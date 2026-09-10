@@ -16,11 +16,12 @@ jobs:
 
       - name: Install Godot 4.4.1
         run: |
-          curl -sL -o godot.zip \
-            https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip
+          curl -sL --retry 3 --fail -o godot.zip \
+            https://github.com/godotengine/godot-builds/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip
           unzip -o godot.zip -d godot-bin
           chmod +x godot-bin/Godot_v4.4.1-stable_linux.x86_64
-          echo "$(pwd)/godot-bin" >> "$GITHUB_PATH"
+          sudo mv godot-bin/Godot_v4.4.1-stable_linux.x86_64 /usr/local/bin/godot
+          godot --version
 
       - name: Install Android build template
         run: |
@@ -38,7 +39,15 @@ jobs:
           KS: ${{ secrets.SIGNING_KEYSTORE }}
         run: |
           mkdir -p android
-          echo "$KS" | base64 -d > android/antigravity.keystore
+          if [ -z "$KS" ]; then
+            echo "::warning::SIGNING_KEYSTORE secret yok — debug keystore ile devam ediliyor"
+            keytool -genkeypair -v -keystore android/antigravity.keystore \
+              -storepass antigravity -keypass antigravity -alias antigravity \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=oyun, OU=dev, O=avenox, L=tr, S=tr, C=TR"
+          else
+            echo "$KS" | base64 -d > android/antigravity.keystore
+          fi
 
       - name: Export debug APK
         run: |
