@@ -1,1 +1,1 @@
-/data/data/com.termux/files/home/oyun/AGENTS.md
+CLAUDE.md -> AGENTS.md (Termux symlink desteklemez; agy-vault sync kuralı gereği gerçek dosya değil)
