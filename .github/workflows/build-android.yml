@@ -62,6 +62,7 @@ jobs:
           GODOT_ANDROID_KEYSTORE_RELEASE_USER: antigravity
           GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD: antigravity
         run: |
+          mkdir -p build
           ls -la android/antigravity.keystore
           godot --headless --path . --export-debug \
             "Android" build/oyun-debug.apk
