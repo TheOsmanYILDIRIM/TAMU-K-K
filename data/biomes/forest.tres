@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="BiomeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/rules/biome_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"forest"
+display_key = "biome.forest"
+temp_range = Vector2(0.0, 0.62)
+humidity_range = Vector2(0.5, 1.0)
+surface_block = &"grass_block"
+subsurface_block = &"dirt"
+deep_block = &"stone"
+surface_tint = Color(0.3, 0.6, 0.3, 1)

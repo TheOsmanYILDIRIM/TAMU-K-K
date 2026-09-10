@@ -1,0 +1,58 @@
+name: build-android
+# APK derlemesi — CI'da (Termux'ta Gradle yok — ev kuralı 4)
+# Sabit keystore: secrets.SIGNING_KEYSTORE (base64) + SIGNING_KEYSTORE_PASSWORD
+# Aynı imza → eski sürüm silinmeden üst üste güncellenebilir (ev kuralı 4).
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Godot 4.4.1
+        run: |
+          curl -sL -o godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip
+          unzip -o godot.zip -d godot-bin
+          chmod +x godot-bin/Godot_v4.4.1-stable_linux.x86_64
+          echo "$(pwd)/godot-bin" >> "$GITHUB_PATH"
+
+      - name: Install Android build template
+        run: |
+          godot --headless --path . --import
+          # Export templates 4.4.1
+          curl -sL -o templates.tpz \
+            https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_export_templates.tpz
+          mkdir -p ~/.local/share/godot/export_templates
+          unzip -o templates.tpz -d ~/.local/share/godot/export_templates --strip-components=1
+          mv ~/.local/share/godot/export_templates/templates \
+             ~/.local/share/godot/export_templates/4.4.1.stable 2>/dev/null || true
+
+      - name: Restore signing keystore (sabit imza)
+        env:
+          KS: ${{ secrets.SIGNING_KEYSTORE }}
+        run: |
+          mkdir -p android
+          echo "$KS" | base64 -d > android/antigravity.keystore
+
+      - name: Export debug APK
+        run: |
+          godot --headless --path . --export-debug \
+            "Android" build/oyun-debug.apk
+          unzip -p build/oyun-debug.apk META-INF/CERT.RSA 2>/dev/null | true
+
+      - name: Verify APK signature fingerprint
+        run: |
+          FP=$(keytool -printcert -jarfile build/oyun-debug.apk 2>/dev/null | \
+            grep SHA256: | head -1 || echo "fingerprint-yok")
+          echo "APK SHA256 imza: $FP"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oyun-debug-apk
+          path: build/oyun-debug.apk

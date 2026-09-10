@@ -1,0 +1,23 @@
+keys,tr
+block.air,Hava
+block.bedrock,Ana Kaya
+block.stone,Taş
+block.dirt,Toprak
+block.grass_block,Çim Bloğu
+block.sand,Kum
+item.hand,El
+item.wood_pickaxe,Ahşap Kazma
+item.stone,Taş
+item.dirt,Toprak
+item.sand,Kum
+item.stick,Çubuk
+biome.desert,Çöl
+biome.plains,Ova
+biome.forest,Orman
+ui.play,Oyna
+ui.settings,Ayarlar
+ui.language,Dil
+ui.quit,Çıkış
+ui.multiplayer,Çok Oyunculu
+ui.host,Oyun Kur
+ui.join,Oyuna Katıl

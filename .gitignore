@@ -1,0 +1,17 @@
+# Godot
+.godot/
+*.tmp
+tmp/
+preview.log
+godot_dl.log
+ubuntu_install.log
+fontconfig_install.log
+import.log
+
+# Build çıktıları
+build/
+*.apk
+*.avi
+
+# Sistem
+.DS_Store

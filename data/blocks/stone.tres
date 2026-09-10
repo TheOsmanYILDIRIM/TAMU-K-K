@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="BlockDef" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/rules/block_def.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/rules/drop_rule.gd" id="2"]
+
+[sub_resource type="Resource" script_class="DropRule" id="0"]
+script = ExtResource("2")
+item_id = &"stone_item"
+count_min = 1
+count_max = 1
+chance = 1.0
+
+[resource]
+script = ExtResource("1")
+id = &"stone"
+display_key = "block.stone"
+hardness = 6.0
+tool_type = &"pickaxe"
+solid = true
+gravity_affected = false
+color = Color(0.55, 0.55, 0.55, 1)
+drops = [SubResource("0")]
+
