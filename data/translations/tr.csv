@@ -5,6 +5,9 @@ block.stone,Taş
 block.dirt,Toprak
 block.grass_block,Çim Bloğu
 block.sand,Kum
+block.water,Su
+block.oak_log,Meşe Kütüğü
+block.leaves,Yapraklar
 item.hand,El
 item.wood_pickaxe,Ahşap Kazma
 item.stone,Taş

@@ -5,6 +5,9 @@ block.stone,Stone
 block.dirt,Dirt
 block.grass_block,Grass Block
 block.sand,Sand
+block.water,Water
+block.oak_log,Oak Log
+block.leaves,Leaves
 item.hand,Hand
 item.wood_pickaxe,Wooden Pickaxe
 item.stone,Stone

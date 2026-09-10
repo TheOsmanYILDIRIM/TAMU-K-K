@@ -99,6 +99,45 @@ func test_worldgen() -> void:
 	# İki farklı chunk aynı seed ile aynı üretilir
 	var vox2 := wg.generate_chunk(0, 0, 16, 16)
 	assert_true(vox == vox2, "chunk üretimi deterministik")
+	# --- Su semantiği: deniz seviyesi altında su hücreleri var, üstünde yok ---
+	var water_num := BlockIds.num(&"water")
+	assert_true(water_num > 0, "water sayısal id > 0 (%d)" % water_num)
+	var found_water := false
+	var water_above_sea := false
+	for i in vox.size():
+		if vox[i] == water_num:
+			found_water = true
+			var y := i / (16 * 16)
+			if y > wg.SEA_LEVEL:
+				water_above_sea = true
+	assert_true(found_water, "chunk içinde su bulundu (deniz seviyesi altı doldu)")
+	assert_true(not water_above_sea, "deniz seviyesi üstünde su yok")
+	# --- Mağara semantiği: bedrock asla delinmez ---
+	var bedrock_num := BlockIds.num(&"bedrock")
+	var bedrock_intact := true
+	for z in 16:
+		for x in 16:
+			if vox[x + z * 16 + 0] != bedrock_num:
+				bedrock_intact = false
+	assert_true(bedrock_intact, "mağara bedrock'u delmez (y=0 katmanı sağlam)")
+	# --- Ağaç semantiği: orman chunk'ında gövde/yaprak bulunur ---
+	var log_num := BlockIds.num(&"oak_log")
+	var leaf_num := BlockIds.num(&"leaves")
+	var tree_count := 0
+	for i in vox.size():
+		if vox[i] == log_num or vox[i] == leaf_num:
+			tree_count += 1
+	assert_true(tree_count > 0, "orman biyomunda ağaç parçaları üretildi (%d blok)" % tree_count)
+	# Ağaç gövdesi zemine oturur: her oak_log altında katı blok veya log var
+	var log_floating := false
+	for i in vox.size():
+		if vox[i] == log_num:
+			var y2 := i / (16 * 16)
+			if y2 > 0:
+				var below := i - 16 * 16
+				if vox[below] == 0 or vox[below] == water_num:
+					log_floating = true
+	assert_true(not log_floating, "havada süzülen gövde yok (zemin oturması)")
 
 
 func is_inf(v: float) -> bool:
