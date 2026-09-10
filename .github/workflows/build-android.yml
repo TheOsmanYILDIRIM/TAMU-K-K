@@ -52,10 +52,20 @@ jobs:
           fi
 
       - name: Export debug APK
+        env:
+          # Godot preset değerlerinden ÖNCE bunları okur (ENV_ANDROID_KEYSTORE_*)
+          # headless export'ta preset keystore okuması güvenilir değil — env zorunlu.
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: ${{ github.workspace }}/android/antigravity.keystore
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER: antigravity
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: antigravity
+          GODOT_ANDROID_KEYSTORE_RELEASE_PATH: ${{ github.workspace }}/android/antigravity.keystore
+          GODOT_ANDROID_KEYSTORE_RELEASE_USER: antigravity
+          GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD: antigravity
         run: |
+          ls -la android/antigravity.keystore
           godot --headless --path . --export-debug \
             "Android" build/oyun-debug.apk
-          unzip -p build/oyun-debug.apk META-INF/CERT.RSA 2>/dev/null | true
+          ls -la build/oyun-debug.apk
 
       - name: Verify APK signature fingerprint
         run: |
