@@ -11,19 +11,24 @@ jobs:
 
       - name: Install Godot 4.4.1
         run: |
-          curl -sL -o godot.zip \
+          set -euo pipefail
+          curl -fL -o godot.zip \
             https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip
+          ls -la godot.zip
           unzip -o godot.zip -d godot-bin
-          chmod +x godot-bin/Godot_v4.4.1-stable_linux.x86_64
-          echo "$(pwd)/godot-bin" >> "$GITHUB_PATH"
+          sudo mv godot-bin/Godot_v4.4.1-stable_linux.x86_64 /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+          godot --version
 
       - name: Import assets
         run: |
+          set -euo pipefail
           godot --headless --path . --import 2>&1 | tail -5
           git diff --exit-code -- .godot || echo "::warning::.godot değişti (import determinizmi kontrol et)"
 
       - name: GDScript lint (check-only)
         run: |
+          set -euo pipefail
           FAIL=0
           for f in $(find scripts tests -name '*.gd'); do
             godot --headless --check-only --script "$f" || { echo "LINT FAIL: $f"; FAIL=1; }
@@ -32,4 +37,5 @@ jobs:
 
       - name: Headless test suite
         run: |
+          set -euo pipefail
           godot --headless --path . --script res://tests/run_tests.gd
