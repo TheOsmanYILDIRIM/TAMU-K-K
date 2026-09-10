@@ -26,13 +26,15 @@ jobs:
       - name: Install Android build template
         run: |
           godot --headless --path . --import
-          # Export templates 4.4.1
-          curl -sL -o templates.tpz \
+          # Export templates 4.4.1 (tpz içinde templates/ klasörü var)
+          curl -sL --retry 3 --fail -o templates.tpz \
             https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_export_templates.tpz
           mkdir -p ~/.local/share/godot/export_templates
-          unzip -o templates.tpz -d ~/.local/share/godot/export_templates --strip-components=1
+          unzip -o -q templates.tpz -d ~/.local/share/godot/export_templates
+          rm -rf ~/.local/share/godot/export_templates/4.4.1.stable
           mv ~/.local/share/godot/export_templates/templates \
-             ~/.local/share/godot/export_templates/4.4.1.stable 2>/dev/null || true
+             ~/.local/share/godot/export_templates/4.4.1.stable
+          ls ~/.local/share/godot/export_templates/4.4.1.stable | head -3
 
       - name: Restore signing keystore (sabit imza)
         env:
