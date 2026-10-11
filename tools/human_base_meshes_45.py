@@ -25,30 +25,31 @@ candidates=[o for o in meshes if len(o.data.vertices)>500 and o.dimensions.z>0.1
 if not candidates:
     candidates=[o for o in meshes if len(o.data.vertices)>500]
 assert candidates,'No human candidate'
-candidates.sort(key=lambda o:(o.dimensions.z>o.dimensions.x*1.5,len(o.data.vertices)),reverse=True)
+candidates.sort(key=lambda o:(o.name=='GEO-body_male_realistic',o.dimensions.z>o.dimensions.x*1.5,len(o.data.vertices)),reverse=True)
 model=candidates[0]
 print('SELECTED',model.name,tuple(model.dimensions),len(model.data.vertices),flush=True)
-# Hide everything else, including reference stages, for clean single-character render.
-for o in bpy.data.objects:
-    if o.type=='MESH':o.hide_render=(o!=model)
-    elif o.type in {'LIGHT','CAMERA','CURVE','FONT','GREASEPENCIL'}:o.hide_render=True
-# Normalize geometry via model matrix rather than destructively changing the original source.
+# Isolate mesh from hidden asset-library collections.
 bpy.context.view_layer.update()
-pts=[model.matrix_world@Vector(c) for c in model.bound_box]
+world_matrix=model.matrix_world.copy()
+mesh_copy=model.data.copy()
+for v in mesh_copy.vertices:
+    v.co=world_matrix @ v.co
+for o in list(bpy.data.objects):
+    bpy.data.objects.remove(o,do_unlink=True)
+fresh=bpy.data.objects.new('AnatomyReference',mesh_copy)
+bpy.context.scene.collection.objects.link(fresh)
+model=fresh
+model.hide_render=False
+pts=[v.co.copy() for v in mesh_copy.vertices]
 mn=Vector([min(p[i] for p in pts) for i in range(3)])
 mx=Vector([max(p[i] for p in pts) for i in range(3)])
-center=(mn+mx)*.5
 size=mx-mn
-assert size.z>0.01,'Candidate not upright in Z'
-# Use a root collection to shift and scale without changing the mesh data.
-bpy.ops.object.empty_add(type='PLAIN_AXES')
-root=bpy.context.object;root.name='ReferenceNormalizer'
-world=model.matrix_world.copy()
-model.parent=root
-model.matrix_world=world
-root.location=-center*(1.8/size.z)
-root.scale=(1.8/size.z,)*3
-bpy.context.view_layer.update()
+assert size.z>0.01,'Human mesh must stand along Z'
+center=(mn+mx)*0.5
+scale=1.8/size.z
+for v in mesh_copy.vertices:
+    v.co=(v.co-center)*scale
+model.data.update()
 scene=bpy.context.scene
 scene.render.engine='BLENDER_EEVEE_NEXT' if bpy.app.version>=(4,2,0) else 'BLENDER_EEVEE'
 scene.render.resolution_x=512;scene.render.resolution_y=768;scene.render.resolution_percentage=100
