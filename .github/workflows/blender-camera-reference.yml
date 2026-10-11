@@ -13,12 +13,14 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Blender
         run: sudo apt-get update && sudo apt-get install -y blender libegl1 libgl1 libopengl0 libgles2 libx11-6 libxext6 libxrender1 libxi6 libxfixes3 libxkbcommon0 libsm6 libice6 libxrandr2 libxcursor1 libxinerama1 python3-numpy
-      - name: Download CC0 anatomical human reference
+      - name: Download CC0 textured human reference
         run: |
           mkdir -p assets/reference
-          curl --fail --location --retry 3 --output assets/reference/makehuman_base.obj https://raw.githubusercontent.com/makehumancommunity/makehuman/master/makehuman/data/3dobjs/base.obj
-          test "$(wc -c < assets/reference/makehuman_base.obj)" -eq 1749303
-          printf 'Source: MakeHuman Community core base mesh, CC0-1.0. Neutral anatomy reference only.\n' > assets/reference/ATTRIBUTION.txt
+          curl --fail --location --retry 3 --output assets/reference/male_3d.obj https://opengameart.org/sites/default/files/male_3d.obj
+          test -s assets/reference/male_3d.obj
+          curl --fail --location --retry 3 --output assets/reference/char_texture.png https://opengameart.org/sites/default/files/char_texture.png
+          test -s assets/reference/char_texture.png
+          printf 'Source: Drummyfish OpenGameArt 3D male, CC0-1.0. Texture and geometry included for perspective reference.\n' > assets/reference/ATTRIBUTION.txt
       - name: Render reference
         run: blender -b -t 2 --python tools/blender_camera_reference.py
       - name: Validate PNG alpha and camera data
