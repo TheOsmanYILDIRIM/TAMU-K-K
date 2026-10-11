@@ -1,0 +1,51 @@
+name: Inspect Blender Human Base Meshes
+on:
+  push:
+    branches: [experiment/blender-camera-reference-20261011]
+    paths:
+      - '.github/workflows/human-base-meshes-45.yml'
+      - 'tools/human_base_meshes_45.py'
+  workflow_dispatch:
+jobs:
+  inspect-and-render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Blender and dependencies
+        run: sudo apt-get update -qq && sudo apt-get install -y blender python3-numpy libegl1 libgl1 unzip
+      - name: Download Blender official Human Base Meshes v1.4.1
+        run: |
+          mkdir -p assets/reference rendered
+          curl --fail --location --retry 3 --max-time 240 --output assets/reference/human-base-meshes.zip 'https://www.blender.org/download/demo/asset-bundles/human-base-meshes/human-base-meshes-bundle-v1.4.1.zip'
+          python3 - <<'PY'
+          import zipfile, pathlib, json
+          p=pathlib.Path('assets/reference/human-base-meshes.zip')
+          with zipfile.ZipFile(p) as z:
+              names=z.namelist()
+              blends=[n for n in names if n.lower().endswith('.blend')]
+              pathlib.Path('rendered/bundle_manifest.json').write_text(json.dumps({'archive_bytes':p.stat().st_size,'blend_files':blends,'file_count':len(names)},indent=2))
+              print('BLEND_FILES:',blends[:40], 'TOTAL:',len(blends))
+              assert blends, 'No .blend files in official archive'
+          PY
+      - name: Inspect model and render
+        run: blender -b -t 2 --python tools/human_base_meshes_45.py
+      - name: Validate output
+        run: |
+          python3 - <<'PY'
+          import pathlib,struct,json
+          m=json.loads(pathlib.Path('rendered/camera.json').read_text())
+          assert m['elevation_degrees']==45
+          for name in ('front','back','left','right'):
+              p=pathlib.Path('rendered',name+'.png')
+              b=p.read_bytes()
+              assert b[:8]==b'\x89PNG\r\n\x1a\n'
+              assert struct.unpack('>II',b[16:24])==(512,768)
+              assert b[25]==6
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: human-base-meshes-45-reference
+          path: rendered/
+          if-no-files-found: warn
