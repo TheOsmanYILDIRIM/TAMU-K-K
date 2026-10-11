@@ -61,7 +61,7 @@ world.node_tree.nodes['Background'].inputs['Strength'].default_value=.7
 bpy.ops.object.light_add(type='AREA',location=(3,-4,6))
 light=bpy.context.object;light.hide_render=False;light.data.energy=450;light.data.size=5
 light.rotation_euler=(Vector((0,0,0))-light.location).to_track_quat('-Z','Y').to_euler()
-for label,az in [('front',0),('right',90),('back',180),('left',270)]:
+for label,az in [('southwest',45),('southeast',135),('northeast',225),('northwest',315)]:
     a=math.radians(az);e=math.radians(45);d=6
     pos=Vector((d*math.sin(a)*math.cos(e),-d*math.cos(a)*math.cos(e),d*math.sin(e)))
     bpy.ops.object.camera_add(location=pos)
@@ -71,4 +71,4 @@ for label,az in [('front',0),('right',90),('back',180),('left',270)]:
     scene.camera=cam;scene.render.filepath=str(out.joinpath(label+'.png').resolve())
     bpy.ops.render.render(write_still=True)
     bpy.data.objects.remove(cam,do_unlink=True)
-out.joinpath('camera.json').write_text(json.dumps({'projection':'ORTHO','elevation_degrees':45,'azimuth_degrees':{'front':0,'right':90,'back':180,'left':270},'size':[512,768],'transparent':True,'source':'Blender Human Base Meshes v1.4.1','source_file':chosen.filename,'selected_mesh':model.name},indent=2))
+out.joinpath('camera.json').write_text(json.dumps({'projection':'ORTHO','elevation_degrees':45,'azimuth_degrees':{'southwest':45,'southeast':135,'northeast':225,'northwest':315},'direction_mode':'four_diagonal_iso','size':[512,768],'transparent':True,'source':'Blender Human Base Meshes v1.4.1','source_file':chosen.filename,'selected_mesh':model.name},indent=2))
