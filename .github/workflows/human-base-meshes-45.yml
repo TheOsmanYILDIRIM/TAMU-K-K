@@ -17,10 +17,12 @@ jobs:
       - name: Download Blender official Human Base Meshes v1.4.1
         run: |
           mkdir -p assets/reference rendered
-          curl --fail --location --retry 3 --max-time 240 --output assets/reference/human-base-meshes.zip 'https://www.blender.org/download/demo/asset-bundles/human-base-meshes/human-base-meshes-bundle-v1.4.1.zip'
+          curl --fail --location --retry 3 --max-time 240 --output assets/reference/human-base-meshes.zip 'https://download.blender.org/demo/asset-bundles/human-base-meshes/human-base-meshes-bundle-v1.4.1.zip'
           python3 - <<'PY'
           import zipfile, pathlib, json
           p=pathlib.Path('assets/reference/human-base-meshes.zip')
+          assert p.stat().st_size > 1000000, 'Download too small: likely an HTML page rather than ZIP'
+          assert zipfile.is_zipfile(p), 'Downloaded file is not a ZIP archive'
           with zipfile.ZipFile(p) as z:
               names=z.namelist()
               blends=[n for n in names if n.lower().endswith('.blend')]
