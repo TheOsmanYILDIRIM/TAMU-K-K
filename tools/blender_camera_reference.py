@@ -2,7 +2,7 @@ import bpy, math, os, json
 from mathutils import Vector
 bpy.ops.object.select_all(action='SELECT')
 bpy.ops.object.delete(use_global=False)
-source='assets/reference/makehuman_base.obj'
+source='assets/reference/male_3d.obj'
 assert os.path.isfile(source), 'Licensed reference model missing'
 bpy.ops.wm.obj_import(filepath=os.path.abspath(source), forward_axis='NEGATIVE_Z', up_axis='Y')
 for o in bpy.context.scene.objects:
@@ -71,4 +71,4 @@ for label,az in [('front',0),('right',90),('back',180),('left',270)]:
  bpy.ops.render.render(write_still=True)
  bpy.data.objects.remove(cam,do_unlink=True)
 with open('rendered/camera.json','w') as f:
- json.dump({'projection':'ORTHO','elevation_degrees':60,'azimuth_degrees':{'front':0,'right':90,'back':180,'left':270},'size':[512,768],'transparent':True,'asset':'MakeHuman CC0 base human mesh','license':'CC0-1.0','attribution':'MakeHuman Community','source':'https://github.com/makehumancommunity/makehuman/blob/master/makehuman/data/3dobjs/base.obj','model_height_m':1.8},f,indent=2)
+ json.dump({'projection':'ORTHO','elevation_degrees':60,'azimuth_degrees':{'front':0,'right':90,'back':180,'left':270},'size':[512,768],'transparent':True,'asset':'Drummyfish CC0 textured male model','license':'CC0-1.0','attribution':'Drummyfish','source':'https://opengameart.org/content/3d-male-0','model_height_m':1.8},f,indent=2)
