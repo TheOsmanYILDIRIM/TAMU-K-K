@@ -17,7 +17,7 @@ jobs:
         run: |
           mkdir -p assets/reference
           curl --fail --location --retry 3 --output assets/reference/makehuman_base.obj https://raw.githubusercontent.com/makehumancommunity/makehuman/master/makehuman/data/3dobjs/base.obj
-          test "$(wc -c < assets/reference/CesiumMan.glb)" -eq 1749303
+          test "$(wc -c < assets/reference/makehuman_base.obj)" -eq 1749303
           printf 'Source: MakeHuman Community core base mesh, CC0-1.0. Neutral anatomy reference only.\n' > assets/reference/ATTRIBUTION.txt
       - name: Render reference
         run: blender -b -t 2 --python tools/blender_camera_reference.py
