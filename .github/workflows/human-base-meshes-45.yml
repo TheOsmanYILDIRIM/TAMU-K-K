@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Blender and dependencies
-        run: sudo apt-get update -qq && sudo apt-get install -y blender python3-numpy libegl1 libgl1 unzip
+        run: sudo apt-get update -qq && sudo apt-get install -y blender python3-numpy python3-pil libegl1 libgl1 unzip
       - name: Download Blender official Human Base Meshes v1.4.1
         run: |
           mkdir -p assets/reference rendered
@@ -46,6 +46,10 @@ jobs:
               assert b[:8]==b'\x89PNG\r\n\x1a\n'
               assert struct.unpack('>II',b[16:24])==(512,768)
               assert b[25]==6
+              from PIL import Image
+              a=Image.open(p).convert('RGBA').getchannel('A')
+              assert a.getbbox() is not None, f'{name} is entirely transparent'
+              assert a.getextrema()[0]==0, f'{name} has no transparent background'
           PY
       - uses: actions/upload-artifact@v4
         if: always()
