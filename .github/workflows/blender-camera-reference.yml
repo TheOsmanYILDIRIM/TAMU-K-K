@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Blender
-        run: sudo apt-get update && sudo apt-get install -y blender libegl1 libgl1 libopengl0 libgles2 libx11-6 libxext6 libxrender1 libxi6 libxfixes3 libxkbcommon0 libsm6 libice6 libxrandr2 libxcursor1 libxinerama1
+        run: sudo apt-get update && sudo apt-get install -y blender libegl1 libgl1 libopengl0 libgles2 libx11-6 libxext6 libxrender1 libxi6 libxfixes3 libxkbcommon0 libsm6 libice6 libxrandr2 libxcursor1 libxinerama1 python3-numpy
       - name: Download licensed human reference
         run: |
           mkdir -p assets/reference
