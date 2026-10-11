@@ -1,1 +1,78 @@
-{"type":"object","required":["schema_version","id","inputs","outputs","station_tags","duration_ticks"],"properties":{"schema_version":{"const":1},"id":{"type":"string"},"inputs":{"type":"array"},"outputs":{"type":"array"},"station_tags":{"type":"array"},"duration_ticks":{"type":"integer","minimum":1}}}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Craft recipe v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "inputs",
+    "outputs",
+    "station_tags",
+    "duration_ticks"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]*:[a-z][a-z0-9_-]*$"
+    },
+    "inputs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "def_id",
+          "count"
+        ],
+        "properties": {
+          "def_id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]*:[a-z][a-z0-9_-]*$"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "def_id",
+          "count"
+        ],
+        "properties": {
+          "def_id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]*:[a-z][a-z0-9_-]*$"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      }
+    },
+    "station_tags": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "duration_ticks": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+}
