@@ -1,0 +1,34 @@
+name: Blender Camera Reference
+on:
+  push:
+    branches: [experiment/blender-camera-reference-20261011]
+    paths:
+      - 'tools/blender_camera_reference.py'
+      - '.github/workflows/blender-camera-reference.yml'
+  workflow_dispatch:
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Blender
+        run: sudo apt-get update && sudo apt-get install -y blender
+      - name: Render reference
+        run: blender -b -t 2 --python tools/blender_camera_reference.py
+      - name: Validate PNG alpha and camera data
+        run: |
+          python3 - <<'PY'
+          import json, struct, pathlib
+          m=json.loads(pathlib.Path('rendered/camera.json').read_text())
+          assert m['elevation_degrees']==60
+          for name in ['front','back','left','right']:
+              p=pathlib.Path('rendered/'+name+'.png')
+              data=p.read_bytes()
+              assert data[:8]==b'\x89PNG\r\n\x1a\n'
+              assert struct.unpack('>II',data[16:24])==(512,768)
+              assert data[25]==6, (name, data[25])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: blender-camera-reference-60deg
+          path: rendered/
