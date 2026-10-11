@@ -19,6 +19,13 @@ with zipfile.ZipFile(archive) as z:
 meshes=[o for o in bpy.data.objects if o.type=='MESH']
 objects=[{'name':o.name,'vertices':len(o.data.vertices),'dimensions':list(o.dimensions),'hidden':o.hide_render} for o in meshes]
 out.joinpath('scene_inspection.json').write_text(json.dumps({'source_file':chosen.filename,'meshes':objects[:100],'mesh_count':len(objects)},indent=2))
+armatures=[{'name':o.name,'bones':len(o.data.bones),'pose_bones':len(o.pose.bones) if o.pose else 0} for o in bpy.data.objects if o.type=='ARMATURE']
+actions=[{'name':a.name,'frame_range':list(a.frame_range),'fcurves':len(a.fcurves) if hasattr(a,'fcurves') else None} for a in bpy.data.actions]
+animations=[{'object':o.name,'type':o.type,'action':o.animation_data.action.name if o.animation_data and o.animation_data.action else None,'nla_tracks':len(o.animation_data.nla_tracks) if o.animation_data else 0} for o in bpy.data.objects if o.animation_data]
+mesh_rigs=[{'name':o.name,'parent':o.parent.name if o.parent else None,'armature_modifiers':[m.object.name if m.object else None for m in o.modifiers if m.type=='ARMATURE'],'vertex_groups':len(o.vertex_groups),'shape_keys':len(o.data.shape_keys.key_blocks) if o.data.shape_keys else 0} for o in meshes]
+audit={'source_file':chosen.filename,'armatures':armatures,'actions':actions,'animated_objects':animations,'mesh_rigs':mesh_rigs,'selected_target':'GEO-body_male_realistic'}
+out.joinpath('animation_audit.json').write_text(json.dumps(audit,indent=2))
+print('ANIMATION_AUDIT',json.dumps({'armatures':armatures,'actions':actions,'animated_objects':animations,'target':next((m for m in mesh_rigs if m['name']=='GEO-body_male_realistic'),None)}),flush=True)
 assert meshes,'No meshes in Blender source'
 # Prefer a whole standing human mesh: tall relative to width, sufficiently detailed, non-hidden.
 candidates=[o for o in meshes if len(o.data.vertices)>500 and o.dimensions.z>0.1 and o.dimensions.z>o.dimensions.x*1.15]
