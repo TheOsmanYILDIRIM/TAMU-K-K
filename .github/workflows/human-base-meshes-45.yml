@@ -36,7 +36,9 @@ jobs:
           import pathlib,struct,json
           m=json.loads(pathlib.Path('rendered/camera.json').read_text())
           assert m['elevation_degrees']==45
-          for name in ('front','back','left','right'):
+          assert m['direction_mode']=='four_diagonal_iso'
+          assert m['azimuth_degrees']=={'front_right':45,'back_right':135,'back_left':225,'front_left':315}
+          for name in ('front_right','back_right','back_left','front_left'):
               p=pathlib.Path('rendered',name+'.png')
               b=p.read_bytes()
               assert b[:8]==b'\x89PNG\r\n\x1a\n'
