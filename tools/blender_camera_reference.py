@@ -8,7 +8,12 @@ bpy.ops.wm.obj_import(filepath=os.path.abspath(source), forward_axis='NEGATIVE_Z
 for o in bpy.context.scene.objects:
  if o.type=='MESH':
   mat=bpy.data.materials.new('Neutral anatomy reference')
-  mat.diffuse_color=(0.65,0.63,0.60,1)
+  mat.diffuse_color=(0.75,0.75,0.75,1)
+  mat.use_nodes=True
+  tex=mat.node_tree.nodes.new('ShaderNodeTexImage')
+  tex.image=bpy.data.images.load(os.path.abspath('assets/reference/char_texture.png'))
+  bsdf=mat.node_tree.nodes.get('Principled BSDF')
+  mat.node_tree.links.new(tex.outputs['Color'],bsdf.inputs['Base Color'])
   o.data.materials.clear()
   o.data.materials.append(mat)
   for face in o.data.polygons: face.use_smooth=True
