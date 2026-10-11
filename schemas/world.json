@@ -1,0 +1,1 @@
+{"type":"object","required":["save_version","world_id","seed","palette","chunks","instances"],"properties":{"save_version":{"const":1},"world_id":{"type":"string"},"seed":{"type":"integer"},"palette":{"type":"array"},"chunks":{"type":"array"},"instances":{"type":"array"}}}

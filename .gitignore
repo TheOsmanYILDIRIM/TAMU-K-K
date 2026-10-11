@@ -1,17 +1,15 @@
-# Godot
 .godot/
-*.tmp
-tmp/
-preview.log
-godot_dl.log
-ubuntu_install.log
-fontconfig_install.log
-import.log
-
-# Build çıktıları
+.import/
 build/
+.cache/
+*.tmp
+*.bak
 *.apk
-*.avi
-
-# Sistem
-.DS_Store
+*.aab
+*.keystore
+*.jks
+.env
+__pycache__/
+.pytest_cache/
+*.pyc
+user_data/

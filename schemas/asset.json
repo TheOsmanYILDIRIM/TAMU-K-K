@@ -1,0 +1,1 @@
+{"type":"object","required":["schema_version","asset_id","origin","format","license"],"properties":{"schema_version":{"const":1},"asset_id":{"type":"string"},"origin":{"enum":["generated","original","external"]},"format":{"enum":["glb","gltf","png","svg"]},"license":{"type":"string"},"sha256":{"type":"string"},"source_url":{"type":"string"},"generator_id":{"type":"string"}}}

@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","required":["catalog_version","definitions","recipes","assets"],"properties":{"catalog_version":{"const":1},"definitions":{"type":"array","items":{"type":"string"}},"recipes":{"type":"array","items":{"type":"string"}},"assets":{"type":"array","items":{"type":"string"}}}}

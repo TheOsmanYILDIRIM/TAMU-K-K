@@ -1,0 +1,1 @@
+{"schema_version":1,"id":"core:wood_plank","kind":"item","name_key":"item.wood_plank","tags":["core:wood"],"components":{"core:stackable":{"max_count":99}},"visual":{"kind":"primitive","shape":"box","color":"#B18450"}}

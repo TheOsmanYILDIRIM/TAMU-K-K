@@ -1,0 +1,1 @@
+{"schema_version":1,"id":"core:workbench","kind":"structure","name_key":"structure.workbench","tags":["core:craft"],"components":{"core:placeable":{"footprint":[1,1],"rotation_steps":4},"core:craft_station":{"station_tags":["core:bench"],"queue_limit":2}},"visual":{"kind":"primitive","shape":"box","color":"#AE7F56"}}

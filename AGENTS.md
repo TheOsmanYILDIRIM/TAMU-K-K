@@ -1,39 +1,29 @@
-# AGENTS.md — oyun (Iso Voxel Survival) Atölye Kuralları
+# AGENTS.md — oyun (Android Portrait Crafting Survival)
 
-> Bu dosya `~/AGENTS.md` (ana ev kuralları) ile birlikte okunur. Proje-özel
-> kurallar burada; çakışma halinde daha sıkı olan geçerlidir.
+Kanonik kapsam yeni `main`; önceki proje `backup/pre-portrait-reboot-20261011` dalında değişmeden korunur. Yeniden başlatma 2026-10-11.
 
-## Ortam ve Çalıştırma
-- Godot 4.4.1 linux.arm64 binary: `~/godot/Godot_v4.4.1-stable_linux.arm64`
-  - glibc binary → **`grun` (glibc-runner) ile Termux'ta NATIVE çalıştırılır.**
-  - proot/Ubuntu KULLANILMAZ (2026-09-10 kararı; glibc-runner + mesa + xvfb kurulu).
-- Render: GL Compatibility + llvmpipe (software, native Mesa). Forward+ KULLANILMAZ.
-- Portrait: 1080×1920. Kamera: ortografik izometrik.
-- Termal koruma: uzun derleme/render `nice -n 15`; paralel ağır iş YOK.
+## İlerleme sınırları
+- Eski yedeği düzenleme, silme veya `main` üzerine geri merge etme. Üretken veri/saved world kaybına sebep olacak migration yapma.
+- `SESSION_HANDOFF.md` güncel teknik devir, `AGENTS.md` kalıcı geliştirme kuralıdır.
+- Kullanıcı test etmeden gerçek cihaz performansı, ergonomi, oynanış veya çok oyunculu başarı iddia etme.
+- Şimdiki görev: mimari, sözleşme, araştırma ve scaffold. Tam oyun ancak fazlar halinde.
 
-## Görsel Önizleme ve APK (2026-09-10 KARARI)
-- **Görsel önizleme kullanıcıya ait:** Ajan ekran görüntüsü/render almaz, bu konuda çalışmaz.
-- Ajan doğrulaması = headless test + `--check-only` lint (görsel iş yok).
-- **APK derlemesi GitHub Actions CI'da** (Termux'ta Gradle yok — ev kuralı 4).
-  - Sabit keystore hem debug hem release'e atanacak (üst üste kurulum kuralı).
-- Preview script'i (`tools/preview.sh`) yalnız kullanıcı manuel çalıştırmak isterse var.
+## Teknik kararlar
+- Android portrait-first; Godot 4.6.3 sabitlenmiş geliştirme/CI sürümü. GL Compatibility başlangıç renderer'ı; gerçek cihazda Mobile renderer karşılaştırması yapılabilir.
+- GDScript statik tür tercih edilir. Oyun davranışı ortak sistemlerde; içerik salt tanımlarda (`data/catalog`).
+- Her içerik tanımı `schemas/` sözleşmesine, her ref tanımlı bir ID'ye bağlanır; UUID instance ID, namespaced stable definition ID; çalışma belleğindeki indeksleri kayda doğrudan yazma.
+- Blok/chunk, etkileşimli instance ve oyuncu kayıtları ayrıdır. Kayıtlarda şema sürümü ve migration; atomik ve geri alınabilir yazım.
+- Android kullanıcı verisi yalnız `user://` yazılır; repodaki dosyalar üretim içerikleridir.
+- Otoriter host dünya değişikliği/üretim/envanter işlemlerini doğrular. İstemci ekranı/hareket tahmin edebilir, eşya üretemez.
+- Lisans doğrulanmadan Mineclonia, MTS veya üçüncü taraf asset import etme. Dosya kaynağı, sürüm, lisans ve hash sakla.
 
-## Kod Standartları
-- GDScript: static typing zorunlu (`:=`, `: Type`), `class_name` her Def sınıfında.
-- Data-driven: blok/item/mob davranışı KOD'A DEĞİL `.tres` TANIMINA yazılır.
-  - Yeni obje = yeni .tres; ortak davranış `behaviors/` script'inde tek sefer.
-- World verisi: chunk voxel'leri `u16 id` dizisi; instance yalnız durumlu varlıklar.
-- Hata yönetimi: sessiz fallback yasak (ev kuralı 1.1). Eksik def = push_error + null.
-- Test kapısı: her sistem için `tests/` altında headless test; PR öncesi yeşil.
+## Doğrulama
+- Python stdlib+jsonschema ile JSON Schema, referans bütünlüğü, ID eşsizlik, geçersiz negatif örnek testleri.
+- Godot headless import ve başlangıç scene smoke; CI geçmeden platform başarısı ilan etme.
+- Mobil doğrulama matrisinde 320-360dp, 392-411dp, büyük yazı 1.3x; kesik/güvenli alan, 19.5:9 ve 20:9.
+- APK imzası kalıcı ve gizli; tek kullanımlık keystore ile kalıcı APK üretme. Android build ileride ayrı görev.
+- GitHub tree/blob içerik ön doğrulaması -> commit(parent=okunan HEAD) -> `update_ref(force=false,expected_sha=HEAD)`; reddedilen CAS'ı kör tekrar etme.
+- Beyin görevlerini kanonik `agy-vault/main` üzerinde ve resmî IO ile doğrula.
 
-## Çeviri
-- Kullanıcıya görünen HİÇBİR metin hard-coded olmaz → `tr(key)` üzerinden.
-- `data/translations/en.csv` (kaynak) + `tr.csv`. Yeni metin = önce en.csv'ye.
-
-## Multiplayer
-- Server-authoritative: dünya değişikliği (kır/yerleştir) yalnız sunucuda uygulanır, RPC ile yayınlanır.
-- İstemci tahmini (prediction) sadece hareket için.
-
-## Vault Senkronu
-- Mimari karar → `AGY-Vault/10-Projects/oyun/Proje.md` "Son Kararlar" bölümüne tarihli eklenir.
-- Yarım iş → `backlog.md`. Araştırma çıktıları → `reports/`.
+## Geliştirme kuralı
+Yalnız doğrulanan kabulleri 'done' yap. Yeni içerik, önce tanım+refs+test, sonra runtime bağlayıcı, sonra cihaz UX. Çekirdek kodu statik veri için çoğaltma; sahte içerik ekleyip tamamlandı deme.

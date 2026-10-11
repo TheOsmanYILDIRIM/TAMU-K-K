@@ -1,0 +1,1 @@
+{"schema_version":1,"id":"core:wood_log","kind":"item","name_key":"item.wood_log","tags":["core:wood"],"components":{"core:stackable":{"max_count":99}},"visual":{"kind":"primitive","shape":"cylinder","color":"#936241"}}

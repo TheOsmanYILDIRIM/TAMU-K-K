@@ -1,0 +1,1 @@
+{"schema_version":1,"id":"core:oak_tree","kind":"resource","name_key":"resource.oak_tree","tags":["core:wood","core:nature"],"components":{"core:harvestable":{"duration_ticks":90,"drops":[{"def_id":"core:wood_log","count":3}],"tool_tags":[]}},"visual":{"kind":"primitive","shape":"cylinder","color":"#386C33"}}

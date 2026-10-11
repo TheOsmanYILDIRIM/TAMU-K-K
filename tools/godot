@@ -1,7 +1,0 @@
-#!/data/data/com.termux/files/usr/bin/bash
-# godot wrapper — glibc-runner ile native çalıştırma + termal koruma
-# Kullanım: ./tools/godot [godot argümanları]
-set -euo pipefail
-GODOT_BIN="$HOME/godot/Godot_v4.4.1-stable_linux.arm64"
-[ -x "$GODOT_BIN" ] || { echo "HATA: $GODOT_BIN bulunamadı (godot indirilmemiş)" >&2; exit 1; }
-exec nice -n 15 grun "$GODOT_BIN" "$@"

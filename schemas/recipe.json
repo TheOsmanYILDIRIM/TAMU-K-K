@@ -1,0 +1,1 @@
+{"type":"object","required":["schema_version","id","inputs","outputs","station_tags","duration_ticks"],"properties":{"schema_version":{"const":1},"id":{"type":"string"},"inputs":{"type":"array"},"outputs":{"type":"array"},"station_tags":{"type":"array"},"duration_ticks":{"type":"integer","minimum":1}}}
