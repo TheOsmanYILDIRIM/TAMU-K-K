@@ -1,0 +1,55 @@
+name: ChamberSu BJD source audit
+on:
+  push:
+    branches: [experiment/blender-camera-reference-20261011]
+    paths:
+      - 'tools/chambersu_bjd_ci_audit.py'
+      - '.github/workflows/chambersu-bjd-audit.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Read verified ZIP from main without changing main
+        run: |
+          mkdir -p input
+          git fetch origin main
+          git show origin/main:ball-joint-doll-rigged-basemesh-male-ver.zip > input/chambersu.zip
+          python3 - <<'PY'
+          import zipfile,pathlib
+          p=pathlib.Path("input/chambersu.zip")
+          assert p.stat().st_size > 1000000 and zipfile.is_zipfile(p)
+          with zipfile.ZipFile(p) as z:
+              for f in z.infolist():
+                  assert f.file_size < 300000000
+                  assert not f.filename.startswith("/")
+                  assert ".." not in pathlib.PurePosixPath(f.filename).parts
+              print("ZIP entries:",len(z.infolist()))
+          PY
+      - name: Install Blender
+        run: sudo apt-get update && sudo apt-get install -y blender libegl1 libgl1
+      - name: Inspect actual Blender assets and render
+        run: blender -b -t 2 --python-exit-code 2 --python tools/chambersu_bjd_ci_audit.py
+      - name: Verify audit output
+        run: |
+          python3 - <<'PY'
+          import json,pathlib,struct
+          p=pathlib.Path("rendered/chambersu_audit")
+          j=json.loads((p/"audit.json").read_text())
+          assert j["mesh_count"]>0 and j["chosen_source"]
+          f=(p/"neutral.png").read_bytes()
+          assert f[:8]==bytes([137,80,78,71,13,10,26,10])
+          print("REPORT mesh=",j["mesh_count"],"armatures=",j["armature_count"],"input=",j["chosen_source"])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chambersu-bjd-audit
+          path: rendered/chambersu_audit/
+          if-no-files-found: warn
