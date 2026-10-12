@@ -102,6 +102,6 @@ for i,f in enumerate(frames):
     scene.frame_set(int(round(f)))
     scene.render.filepath=str((OUT/("walk_%02d.png"%(i+1))).resolve())
     bpy.ops.render.render(write_still=True)
-meta={"source":str(p),"license":"CC0-1.0","rig":rig_name,"action":action_name,"kind":kind,"range":[start,end],"sample_frames":frames,"camera_elevation":45,"camera_azimuth":45,"orthographic":True,"resolution":[512,768],"pngs":[f"walk_{i:02d}.png" for i in range(1,5)]}
+source_info=json.loads((ROOT/"source.json").read_text()) if (ROOT/"source.json").exists() else {}\nmeta={"source":str(p),"license":source_info.get("license","unverified"),"source_page":source_info.get("page","unverified"),"rig":rig_name,"action":action_name,"kind":kind,"range":[start,end],"sample_frames":frames,"camera_elevation":45,"camera_azimuth":45,"orthographic":True,"resolution":[512,768],"pngs":[f"walk_{i:02d}.png" for i in range(1,5)]}
 (OUT/"walk_manifest.json").write_text(json.dumps(meta,indent=2))
 print("WALK_RENDER_SUCCESS",json.dumps(meta))
