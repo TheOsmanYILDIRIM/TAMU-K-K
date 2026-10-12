@@ -14,7 +14,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Blender
-        run: sudo apt-get update && sudo apt-get install -y blender python3-requests
+        run: sudo apt-get update && sudo apt-get install -y blender python3-requests python3-numpy
+      - name: Verify Blender Python dependencies
+        run: blender -b --python-exit-code 2 --python-expr "import numpy; print('Blender numpy', numpy.__version__)"
       - name: Verify exact uploaded Adventurer GLB
         run: |
           python3 - <<'PY'
@@ -31,7 +33,7 @@ jobs:
           print('Verified original GLB:',digest)
           PY
       - name: Render 4 poses
-        run: blender -b -t 2 --python tools/blender_walk_four_frames.py
+        run: blender -b -t 2 --python-exit-code 2 --python tools/blender_walk_four_frames.py
       - name: Validate PNGs and sample count
         run: |
           python3 - <<'PY'
