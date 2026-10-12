@@ -50,19 +50,24 @@ for base,arr in by_type.items():
 classification={}
 for base in split_names:
     arr=by_type.get(base,[])
-    # pick two largest components, provided they lie on opposite sides of the pelvis.
+    # Choose largest component on each anatomical side; ignore same-side overlapping shells.
     arr=sorted(arr,key=lambda o:len(o.data.vertices),reverse=True)
-    pair=arr[:2]
     classification[base]=[{'name':o.name,'center':list(center(o)),'vertices':len(o.data.vertices)} for o in arr]
     print('COMPONENT_DIAGNOSTIC',base,[(o.name,round(center(o).x-mid.x,4),round(center(o).y-mid.y,4),len(o.data.vertices)) for o in arr],flush=True)
     (OUT/('components_'+base+'.json')).write_text(json.dumps(classification[base],indent=2))
-    assert len(pair)==2, 'Cannot independently isolate two '+base+' segments'
-    assert (center(pair[0]).x-mid.x)*(center(pair[1]).x-mid.x)<0, 'Segments do not straddle pelvis: '+base
-# Additional parts may form joints; choose only two largest per category for moving.
+    left=[o for o in arr if center(o).x>mid.x+0.015]
+    right=[o for o in arr if center(o).x<mid.x-0.015]
+    assert left and right, 'Cannot find distinct left and right '+base
+    chosen=[left[0],right[0]]
+    by_type[base]=chosen
+    for obj in arr:
+        if obj not in chosen:
+            obj.hide_render=True
+            # Do not render duplicate/extra disconnected shells during animation.
+# Motion objects are two independent components per major leg segment.
 movables=[]
 for base in split_names:
-    two=sorted(by_type[base],key=lambda o:len(o.data.vertices),reverse=True)[:2]
-    for side,obj in zip(('L','R'),sorted(two,key=lambda o:center(o).x,reverse=True)):
+    for side,obj in zip(('L','R'),by_type[base]):
         movables.append((base,side,obj))
 # Load source walking animation after BJD segmentation.
 bpy.ops.import_scene.gltf(filepath=str(pathlib.Path('assets/walk_source/adventurer.glb').resolve()))
