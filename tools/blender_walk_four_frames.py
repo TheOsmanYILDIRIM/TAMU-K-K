@@ -54,7 +54,7 @@ for tr in rig.animation_data.nla_tracks: tr.mute=True
 start,end=map(float,act.frame_range)
 if end-start<4: raise RuntimeError("Walk action too short")
 scene=bpy.context.scene
-scene.render.engine="BLENDER_EEVEE"
+scene.render.engine="BLENDER_EEVEE_NEXT" if bpy.app.version >= (4, 2, 0) else "BLENDER_EEVEE"
 scene.render.resolution_x=512
 scene.render.resolution_y=768
 scene.render.resolution_percentage=100
