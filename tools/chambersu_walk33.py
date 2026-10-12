@@ -54,6 +54,8 @@ for base in split_names:
     arr=sorted(arr,key=lambda o:len(o.data.vertices),reverse=True)
     pair=arr[:2]
     classification[base]=[{'name':o.name,'center':list(center(o)),'vertices':len(o.data.vertices)} for o in arr]
+    print('COMPONENT_DIAGNOSTIC',base,[(o.name,round(center(o).x-mid.x,4),round(center(o).y-mid.y,4),len(o.data.vertices)) for o in arr],flush=True)
+    (OUT/('components_'+base+'.json')).write_text(json.dumps(classification[base],indent=2))
     assert len(pair)==2, 'Cannot independently isolate two '+base+' segments'
     assert (center(pair[0]).x-mid.x)*(center(pair[1]).x-mid.x)<0, 'Segments do not straddle pelvis: '+base
 # Additional parts may form joints; choose only two largest per category for moving.
