@@ -34,6 +34,8 @@ jobs:
           PY
       - name: Install Blender
         run: sudo apt-get update && sudo apt-get install -y blender libegl1 libgl1
+      - name: Validate audit Python syntax
+        run: python3 -m py_compile tools/chambersu_bjd_ci_audit.py
       - name: Inspect actual Blender assets and render
         run: blender -b -t 2 --python-exit-code 2 --python tools/chambersu_bjd_ci_audit.py
       - name: Verify audit output
