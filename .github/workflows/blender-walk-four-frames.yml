@@ -1,0 +1,58 @@
+name: Rigged Walk Four Frames
+on:
+  push:
+    branches: [experiment/blender-camera-reference-20261011]
+    paths:
+      - 'tools/blender_walk_four_frames.py'
+      - '.github/workflows/blender-walk-four-frames.yml'
+  workflow_dispatch:
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Blender
+        run: sudo apt-get update && sudo apt-get install -y blender
+      - name: Download CC0 animated humans
+        run: |
+          mkdir -p assets/walk_source
+          curl --fail --location --retry 3 -o /tmp/quaternius_animated.zip 'https://opengameart.org/sites/default/files/ultimate_animated_character_pack_by_quaternius.zip'
+          python3 - <<'PY'
+          import zipfile,pathlib
+          z=zipfile.ZipFile('/tmp/quaternius_animated.zip')
+          base=pathlib.Path('assets/walk_source').resolve()
+          for info in z.infolist():
+              name=pathlib.PurePosixPath(info.filename)
+              if name.is_absolute() or '..' in name.parts: raise ValueError('unsafe archive member')
+              if info.file_size>150_000_000: raise ValueError('oversized archive member')
+          if sum(x.file_size for x in z.infolist())>800_000_000: raise ValueError('oversized archive')
+          z.extractall(base)
+          print('Extracted',len(z.namelist()),'members')
+          PY
+      - name: Render CC0 walking character
+        run: blender -b -t 2 --python tools/blender_walk_four_frames.py
+      - name: Validate four RGBA PNGs and independent pose hashes
+        run: |
+          python3 - <<'PY'
+          import json,pathlib,struct,hashlib
+          root=pathlib.Path('rendered/walk4')
+          m=json.loads((root/'walk_manifest.json').read_text())
+          assert m['orthographic'] and m['camera_elevation']==45
+          assert len(m['sample_frames'])==4
+          hashes=[]
+          for name in m['pngs']:
+              b=(root/name).read_bytes()
+              assert b[:8]==b'\x89PNG\r\n\x1a\n'
+              assert struct.unpack('>II',b[16:24])==(512,768)
+              assert b[25]==6
+              hashes.append(hashlib.sha256(b).hexdigest())
+          assert len(set(hashes))==4, 'identical pose frames'
+          print('PNG_SHA256',hashes)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cc0-rigged-walk-4frames-iso45
+          path: rendered/walk4/
+          if-no-files-found: warn
