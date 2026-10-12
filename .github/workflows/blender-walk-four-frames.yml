@@ -1,58 +1,81 @@
-name: Rigged Walk Four Frames
+name: Google Poly Archive - Four Walk Frames
 on:
-  push:
-    branches: [experiment/blender-camera-reference-20261011]
-    paths:
-      - 'tools/blender_walk_four_frames.py'
-      - '.github/workflows/blender-walk-four-frames.yml'
   workflow_dispatch:
+    inputs:
+      archive_asset_url:
+        description: 'Verified direct downloadable Google Poly / Icosa Gallery GLB or glTF archive URL'
+        required: true
+        type: string
+      original_model_page:
+        description: 'Original Icosa Gallery / Google Poly model page with license'
+        required: true
+        type: string
+      license:
+        description: 'Verified original license (CC-BY-3.0 or CC0-1.0 only)'
+        required: true
+        type: choice
+        options:
+          - CC-BY-3.0
+          - CC0-1.0
 jobs:
   render:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
+      - name: Validate source restrictions
+        env:
+          ASSET_URL: ${{ inputs.archive_asset_url }}
+          MODEL_PAGE: ${{ inputs.original_model_page }}
+        run: |
+          python3 - <<'PY'
+          import os,urllib.parse
+          url=urllib.parse.urlsplit(os.environ['ASSET_URL'])
+          page=urllib.parse.urlsplit(os.environ['MODEL_PAGE'])
+          assert url.scheme=='https' and url.hostname in ('icosa.gallery','api.icosa.gallery','media.icosa.gallery'), 'Only verified Icosa Gallery source URL permitted'
+          assert page.scheme=='https' and page.hostname=='icosa.gallery' and page.path.startswith('/view/'), 'Original model record required'
+          assert not url.username and not url.password and not page.username and not page.password
+          PY
       - name: Install Blender
         run: sudo apt-get update && sudo apt-get install -y blender
-      - name: Download CC0 animated humans
+      - name: Download Google Poly archive model
+        env:
+          ASSET_URL: ${{ inputs.archive_asset_url }}
+          MODEL_PAGE: ${{ inputs.original_model_page }}
+          ASSET_LICENSE: ${{ inputs.license }}
         run: |
           mkdir -p assets/walk_source
-          curl --fail --location --retry 3 -o /tmp/quaternius_animated.zip 'https://opengameart.org/sites/default/files/ultimate_animated_character_pack_by_quaternius.zip'
+          curl --fail --location --retry 3 --max-time 180 --max-filesize 104857600 --output assets/walk_source/archived_model.glb "$ASSET_URL"
           python3 - <<'PY'
-          import zipfile,pathlib
-          z=zipfile.ZipFile('/tmp/quaternius_animated.zip')
-          base=pathlib.Path('assets/walk_source').resolve()
-          for info in z.infolist():
-              name=pathlib.PurePosixPath(info.filename)
-              if name.is_absolute() or '..' in name.parts: raise ValueError('unsafe archive member')
-              if info.file_size>150_000_000: raise ValueError('oversized archive member')
-          if sum(x.file_size for x in z.infolist())>800_000_000: raise ValueError('oversized archive')
-          z.extractall(base)
-          print('Extracted',len(z.namelist()),'members')
+          from pathlib import Path
+          import os,json
+          p=Path('assets/walk_source/archived_model.glb')
+          if p.read_bytes()[:4]!=b'glTF': raise ValueError('Not a GLB; choose a direct GLB archive asset')
+          Path('assets/walk_source/source.json').write_text(json.dumps({'page':os.environ['MODEL_PAGE'],'license':os.environ['ASSET_LICENSE'],'archive':'Google Poly via Icosa Gallery'}))
           PY
-      - name: Render CC0 walking character
+      - name: Render four walking poses
         run: blender -b -t 2 --python tools/blender_walk_four_frames.py
-      - name: Validate four RGBA PNGs and independent pose hashes
+      - name: Validate PNG files
         run: |
           python3 - <<'PY'
           import json,pathlib,struct,hashlib
           root=pathlib.Path('rendered/walk4')
-          m=json.loads((root/'walk_manifest.json').read_text())
-          assert m['orthographic'] and m['camera_elevation']==45
-          assert len(m['sample_frames'])==4
+          manifest=json.loads((root/'walk_manifest.json').read_text())
+          assert manifest['camera_elevation']==45 and manifest['orthographic']
           hashes=[]
-          for name in m['pngs']:
-              b=(root/name).read_bytes()
-              assert b[:8]==b'\x89PNG\r\n\x1a\n'
-              assert struct.unpack('>II',b[16:24])==(512,768)
-              assert b[25]==6
-              hashes.append(hashlib.sha256(b).hexdigest())
-          assert len(set(hashes))==4, 'identical pose frames'
-          print('PNG_SHA256',hashes)
+          for name in manifest['pngs']:
+              data=(root/name).read_bytes()
+              assert data[:8]==b'\x89PNG\r\n\x1a\n'
+              assert struct.unpack('>II',data[16:24])==(512,768) and data[25]==6
+              hashes.append(hashlib.sha256(data).hexdigest())
+          assert len(set(hashes))==4
+          print('Four rendered PNG hashes:',hashes)
           PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: cc0-rigged-walk-4frames-iso45
-          path: rendered/walk4/
+          name: google-poly-walk-4frames-iso45
+          path: |
+            rendered/walk4/
+            assets/walk_source/source.json
           if-no-files-found: warn
