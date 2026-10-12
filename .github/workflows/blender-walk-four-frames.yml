@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Blender
-        run: sudo apt-get update && sudo apt-get install -y blender python3-requests python3-numpy
+        run: sudo apt-get update && sudo apt-get install -y blender python3-requests python3-numpy libegl1 libgl1 libgles2
       - name: Verify Blender Python dependencies
         run: blender -b --python-exit-code 2 --python-expr "import numpy; print('Blender numpy', numpy.__version__)"
       - name: Verify exact uploaded Adventurer GLB
