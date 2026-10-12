@@ -1,0 +1,42 @@
+name: ChamberSu BJD one-body rig2d reference
+on:
+  push:
+    branches: [experiment/blender-camera-reference-20261011]
+    paths: ['tools/chambersu_rig2d_reference.py','.github/workflows/chambersu-rig2d-reference.yml','tools/chambersu_rig2d_audit.html']
+  workflow_dispatch:
+jobs:
+  reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions: {contents: read}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Read BJD from main
+        run: |
+          mkdir -p input
+          git fetch origin main
+          git show origin/main:ball-joint-doll-rigged-basemesh-male-ver.zip > input/chambersu.zip
+          python3 -m py_compile tools/chambersu_rig2d_reference.py
+      - name: Blender deps
+        run: sudo apt-get update && sudo apt-get install -y blender python3-numpy libegl1 libgl1
+      - name: Generate BJD + motion-target diagnostics
+        run: blender -b -t 2 --python-exit-code 2 --python tools/chambersu_rig2d_reference.py
+      - name: Validate
+        run: |
+          python3 - <<'PY'
+          import pathlib,json
+          p=pathlib.Path('rendered/chambersu_rig2d')
+          x=json.loads((p/'rig2d_manifest.json').read_text())
+          assert len(x['motion_frames'])==33 and x['selected_mesh_count']>=12
+          assert x['retarget_status']=='joint_targets_only_not_rigged'
+          assert (p/'isolated_body.png').read_bytes().startswith(b'\\x89PNG\\r\\n\\x1a\\n')
+          print('BJD_PARTS',x['selected_mesh_count'],'MOTION',len(x['motion_frames']))
+          PY
+          cp tools/chambersu_rig2d_audit.html rendered/chambersu_rig2d/index.html
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chambersu-rig2d-reference
+          path: rendered/chambersu_rig2d/
+          if-no-files-found: warn
