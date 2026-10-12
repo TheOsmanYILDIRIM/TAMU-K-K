@@ -55,6 +55,21 @@ jobs:
           export GODOT_ANDROID_KEYSTORE_DEBUG_PATH
           mkdir -p artifacts
           Godot_v4.6.3-stable_linux.x86_64 --headless --path bench/android/godot --editor --quit
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          files=list((Path.home()/".config/godot").rglob("editor_settings-*.tres"))
+          assert files, "Godot editor settings not generated"
+          p=files[0]
+          s=p.read_text()
+          extra='\nexport/android/android_sdk_path = "'+os.environ["ANDROID_SDK_ROOT"]+'"\n'
+          extra+='export/android/java_sdk_path = "'+os.environ["JAVA_HOME"]+'"\n'
+          for key in ("export/android/android_sdk_path", "export/android/java_sdk_path"):
+              import re
+              s=re.sub(r"(?m)^"+key+r" = .*\n", "", s)
+          p.write_text(s+extra)
+          print("Android editor SDK paths configured")
+          PY
           Godot_v4.6.3-stable_linux.x86_64 --headless --path bench/android/godot --export-debug Android "$GITHUB_WORKSPACE/artifacts/godot-world-debug.apk"
           test -s artifacts/godot-world-debug.apk
           sha256sum artifacts/godot-world-debug.apk
