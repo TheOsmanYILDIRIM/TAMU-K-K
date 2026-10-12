@@ -1,3 +1,11 @@
+# Güncel 2D yön (2026-10-12)
+
+**Kesin karar:** Dünya 3D yerine **45° izometrik 2D** olacak; karakter 2D, dört yönlü sprite animasyonu hedefleniyor. Önceki tabloda geçen 3D voxel/heightfield/3D kamera/renderer varsayımları artık güncel dünya kararı değildir. Bunlar tarihsel araştırma olarak korunmuştur. Güncel kaynak: [`12_WORLD_2D_DIRECTION_20261012.md`](12_WORLD_2D_DIRECTION_20261012.md).
+
+**Açık:** Tek parça veya prosedürel parçalı zemin, mantıksal grid/tilemap, 2D yükseklik/occlusion, world sınırları, mağaralar ve pathfinding. Bu sorular için henüz teknik seçim yapılmadı. Karakter deney dalına müdahale edilmez.
+
+---
+
 # Açık karar kaydı
 
 Bu sorular tamamlanmış karar değildir; şema buna göre boş/esnek tasarlanmıştır.
