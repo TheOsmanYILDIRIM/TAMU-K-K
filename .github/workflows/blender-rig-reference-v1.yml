@@ -1,0 +1,39 @@
+name: Adventurer Anatomical 2D Rig Reference Prototype
+on:
+  push:
+    branches: [experiment/blender-camera-reference-20261011]
+    paths:
+      - 'tools/blender_rig_reference_v1.py'
+      - '.github/workflows/blender-rig-reference-v1.yml'
+  workflow_dispatch:
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Blender dependencies
+        run: sudo apt-get update && sudo apt-get install -y blender python3-numpy libegl1 libgl1 libgles2
+      - name: Generate anatomical references
+        run: blender -b -t 2 --python-exit-code 2 --python tools/blender_rig_reference_v1.py
+      - name: Validate genuine references and motion
+        run: |
+          python3 - <<'PY'
+          import json,pathlib,struct,hashlib
+          p=pathlib.Path("rendered/rig_ref_v1")
+          m=json.loads((p/"manifest.json").read_text())
+          assert m["source_sha256"]=="4a8639cd8eee9d8a150464edc25eb0536ced464790704a64e40c8620d99f66db"
+          assert len(m["selected_frames"])>=4 and len(m["all_motion_frames"])>=8
+          assert m["camera"]["resolution"]==[512,768]
+          assert len(m["parts"])>=4
+          for name in ["neutral_full.png"]+[x["file"] for x in m["parts"].values() if "file" in x]:
+              raw=(p/name).read_bytes()
+              assert raw[:8]==bytes([137,80,78,71,13,10,26,10]) and struct.unpack(">II",raw[16:24])==(512,768),name
+          print("Reference validation passed",len(m["parts"]),m["selected_frames"])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: adventurer-rig-reference-v1
+          path: rendered/rig_ref_v1/
+          if-no-files-found: warn
