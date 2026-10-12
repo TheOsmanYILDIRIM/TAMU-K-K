@@ -1,0 +1,13 @@
+{
+  "model_id": "5EGWBMpuXq",
+  "page": "https://poly.pizza/m/5EGWBMpuXq",
+  "title": "Adventurer",
+  "creator": "Quaternius",
+  "license": "CC0",
+  "animated_listing": true,
+  "formats": [
+    "FBX",
+    "GLTF"
+  ],
+  "note": "Listing metadata; action/rig verification requires actual downloaded GLB and Blender CI."
+}
