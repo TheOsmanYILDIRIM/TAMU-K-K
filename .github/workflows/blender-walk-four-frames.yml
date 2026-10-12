@@ -1,80 +1,89 @@
-name: Google Poly Archive - Four Walk Frames
+name: Adventurer CC0 Four Walk Frames
 on:
+  push:
+    branches: [experiment/blender-camera-reference-20261011]
+    paths:
+      - '.github/workflows/blender-walk-four-frames.yml'
+      - 'tools/blender_walk_four_frames.py'
+      - 'assets/reference/poly_pizza_adventurer.json'
   workflow_dispatch:
     inputs:
-      archive_asset_url:
-        description: 'Verified direct downloadable Google Poly / Icosa Gallery GLB or glTF archive URL'
-        required: true
+      direct_glb_url:
+        description: 'Optional direct GLB URL from the verified Adventurer model download; leave blank to use Poly Pizza API'
+        required: false
         type: string
-      original_model_page:
-        description: 'Original Icosa Gallery / Google Poly model page with license'
-        required: true
-        type: string
-      license:
-        description: 'Verified original license (CC-BY-3.0 or CC0-1.0 only)'
-        required: true
-        type: choice
-        options:
-          - CC-BY-3.0
-          - CC0-1.0
 jobs:
   render:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
-      - name: Validate source restrictions
-        env:
-          ASSET_URL: ${{ inputs.archive_asset_url }}
-          MODEL_PAGE: ${{ inputs.original_model_page }}
-        run: |
-          python3 - <<'PY'
-          import os,urllib.parse
-          url=urllib.parse.urlsplit(os.environ['ASSET_URL'])
-          page=urllib.parse.urlsplit(os.environ['MODEL_PAGE'])
-          assert url.scheme=='https' and url.hostname in ('icosa.gallery','api.icosa.gallery','media.icosa.gallery'), 'Only verified Icosa Gallery source URL permitted'
-          assert page.scheme=='https' and page.hostname=='icosa.gallery' and page.path.startswith('/view/'), 'Original model record required'
-          assert not url.username and not url.password and not page.username and not page.password
-          PY
       - name: Install Blender
-        run: sudo apt-get update && sudo apt-get install -y blender
-      - name: Download Google Poly archive model
+        run: sudo apt-get update && sudo apt-get install -y blender python3-requests
+      - name: Fetch Adventurer asset
         env:
-          ASSET_URL: ${{ inputs.archive_asset_url }}
-          MODEL_PAGE: ${{ inputs.original_model_page }}
-          ASSET_LICENSE: ${{ inputs.license }}
+          POLY_PIZZA_KEY: ${{ secrets.POLY_PIZZA_KEY }}
+          DIRECT_GLB_URL: ${{ inputs.direct_glb_url }}
         run: |
-          mkdir -p assets/walk_source
-          curl --fail --location --retry 3 --max-time 180 --max-filesize 104857600 --output assets/walk_source/archived_model.glb "$ASSET_URL"
           python3 - <<'PY'
-          from pathlib import Path
-          import os,json
-          p=Path('assets/walk_source/archived_model.glb')
-          if p.read_bytes()[:4]!=b'glTF': raise ValueError('Not a GLB; choose a direct GLB archive asset')
-          Path('assets/walk_source/source.json').write_text(json.dumps({'page':os.environ['MODEL_PAGE'],'license':os.environ['ASSET_LICENSE'],'archive':'Google Poly via Icosa Gallery'}))
+          import hashlib,json,os,pathlib,requests,urllib.parse
+          page='https://poly.pizza/m/5EGWBMpuXq'
+          src={'id':'5EGWBMpuXq','page':page,'title':'Adventurer','creator':'Quaternius','license':'CC0','archive':'Poly Pizza'}
+          url=os.getenv('DIRECT_GLB_URL','').strip()
+          if url:
+              parsed=urllib.parse.urlsplit(url)
+              if parsed.scheme!='https' or not parsed.hostname or parsed.username or parsed.password:
+                  raise ValueError('Unsafe direct asset URL')
+          else:
+              key=os.getenv('POLY_PIZZA_KEY','')
+              if not key: raise RuntimeError('POLY_PIZZA_KEY repository secret required when direct_glb_url is blank')
+              response=requests.get('https://api.poly.pizza/v1/model/5EGWBMpuXq',headers={'X-Auth-Token':key},timeout=45)
+              response.raise_for_status()
+              data=response.json()
+              if data.get('ID')!='5EGWBMpuXq' or data.get('Title')!='Adventurer' or (data.get('Creator') or {}).get('Username')!='Quaternius' or data.get('Licence') not in ('CC0','CC0 1.0','Public Domain') or data.get('Animated') is not True:
+                  raise ValueError('Unexpected model metadata')
+              url=data.get('Download')
+              if not url: raise ValueError('No GLB download URL')
+          result=requests.get(url,timeout=120,stream=True)
+          result.raise_for_status()
+          out=pathlib.Path('assets/walk_source')
+          out.mkdir(parents=True,exist_ok=True)
+          asset=out/'adventurer.glb'
+          digest=hashlib.sha256()
+          n=0
+          with asset.open('wb') as f:
+              for chunk in result.iter_content(1024*1024):
+                  n+=len(chunk)
+                  if n>100*1024*1024: raise ValueError('Asset exceeds size cap')
+                  digest.update(chunk);f.write(chunk)
+          if asset.read_bytes()[:4]!=b'glTF': raise ValueError('Not a binary GLB')
+          src['sha256']=digest.hexdigest()
+          src['bytes']=n
+          (out/'source.json').write_text(json.dumps(src,indent=2))
+          print('Source verified:',page,'size:',n,'sha256:',digest.hexdigest())
           PY
-      - name: Render four walking poses
+      - name: Render 4 poses
         run: blender -b -t 2 --python tools/blender_walk_four_frames.py
-      - name: Validate PNG files
+      - name: Validate PNGs and sample count
         run: |
           python3 - <<'PY'
-          import json,pathlib,struct,hashlib
-          root=pathlib.Path('rendered/walk4')
-          manifest=json.loads((root/'walk_manifest.json').read_text())
-          assert manifest['camera_elevation']==45 and manifest['orthographic']
+          import hashlib,json,pathlib,struct
+          p=pathlib.Path('rendered/walk4')
+          m=json.loads((p/'walk_manifest.json').read_text())
+          assert m['camera_elevation']==45 and m['orthographic'] is True and m['source_page']=='https://poly.pizza/m/5EGWBMpuXq'
+          assert len(m['sample_frames'])==4 and len(m['pngs'])==4
           hashes=[]
-          for name in manifest['pngs']:
-              data=(root/name).read_bytes()
-              assert data[:8]==b'\x89PNG\r\n\x1a\n'
-              assert struct.unpack('>II',data[16:24])==(512,768) and data[25]==6
+          for name in m['pngs']:
+              data=(p/name).read_bytes()
+              assert data[:8]==b'\x89PNG\r\n\x1a\n' and struct.unpack('>II',data[16:24])==(512,768) and data[25]==6
               hashes.append(hashlib.sha256(data).hexdigest())
           assert len(set(hashes))==4
-          print('Four rendered PNG hashes:',hashes)
+          print('PNG SHA256:',hashes)
           PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: google-poly-walk-4frames-iso45
+          name: adventurer-iso45-four-walk-frames
           path: |
             rendered/walk4/
             assets/walk_source/source.json
