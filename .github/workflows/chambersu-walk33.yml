@@ -1,0 +1,43 @@
+name: ChamberSu BJD 33-frame rigid walk experiment
+on:
+  push:
+    branches: [experiment/blender-camera-reference-20261011]
+    paths: ['tools/chambersu_walk33.py','.github/workflows/chambersu-walk33.yml','tools/chambersu_walk33.html']
+  workflow_dispatch:
+jobs:
+  walk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions: {contents: read}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Fetch immutable input ZIP from main
+        run: |
+          mkdir -p input
+          git fetch origin main
+          git show origin/main:ball-joint-doll-rigged-basemesh-male-ver.zip > input/chambersu.zip
+          python3 -m py_compile tools/chambersu_walk33.py
+      - name: Install Blender dependencies
+        run: sudo apt-get update && sudo apt-get install -y blender python3-numpy libegl1 libgl1
+      - name: Render 33 Blender walk frames
+        run: blender -b -t 2 --python-exit-code 2 --python tools/chambersu_walk33.py
+      - name: Verify frames and package HTML
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('rendered/chambersu_walk33')
+          j=json.loads((p/'walk_report.json').read_text())
+          assert j['frame_count']==33
+          frames=sorted(p.glob('walk_*.png'))
+          assert len(frames)==33,len(frames)
+          assert all(f.read_bytes()[:8]==bytes([137,80,78,71,13,10,26,10]) for f in frames)
+          print('BJD_WALK_FRAME_TEST_SUCCESS',len(frames),j['moved_rigid_components'])
+          PY
+          cp tools/chambersu_walk33.html rendered/chambersu_walk33/index.html
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chambersu-walk33-experiment
+          path: rendered/chambersu_walk33/
+          if-no-files-found: warn
