@@ -79,11 +79,12 @@ scene.camera=cam
 cam_data.type="ORTHO"
 cam_data.ortho_scale=diam*1.35
 elev=math.radians(45)
-az=math.radians(45)
-offset=Vector((math.cos(elev)*math.cos(az),-math.cos(elev)*math.sin(az), math.sin(elev)))*diam*2.5
-cam.location=center+offset
-direction=center-cam.location
-cam.rotation_euler=direction.to_track_quat("-Z","Y").to_euler()
+camera_azimuths = {"front":45, "right":135, "back":225, "left":315}
+def set_camera_azimuth(degrees):
+    az=math.radians(degrees)
+    offset=Vector((math.cos(elev)*math.cos(az),-math.cos(elev)*math.sin(az),math.sin(elev)))*diam*2.5
+    cam.location=center+offset
+    cam.rotation_euler=(center-cam.location).to_track_quat("-Z","Y").to_euler()
 world=bpy.data.worlds.new("WalkNeutralWorld")
 scene.world=world
 world.use_nodes=True
@@ -97,12 +98,22 @@ ld.energy=850
 ld.shape="DISK"
 ld.size=max(diam,1)
 lamp.rotation_euler=(center-lamp.location).to_track_quat("-Z","Y").to_euler()
-frames=[start+(end-start)*i/4 for i in range(4)]
-for i,f in enumerate(frames):
-    scene.frame_set(int(round(f)))
-    scene.render.filepath=str((OUT/("walk_%02d.png"%(i+1))).resolve())
-    bpy.ops.render.render(write_still=True)
+frames=[int(round(start+(end-start)*i/4)) for i in range(4)]
+pngs=[]
+direction_outputs={}
+for direction,azimuth in camera_azimuths.items():
+    set_camera_azimuth(azimuth)
+    bpy.context.view_layer.update()
+    names=[]
+    for i,frame in enumerate(frames,1):
+        scene.frame_set(frame)
+        name=f"{direction}_walk_{i:02d}.png"
+        scene.render.filepath=str((OUT/name).resolve())
+        bpy.ops.render.render(write_still=True)
+        names.append(name)
+        pngs.append(name)
+    direction_outputs[direction]={"azimuth":azimuth,"frames":names}
 source_info=json.loads((ROOT/"source.json").read_text()) if (ROOT/"source.json").exists() else {}
-meta={"source":str(p),"license":source_info.get("license","unverified"),"source_page":source_info.get("page","unverified"),"rig":rig_name,"action":action_name,"kind":kind,"range":[start,end],"sample_frames":frames,"camera_elevation":45,"camera_azimuth":45,"orthographic":True,"resolution":[512,768],"pngs":[f"walk_{i:02d}.png" for i in range(1,5)]}
+meta={"source":str(p),"license":source_info.get("license","unverified"),"source_page":source_info.get("page","unverified"),"rig":rig_name,"action":action_name,"kind":kind,"range":[start,end],"sample_frames":frames,"camera_elevation":45,"camera_azimuths":camera_azimuths,"directions":direction_outputs,"orthographic":True,"resolution":[512,768],"pngs":pngs}
 (OUT/"walk_manifest.json").write_text(json.dumps(meta,indent=2))
 print("WALK_RENDER_SUCCESS",json.dumps(meta))

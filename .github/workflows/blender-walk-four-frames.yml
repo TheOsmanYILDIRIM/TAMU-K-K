@@ -1,4 +1,4 @@
-name: Adventurer CC0 Four Walk Frames
+name: Adventurer CC0 Four-Direction Walk Frames
 on:
   push:
     branches: [experiment/blender-camera-reference-20261011]
@@ -32,28 +32,32 @@ jobs:
           (source.parent/'source.json').write_text(json.dumps({'page':'user-upload','license':'unverified','sha256':digest,'bytes':len(data)},indent=2))
           print('Verified original GLB:',digest)
           PY
-      - name: Render 4 poses
+      - name: Render 4 directions x 4 poses
         run: blender -b -t 2 --python-exit-code 2 --python tools/blender_walk_four_frames.py
-      - name: Validate PNGs and sample count
+      - name: Validate 16 directional PNGs and sample count
         run: |
           python3 - <<'PY'
           import hashlib,json,pathlib,struct
           p=pathlib.Path('rendered/walk4')
           m=json.loads((p/'walk_manifest.json').read_text())
           assert m['camera_elevation']==45 and m['orthographic'] is True and m['source_page']=='user-upload'
-          assert len(m['sample_frames'])==4 and len(m['pngs'])==4
+          assert len(m['sample_frames'])==4 and len(m['pngs'])==16
+          assert set(m['directions'])=={'front','back','left','right'}
+          assert set(m['camera_azimuths'].values())=={45,135,225,315}
+          assert all(len(info['frames'])==4 for info in m['directions'].values())
+          assert len(set(m['pngs']))==16
           hashes=[]
           for name in m['pngs']:
               data=(p/name).read_bytes()
               assert data[:8]==b'\x89PNG\r\n\x1a\n' and struct.unpack('>II',data[16:24])==(512,768) and data[25]==6
               hashes.append(hashlib.sha256(data).hexdigest())
-          assert len(set(hashes))==4
+          assert len(set(hashes))==16
           print('PNG SHA256:',hashes)
           PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: adventurer-iso45-four-walk-frames
+          name: adventurer-iso45-four-directions-16-walk-frames
           path: |
             rendered/walk4/
             assets/walk_source/source.json
