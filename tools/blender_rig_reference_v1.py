@@ -11,7 +11,7 @@ assert hashlib.sha256(SOURCE.read_bytes()).hexdigest() == EXPECTED, "Incorrect G
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.gltf(filepath=str(SOURCE.resolve()))
 rig = next(o for o in bpy.data.objects if o.type == 'ARMATURE')
-action = next(a for a in bpy.data.actions if a.name.endswith("|Walk"))
+action = next(a for a in bpy.data.actions if "walk" in a.name.lower())
 rig.animation_data_create()
 rig.animation_data.action = action
 for track in rig.animation_data.nla_tracks: track.mute = True
