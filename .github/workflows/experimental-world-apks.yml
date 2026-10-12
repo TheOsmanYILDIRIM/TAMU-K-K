@@ -1,0 +1,100 @@
+name: Experimental Godot vs LOVE Android APK
+on:
+  push:
+    branches:
+      - experiment/apk-engine-benchmark-20261012
+    paths:
+      - 'bench/android/**'
+      - '.github/workflows/experimental-world-apks.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  godot-apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Android SDK
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager 'platform-tools' 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Install pinned Godot editor and templates
+        env:
+          V: '4.6.3-stable'
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 -o /tmp/editor.zip "https://github.com/godotengine/godot/releases/download/${V}/Godot_v${V}_linux.x86_64.zip"
+          unzip -q /tmp/editor.zip -d /tmp/godot-bin
+          chmod +x /tmp/godot-bin/Godot_v${V}_linux.x86_64
+          echo "/tmp/godot-bin" >> "$GITHUB_PATH"
+          curl -fL --retry 3 -o /tmp/templates.tpz "https://github.com/godotengine/godot/releases/download/${V}/Godot_v${V}_export_templates.tpz"
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.6.3.stable"
+          unzip -q -j /tmp/templates.tpz 'templates/android_*.apk' -d "$HOME/.local/share/godot/export_templates/4.6.3.stable"
+      - name: Debug signing keystore
+        run: |
+          mkdir -p "$HOME/.android"
+          keytool -genkeypair -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey -keypass android -dname "CN=Android Debug,O=Android,C=US" -keyalg RSA -keysize 2048 -validity 10000
+      - name: Headless import and debug APK
+        env:
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: ${{ github.workspace }}/bench/android/godot/.android-unused
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
+        run: |
+          set -euo pipefail
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH="$HOME/.android/debug.keystore"
+          export GODOT_ANDROID_KEYSTORE_DEBUG_PATH
+          mkdir -p artifacts
+          Godot_v4.6.3-stable_linux.x86_64 --headless --path bench/android/godot --editor --quit
+          Godot_v4.6.3-stable_linux.x86_64 --headless --path bench/android/godot --export-debug Android "$GITHUB_WORKSPACE/artifacts/godot-world-debug.apk"
+          test -s artifacts/godot-world-debug.apk
+          sha256sum artifacts/godot-world-debug.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: godot-world-debug-apk
+          path: artifacts/godot-world-debug.apk
+          if-no-files-found: error
+
+  love-apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Set up Android NDK and SDK
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager 'platforms;android-34' 'build-tools;34.0.0' 'ndk;26.1.10909125' 'cmake;3.22.1'
+      - name: Clone official LOVE Android with submodules
+        run: |
+          git clone --depth 1 --recurse-submodules --shallow-submodules https://github.com/love2d/love-android.git /tmp/love-android
+      - name: Embed same game source
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/love-android/app/src/embed/assets
+          cp bench/android/love/*.lua /tmp/love-android/app/src/embed/assets/
+          cd /tmp/love-android
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleEmbedNoRecordDebug
+          mkdir -p "$GITHUB_WORKSPACE/artifacts"
+          find app/build/outputs/apk -name '*.apk' -print
+          APK="$(find app/build/outputs/apk -type f -name '*embed*debug.apk' | head -1)"
+          test -n "$APK"
+          cp "$APK" "$GITHUB_WORKSPACE/artifacts/love-world-debug.apk"
+          sha256sum "$GITHUB_WORKSPACE/artifacts/love-world-debug.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: love-world-debug-apk
+          path: artifacts/love-world-debug.apk
+          if-no-files-found: error
