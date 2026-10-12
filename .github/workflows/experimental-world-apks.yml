@@ -21,7 +21,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
       - name: Android SDK
         run: |
           yes | sdkmanager --licenses >/dev/null || true
@@ -71,7 +70,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
       - name: Set up Android NDK and SDK
         run: |
           yes | sdkmanager --licenses >/dev/null || true
