@@ -1,0 +1,29 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {spawnSync} from 'node:child_process';
+import path from 'node:path';
+const root=path.resolve(import.meta.dirname,'..');
+test('terrain supports shared materials and biome-specific variants',()=>{
+ const html=fs.readFileSync(path.join(root,'src/terrain.html'),'utf8');
+ for(const id of ['grass','soil','stone','meadow','forest','rocky'])assert.match(html,new RegExp(id));
+ assert.match(html,/osman:terrain-studio:v1:/);
+ assert.match(html,/OsmanTerrainStudioAssets/);
+ assert.match(html,/tangent-space RGB normal map/);
+ assert.match(html,/Height\/displacement is NOT needed/);
+ assert.match(html,/GitHub'a güvenli kayıt/);
+ assert.match(html,/kimlik doğrulaması bağlanmadan otomatik GitHub yazması açılmayacak/);
+ const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];assert(script);
+ const check=spawnSync(process.execPath,['--check','--input-type=commonjs'],{input:script,encoding:'utf8'});
+ assert.equal(check.status,0,check.stderr);
+});
+test('single-file production build includes terrain page without mutating object-store keys',()=>{
+ const run=spawnSync(process.execPath,['scripts/build.mjs'],{cwd:root,env:{...process.env,BUILD_SHA:'0123456789abcdef0123456789abcdef01234567'},encoding:'utf8'});
+ assert.equal(run.status,0,run.stderr);
+ const html=fs.readFileSync(path.join(root,'dist/terrain.html'),'utf8');
+ assert.match(html,/TERRAIN STUDIO/);
+ assert.match(html,/osman-terrain-v1/);
+ const object=fs.readFileSync(path.join(root,'dist/latest.html'),'utf8');
+ assert.match(object,/href="\.\/terrain\.html"/);
+ assert.match(object,/OsmanObjectStudioAssets/);
+});
