@@ -19,6 +19,7 @@ A small mobile-first, fully local browser workspace for authoring seven core iso
 ## Terrain Studio and GitHub save status
 
 - `terrain.html` is a separate, mobile-friendly environment editor linked from the Object Studio start page. Three **shared materials** (grass, soil, stone) each have 2 variants per biome (meadow, forest, rocky): 18 independent material/biome/variant records without inventing more base biomes.
+- **Variant source rule:** Each of the three materials uses its existing **first variant** (meadow, index 0) as Image A for every other biome/surface variant. There is no extra base/master PNG or storage key. The first variant is produced independently; derived variants preserve Image A material scale, edge continuity, and structural family while Image B controls their MTS styling. New UI compares base vs selected variant without touching stored images.
 - Terrain prompts follow MTS grounded dark fantasy material language and strict **literal canvas edge tileability**. This is a texture asset workflow, not a plan to show tile-grid seams in the world. Albedo (square PNG) and optional normal maps; height maps are not required.
 - Terrain uses **its own IndexedDB** `OsmanTerrainStudioAssets`, separate from object asset storage. JSON export/import is manual, warns before overwriting matching assets, and never migrates Object Studio IndexedDB/localStorage.
 - The Terrain Studio 'GitHub aktarım manifesti indir' button currently downloads the **full local JSON backup**, not a server upload. Nothing is automatically pushed to GitHub.
