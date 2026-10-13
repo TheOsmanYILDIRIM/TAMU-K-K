@@ -14,7 +14,7 @@ test('terrain supports shared materials and biome-specific variants',()=>{
  assert.match(html,/SINGLE IMAGE VARIANT PRODUCTION — IMAGE A ONLY/);
  assert.match(html,/NO second style image or Image B is needed/);
  assert.match(html,/No preceding Image A is needed/);
- assert.match(html,/DONOTMODIFYNOTREQUIRED|DO NOT modify the original first variant/);
+ assert.match(html,/NEVER modify or replace the source first variant/);
  assert(!html.includes('masterAlbedo'));
  assert.match(html,/data-view="compare"/);
  assert.match(html,/OsmanTerrainStudioAssets/);
