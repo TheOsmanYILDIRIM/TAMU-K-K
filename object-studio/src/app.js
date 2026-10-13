@@ -6,7 +6,6 @@ const BUILD='__BUILD_SHA__';
 const $=id=>document.getElementById(id);
 const state=readMetadata();
 let filterFamily='all',query='',images=new Map(),bitmaps=new Map(),imageURLs=[],busy=false,pendingSlot=null,toastTimer=null,selectionCycle=0;
-let selectedLayerPrompt='base'; // UI only: preserve existing persisted selections and uploads
 if(!assetById(state.selected))state.selected='T-01';
 if(!STAGES.some(s=>s.id===state.stage))state.stage='direction';
 function toast(text,isError=false){const el=$('toast');el.textContent=text;el.style.background=isError?'#edd5bc':'#d1e3ac';el.classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('visible'),4600);}
@@ -36,9 +35,7 @@ function renderStage(){const a=selectedAsset(),v=variant(),e=entry(),st=STAGES.f
  $('stageLabel').textContent='AŞAMA '+st.number;
  $('stageTitle').textContent=st.name;
  $('stageDescription').textContent=st.description;
- $('layerPromptPickerWrap').style.display=state.stage==='layers'?'block':'none';
- $('layerPromptPicker').value=selectedLayerPrompt;
- const prompt=promptFor(a,state.stage,v.form,v.surface,state.biome,selectedLayerPrompt),guide=stageGuide(state.stage,a);
+ const prompt=promptFor(a,state.stage,v.form,v.surface,state.biome),guide=stageGuide(state.stage,a);
  $('promptLabel').textContent=prompt?'Özgün üretim promptu':'Üretim / kabul notları';
  $('promptText').value=prompt||guide||'';
  $('copyPrompt').disabled=!(prompt||guide);
@@ -74,9 +71,8 @@ function canComplete(stage){if(stage==='direction')return true;
  if(stage==='reference')return record('reference');
  if(stage==='creative')return record('creative');
  if(stage==='correction')return record('corrected');
- if(stage==='layers')return record('body')||record('upper');
  if(stage==='maps')return record('normal')||record('height');
- if(stage==='approval')return record('corrected')||record('body');
+ if(stage==='approval')return record('corrected');
  return false;}
 function approve(){const e=entry();e.stages||={};if(e.stages[state.stage]){delete e.stages[state.stage];toast('Onay geri alındı.');}
  else{if(!canComplete(state.stage)){toast('Bu aşamayı onaylamak için ilgili PNG gerekli. Eksik görüntü yerine sahte kabul yapmıyoruz.',true);return;}e.stages[state.stage]={at:new Date().toISOString(),manuallyApproved:true};toast('Aşama elle onaylandı.');}
@@ -92,7 +88,7 @@ async function importBackup(file){if(busy||!file)return;busy=true;try{
  if(file.size>120*1024*1024)throw new Error('Yedek 120 MB sınırını aşıyor.');
  const data=JSON.parse(await file.text());validateBackup(data);
  if(!confirm(`Yedekte ${data.images.length} PNG var. Mevcut çalışma korunarak birleştirilecek; çakışan varyantlar yedektekilerle değiştirilecek. Devam?`))return;
- for(const item of data.images){const blob=blobFromDataURL(item.data);const slot=item.key.split('::')[3],spec=SLOTS.find(x=>x.id===slot);if(!spec)throw new Error('Bilinmeyen slot: '+slot);const meta=await inspectPng(blob,{alphaRequired:spec.alpha});await putImage(item.key,blob,{...meta,...item.meta});}
+ for(const item of data.images){const blob=blobFromDataURL(item.data);const slot=item.key.split('::')[3],spec=SLOTS.find(x=>x.id===slot);const legacyLayer=['base','body','upper','front'].includes(slot);if(!spec&&!legacyLayer)throw new Error('Bilinmeyen slot: '+slot);const meta=await inspectPng(blob,{alphaRequired:spec?.alpha??true});await putImage(item.key,blob,{...meta,...item.meta});}
  Object.assign(state.work,data.metadata.work);Object.assign(state.selection,data.metadata.selection||{});persist();renderAll();await loadVariant();toast(data.images.length+' PNG ve üretim kayıtları birleştirildi.');
  }catch(e){toast('Yedek yüklenemedi: '+e.message,true)}finally{busy=false;$('backupFile').value=''}}
 function wire(){
@@ -110,7 +106,6 @@ function wire(){
  $('slotGrid').addEventListener('click',e=>{const upload=e.target.closest('[data-upload]'),remove=e.target.closest('[data-remove]');if(upload)onUpload(upload.dataset.upload);if(remove)onRemove(remove.dataset.remove)});
  $('assetFile').onchange=e=>processUpload(e.target.files?.[0]);
  $('directorNote').oninput=e=>{const v=entry();v.notes||={};v.notes[state.stage]=e.target.value;persist()};
- $('layerPromptPicker').onchange=e=>{selectedLayerPrompt=e.target.value;renderStage()};
  $('copyPrompt').onclick=async()=>{try{await navigator.clipboard.writeText($('promptText').value);toast('Üretim promptu kopyalandı.')}catch{toast('Kopyalama izni yok. Metni elle seç.',true)}};
  $('approveStage').onclick=approve;
  $('exportBackup').onclick=exportBackup;
