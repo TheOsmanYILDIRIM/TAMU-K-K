@@ -11,13 +11,16 @@ test('terrain supports shared materials and biome-specific variants',()=>{
  assert.match(html,/function baseKey\(\)\{return state.material\+'::meadow::0'\}/);
  assert.match(html,/function isBase\(\)/);
  assert.match(html,/FIRST VARIANT \/ CANONICAL IMAGE A/);
- assert.match(html,/DERIVED BIOME VARIANT — IMAGE A/);
+ assert.match(html,/SINGLE IMAGE VARIANT PRODUCTION — IMAGE A ONLY/);
+ assert.match(html,/NO second style image or Image B is needed/);
  assert.match(html,/No preceding Image A is needed/);
  assert.match(html,/DONOTMODIFYNOTREQUIRED|DO NOT modify the original first variant/);
  assert(!html.includes('masterAlbedo'));
  assert.match(html,/data-view="compare"/);
  assert.match(html,/OsmanTerrainStudioAssets/);
- assert.match(html,/tangent-space RGB normal map/);
+ assert.match(html,/Normal üretimi sonraya bırakıldı/);
+ assert(!html.includes('data-stage="normal"'));
+ assert.match(html,/display:none[^>]*><strong>Eski normal map/);
  assert.match(html,/Height\/displacement is NOT needed/);
  assert.match(html,/GitHub'a güvenli kayıt/);
  assert.match(html,/kimlik doğrulaması bağlanmadan otomatik GitHub yazması açılmayacak/);
