@@ -1,3 +1,4 @@
+import {removeBorderBlack} from './image-tools.js';
 import {CATALOG,BIOMES,STAGES,SLOTS,STYLE,assetById,stageSlots,variantKey} from './catalog.js';
 import {promptFor,stageGuide} from './prompts.js';
 import {readMetadata,writeMetadata,variantEntry,getImage,putImage,removeImage,listImages,inspectPng,readAsDataURL,blobFromDataURL,validateBackup,imageKey} from './storage.js';
@@ -6,6 +7,8 @@ const BUILD='__BUILD_SHA__';
 const $=id=>document.getElementById(id);
 const state=readMetadata();
 let filterFamily='all',query='',images=new Map(),bitmaps=new Map(),imageURLs=[],busy=false,pendingSlot=null,toastTimer=null,selectionCycle=0;
+const materialLab={lightAngle:35,normalStrength:1,heightStrength:1,materialIntensity:.85};
+let cleanedMatteBlob=null;
 if(!assetById(state.selected))state.selected='T-01';
 if(!STAGES.some(s=>s.id===state.stage))state.stage='direction';
 function toast(text,isError=false){const el=$('toast');el.textContent=text;el.style.background=isError?'#edd5bc':'#d1e3ac';el.classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('visible'),4600);}
@@ -51,7 +54,8 @@ function renderSlots(){const slots=stageSlots(state.stage),box=$('slotGrid');if(
  box.innerHTML=slots.map(slot=>{const record=images.get(slot.id),meta=record?.meta;let thumb=record?URL.createObjectURL(record.blob):null;if(thumb)imageURLs.push(thumb);
  return `<div class="slotCard"><div class="slotThumb">${thumb?`<img src="${thumb}" alt="${slot.name} görseli" loading="lazy">`:'<span>PNG YOK</span>'}</div><div class="slotMeta"><strong>${slot.name}</strong><small>${meta?`${meta.width}×${meta.height} · ${Math.round(meta.bytes/1024)} KB`:slot.description}</small><div class="slotButtons"><button data-upload="${slot.id}">${record?'Değiştir':'PNG yükle'}</button>${record?`<button class="remove" data-remove="${slot.id}" aria-label="${slot.name} kaldır">×</button>`:''}</div></div></div>`}).join('');}
 function updatePreview(){const e=entry();$('previewChip').textContent=images.size?`${images.size} görsel / ${state.preview==='world'?'oyun':'kontrol'}`:'Şematik · doku yok';
- drawPreview($('previewCanvas'),{asset:selectedAsset(),mode:state.preview,biome:state.biome,bitmaps,entry:e,showGuide:state.viewGuide,showShadow:state.viewShadow});}
+ $('materialControls').style.display=state.preview==='material'?'block':'none';
+ drawPreview($('previewCanvas'),{asset:selectedAsset(),mode:state.preview,biome:state.biome,bitmaps,entry:e,showGuide:state.viewGuide,showShadow:state.viewShadow,...materialLab});}
 function renderAll(){renderCatalog();renderSelects();renderStage();updateContract();document.querySelectorAll('[data-preview]').forEach(b=>b.classList.toggle('active',b.dataset.preview===state.preview));$('viewGuide').checked=state.viewGuide;$('viewShadow').checked=state.viewShadow;updatePreview();}
 async function onUpload(slot){const spec=SLOTS.find(s=>s.id===slot);if(!spec)return;pendingSlot=spec;$('assetFile').value='';$('assetFile').click();}
 async function processUpload(file){if(!pendingSlot||!file)return;const spec=pendingSlot;pendingSlot=null;try{
@@ -91,6 +95,32 @@ async function importBackup(file){if(busy||!file)return;busy=true;try{
  for(const item of data.images){const blob=blobFromDataURL(item.data);const slot=item.key.split('::')[3],spec=SLOTS.find(x=>x.id===slot);const legacyLayer=['base','body','upper','front'].includes(slot);if(!spec&&!legacyLayer)throw new Error('Bilinmeyen slot: '+slot);const meta=await inspectPng(blob,{alphaRequired:spec?.alpha??true});await putImage(item.key,blob,{...meta,...item.meta});}
  Object.assign(state.work,data.metadata.work);Object.assign(state.selection,data.metadata.selection||{});persist();renderAll();await loadVariant();toast(data.images.length+' PNG ve üretim kayıtları birleştirildi.');
  }catch(e){toast('Yedek yüklenemedi: '+e.message,true)}finally{busy=false;$('backupFile').value=''}}
+async function previewMatteRemoval(){
+ const file=$('matteInput').files?.[0];
+ cleanedMatteBlob=null;$('matteDownload').disabled=true;
+ if(!file){$('matteFeedback').textContent='Önce PNG seç.';return;}
+ if(file.type!=='image/png'||file.size>18*1024*1024){$('matteFeedback').textContent='PNG seç; en fazla 18 MB.';return;}
+ try{
+  const bitmap=await createImageBitmap(file);
+  if(bitmap.width>4096||bitmap.height>4096)throw new Error('En büyük boyut 4096.');
+  const temp=document.createElement('canvas');temp.width=bitmap.width;temp.height=bitmap.height;
+  const cx=temp.getContext('2d',{willReadFrequently:true});cx.drawImage(bitmap,0,0);bitmap.close();
+  const source=cx.getImageData(0,0,temp.width,temp.height);
+  const result=removeBorderBlack(source,+$('matteTolerance').value);
+  const cleaned=cx.createImageData(temp.width,temp.height);cleaned.data.set(result.data);cx.putImageData(cleaned,0,0);
+  const preview=$('matteCanvas'),ctx=preview.getContext('2d');preview.style.display='block';
+  preview.width=640;preview.height=320;ctx.clearRect(0,0,640,320);
+  // Before / after previews, but downloaded pixels are the full-resolution cleaned canvas.
+  const before=document.createElement('canvas');before.width=temp.width;before.height=temp.height;
+  before.getContext('2d').putImageData(source,0,0);
+  ctx.drawImage(before,0,0,320,320);ctx.drawImage(temp,320,0,320,320);
+  ctx.font='bold 15px system-ui';ctx.fillStyle='#f3f3e9';ctx.fillText('ÖNCE',12,24);ctx.fillText('SONRA',332,24);
+  cleanedMatteBlob=await new Promise(resolve=>temp.toBlob(resolve,'image/png'));
+  if(!cleanedMatteBlob)throw new Error('PNG dışa aktarılamadı.');
+  $('matteDownload').disabled=result.removed===0;
+  $('matteFeedback').textContent=result.removed+' kenara bağlı siyah piksel şeffaflaştırıldı. Sol önce / sağ sonra. Sonucu incele; orijinal dosya değiştirilmedi.';
+ }catch(e){$('matteFeedback').textContent='Temizleme başarısız: '+e.message;toast(e.message,true)}
+}
 function wire(){
  $('catalogList').addEventListener('click',e=>{const card=e.target.closest('[data-asset]');if(card)changedAsset(card.dataset.asset)});
  $('search').addEventListener('input',e=>{query=e.target.value.toLocaleLowerCase('tr');renderCatalog()});
@@ -102,6 +132,14 @@ function wire(){
  $('previewTabs').addEventListener('click',e=>{const b=e.target.closest('[data-preview]');if(!b)return;state.preview=b.dataset.preview;persist();renderAll()});
  $('viewGuide').onchange=e=>{state.viewGuide=e.target.checked;persist();updatePreview()};
  $('viewShadow').onchange=e=>{state.viewShadow=e.target.checked;persist();updatePreview()};
+ for(const [id,key,scale] of [['lightAngle','lightAngle',1],['normalStrength','normalStrength',.01],['heightStrength','heightStrength',.01],['materialIntensity','materialIntensity',.01]]){
+  $(id).oninput=e=>{materialLab[key]=Number(e.target.value)*scale;$(id+'Out').textContent=id==='lightAngle'?e.target.value+'°':e.target.value+'%';updatePreview()};
+ }
+ $('matteTolerance').oninput=e=>{$('matteToleranceOut').textContent=e.target.value;$('matteDownload').disabled=true;cleanedMatteBlob=null;};
+ $('matteInput').onchange=()=>{$('matteDownload').disabled=true;cleanedMatteBlob=null;$('matteCanvas').style.display='none';};
+ $('mattePreviewBtn').onclick=previewMatteRemoval;
+ $('matteDownload').onclick=()=>{if(!cleanedMatteBlob)return;const file=$('matteInput').files?.[0];saveFile((file?.name||'asset.png').replace(/\.png$/i,'')+'-transparent.png',cleanedMatteBlob)};
+
  for(const id of ['scale','pivotX','pivotY','shadow'])$(id).oninput=e=>{entry()[id]=Number(e.target.value);persist();updateContract();updatePreview()};
  $('slotGrid').addEventListener('click',e=>{const upload=e.target.closest('[data-upload]'),remove=e.target.closest('[data-remove]');if(upload)onUpload(upload.dataset.upload);if(remove)onRemove(remove.dataset.remove)});
  $('assetFile').onchange=e=>processUpload(e.target.files?.[0]);
