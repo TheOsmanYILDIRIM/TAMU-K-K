@@ -1,0 +1,45 @@
+name: Mixamo Walking FBX audit
+on:
+  push:
+    branches: [experiment/blender-camera-reference-20261011]
+    paths: ['tools/mixamo_walking_audit.py','.github/workflows/mixamo-walking-audit.yml']
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions: {contents: read}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Read FBX from pinned main source
+        run: |
+          mkdir -p input
+          git fetch origin 18fdb06e194a757b356de0668c7cd2246db80ece
+          git show 18fdb06e194a757b356de0668c7cd2246db80ece:Walking.fbx > input/Walking.fbx
+          python3 - <<'PY'
+          import pathlib
+          assert pathlib.Path('input/Walking.fbx').stat().st_size==1839568
+          PY
+          python3 -m py_compile tools/mixamo_walking_audit.py
+      - name: Install Blender
+        run: sudo apt-get update && sudo apt-get install -y blender python3-numpy libegl1 libgl1
+      - name: Inspect and render genuine FBX
+        run: blender -b -t 2 --python-exit-code 2 --python tools/mixamo_walking_audit.py
+      - name: Validate audit
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('rendered/mixamo_walking')
+          j=json.loads((p/'audit.json').read_text())
+          assert j['armature_count']>0 and j['mesh_count']>0 and j['actions']
+          fs=sorted(p.glob('walking_*.png'))
+          assert len(fs)==9 and all(f.read_bytes()[:8]==bytes([137,80,78,71,13,10,26,10]) for f in fs)
+          print('AUDIT_OK',j['fps'],j['action_frame_range'],len(j['rigs'][0]['bones']),len(fs))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mixamo-walking-audit
+          path: rendered/mixamo_walking/
+          if-no-files-found: warn
