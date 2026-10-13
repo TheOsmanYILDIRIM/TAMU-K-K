@@ -29,8 +29,10 @@ test('stage prompts enforce square alpha and locked composition',()=>{
  const a=CATALOG[0];
  assert.match(promptFor(a,'creative',0,0,'forest'),/1024×1024/);
  assert.match(promptFor(a,'creative',0,0,'forest'),/transparen/i);
- assert.match(promptFor(a,'correction',0,0,'forest'),/Image A = approved creative/i);
- assert.match(promptFor(a,'correction',0,0,'forest'),/Image B = separately approved/i);
+ assert.match(promptFor(a,'correction',0,0,'forest'),/Image A = approved creative design/i);
+ assert.match(promptFor(a,'correction',0,0,'forest'),/Image A is NOT the style source/i);
+ assert.match(promptFor(a,'correction',0,0,'forest'),/Image B's object language/i);
+ assert.match(promptFor(a,'correction',0,0,'forest'),/Image B = approved MATERIAL AND STYLE MASTER/i);
  assert.match(promptFor(a,'maps',0,0,'forest'),/Normal encodes surface lighting detail only/i);
  assert.match(promptFor(a,'layers',0,0,'forest'),/exactly 1024×1024/i);
 });
