@@ -17,15 +17,33 @@
       </section>
       <section class="panel previewPane" aria-labelledby="previewTitle">
         <div class="paneHead"><div><span class="eyebrow">45° ISOMETRIC</span><h2 id="previewTitle">Sahne önizlemesi</h2></div><span class="tinyBadge" id="statusTag">Taslak</span></div>
-        <div class="miniTabs previewTabs" id="previewTabs" role="group" aria-label="Önizleme modu"><button data-preview="world" class="active">Oyun</button><button data-preview="square">Kare PNG</button><button data-preview="normal">Normal</button><button data-preview="height">Height</button></div>
+        <div class="miniTabs previewTabs" id="previewTabs" role="group" aria-label="Önizleme modu"><button data-preview="world" class="active">Oyun</button><button data-preview="square">Kare PNG</button><button data-preview="normal">Normal</button><button data-preview="height">Height</button><button data-preview="material">Işık testi</button></div>
         <div class="previewFrame"><canvas id="previewCanvas" aria-label="Seçilen objenin izometrik önizlemesi"></canvas><div class="previewChip" id="previewChip">Şematik görsel</div></div>
         <div class="previewSettings"><label><input type="checkbox" id="viewGuide" checked> Kılavuz</label><label><input type="checkbox" id="viewShadow" checked> Dinamik gölge</label><span class="microInfo">Sprite dönmez; pivot ve dünya eksenleri sabittir.</span></div>
-        <div class="settingsGrid">
+        <div class="materialControls" id="materialControls" style="display:none;padding:10px 16px;border-top:1px solid #405d44">
+  <div class="eyebrow">MATERIAL LAB · AYNI SPRITE, İKİ GÖRÜNÜM</div>
+  <label>Işık yönü <output id="lightAngleOut">35°</output><input type="range" id="lightAngle" min="0" max="360" value="35" step="5"></label>
+  <label>Normal kuvveti <output id="normalStrengthOut">100%</output><input type="range" id="normalStrength" min="0" max="200" value="100" step="10"></label>
+  <label>Height etkisi <output id="heightStrengthOut">100%</output><input type="range" id="heightStrength" min="0" max="300" value="100" step="10"></label>
+  <label>Karşılaştırma etkisi <output id="materialIntensityOut">85%</output><input type="range" id="materialIntensity" min="0" max="100" value="85" step="5"></label>
+  <p class="microInfo">Sağdaki görünüm 2D aydınlatma simülasyonudur, gerçek geometri/displacement değildir. Harita yoksa o kanal etkisizdir.</p>
+</div>
+<div class="settingsGrid">
           <label>Ölçek <output id="scaleOut">100%</output><input id="scale" type="range" min="0.5" max="1.8" step="0.05" value="1"></label>
           <label>Pivot X <output id="pivotXOut">50%</output><input id="pivotX" type="range" min="0.25" max="0.75" step="0.01" value="0.5"></label>
           <label>Pivot Y <output id="pivotYOut">88%</output><input id="pivotY" type="range" min="0.55" max="0.98" step="0.01" value="0.88"></label>
           <label>Gölge <output id="shadowOut">48%</output><input id="shadow" type="range" min="0.1" max="0.68" step="0.02" value="0.48"></label>
         </div>
+        <section class="card" id="matteCleaner" style="margin:0 14px 14px">
+  <div class="eyebrow">PNG ONARIMI · SİYAH ARKA PLAN</div>
+  <p class="microInfo" style="margin:8px 0">Yalnız dış kenarla bağlantılı siyah alanları temizler. Objedeki koyu detayları korumaya çalışır; sınırda siyah obje parçaları varsa manuel denetim gerekir.</p>
+  <input type="file" id="matteInput" accept="image/png" aria-label="Siyah arka planlı PNG yükle" style="width:100%;margin:8px 0">
+  <label class="microInfo">Siyah toleransı <output id="matteToleranceOut">28</output><input id="matteTolerance" type="range" min="0" max="90" value="28" step="2" style="width:100%"></label>
+  <button class="smallBtn" id="mattePreviewBtn" style="margin:9px 0">Temizlemeyi önizle</button>
+  <div id="matteFeedback" class="microInfo" role="status"></div>
+  <canvas id="matteCanvas" width="320" height="320" style="display:none;width:100%;max-width:320px;margin:10px auto;border:1px solid #64775d;background:repeating-conic-gradient(#647968 0% 25%,#415447 0% 50%) 50%/20px 20px"></canvas>
+  <button class="smallBtn" id="matteDownload" disabled>Temizlenmiş PNG indir</button>
+</section>
         <section class="card assetContract"><div class="eyebrow">ÜRETİM SÖZLEŞMESİ</div><div id="contract" class="contractText"></div></section>
       </section>
       <section class="panel detailPane" aria-labelledby="detailTitle">
