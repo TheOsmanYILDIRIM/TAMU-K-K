@@ -105,46 +105,62 @@ light.location=origin+Vector((diam,-diam,diam*2))
 light.rotation_euler=(origin-light.location).to_track_quat('-Z','Y').to_euler()
 ld.energy=950;ld.size=diam
 original={o.name:o.matrix_world.copy() for _,_,o in movables}
-center_original={o.name:center(o) for _,_,o in movables}
-def source_pair(base,side):
-    if base=='tightMesh':return 'UpperLeg.'+side,'LowerLeg.'+side
-    if base=='kneeMesh':return 'UpperLeg.'+side,'LowerLeg.'+side
-    if base=='calfMesh':return 'LowerLeg.'+side,'Foot.'+side
-    return 'LowerLeg.'+side,'Foot.'+side
-# Scale translation based on BJD leg: first-frame knees and ankles are not reinterpreted
-# as native BJD joints; 0.7 is an explicit experimental motion scaling.
-motion_scale=0.7
+pieces={(base,side):o for base,side,o in movables}
+def bounds_world(o):
+    pts=[o.matrix_world @ Vector(c) for c in o.bound_box]
+    return Vector((min(p.x for p in pts),min(p.y for p in pts),min(p.z for p in pts))), Vector((max(p.x for p in pts),max(p.y for p in pts),max(p.z for p in pts)))
+rest={}
+for side in ('L','R'):
+    thigh=pieces['tightMesh',side]; knee=pieces['kneeMesh',side]
+    calf=pieces['calfMesh',side]; foot=pieces['footMesh',side]
+    thigh_min,thigh_max=bounds_world(thigh)
+    calf_min,calf_max=bounds_world(calf)
+    hip=Vector((center(thigh).x,center(thigh).y,thigh_max.z))
+    knee_p=center(knee)
+    ankle=Vector((center(calf).x,center(calf).y,calf_min.z))
+    assert (hip-knee_p).length>0.01 and (knee_p-ankle).length>0.01
+    rest[side]={'hip':hip,'knee':knee_p,'ankle':ankle}
 stats=[]
 for idx,f in enumerate(frames):
     current=joints(f)
-    maxrot=0
-    for base,side,o in movables:
-        a,b=source_pair(base,side)
-        v0=first[b]-first[a];v1=current[b]-current[a]
-        assert v0.length>1e-5 and v1.length>1e-5
-        rotation=v0.rotation_difference(v1)
-        angle=rotation.angle
-        # Prevent implausible 180-degree source-axis inversions
-        assert angle<math.radians(135)
-        maxrot=max(maxrot,math.degrees(angle))
-        pivot=center_original[o.name]
-        displacement=(current[a]-first[a])*motion_scale
-        worldmat=(Matrix.Translation(pivot+displacement)@rotation.to_matrix().to_4x4()
-                  @Matrix.Translation(-pivot)@original[o.name])
-        o.matrix_world=worldmat
+    maxrot=0.0; max_anchor_error=0.0; ank={}
+    for side in ('L','R'):
+        upper='UpperLeg.'+side; lower='LowerLeg.'+side; footname='Foot.'+side
+        a0=first[lower]-first[upper]; a1=current[lower]-current[upper]
+        b0=first[footname]-first[lower]; b1=current[footname]-current[lower]
+        assert min(a0.length,a1.length,b0.length,b1.length)>1e-5
+        q_upper=a0.rotation_difference(a1);q_lower=b0.rotation_difference(b1)
+        assert max(q_upper.angle,q_lower.angle)<math.radians(135)
+        maxrot=max(maxrot,math.degrees(q_upper.angle),math.degrees(q_lower.angle))
+        r=rest[side]
+        hip_now=r['hip']+(current[upper]-first[upper])*0.7
+        knee_now=hip_now+q_upper @ (r['knee']-r['hip'])
+        ankle_now=knee_now+q_lower @ (r['ankle']-r['knee'])
+        configs={'tightMesh':(r['hip'],hip_now,q_upper),
+                 'kneeMesh':(r['knee'],knee_now,q_upper),
+                 'calfMesh':(r['knee'],knee_now,q_lower),
+                 'footMesh':(r['ankle'],ankle_now,q_lower)}
+        for base in split_names:
+            pivot,target,q=configs[base]
+            o=pieces[base,side]
+            o.matrix_world=Matrix.Translation(target) @ q.to_matrix().to_4x4() @ Matrix.Translation(-pivot) @ original[o.name]
+            mapped=o.matrix_world @ original[o.name].inverted() @ pivot
+            max_anchor_error=max(max_anchor_error,(mapped-target).length)
+        ank[side]=list(ankle_now)
+    assert max_anchor_error<0.0001
     scene.render.filepath=str((OUT/('walk_%02d.png'%idx)).resolve())
     bpy.ops.render.render(write_still=True)
-    stats.append({'frame':f,'max_rotation_deg':round(maxrot,4)})
+    stats.append({'frame':f,'max_rotation_deg':round(maxrot,4),'fk_pivot_error':round(max_anchor_error,8),'ankles':ank})
 # Restore originals to avoid output mixups
 for _,_,o in movables:o.matrix_world=original[o.name]
 report={'schema_version':1,'source_action':action.name,'frame_count':33,'selected_mesh_count':len(keep),
         'component_split':split_report,'classification':classification,
         'moved_rigid_components':[{'category':base,'side':side,'object':o.name,
-                                   'pivot_heuristic':'component_boundbox_center'} for base,side,o in movables],
-        'frames':stats,'retarget_level':'experimental_3d_component_rotation_no_true_anatomical_pivot',
+                                   'pivot_heuristic':'geometry_derived_hip_knee_ankle_FK'} for base,side,o in movables],
+        'frames':stats,'retarget_level':'geometry_anchor_FK_without_ground_IK',
         'limits':['Vertex island split is not proof of correct anatomy',
         'Rotations follow source segment vectors; translations scaled heuristically',
-        'No actual knee hinge or foot toe contact solution',
+        'FK pivot attachment only; no ground/contact IK',
         'No measured projected seam, collision, or foot slip; do not claim solved']}
 (OUT/'walk_report.json').write_text(json.dumps(report,indent=2))
 print('BJD_WALK33_SUCCESS',len(movables),len(stats))
