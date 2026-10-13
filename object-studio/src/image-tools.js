@@ -24,6 +24,7 @@ export function materialPixels(albedo,normal,height,options={}){
  const normalStrength=Math.max(0,Math.min(2,Number(options.normalStrength)||0));
  const heightStrength=Math.max(0,Math.min(3,Number(options.heightStrength)||0));
  const intensity=Math.max(0,Math.min(1,Number(options.intensity)||0));
+ if(intensity===0||(!normal||normalStrength===0)&&(!height||heightStrength===0))return {data:output,width,height:h};
  const sample=(x,y)=>{x=Math.max(0,Math.min(width-1,x));y=Math.max(0,Math.min(h-1,y));const i=4*(y*width+x);return height?(height.data[i]+height.data[i+1]+height.data[i+2])/765:0};
  const pixel=(x,y)=>{const i=4*(y*width+x);if(src[i+3]===0)return;
   let nx=0,ny=0,nz=1;
