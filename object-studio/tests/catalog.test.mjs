@@ -34,7 +34,7 @@ test('stage prompts enforce square alpha and locked composition',()=>{
  assert.match(promptFor(a,'correction',0,0,'forest'),/Image B's object language/i);
  assert.match(promptFor(a,'correction',0,0,'forest'),/Image B = approved MATERIAL AND STYLE MASTER/i);
  assert.match(promptFor(a,'maps',0,0,'forest'),/Normal encodes surface lighting detail only/i);
- assert.match(promptFor(a,'layers',0,0,'forest'),/exactly 1024×1024/i);
+ assert.match(promptFor(a,'layers',0,0,'forest'),/exactly ONE 1024×1024/i);
 });
 test('28 independent L0-L3 prompts target only one layer and preserve source alignment',()=>{
  assert.deepEqual(LAYER_PROMPT_SLOTS,['base','body','upper','front']);
