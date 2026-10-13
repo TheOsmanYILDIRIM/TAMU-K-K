@@ -1,0 +1,43 @@
+name: Mixamo Walking 32-frame segmentation
+on:
+  push:
+    branches: [experiment/blender-camera-reference-20261011]
+    paths: ['tools/mixamo_parts.py','.github/workflows/mixamo-parts.yml','tools/mixamo_parts.html']
+  workflow_dispatch:
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions: {contents: read}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Pinned FBX from main
+        run: |
+          mkdir -p input
+          git fetch origin 18fdb06e194a757b356de0668c7cd2246db80ece
+          git show 18fdb06e194a757b356de0668c7cd2246db80ece:Walking.fbx > input/Walking.fbx
+          python3 -m py_compile tools/mixamo_parts.py
+      - name: Install Blender
+        run: sudo apt-get update && sudo apt-get install -y blender python3-numpy libegl1 libgl1
+      - name: Generate
+        run: blender -b -t 2 --python-exit-code 2 --python tools/mixamo_parts.py
+      - name: Verify
+        run: |
+          python3 - <<'PY'
+          import pathlib,json
+          p=pathlib.Path('rendered/mixamo_parts')
+          m=json.loads((p/'manifest.json').read_text())
+          assert len(m['frames'])==32
+          assert len(list(p.glob('full_*.png')))==32
+          assert all(x.read_bytes()[:8]==bytes([137,80,78,71,13,10,26,10]) for x in p.glob('*.png'))
+          assert m['regions']
+          print('VERIFIED',len(m['frames']),m['regions'])
+          PY
+          cp tools/mixamo_parts.html rendered/mixamo_parts/index.html
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mixamo-32-frame-parts
+          path: rendered/mixamo_parts/
+          if-no-files-found: warn
