@@ -20,9 +20,10 @@ export function promptFor(asset,stage,form,surface,biome){
   ].join('\n\n');
   if(stage==='correction')return [
     'STAGE 03 — COMPOSITION-LOCKED A+B PRODUCTION.',specific,
-    'Image A = approved creative design/structural image. Lock its object silhouette, body proportions, pose, scale/occupied square area, pivot and 45° isometric ground orientation. Image B = separately approved material/world style reference, and controls only the material language, natural aging, color relationships and restrained details.',
+    'Image A = approved creative design / structural source. Use Image A ONLY for the silhouette footprint, body proportions, canvas placement, pivot, alpha boundary logic and 45° isometric ground orientation. Image B = approved MATERIAL AND STYLE MASTER. The finished asset must derive its dominant artistic identity, surface design, material richness, age, tones and shape styling from Image B.',
+    "CRITICAL: Do not imitate Image A surface appearance, internal texture, leaf clusters, bark grain, stone fractures or original artistic finish. Image A is NOT the style source. The result must look like Image B's object language placed into Image A's structural slot, NOT like Image A with minor polish.",
     asset.correction,visual,STYLE.silhouette,
-    'Do not copy the background or composition from Image B. Keep Image A identity and empty alpha regions intact. A real transparent PNG output, exactly one isolated asset, 1024×1024.'
+    'Preserve the composition, object type, broad silhouette and negative alpha space from Image A without inheriting its surface aesthetic. Do not copy the background or scene framing from Image B. Output exactly one isolated 1024×1024 square RGBA PNG with REAL transparent background, no pedestal, scene, border, labels, checkerboard or baked cast shadow.'
   ].join('\n\n');
   if(stage==='layers')return [
     'STAGE 04 — LOSSLESS ALIGNED LAYER EXTRACTION.',specific,
