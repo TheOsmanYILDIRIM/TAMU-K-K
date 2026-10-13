@@ -25,17 +25,12 @@ export function promptFor(asset,stage,form,surface,biome){
     asset.correction,visual,STYLE.silhouette,
     'Preserve the composition, object type, broad silhouette and negative alpha space from Image A without inheriting its surface aesthetic. Do not copy the background or scene framing from Image B. Output exactly one isolated 1024×1024 square RGBA PNG with REAL transparent background, no pedestal, scene, border, labels, checkerboard or baked cast shadow.'
   ].join('\n\n');
-  if(stage==='maps')return [
-    'STAGE 05 — PHYSICALLY PLAUSIBLE MATERIAL MAPS.',specific,
-    'Image A = approved corrected/color asset. Export separately aligned 1024×1024 tangent-space normal RGB and grayscale height data when relevant.',asset.maps,
-    'Normal encodes surface lighting detail only. Height can drive mesh deformation or displacement in a later pipeline and must not invent geometry inconsistent with the object. Maintain silhouette, anchor, physical scale and UV registration. Avoid baked shadows/highlights.'
-  ].join('\n\n');
   return null;
 }
 export function stageGuide(stage,asset){
   const text={
     direction:`${asset.id} · ${asset.species}\nSiluet: ${asset.art}\nZemindeki rol: ${asset.placement}\nFiziksel ayak izi: ${asset.footprint[0]} × ${asset.footprint[1]} birim. Çarpışma: ${asset.collider}.`,
-    approval:'Kabul etmeden önce: 45° kamerada siluet ve ölçek, gerçek PNG alpha, 1:1 kare, pivot/ayak izi, dinamik gölge, çarpışma, biyom uyumu ve oyun ölçeğinde okunurluğu gözle kontrol et. Eksik normal/height haritası ancak planlı ve açıkça bekleyen iş olarak işaretlenebilir.'
+    approval:'Kabul etmeden önce: 45° kamerada siluet ve ölçek, gerçek PNG alpha, 1:1 kare, pivot/ayak izi, dinamik gölge, çarpışma, biyom uyumu ve oyun ölçeğinde okunurluğu gözle kontrol et. Normal haritalar şimdilik üretim zorunluluğu değildir; nihai oyun görünümü görüldükten sonra değerlendirilir.'
   };
   return text[stage]??null;
 }
