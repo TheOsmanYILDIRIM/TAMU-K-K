@@ -8,6 +8,14 @@ test('terrain supports shared materials and biome-specific variants',()=>{
  const html=fs.readFileSync(path.join(root,'src/terrain.html'),'utf8');
  for(const id of ['grass','soil','stone','meadow','forest','rocky'])assert.match(html,new RegExp(id));
  assert.match(html,/osman:terrain-studio:v1:/);
+ assert.match(html,/function baseKey\(\)\{return state.material\+'::meadow::0'\}/);
+ assert.match(html,/function isBase\(\)/);
+ assert.match(html,/FIRST VARIANT \/ CANONICAL IMAGE A/);
+ assert.match(html,/DERIVED BIOME VARIANT — IMAGE A/);
+ assert.match(html,/No preceding Image A is needed/);
+ assert.match(html,/DONOTMODIFYNOTREQUIRED|DO NOT modify the original first variant/);
+ assert(!html.includes('masterAlbedo'));
+ assert.match(html,/data-view="compare"/);
  assert.match(html,/OsmanTerrainStudioAssets/);
  assert.match(html,/tangent-space RGB normal map/);
  assert.match(html,/Height\/displacement is NOT needed/);
