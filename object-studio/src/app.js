@@ -6,6 +6,7 @@ const BUILD='__BUILD_SHA__';
 const $=id=>document.getElementById(id);
 const state=readMetadata();
 let filterFamily='all',query='',images=new Map(),bitmaps=new Map(),imageURLs=[],busy=false,pendingSlot=null,toastTimer=null,selectionCycle=0;
+let selectedLayerPrompt='base'; // UI only: preserve existing persisted selections and uploads
 if(!assetById(state.selected))state.selected='T-01';
 if(!STAGES.some(s=>s.id===state.stage))state.stage='direction';
 function toast(text,isError=false){const el=$('toast');el.textContent=text;el.style.background=isError?'#edd5bc':'#d1e3ac';el.classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('visible'),4600);}
@@ -35,7 +36,9 @@ function renderStage(){const a=selectedAsset(),v=variant(),e=entry(),st=STAGES.f
  $('stageLabel').textContent='AŞAMA '+st.number;
  $('stageTitle').textContent=st.name;
  $('stageDescription').textContent=st.description;
- const prompt=promptFor(a,state.stage,v.form,v.surface,state.biome),guide=stageGuide(state.stage,a);
+ $('layerPromptPickerWrap').style.display=state.stage==='layers'?'block':'none';
+ $('layerPromptPicker').value=selectedLayerPrompt;
+ const prompt=promptFor(a,state.stage,v.form,v.surface,state.biome,selectedLayerPrompt),guide=stageGuide(state.stage,a);
  $('promptLabel').textContent=prompt?'Özgün üretim promptu':'Üretim / kabul notları';
  $('promptText').value=prompt||guide||'';
  $('copyPrompt').disabled=!(prompt||guide);
@@ -107,6 +110,7 @@ function wire(){
  $('slotGrid').addEventListener('click',e=>{const upload=e.target.closest('[data-upload]'),remove=e.target.closest('[data-remove]');if(upload)onUpload(upload.dataset.upload);if(remove)onRemove(remove.dataset.remove)});
  $('assetFile').onchange=e=>processUpload(e.target.files?.[0]);
  $('directorNote').oninput=e=>{const v=entry();v.notes||={};v.notes[state.stage]=e.target.value;persist()};
+ $('layerPromptPicker').onchange=e=>{selectedLayerPrompt=e.target.value;renderStage()};
  $('copyPrompt').onclick=async()=>{try{await navigator.clipboard.writeText($('promptText').value);toast('Üretim promptu kopyalandı.')}catch{toast('Kopyalama izni yok. Metni elle seç.',true)}};
  $('approveStage').onclick=approve;
  $('exportBackup').onclick=exportBackup;
