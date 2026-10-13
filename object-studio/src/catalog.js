@@ -8,15 +8,12 @@ export const STAGES = Object.freeze([
   {id:'reference',name:'Referans',number:'01',description:'Tek kare stil referansı; kompozisyon değil malzeme dili belirler.'},
   {id:'creative',name:'Yaratıcı',number:'02',description:'1024×1024 gerçek transparan PNG; özgür ama oyun rolüne sadık ilk biçim.'},
   {id:'correction',name:'Düzeltme',number:'03',description:'Image A yalnız siluet/yerleşim; Image B baskın stil ve materyal; son kare PNG.'},
-  {id:'maps',name:'Haritalar',number:'04',description:'Normal aydınlatma; height gerçek geometri/ileride displacement. İkisi aynı şey değil.'},
-  {id:'approval',name:'Kabul',number:'05',description:'Oyun mesafesi, alpha, pivot, gölge, çarpışma ve biyom okunurluğu.'}
+  {id:'approval',name:'Kabul',number:'04',description:'Oyun mesafesi, alpha, pivot, gölge, çarpışma ve biyom okunurluğu.'}
 ]);
 export const SLOTS = Object.freeze([
   {id:'reference',name:'Stil referansı',stage:'reference',alpha:false,description:'Kare PNG; ortam/ışık/malzeme dili.'},
   {id:'creative',name:'Yaratıcı PNG',stage:'creative',alpha:true,description:'İzolasyon ve serbest siluet. Gerçek alpha.'},
-  {id:'corrected',name:'Düzeltilmiş PNG',stage:'correction',alpha:true,description:'Kabul için esas sprite, Image A geometrisi korunmuş.'},
-  {id:'normal',name:'Normal map',stage:'maps',alpha:false,description:'Tangent-space RGB ışık tepkisi. Geometri üretmez.'},
-  {id:'height',name:'Height map',stage:'maps',alpha:false,description:'Yükseklik/gri değer; ileride displacement için.'}
+  {id:'corrected',name:'Düzeltilmiş PNG',stage:'correction',alpha:true,description:'Kabul için esas sprite, Image A geometrisi korunmuş.'}
 ]);
 export const STYLE = Object.freeze({
   title:'MTS · Grounded Dark Fantasy',
