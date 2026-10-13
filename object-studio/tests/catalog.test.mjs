@@ -9,7 +9,9 @@ test('minimal biome and core model contract',()=>{
  assert.deepEqual(CATALOG.filter(a=>a.family==='tree').map(a=>a.id),['T-01','T-02','T-03']);
  assert.deepEqual(CATALOG.filter(a=>a.family==='rock').map(a=>a.id),['R-01','R-02','R-03','R-04']);
  assert.equal(new Set(CATALOG.map(a=>a.id)).size,7);
- assert.equal(STAGES.length,6);
+ assert.equal(STAGES.length,5);
+ assert(!STAGES.some(s=>s.id==='maps'));
+ assert(!SLOTS.some(s=>s.id==='normal'||s.id==='height'));
  assert(!STAGES.some(s=>s.id==='layers'));
  assert(!SLOTS.some(s=>['base','body','upper','front'].includes(s.id)));
  assert.equal(new Set(SLOTS.map(x=>x.id)).size,SLOTS.length);
@@ -18,7 +20,7 @@ test('minimal biome and core model contract',()=>{
   assert.deepEqual(a.forms.length>=3,true);assert.deepEqual(a.surfaces.length>=3,true);
   assert(a.footprint.every(n=>n>0));assert(a.roles.every(r=>BIOMES.some(b=>b.id===r)));
   assert.equal(assetById(a.id),a);
-  for(const stage of ['reference','creative','correction','maps']){
+  for(const stage of ['reference','creative','correction']){
    const prompt=promptFor(a,stage,0,0,a.roles[0]);
    assert(prompt?.includes(a.id));assert(prompt.length>420);
   }
@@ -35,7 +37,7 @@ test('stage prompts enforce square alpha and locked composition',()=>{
  assert.match(promptFor(a,'correction',0,0,'forest'),/Image A is NOT the style source/i);
  assert.match(promptFor(a,'correction',0,0,'forest'),/Image B's object language/i);
  assert.match(promptFor(a,'correction',0,0,'forest'),/Image B = approved MATERIAL AND STYLE MASTER/i);
- assert.match(promptFor(a,'maps',0,0,'forest'),/Normal encodes surface lighting detail only/i);
+ assert.equal(promptFor(a,'maps',0,0,'forest'),null);
  assert.equal(promptFor(a,'layers',0,0,'forest'),null);
 });
 test('one sprite and preserved legacy data policy',()=>{
@@ -47,6 +49,8 @@ test('one sprite and preserved legacy data policy',()=>{
  assert(!preview.includes('gw*.27,gh*.40'));
  assert(!app.includes('layerPromptPicker'));
  assert.match(app,/legacyLayer/);
+ assert.match(app,/\{id:'normal'\},\{id:'height'\}/);
+ assert.match(app,/heightStrength:0/);
  assert.match(app,/\['base','body','upper','front'\]/);
 });
 test('browser imports and user data safety boundaries',()=>{
