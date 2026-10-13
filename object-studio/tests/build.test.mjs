@@ -19,5 +19,5 @@ test('self-contained build is stamped and has no external runtime scripts',()=>{
  const check=spawnSync(process.execPath,['--check','--input-type=commonjs'],{input:code,encoding:'utf8'});
  assert.equal(check.status,0,check.stderr);
  const manifest=JSON.parse(fs.readFileSync(path.join(root,'dist/build.json'),'utf8'));
- assert.equal(manifest.sha,sha);assert.equal(manifest.source_modules.length,5);
+ assert.equal(manifest.sha,sha);assert.equal(manifest.source_modules.length,6);assert(manifest.source_modules.includes('image-tools.js'));
 });
