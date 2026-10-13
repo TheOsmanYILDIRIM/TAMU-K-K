@@ -18,7 +18,7 @@ function variant(){const a=selectedAsset();const v=state.selection[a.id]||{};ret
 function entry(){const v=variant();return variantEntry(state,state.selected,v.form,v.surface)}
 function imageKeyFor(slot){const v=variant();return imageKey(state.selected,v.form,v.surface,slot)}
 function releaseImages(){for(const bm of bitmaps.values())try{bm.close()}catch{}bitmaps.clear();images.clear();for(const u of imageURLs)URL.revokeObjectURL(u);imageURLs=[];}
-async function loadVariant(){const generation=++selectionCycle;releaseImages();const results=await Promise.all(SLOTS.map(async slot=>{
+async function loadVariant(){const generation=++selectionCycle;releaseImages();const results=await Promise.all([...SLOTS,{id:'normal'},{id:'height'}].map(async slot=>{
  try{return [slot.id,await getImage(imageKeyFor(slot.id))]}catch(e){return [slot.id,null]}
  }));if(generation!==selectionCycle)return;
  for(const [slot,record] of results){if(!record)continue;images.set(slot,record);try{bitmaps.set(slot,await createImageBitmap(record.blob))}catch{toast(slot+' görseli okunamadı.',true)}}
@@ -75,7 +75,6 @@ function canComplete(stage){if(stage==='direction')return true;
  if(stage==='reference')return record('reference');
  if(stage==='creative')return record('creative');
  if(stage==='correction')return record('corrected');
- if(stage==='maps')return record('normal')||record('height');
  if(stage==='approval')return record('corrected');
  return false;}
 function approve(){const e=entry();e.stages||={};if(e.stages[state.stage]){delete e.stages[state.stage];toast('Onay geri alındı.');}
@@ -92,7 +91,7 @@ async function importBackup(file){if(busy||!file)return;busy=true;try{
  if(file.size>120*1024*1024)throw new Error('Yedek 120 MB sınırını aşıyor.');
  const data=JSON.parse(await file.text());validateBackup(data);
  if(!confirm(`Yedekte ${data.images.length} PNG var. Mevcut çalışma korunarak birleştirilecek; çakışan varyantlar yedektekilerle değiştirilecek. Devam?`))return;
- for(const item of data.images){const blob=blobFromDataURL(item.data);const slot=item.key.split('::')[3],spec=SLOTS.find(x=>x.id===slot);const legacyLayer=['base','body','upper','front'].includes(slot);if(!spec&&!legacyLayer)throw new Error('Bilinmeyen slot: '+slot);const meta=await inspectPng(blob,{alphaRequired:spec?.alpha??true});await putImage(item.key,blob,{...meta,...item.meta});}
+ for(const item of data.images){const blob=blobFromDataURL(item.data);const slot=item.key.split('::')[3],spec=SLOTS.find(x=>x.id===slot);const legacyLayer=['base','body','upper','front','normal','height'].includes(slot);if(!spec&&!legacyLayer)throw new Error('Bilinmeyen slot: '+slot);const meta=await inspectPng(blob,{alphaRequired:spec?.alpha??true});await putImage(item.key,blob,{...meta,...item.meta});}
  Object.assign(state.work,data.metadata.work);Object.assign(state.selection,data.metadata.selection||{});persist();renderAll();await loadVariant();toast(data.images.length+' PNG ve üretim kayıtları birleştirildi.');
  }catch(e){toast('Yedek yüklenemedi: '+e.message,true)}finally{busy=false;$('backupFile').value=''}}
 async function previewMatteRemoval(){
