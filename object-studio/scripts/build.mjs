@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 const root=path.resolve(import.meta.dirname,'..');
-const modules=['catalog.js','prompts.js','storage.js','preview.js','app.js'];
+const modules=['catalog.js','prompts.js','storage.js','image-tools.js','preview.js','app.js'];
 const declared=new Set();
 let output='"use strict";\n';
 const moduleNames=[];
