@@ -34,7 +34,7 @@
         <div class="stageRail" id="stageRail" aria-label="Üretim aşamaları"></div>
         <div class="stageArea"><div class="stageHeading"><span class="eyebrow" id="stageLabel">AŞAMA 00</span><h3 id="stageTitle">Üretim yönü</h3><p id="stageDescription"></p></div>
           <div id="slotGrid" class="slotGrid"></div>
-          <div class="promptCard"><div class="promptHead"><strong id="promptLabel">Üretim yönergesi</strong><button id="copyPrompt" class="smallBtn">Kopyala</button></div><textarea id="promptText" readonly rows="7" spellcheck="false" aria-label="Üretim yönergesi"></textarea></div>
+          <div class="promptCard"><div class="promptHead"><strong id="promptLabel">Üretim yönergesi</strong><button id="copyPrompt" class="smallBtn">Kopyala</button></div><label id="layerPromptPickerWrap" style="display:none;margin:10px 0;font-size:13px">Üretilecek tek katman <select id="layerPromptPicker" aria-label="Katman üretim promptunu seç" style="display:block;width:100%;margin-top:7px;padding:10px;background:#24372d;color:#f4f0e5;border:1px solid #708575;border-radius:10px"><option value="base">L0 · Zemin altlığı</option><option value="body">L1 · Ana gövde</option><option value="upper">L2 · Üst hacim</option><option value="front">L3 · Ön örtü</option></select></label><textarea id="promptText" readonly rows="7" spellcheck="false" aria-label="Üretim yönergesi"></textarea></div>
           <label class="noteLabel" for="directorNote">Yönetmen notu / üretim değerlendirmesi</label><textarea id="directorNote" rows="3" placeholder="Örn. gövde çok kalın; taç biraz açılmalı…"></textarea>
           <button class="approveBtn" id="approveStage">✓ Bu aşamayı onayla</button>
         </div>
