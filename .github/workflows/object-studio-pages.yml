@@ -1,0 +1,90 @@
+name: Object Studio Pages · main
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'object-studio/**'
+      - '.github/workflows/object-studio-pages.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: world-object-studio-pages
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check source and tests
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate Object Studio source
+        working-directory: object-studio
+        run: |
+          npm run test
+          python3 -m unittest discover -s tests -p 'test_*.py' -v
+          BUILD_SHA="${GITHUB_SHA}" npm run build
+      - name: Read-only checkout of existing World Builder
+        uses: actions/checkout@v4
+        with:
+          ref: experiment/world-2d-design-20261012
+          path: _world_preview
+          persist-credentials: false
+      - name: Build composite Pages artifact without replacing the old preview
+        run: |
+          PREVIEW_SHA="$(git -C _world_preview rev-parse HEAD)"
+          python3 object-studio/scripts/assemble_pages.py \
+            --preview _world_preview/world-builder \
+            --studio object-studio/dist \
+            --out _site \
+            --preview-sha "$PREVIEW_SHA" \
+            --main-sha "$GITHUB_SHA"
+          test -s _site/index.html
+          test -s _site/assembly.html
+          test -s _site/object-studio/latest.html
+          python3 - <<'PY'
+          import json,os,pathlib
+          p=pathlib.Path('_site/object-studio/build.json')
+          assert json.loads(p.read_text())['sha']==os.environ['GITHUB_SHA']
+          assert 'OBJECT STUDIO' in pathlib.Path('_site/object-studio/latest.html').read_text()
+          PY
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Verify live new studio build
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL='https://theosmanyildirim.github.io/oyun/object-studio/build.json'
+          for i in $(seq 1 18); do
+            if curl --silent --show-error --fail --max-time 12 \
+              -H 'Cache-Control: no-cache' "$URL?probe=$RANDOM-$i" > /tmp/object-build.json; then
+              if python3 -c 'import json,os; data=json.load(open("/tmp/object-build.json")); assert data.get("sha")==os.environ["EXPECTED_SHA"]'; then
+                curl --silent --show-error --fail --max-time 12 \
+                  "https://theosmanyildirim.github.io/oyun/object-studio/latest.html?build=${EXPECTED_SHA}" \
+                  -o /tmp/object-latest.html
+                grep -q 'OBJECT STUDIO' /tmp/object-latest.html
+                echo "LIVE OBJECT STUDIO VERIFIED: ${EXPECTED_SHA}"
+                exit 0
+              fi
+            fi
+            sleep 5
+          done
+          echo 'Pages deploy completed but live build SHA could not be verified' >&2
+          exit 1
