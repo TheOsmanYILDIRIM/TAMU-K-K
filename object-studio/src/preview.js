@@ -1,12 +1,31 @@
+import {materialPixels} from './image-tools.js';
 // Canvas-only schematic/asset preview. No texture is substituted for missing art.
 const TAU=Math.PI*2;
 const silhouetteCache=new WeakMap();
 export function drawPreview(canvas,options){
-  const {asset,mode,biome,bitmaps,entry,showGuide=true,showShadow=true}=options;
+  const {asset,mode,biome,bitmaps,entry,showGuide=true,showShadow=true,lightAngle=35,normalStrength=1,heightStrength=1,materialIntensity=.85}=options;
   const ctx=canvas.getContext('2d',{alpha:false});const bounds=canvas.getBoundingClientRect(),size=Math.max(320,Math.min(1000,Math.round(bounds.width||600)));
   const dpr=Math.min(2,window.devicePixelRatio||1),pixel=Math.round(size*dpr);
   if(canvas.width!==pixel||canvas.height!==pixel){canvas.width=pixel;canvas.height=pixel;}
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,size,size);
+  if(mode==='material'){
+    const sprite=bitmaps.get('corrected')||bitmaps.get('creative');
+    ctx.fillStyle='#25372c';ctx.fillRect(0,0,size,size);
+    if(!sprite){centerText(ctx,size,'Önce yaratıcı / düzeltilmiş PNG yükle');return}
+    const side=256,make=img=>{if(!img)return null;const b=document.createElement('canvas');b.width=b.height=side;const cc=b.getContext('2d',{willReadFrequently:true});cc.drawImage(img,0,0,side,side);return cc.getImageData(0,0,side,side)};
+    const base=make(sprite),normal=make(bitmaps.get('normal')),height=make(bitmaps.get('height'));
+    const lit=materialPixels(base,normal,height,{lightAngle,normalStrength,heightStrength,intensity:materialIntensity});
+    const canvasLit=document.createElement('canvas');canvasLit.width=canvasLit.height=side;
+    const cc=canvasLit.getContext('2d');const output=cc.createImageData(side,side);output.data.set(lit.data);cc.putImageData(output,0,0);
+    const available=Math.min(size*.48,320),ox=(size-available*2)/2,oy=(size-available)/2;
+    checkerMaterial(ctx,size);
+    ctx.drawImage(sprite,ox,oy,available,available);
+    ctx.drawImage(canvasLit,ox+available,oy,available,available);
+    ctx.fillStyle='#e4ebd8';ctx.font='600 12px system-ui';ctx.textAlign='left';
+    ctx.fillText('ORİJİNAL',ox+6,oy-8);ctx.fillText('NORMAL + HEIGHT',ox+available+6,oy-8);
+    label(ctx,size,(normal?'Normal aktif':'Normal yok')+' · '+(height?'Height etkisi aktif':'Height yok')+' · ışık açısı '+Math.round(lightAngle)+'°');
+    return;
+  }
   if(mode==='normal'||mode==='height'){
     ctx.fillStyle='#293730';ctx.fillRect(0,0,size,size);
     const img=bitmaps.get(mode);
@@ -40,6 +59,7 @@ export function drawPreview(canvas,options){
   ctx.fillStyle='#cdd9bc88';ctx.beginPath();ctx.arc(cx,cy,2.8,0,TAU);ctx.fill();
   label(ctx,size,'45° izometrik / şematik zemin');
 }
+function checkerMaterial(ctx,size){const step=20;for(let y=0;y<size;y+=step)for(let x=0;x<size;x+=step){ctx.fillStyle=(Math.floor(x/step)+Math.floor(y/step))%2?'#33483a':'#415546';ctx.fillRect(x,y,step,step)}}
 function checker(ctx,size){const s=size/16;ctx.fillStyle='#45574a';ctx.fillRect(0,0,size,size);for(let y=0;y<16;y++)for(let x=0;x<16;x++){if((x+y)%2===0){ctx.fillStyle='#576a58';ctx.fillRect(x*s,y*s,s,s)}}}
 function paintSprite(ctx,{asset,bitmaps,entry,anchorX,anchorY,width,schematicScale}){
   const single=bitmaps.get('corrected')||bitmaps.get('creative');
