@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#15231d"><meta name="description" content="Osman Object Studio: 45° izometrik oyun için aşamalı obje üretim paneli."><title>Osman • Obje Stüdyosu</title><!-- INLINE_STYLES --></head>
+<body>
+  <header class="topbar">
+    <div class="identity"><div class="emblem" aria-hidden="true">◇</div><div><strong>OBJECT STUDIO</strong><small>OSMAN / WORLD PRODUCTION LAB</small></div></div>
+    <div class="toptools"><span class="buildTag" id="buildTag" title="Yüklü üretim sürümü">hazırlanıyor</span><button class="iconBtn" id="updateBtn" aria-label="Güncellemeyi kontrol et" title="Güncellemeyi kontrol et">↻</button></div>
+  </header>
+  <main>
+    <div class="intro"><div><div class="eyebrow">01 / OBJECT LIBRARY</div><h1>Yedi model. Tek dünya dili.</h1><p>MTS üretim standardı · aşamalı kare PNG · üç biyom · oyun içi izometrik önizleme</p></div><div class="introCount"><strong>07</strong><span>Çekirdek obje</span></div></div>
+    <div class="workspace">
+      <section class="panel catalogPane" aria-labelledby="catalogTitle">
+        <div class="paneHead"><div><span class="eyebrow">KÜTÜPHANE</span><h2 id="catalogTitle">Obje seç</h2></div><span class="tinyBadge" id="totalProgress">0 onay</span></div>
+        <div class="searchRow"><input id="search" type="search" autocomplete="off" placeholder="Ağaç, kaya veya kod ara…" aria-label="Obje ara"><span aria-hidden="true">⌕</span></div>
+        <div id="familyFilter" class="miniTabs" role="group" aria-label="Obje ailesi"><button data-family="all" class="active">Tümü</button><button data-family="tree">Ağaçlar</button><button data-family="rock">Kayalar</button></div>
+        <div id="catalogList" class="catalogList" aria-live="polite"></div>
+        <p class="catalogFoot"><span class="dot"></span> Şimdilik gerçek doku bulunmuyor. Şematik önizleme, onaylı sanat eseri değildir.</p>
+      </section>
+      <section class="panel previewPane" aria-labelledby="previewTitle">
+        <div class="paneHead"><div><span class="eyebrow">45° ISOMETRIC</span><h2 id="previewTitle">Sahne önizlemesi</h2></div><span class="tinyBadge" id="statusTag">Taslak</span></div>
+        <div class="miniTabs previewTabs" id="previewTabs" role="group" aria-label="Önizleme modu"><button data-preview="world" class="active">Oyun</button><button data-preview="square">Kare PNG</button><button data-preview="normal">Normal</button><button data-preview="height">Height</button></div>
+        <div class="previewFrame"><canvas id="previewCanvas" aria-label="Seçilen objenin izometrik önizlemesi"></canvas><div class="previewChip" id="previewChip">Şematik görsel</div></div>
+        <div class="previewSettings"><label><input type="checkbox" id="viewGuide" checked> Kılavuz</label><label><input type="checkbox" id="viewShadow" checked> Dinamik gölge</label><span class="microInfo">Sprite dönmez; pivot ve dünya eksenleri sabittir.</span></div>
+        <div class="settingsGrid">
+          <label>Ölçek <output id="scaleOut">100%</output><input id="scale" type="range" min="0.5" max="1.8" step="0.05" value="1"></label>
+          <label>Pivot X <output id="pivotXOut">50%</output><input id="pivotX" type="range" min="0.25" max="0.75" step="0.01" value="0.5"></label>
+          <label>Pivot Y <output id="pivotYOut">88%</output><input id="pivotY" type="range" min="0.55" max="0.98" step="0.01" value="0.88"></label>
+          <label>Gölge <output id="shadowOut">48%</output><input id="shadow" type="range" min="0.1" max="0.68" step="0.02" value="0.48"></label>
+        </div>
+        <section class="card assetContract"><div class="eyebrow">ÜRETİM SÖZLEŞMESİ</div><div id="contract" class="contractText"></div></section>
+      </section>
+      <section class="panel detailPane" aria-labelledby="detailTitle">
+        <div class="paneHead"><div><span class="eyebrow">ÜRETİM HATTI</span><h2 id="detailTitle">Aşamaları yönet</h2></div><span id="stageCount" class="tinyBadge">0 / 7</span></div>
+        <div class="pickerGrid"><label>Bi̇yom<select id="biome"></select></label><label>Biçim varyantı<select id="formVariant"></select></label><label>Yüzey varyantı<select id="surfaceVariant"></select></label></div>
+        <div class="stageRail" id="stageRail" aria-label="Üretim aşamaları"></div>
+        <div class="stageArea"><div class="stageHeading"><span class="eyebrow" id="stageLabel">AŞAMA 00</span><h3 id="stageTitle">Üretim yönü</h3><p id="stageDescription"></p></div>
+          <div id="slotGrid" class="slotGrid"></div>
+          <div class="promptCard"><div class="promptHead"><strong id="promptLabel">Üretim yönergesi</strong><button id="copyPrompt" class="smallBtn">Kopyala</button></div><textarea id="promptText" readonly rows="7" spellcheck="false" aria-label="Üretim yönergesi"></textarea></div>
+          <label class="noteLabel" for="directorNote">Yönetmen notu / üretim değerlendirmesi</label><textarea id="directorNote" rows="3" placeholder="Örn. gövde çok kalın; taç biraz açılmalı…"></textarea>
+          <button class="approveBtn" id="approveStage">✓ Bu aşamayı onayla</button>
+        </div>
+        <div class="backupBar"><button id="exportBackup">↓ Tam yedek</button><button id="importBackup">↑ Yedek yükle</button><input type="file" accept="application/json,.json" id="backupFile" hidden><input type="file" accept="image/png" id="assetFile" hidden></div>
+        <div class="footerHint">Görseller yalnız bu cihazın IndexedDB alanında saklanır. GitHub'a otomatik yüklenmez. Yedek alıp başka cihazda içe aktarabilirsin.</div>
+      </section>
+    </div>
+  </main>
+  <div id="toast" role="status" aria-live="polite" class="toast"></div>
+  <!-- INLINE_SCRIPT -->
+</body></html>
