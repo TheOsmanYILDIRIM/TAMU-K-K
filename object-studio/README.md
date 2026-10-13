@@ -13,7 +13,8 @@ A small mobile-first, fully local browser workspace for authoring seven core iso
 - The image stays local in IndexedDB `OsmanObjectStudioAssets` / `png-assets`; metadata stays in `osman:object-studio:v1:metadata`. Prior MTS and World Builder DBs are never opened or changed.
 - Export a **full JSON backup including binary images**; import explicitly merges and warns that conflicting variant keys replace. No automatic remote upload.
 - Independent stage approval; it never silently marks missing art as complete.
-- Browser preview renders correct 45° ground projection, schematic silhouettes when no art, real PNG alpha-silhouette projected soft ground shadow (no fixed ellipse), editable scale/pivot, square alpha check, normal and height images.
+- Browser preview renders 45° ground projection, real PNG alpha-silhouette projected soft shadow, editable scale/pivot, and a side-by-side **original versus normal+height illumination** laboratory with light angle and strength controls. This is 2D per-pixel lighting only, **not displacement or a LÖVE2D shader proof**.
+- Black background repair accepts a separate PNG, flood-fills **border-connected** near-black pixels at a user-specified threshold, shows before/after and downloads a separate transparent PNG. Original IndexedDB assets are not overwritten; dark object edges that physically meet the canvas border must be reviewed.
 
 ## Important art and geometry boundary
 
