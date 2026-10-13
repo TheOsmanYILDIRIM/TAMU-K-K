@@ -8,18 +8,13 @@ export const STAGES = Object.freeze([
   {id:'reference',name:'Referans',number:'01',description:'Tek kare stil referansı; kompozisyon değil malzeme dili belirler.'},
   {id:'creative',name:'Yaratıcı',number:'02',description:'1024×1024 gerçek transparan PNG; özgür ama oyun rolüne sadık ilk biçim.'},
   {id:'correction',name:'Düzeltme',number:'03',description:'Image A yalnız siluet/yerleşim; Image B baskın stil ve materyal; son kare PNG.'},
-  {id:'layers',name:'Katman',number:'04',description:'Aynı kare koordinatlarda L0 taban, L1 gövde, L2 üst hacim, L3 ön örtü.'},
-  {id:'maps',name:'Haritalar',number:'05',description:'Normal aydınlatma; height gerçek geometri/ileride displacement. İkisi aynı şey değil.'},
-  {id:'approval',name:'Kabul',number:'06',description:'Oyun mesafesi, alpha, pivot, gölge, çarpışma ve biyom okunurluğu.'}
+  {id:'maps',name:'Haritalar',number:'04',description:'Normal aydınlatma; height gerçek geometri/ileride displacement. İkisi aynı şey değil.'},
+  {id:'approval',name:'Kabul',number:'05',description:'Oyun mesafesi, alpha, pivot, gölge, çarpışma ve biyom okunurluğu.'}
 ]);
 export const SLOTS = Object.freeze([
   {id:'reference',name:'Stil referansı',stage:'reference',alpha:false,description:'Kare PNG; ortam/ışık/malzeme dili.'},
   {id:'creative',name:'Yaratıcı PNG',stage:'creative',alpha:true,description:'İzolasyon ve serbest siluet. Gerçek alpha.'},
   {id:'corrected',name:'Düzeltilmiş PNG',stage:'correction',alpha:true,description:'Kabul için esas sprite, Image A geometrisi korunmuş.'},
-  {id:'base',name:'L0 • Taban',stage:'layers',alpha:true,description:'Toprak, kök, moloz, dip geçişleri.'},
-  {id:'body',name:'L1 • Ana kütle',stage:'layers',alpha:true,description:'Gövde veya kaya ana kütlesi.'},
-  {id:'upper',name:'L2 • Üst hacim',stage:'layers',alpha:true,description:'Yaprak taç veya taşın üst yüzeyi.'},
-  {id:'front',name:'L3 • Ön örtü',stage:'layers',alpha:true,description:'Karakteri örten isteğe bağlı ön yüz.'},
   {id:'normal',name:'Normal map',stage:'maps',alpha:false,description:'Tangent-space RGB ışık tepkisi. Geometri üretmez.'},
   {id:'height',name:'Height map',stage:'maps',alpha:false,description:'Yükseklik/gri değer; ileride displacement için.'}
 ]);
