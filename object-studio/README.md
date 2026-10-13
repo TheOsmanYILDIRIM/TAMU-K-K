@@ -16,6 +16,15 @@ A small mobile-first, fully local browser workspace for authoring seven core iso
 - Browser preview renders 45° ground projection, real PNG alpha-silhouette projected soft shadow, editable scale/pivot, and a side-by-side **original versus normal+height illumination** laboratory with light angle and strength controls. This is 2D per-pixel lighting only, **not displacement or a LÖVE2D shader proof**.
 - Black background repair accepts a separate PNG, flood-fills **border-connected** near-black pixels at a user-specified threshold, shows before/after and downloads a separate transparent PNG. Original IndexedDB assets are not overwritten; dark object edges that physically meet the canvas border must be reviewed.
 
+## Terrain Studio and GitHub save status
+
+- `terrain.html` is a separate, mobile-friendly environment editor linked from the Object Studio start page. Three **shared materials** (grass, soil, stone) each have 2 variants per biome (meadow, forest, rocky): 18 independent material/biome/variant records without inventing more base biomes.
+- Terrain prompts follow MTS grounded dark fantasy material language and strict **literal canvas edge tileability**. This is a texture asset workflow, not a plan to show tile-grid seams in the world. Albedo (square PNG) and optional normal maps; height maps are not required.
+- Terrain uses **its own IndexedDB** `OsmanTerrainStudioAssets`, separate from object asset storage. JSON export/import is manual, warns before overwriting matching assets, and never migrates Object Studio IndexedDB/localStorage.
+- The Terrain Studio 'GitHub aktarım manifesti indir' button currently downloads the **full local JSON backup**, not a server upload. Nothing is automatically pushed to GitHub.
+- `server/terrain-save.ts` is a server-only **not-deployed** backend draft. Its preconditions are a verified Supabase user session belonging to an explicit configured owner UID, restricted GitHub credential stored as Edge secret, strict 3-material path/size/type allowlists, and no preexisting-file replacement. The write path is `assets/terrain/drafts/...`; draft presence does not imply art approval. This code must never be bundled into public Pages. The server was deliberately not deployed because valid owner authentication/configured secret access and permission scoping have not been verified. It is not a working sync button.
+- GitHub upload acceptance still needs owner auth and a real end-to-end authorized PNG push, observed new commit/blob and safe error handling; never embed PAT or Supabase service-role key in HTML. The existing Supabase agent GitHub control plane is **not** implicitly a safe browser upload service.
+
 ## Important art and geometry boundary
 
 Height maps are *candidate displacement inputs* for a later terrain or object mesh pipeline; normal maps describe lighting gradients. Neither are fully integrated game shaders in this version, and a normal map alone does not sculpt geometry. Trees and boulders must remain readable at target Android distance, with no shadows baked into the transparent PNG.
