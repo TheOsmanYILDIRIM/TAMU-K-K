@@ -7,7 +7,7 @@ const BUILD='__BUILD_SHA__';
 const $=id=>document.getElementById(id);
 const state=readMetadata();
 let filterFamily='all',query='',images=new Map(),bitmaps=new Map(),imageURLs=[],busy=false,pendingSlot=null,toastTimer=null,selectionCycle=0;
-const materialLab={lightAngle:35,normalStrength:1,heightStrength:1,materialIntensity:.85};
+const materialLab={lightAngle:35,normalStrength:1,heightStrength:0,materialIntensity:.85};
 let cleanedMatteBlob=null;
 if(!assetById(state.selected))state.selected='T-01';
 if(!STAGES.some(s=>s.id===state.stage))state.stage='direction';
@@ -131,7 +131,7 @@ function wire(){
  $('previewTabs').addEventListener('click',e=>{const b=e.target.closest('[data-preview]');if(!b)return;state.preview=b.dataset.preview;persist();renderAll()});
  $('viewGuide').onchange=e=>{state.viewGuide=e.target.checked;persist();updatePreview()};
  $('viewShadow').onchange=e=>{state.viewShadow=e.target.checked;persist();updatePreview()};
- for(const [id,key,scale] of [['lightAngle','lightAngle',1],['normalStrength','normalStrength',.01],['heightStrength','heightStrength',.01],['materialIntensity','materialIntensity',.01]]){
+ for(const [id,key,scale] of [['lightAngle','lightAngle',1],['normalStrength','normalStrength',.01],['materialIntensity','materialIntensity',.01]]){
   $(id).oninput=e=>{materialLab[key]=Number(e.target.value)*scale;$(id+'Out').textContent=id==='lightAngle'?e.target.value+'°':e.target.value+'%';updatePreview()};
  }
  $('matteTolerance').oninput=e=>{$('matteToleranceOut').textContent=e.target.value;$('matteDownload').disabled=true;cleanedMatteBlob=null;};
