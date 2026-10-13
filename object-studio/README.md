@@ -7,13 +7,13 @@ A small mobile-first, fully local browser workspace for authoring seven core iso
 - Three base biomes: meadow, forest, rocky. Water/path are world features, not additional biome classes.
 - Three tree (T-01..03) and four rock (R-01..04) core models.
 - Per-object **form** × **surface** variations, with biome preview independent of the actual asset ID.
-- Stages 00 art direction, 01 reference, 02 creative transparent square PNG, 03 Image A structure + Image B style correction, 04 co-registered layers, 05 normal/height, 06 explicit user approval.
+- Stages 00 art direction, 01 reference, 02 creative transparent square PNG, 03 Image A structure + Image B style correction, 04 optional normal/height materials, 05 explicit user approval. No layer separation: trees and rocks use one complete RGBA sprite.
 - Each prompt is per asset; no generic prompt fallback for uncovered assets.
-- Main output is 1024×1024 PNG RGBA with isolated alpha. The app accepts square 256–4096 PNG but warns if not 1024. Existing layer resolution must match.
+- Main output is 1024×1024 PNG RGBA with isolated alpha. The app accepts square 256–4096 PNG but warns if not 1024. Historic layer images remain in local storage/backups for recovery but are not part of the active workflow.
 - The image stays local in IndexedDB `OsmanObjectStudioAssets` / `png-assets`; metadata stays in `osman:object-studio:v1:metadata`. Prior MTS and World Builder DBs are never opened or changed.
 - Export a **full JSON backup including binary images**; import explicitly merges and warns that conflicting variant keys replace. No automatic remote upload.
 - Independent stage approval; it never silently marks missing art as complete.
-- Browser preview renders correct 45° ground projection, schematic silhouettes when no art, dynamic ground shadow, editable scale/pivot, square alpha check, normal and height images.
+- Browser preview renders correct 45° ground projection, schematic silhouettes when no art, real PNG alpha-silhouette projected soft ground shadow (no fixed ellipse), editable scale/pivot, square alpha check, normal and height images.
 
 ## Important art and geometry boundary
 
