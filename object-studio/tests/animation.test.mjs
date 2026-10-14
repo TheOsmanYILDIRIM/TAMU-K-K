@@ -63,3 +63,11 @@ test('spritesheet chunk export belongs to main animation export',()=>{
  const syntax=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
  assert.equal(syntax.status,0,syntax.stderr);
 });
+
+test('comparison merges ordered spritesheet PNG parts',()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
+ for(const key of ['input.multiple=true','combineParts(v)','partOrder(files)','partStart(name)','Birleşik varyant'])assert.ok(html.includes(key),'missing '+key);
+ const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+ const syntax=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
+ assert.equal(syntax.status,0,syntax.stderr);
+});
