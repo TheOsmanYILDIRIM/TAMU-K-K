@@ -39,3 +39,10 @@ test('comparison page is packaged and preserves original frames',()=>{
  assert.equal(run.status,0,run.stderr);
  assert.ok(fs.existsSync(path.join(root,'dist/animation-compare.html')));
 });
+
+test('variant comparison has average, dynamic variants and focus controls',()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
+ for(const key of ['addVariant','focusTitle','back','Ortalama konum','Ortalama kare','loadVariant','rebuild()'])assert.ok(html.includes(key),'missing '+key);
+ const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];assert.ok(js);
+ const syntax=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});assert.equal(syntax.status,0,syntax.stderr);
+});
