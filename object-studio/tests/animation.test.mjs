@@ -71,3 +71,11 @@ test('comparison merges ordered spritesheet PNG parts',()=>{
  const syntax=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
  assert.equal(syntax.status,0,syntax.stderr);
 });
+
+test('spritesheet export preserves a fixed coordinate system across chunks',()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation.html'),'utf8');
+ for(const key of ['sourceW=Math.max','sourceH=Math.max','fx=f.original?.x','fy=f.original?.y','Math.round(cx*size/cols)','Math.round(cy*size/rows)'])assert.ok(html.includes(key),'missing '+key);
+ const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+ const syntax=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
+ assert.equal(syntax.status,0,syntax.stderr);
+});
