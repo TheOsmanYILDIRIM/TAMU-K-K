@@ -7,6 +7,9 @@ const root=path.resolve(import.meta.dirname,'..');
 test('standalone mobile animation page preserves independent project storage',()=>{
  const html=fs.readFileSync(path.join(root,'src/animation.html'),'utf8');
  for(const key of ['ANIMATION STUDIO','OsmanAnimationStudioFramesV1','[data-rate]','100','50','25','loadPNG','loadZIP','loadSheet','replace','average','downloadAll','pngBytes','drawNoncontactGrid'])assert.ok(html.includes(key),'missing '+key);
+ for(const dir of ['NE','NW','SE','SW'])assert.match(html,new RegExp('data-direction="'+dir+'"'),'missing direction '+dir);
+ for(const key of ['importGroups(groups)','let groups={NE:[],NW:[],SE:[],SW:[]}','clearDirection(d)','slot:d+\':\'+i','moveEnabled=false','if(!moveEnabled||!frames[selected]','aria-pressed="false"'])assert.ok(html.includes(key),'missing '+key);
+ assert.ok(!html.includes('let chosen=matches.filter'),'ZIP importer must not silently restrict to SE');
  assert.ok(html.includes('width=device-width'));
  assert.ok(!html.includes('OsmanTerrainStudioAssets')&&!html.includes('OsmanObjectStudioAssets'));
  const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];assert.ok(js);
