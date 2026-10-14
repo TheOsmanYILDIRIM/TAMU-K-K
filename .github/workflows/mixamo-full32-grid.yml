@@ -1,0 +1,78 @@
+name: Mixamo all 4 directions 32 frame fixed-camera grid ZIP
+on:
+  push:
+    branches: [experiment/blender-camera-reference-20261011]
+    paths: ['tools/mixamo_full32_render.py','tools/mixamo_full32_grid.py','.github/workflows/mixamo-full32-grid.yml']
+  workflow_dispatch:
+jobs:
+  render:
+    strategy:
+      fail-fast: false
+      matrix:
+        direction: [NE, NW, SE, SW]
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    permissions: {contents: read}
+    env:
+      DIRECTION: ${{ matrix.direction }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Load pinned original Mixamo Walking FBX
+        run: |
+          mkdir -p input
+          git fetch origin 18fdb06e194a757b356de0668c7cd2246db80ece
+          git show 18fdb06e194a757b356de0668c7cd2246db80ece:Walking.fbx > input/Walking.fbx
+          python3 -m py_compile tools/mixamo_full32_render.py tools/mixamo_full32_grid.py
+      - name: Install Blender and Pillow
+        run: sudo apt-get update && sudo apt-get install -y blender python3-pil python3-numpy libegl1 libgl1
+      - name: Render all 32 frames with same fixed camera
+        run: blender -b -t 2 --python-exit-code 2 --python tools/mixamo_full32_render.py
+      - name: Apply noncontact grid
+        run: python3 tools/mixamo_full32_grid.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frames-${{ matrix.direction }}
+          path: rendered/mixamo_full32_4dir/${{ matrix.direction }}/
+          if-no-files-found: error
+          retention-days: 30
+  assemble:
+    needs: render
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: {contents: read}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: frames-*
+          path: all_frames
+      - name: Validate exactly 128 individual frames and create one zip
+        run: |
+          python3 - <<'PY'
+          import pathlib,json,zipfile,hashlib
+          root=pathlib.Path('all_frames')
+          dirs=('NE','NW','SE','SW')
+          mapping={'directions':{},'frame_count_per_direction':32,'total_frames':128,'camera':'fixed orthographic 45-degree','grid':'magenta #FF00FF, 48px, non-contact, 8px clearance','reference_source':'Mixamo Walking.fbx'}
+          output=pathlib.Path('mixamo_all_4_directions_full_32_frames.zip')
+          with zipfile.ZipFile(output,'w',zipfile.ZIP_DEFLATED,compresslevel=4) as z:
+           for direction in dirs:
+            folder=root/('frames-'+direction)
+            files=sorted(folder.glob('frame_*.png'))
+            assert len(files)==32,(direction,len(files))
+            manifest=json.loads((folder/'manifest.json').read_text())
+            assert manifest['frame_count_per_direction']==32
+            assert manifest['per_frame_camera_recenter'] is False
+            mapping['directions'][direction]=manifest['frames']
+            for n,f in enumerate(files,1):
+             assert f.name==f'frame_{n:02d}.png'
+             z.write(f,f'{direction}/{f.name}')
+           z.writestr('mapping.json',json.dumps(mapping,indent=2))
+          with zipfile.ZipFile(output) as z:
+           assert len(z.namelist())==129 and z.testzip() is None
+          print('FULL_128_FRAME_ZIP_VERIFIED',output.stat().st_size)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mixamo-all-4-directions-full-32-frame-zip
+          path: mixamo_all_4_directions_full_32_frames.zip
+          if-no-files-found: error
+          retention-days: 30
