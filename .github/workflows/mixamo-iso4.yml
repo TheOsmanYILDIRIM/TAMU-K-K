@@ -1,0 +1,45 @@
+name: Mixamo 4 isometric directions 8-frame sheets
+on:
+  push:
+    branches: [experiment/blender-camera-reference-20261011]
+    paths: ['tools/mixamo_iso4_render.py','tools/mixamo_iso4_atlas.py','.github/workflows/mixamo-iso4.yml']
+  workflow_dispatch:
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    permissions: {contents: read}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Pinned source FBX
+        run: |
+          mkdir -p input
+          git fetch origin 18fdb06e194a757b356de0668c7cd2246db80ece
+          git show 18fdb06e194a757b356de0668c7cd2246db80ece:Walking.fbx > input/Walking.fbx
+          python3 -m py_compile tools/mixamo_iso4_render.py tools/mixamo_iso4_atlas.py
+      - name: Install Blender and Pillow
+        run: sudo apt-get update && sudo apt-get install -y blender python3-pil libegl1 libgl1
+      - name: Render 4x8 genuine FBX poses
+        run: blender -b -t 2 --python-exit-code 2 --python tools/mixamo_iso4_render.py
+      - name: Generate square sheets and reversible grids
+        run: python3 tools/mixamo_iso4_atlas.py
+      - name: Validate deliverables
+        run: |
+          python3 - <<'PY'
+          import pathlib,json
+          from PIL import Image
+          p=pathlib.Path('rendered/mixamo_iso4')
+          assert len(list(p.glob('*/frame_*.png')))==32
+          for n in ('NE','NW','SW','SE'):
+           assert Image.open(p/(n+'_clean.png')).size==(1024,1024)
+           assert Image.open(p/(n+'_grid_overlay.png')).size==(1024,1024)
+          assert Image.open(p/'ALL_4_DIRECTIONS_clean.png').size==(2048,2048)
+          print('ISO4_VALIDATED')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mixamo-iso4-8frame-atlases
+          path: rendered/mixamo_iso4/
+          if-no-files-found: warn
