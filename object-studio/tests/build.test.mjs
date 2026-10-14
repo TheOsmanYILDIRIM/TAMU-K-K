@@ -14,10 +14,11 @@ test('self-contained build is stamped and has no external runtime scripts',()=>{
  assert(!html.includes('__BUILD_SHA__'));
  assert(!/<script[^>]*src=/i.test(html));
  assert(!/<link[^>]*href=["'].*\.css/i.test(html));
- assert.equal((html.match(/<script>/g)||[]).length,1);
- const code=html.match(/<script>([\s\S]*?)<\/script>/)[1];
- const check=spawnSync(process.execPath,['--check','--input-type=commonjs'],{input:code,encoding:'utf8'});
- assert.equal(check.status,0,check.stderr);
+ assert.equal((html.match(/<script>/g)||[]).length,2);
+ for(const match of html.matchAll(/<script>([\s\S]*?)<\/script>/g)){
+  const check=spawnSync(process.execPath,['--check','--input-type=commonjs'],{input:match[1],encoding:'utf8'});
+  assert.equal(check.status,0,check.stderr);
+ }
  const manifest=JSON.parse(fs.readFileSync(path.join(root,'dist/build.json'),'utf8'));
  assert.equal(manifest.sha,sha);assert.equal(manifest.source_modules.length,6);assert(manifest.source_modules.includes('image-tools.js'));
 });
