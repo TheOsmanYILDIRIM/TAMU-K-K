@@ -1,0 +1,47 @@
+name: Mixamo lit anatomy 4 directions 8-frame sheets
+on:
+  push:
+    branches: [experiment/blender-camera-reference-20261011]
+    paths: ['tools/mixamo_walk4_lit_render.py','tools/mixamo_walk4_lit_atlas.py','.github/workflows/mixamo-walk4-lit.yml']
+  workflow_dispatch:
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions: {contents: read}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pinned Mixamo FBX
+        run: |
+          mkdir -p input
+          git fetch origin 18fdb06e194a757b356de0668c7cd2246db80ece
+          git show 18fdb06e194a757b356de0668c7cd2246db80ece:Walking.fbx > input/Walking.fbx
+          python3 -m py_compile tools/mixamo_walk4_lit_render.py tools/mixamo_walk4_lit_atlas.py
+      - name: Install Blender and Pillow
+        run: sudo apt-get update && sudo apt-get install -y blender python3-pil python3-numpy libegl1 libgl1
+      - name: Render 32 genuine lit Blender frames
+        run: blender -b -t 2 --python-exit-code 2 --python tools/mixamo_walk4_lit_render.py
+      - name: Build square direction and combined spritesheets
+        run: python3 tools/mixamo_walk4_lit_atlas.py
+      - name: Validate spritesheets
+        run: |
+          python3 - <<'PY'
+          from PIL import Image
+          import pathlib,json
+          p=pathlib.Path('rendered/mixamo_walk4_lit')
+          assert len(list(p.glob('*/frame_*.png')))==32
+          for d in ('NE','NW','SW','SE'):
+           for suffix in ('clean','grid','grid_overlay'):
+            assert Image.open(p/f'{d}_{suffix}.png').size==(2048,2048)
+          for suffix in ('clean','grid','grid_overlay'):
+           assert Image.open(p/f'ALL_4_DIRECTIONS_{suffix}.png').size==(4096,4096)
+          m=json.loads((p/'render_manifest.json').read_text())
+          assert m['walking_action_used'] and len(m['source_frames'])==8
+          print('WALK4_LIT_VERIFIED')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mixamo-walk4-lit-8frame-spritesheets
+          path: rendered/mixamo_walk4_lit/
+          if-no-files-found: warn
