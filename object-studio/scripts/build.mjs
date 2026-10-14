@@ -39,9 +39,9 @@ if(!terrain.includes('TERRAIN STUDIO')||!terrain.includes('osman-terrain-v1'))th
 fs.writeFileSync(path.join(dist,'terrain.html'),terrain);
 const animation=fs.readFileSync(path.join(root,'src','animation.html'),'utf8');
 if(!animation.includes('ANIMATION STUDIO')||!animation.includes('OsmanAnimationStudioFramesV1'))throw new Error('Animation Studio contract missing');
-fs.writeFileSync(path.join(dist,'animation.html'),animation);
+fs.writeFileSync(path.join(dist,'animation.html'),animation.replaceAll('__ANIMATION_BUILD_SHA__',sha));
 const comparison=fs.readFileSync(path.join(root,'src','animation-compare.html'),'utf8');
 if(!comparison.includes('VARYANT KARŞILAŞTIRMA'))throw new Error('Animation comparison page missing');
-fs.writeFileSync(path.join(dist,'animation-compare.html'),comparison);
+fs.writeFileSync(path.join(dist,'animation-compare.html'),comparison.replaceAll('__ANIMATION_BUILD_SHA__',sha));
 fs.writeFileSync(path.join(dist,'build.json'),JSON.stringify({sha,kind:'object-studio',entry:'latest.html',content_sha256:crypto.createHash('sha256').update(html).digest('hex'),source_modules:moduleNames},null,2));
 console.log('Bundled '+modules.length+' ES modules into stand-alone HTML ('+Buffer.byteLength(html)+' bytes) SHA '+sha);
