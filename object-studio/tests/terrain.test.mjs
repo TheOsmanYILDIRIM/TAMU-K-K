@@ -10,11 +10,11 @@ test('terrain supports shared materials and biome-specific variants',()=>{
  assert.match(html,/osman:terrain-studio:v1:/);
  assert.match(html,/function baseKey\(\)\{return state.material\+'::meadow::0'\}/);
  assert.match(html,/function isBase\(\)/);
- assert.match(html,/FIRST VARIANT \/ CANONICAL IMAGE A/);
- assert.match(html,/SINGLE IMAGE VARIANT PRODUCTION — IMAGE A ONLY/);
- assert.match(html,/NO second style image or Image B is needed/);
- assert.match(html,/No preceding Image A is needed/);
- assert.match(html,/NEVER modify or replace the source first variant/);
+ assert.match(html,/TERRAIN MATERIAL —/);
+ assert.match(html,/TERRAIN MATERIAL VARIANT —/);
+ assert.match(html,/Transform the supplied/);
+ assert.match(html,/Create a natural, coherent/);
+ assert.match(html,/Preserve the original material structure/);
  assert(!html.includes('masterAlbedo'));
  assert.match(html,/data-view="compare"/);
  assert.match(html,/OsmanTerrainStudioAssets/);
