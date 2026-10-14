@@ -93,3 +93,12 @@ test('animation pages expose stamped build and live freshness status',()=>{
   assert.ok(!built.includes('__ANIMATION_BUILD_SHA__'));
  }
 });
+
+test('all four Studio pages show shared build and refresh-all control',()=>{
+ const run=spawnSync(process.execPath,['scripts/build.mjs'],{cwd:root,env:{...process.env,BUILD_SHA:'0123456789abcdef0123456789abcdef01234567'},encoding:'utf8'});
+ assert.equal(run.status,0,run.stderr);
+ for(const name of ['latest.html','terrain.html','animation.html','animation-compare.html']){
+  const page=fs.readFileSync(path.join(root,'dist',name),'utf8');
+  for(const key of ['studioBuildBar','studioRefreshAll','Tüm sayfaları güncelle','0123456789abcdef0123456789abcdef01234567'])assert.ok(page.includes(key),name+' missing '+key);
+ }
+});
