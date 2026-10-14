@@ -110,3 +110,11 @@ test('final alignment has independent reference and variant scales',()=>{
  const check=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
  assert.equal(check.status,0,check.stderr);
 });
+
+test('sequential 16+16 variant uploads preserve 32 frame indices',()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
+ for(const key of ['const byName=new Map','byName.set(part.name,part)','assembleParts([...byName.values()])','v.ranges=merged.positions','editorIndex+1>=p.start'])assert.ok(html.includes(key),'missing '+key);
+ const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+ const check=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
+ assert.equal(check.status,0,check.stderr);
+});
