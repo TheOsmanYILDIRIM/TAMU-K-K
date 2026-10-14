@@ -37,5 +37,8 @@ fs.writeFileSync(path.join(dist,'latest.html'),html);
 const terrain=fs.readFileSync(path.join(root,'src','terrain.html'),'utf8');
 if(!terrain.includes('TERRAIN STUDIO')||!terrain.includes('osman-terrain-v1'))throw new Error('Terrain Studio contract missing');
 fs.writeFileSync(path.join(dist,'terrain.html'),terrain);
+const animation=fs.readFileSync(path.join(root,'src','animation.html'),'utf8');
+if(!animation.includes('ANIMATION STUDIO')||!animation.includes('OsmanAnimationStudioFramesV1'))throw new Error('Animation Studio contract missing');
+fs.writeFileSync(path.join(dist,'animation.html'),animation);
 fs.writeFileSync(path.join(dist,'build.json'),JSON.stringify({sha,kind:'object-studio',entry:'latest.html',content_sha256:crypto.createHash('sha256').update(html).digest('hex'),source_modules:moduleNames},null,2));
 console.log('Bundled '+modules.length+' ES modules into stand-alone HTML ('+Buffer.byteLength(html)+' bytes) SHA '+sha);

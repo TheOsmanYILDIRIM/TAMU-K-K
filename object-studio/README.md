@@ -37,3 +37,7 @@ Height maps are *candidate displacement inputs* for a later terrain or object me
 ## Deployment
 
 Main branch Pages workflow publishes the object studio under `/oyun/object-studio/` and, for URL continuity, re-publishes existing World Builder root previews from the frozen experiment source branch. The legacy experiment Pages workflow can overwrite a main publication if later run; coordinate subsequent world preview updates before shipping. The studio's deployed `build.json` is checked with timestamp+`cache: no-store`; reloads use `latest.html?build=<sha>`; artwork is never cached as a Pages asset.
+
+## Animation Studio (independent workspace)
+
+`animation.html` is linked from both Object Studio and Terrain Studio. It accepts numbered individual PNG frames, a conventional SE ZIP archive, or one 4×2 eight-frame sheet; previews frames, replaces an individual frame with AI output, samples playback at 100/50/25% without discarding source frames, offers foot/center/average-position alignment plus a composite average frame, and exports aligned noncontact-grid square PNG or a numbered ZIP. The local-only IndexedDB `OsmanAnimationStudioFramesV1` and preference key `osman:animation-studio:v1:settings` are separate from existing Terrain and Object Studio storage. Generated PNGs remain explicitly user-approved work, not automatic published game assets. No remote PNG upload or GitHub write is performed by the page.

@@ -47,6 +47,7 @@ jobs:
           test -s _site/assembly.html
           test -s _site/object-studio/latest.html
           test -s _site/object-studio/terrain.html
+          test -s _site/object-studio/animation.html
           python3 - <<'PY'
           import json,os,pathlib
           p=pathlib.Path('_site/object-studio/build.json')
@@ -85,6 +86,10 @@ jobs:
                   "https://theosmanyildirim.github.io/oyun/object-studio/terrain.html?build=${EXPECTED_SHA}" \
                   -o /tmp/terrain-live.html
                 grep -q 'TERRAIN STUDIO' /tmp/terrain-live.html
+                curl --silent --show-error --fail --max-time 12 \
+                  "https://theosmanyildirim.github.io/oyun/object-studio/animation.html?build=${EXPECTED_SHA}" \
+                  -o /tmp/animation-live.html
+                grep -q 'ANIMATION STUDIO' /tmp/animation-live.html
                 echo "LIVE OBJECT STUDIO VERIFIED: ${EXPECTED_SHA}"
                 exit 0
               fi
