@@ -19,6 +19,8 @@ cd=bpy.data.cameras.new('Iso45');cam=bpy.data.objects.new('Iso45',cd)
 scene.collection.objects.link(cam);scene.camera=cam;cd.type='ORTHO';cd.ortho_scale=diam*1.45
 cam.location=center+Vector((1,-1,1)).normalized()*diam*2.5
 cam.rotation_euler=(center-cam.location).to_track_quat('-Z','Y').to_euler()
+scene.view_layers[0].update()
+assert abs(cam.matrix_world.translation.length)>0.01, 'camera matrix was not evaluated'
 def mat(m):return [list(map(float,row)) for row in m]
 bind={b.name:(rig.matrix_world@b.matrix_local).inverted() for b in rig.data.bones}
 data={'schema':2,'size':[384,576],'ortho_scale':float(cd.ortho_scale),'camera_inverse':mat(cam.matrix_world.inverted()),'bind_inverse':{n:mat(m) for n,m in bind.items()},'meshes':{},'frames':[]}
