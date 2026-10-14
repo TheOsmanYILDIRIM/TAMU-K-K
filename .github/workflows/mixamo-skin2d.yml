@@ -1,0 +1,38 @@
+name: Mixamo compact 2D skin export
+on:
+  push:
+    branches: [experiment/blender-camera-reference-20261011]
+    paths: ['tools/mixamo_skin2d_export.py','.github/workflows/mixamo-skin2d.yml']
+  workflow_dispatch:
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions: {contents: read}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Fetch pinned original FBX
+        run: |
+          mkdir -p input
+          git fetch origin 18fdb06e194a757b356de0668c7cd2246db80ece
+          git show 18fdb06e194a757b356de0668c7cd2246db80ece:Walking.fbx > input/Walking.fbx
+          python3 -m py_compile tools/mixamo_skin2d_export.py
+      - name: Install Blender
+        run: sudo apt-get update && sudo apt-get install -y blender python3-numpy libegl1 libgl1
+      - name: Export bind pose, weights, UV and 32 bone-only frames
+        run: blender -b -t 2 --python-exit-code 2 --python tools/mixamo_skin2d_export.py
+      - name: Validate compact export
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          j=json.loads(pathlib.Path('rendered/mixamo_skin2d/skin2d.json').read_text())
+          assert len(j['frames'])==32 and len(j['meshes'])==2
+          assert all(len(x['bones'])>=60 for x in j['frames'])
+          assert all(len(m['vertices'])==len(m['weights']) for m in j['meshes'].values())
+          print('SKIN2D_VERIFIED',len(j['frames']),list(j['meshes']))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mixamo-compact-skin2d
+          path: rendered/mixamo_skin2d/
