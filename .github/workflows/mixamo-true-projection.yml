@@ -1,0 +1,44 @@
+name: Mixamo true vertex projection audit
+on:
+  push:
+    branches: [experiment/blender-camera-reference-20261011]
+    paths:
+      - 'tools/mixamo_true_projection.py'
+      - '.github/workflows/mixamo-true-projection.yml'
+  workflow_dispatch:
+jobs:
+  projection:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions: {contents: read}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Read pinned FBX from main
+        run: |
+          mkdir -p input
+          git fetch origin 18fdb06e194a757b356de0668c7cd2246db80ece
+          git show 18fdb06e194a757b356de0668c7cd2246db80ece:Walking.fbx > input/Walking.fbx
+          python3 -m py_compile tools/mixamo_true_projection.py
+      - name: Install Blender
+        run: sudo apt-get update && sudo apt-get install -y blender python3-numpy libegl1 libgl1
+      - name: Export actual skinned vertices and render
+        run: blender -b -t 2 --python-exit-code 2 --python tools/mixamo_true_projection.py
+      - name: Verify exported 32 frames and projected geometry
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('rendered/mixamo_true_projection')
+          j=json.loads((p/'projection.json').read_text())
+          assert len(j['frames'])==32
+          assert len(j['topology'])==2
+          assert all(len(f['bones'])>=60 for f in j['frames'])
+          assert len(list(p.glob('reference_*.png')))==32
+          print('PROJECTION_VERIFIED',len(j['frames']),list(j['topology']))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mixamo-true-projection
+          path: rendered/mixamo_true_projection/
+          if-no-files-found: warn
