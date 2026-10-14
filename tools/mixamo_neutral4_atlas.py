@@ -11,7 +11,7 @@ for i,name in enumerate(directions):
  bbox=im.getchannel('A').getbbox()
  assert bbox,'Empty rest pose render: '+name
  x=(i%2)*cell;y=(i//2)*cell
- clean.alpha_composite(im,(x,y))
+ clean.paste(im,(x,y))
  mapping[name]={'source_file':name+'_rest.png','source_sha256':hashlib.sha256((P/(name+'_rest.png')).read_bytes()).hexdigest(),
  'source_bbox':list(bbox),'atlas_rect':[x,y,cell,cell],'atlas_occupied_bbox':[x+bbox[0],y+bbox[1],x+bbox[2],y+bbox[3]]}
 clean.save(P/'NEUTRAL_4_clean.png')

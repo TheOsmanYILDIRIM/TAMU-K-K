@@ -30,7 +30,8 @@ for side in ('Left','Right'):
  before=(pb.tail-pb.head).normalized()
  # Natural standing: mostly down, slightly outwards from the body.
  outward=1.0 if side=='Left' else -1.0
- target=Vector((0.12*outward,0.0,-1.0)).normalized()
+ target_world=Vector((0.12*outward,0.0,-1.0)).normalized()
+ target=(rig.matrix_world.inverted().to_3x3()@target_world).normalized()
  rot=before.rotation_difference(target)
  pivot=pb.head.copy()
  pb.matrix=Matrix.Translation(pivot)@rot.to_matrix().to_4x4()@Matrix.Translation(-pivot)@pb.matrix
