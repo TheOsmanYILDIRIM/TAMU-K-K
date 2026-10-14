@@ -93,7 +93,7 @@ area('Softbox_Fill',(1.8,0.7,1.5),280,diam*2.8)
 area('Softbox_Rim',(0.8,2.0,2.4),433.333,diam*2.0)
 directions={'SE':(1,-1)}
 for label,(x,y) in directions.items():
- folder=P/label;folder.mkdir(exist_ok=True)
+ folder=P;folder.mkdir(exist_ok=True)
  cam.location=center+Vector((x,y,math.sqrt(2))).normalized()*diam*2.8
  cam.rotation_euler=(center-cam.location).to_track_quat('-Z','Y').to_euler()
  for i,frame in enumerate(indices):
