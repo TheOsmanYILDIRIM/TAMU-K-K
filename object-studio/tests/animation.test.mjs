@@ -46,3 +46,10 @@ test('variant comparison has average, dynamic variants and focus controls',()=>{
  const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];assert.ok(js);
  const syntax=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});assert.equal(syntax.status,0,syntax.stderr);
 });
+
+test('final variant editor exports individual PNG and splits 32 into chunks',()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
+ for(const key of ['chunkExport','chunkSize','editorExport','editorGeometry','pointermove','finalId','offsetX','offsetY'])assert.ok(html.includes(key),'missing '+key);
+ const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];assert.ok(js);
+ const syntax=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});assert.equal(syntax.status,0,syntax.stderr);
+});
