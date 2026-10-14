@@ -19,7 +19,7 @@ jobs:
           git show 18fdb06e194a757b356de0668c7cd2246db80ece:Walking.fbx > input/Walking.fbx
           python3 -m py_compile tools/mixamo_iso4_render.py tools/mixamo_iso4_atlas.py
       - name: Install Blender and Pillow
-        run: sudo apt-get update && sudo apt-get install -y blender python3-pil libegl1 libgl1
+        run: sudo apt-get update && sudo apt-get install -y blender python3-pil python3-numpy libegl1 libgl1
       - name: Render 4x8 genuine FBX poses
         run: blender -b -t 2 --python-exit-code 2 --python tools/mixamo_iso4_render.py
       - name: Generate square sheets and reversible grids
