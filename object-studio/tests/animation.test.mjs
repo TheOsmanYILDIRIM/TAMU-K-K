@@ -118,3 +118,11 @@ test('sequential 16+16 variant uploads preserve 32 frame indices',()=>{
  const check=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
  assert.equal(check.status,0,check.stderr);
 });
+
+test('final alignment editor uses exact frame index and alpha bounds',()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
+ for(const key of ["stored[dir][editorIndex]","id=\"editorJump\"","g.rx,g.ry","ib[0]+ib[2]/2"])assert.ok(html.includes(key),'missing '+key);
+ const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+ const check=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
+ assert.equal(check.status,0,check.stderr);
+});
