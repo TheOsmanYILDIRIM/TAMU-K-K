@@ -79,3 +79,17 @@ test('spritesheet export preserves a fixed coordinate system across chunks',()=>
  const syntax=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
  assert.equal(syntax.status,0,syntax.stderr);
 });
+
+test('animation pages expose stamped build and live freshness status',()=>{
+ for(const page of ['animation.html','animation-compare.html']){
+  const source=fs.readFileSync(path.join(root,'src',page),'utf8');
+  for(const key of ['versionBar','pageBuild','versionState','versionRefresh','version_check=','cache:\'no-store\''])assert.ok(source.includes(key),'missing '+key+' in '+page);
+ }
+ const run=spawnSync(process.execPath,['scripts/build.mjs'],{cwd:root,env:{...process.env,BUILD_SHA:'0123456789abcdef0123456789abcdef01234567'},encoding:'utf8'});
+ assert.equal(run.status,0,run.stderr);
+ for(const page of ['animation.html','animation-compare.html']){
+  const built=fs.readFileSync(path.join(root,'dist',page),'utf8');
+  assert.ok(built.includes('0123456789abcdef0123456789abcdef01234567'));
+  assert.ok(!built.includes('__ANIMATION_BUILD_SHA__'));
+ }
+});
