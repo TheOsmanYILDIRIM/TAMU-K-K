@@ -127,14 +127,25 @@ def main():
 
     camera = new_camera(scene, center, diameter, "IsometricSE")
     scene.camera = camera
+    # Never reuse/mutate one camera for the four reference rays.
+    # Blender can defer object transform propagation until depsgraph update;
+    # silently capturing the same stale matrix mapped nearly every polygon
+    # to the first SE material in the previous prototype.
     bounds = {}
     projectors = {}
     for name, xy in DIRECTIONS.items():
-        set_view(camera, center, diameter, xy)
-        projectors[name] = camera.matrix_world.copy()
-        xy_proj = [world_to_camera_view(scene, camera, p) for p in points]
-        bounds[name] = [min(p.x for p in xy_proj), min(p.y for p in xy_proj),
-                        max(p.x for p in xy_proj), max(p.y for p in xy_proj)]
+        projectors[name] = new_camera(scene, center, diameter, "Projector_" + name)
+        set_view(projectors[name], center, diameter, xy)
+    bpy.context.view_layer.update()
+    for name, projector in projectors.items():
+        xy_proj = [world_to_camera_view(scene, projector, point) for point in points]
+        bounds[name] = [min(q.x for q in xy_proj), min(q.y for q in xy_proj),
+                        max(q.x for q in xy_proj), max(q.y for q in xy_proj)]
+    projector_separation = {
+        name: [round(float(a), 4) for a in projector.location]
+        for name, projector in projectors.items()
+    }
+    assert len({tuple(x) for x in projector_separation.values()}) == 4, projector_separation
     # Build four viewport-image materials, not a flat camera billboard.
     mats = {}
     for name in DIRECTIONS:
@@ -170,8 +181,7 @@ def main():
         for loop in obj.data.loops:
             p = verts[loop.vertex_index]
             for name in labels:
-                camera.matrix_world = projectors[name]
-                raw = world_to_camera_view(scene, camera, p)
+                raw = world_to_camera_view(scene, projectors[name], p)
                 rect = prepare["views"][name]["aligned_bbox"]
                 uv_layers[name].data[loop.index].uv = mapped_uv(raw, bounds[name], rect)
         counts = Counter()
@@ -183,14 +193,13 @@ def main():
             scores = {}
             alphas = {}
             for name in labels:
-                camera.matrix_world = projectors[name]
-                to_view = (camera.location - midpoint).normalized()
+                to_view = (projectors[name].location - midpoint).normalized()
                 facing = max(-1.0, min(1.0, normal.dot(to_view)))
-                raw = world_to_camera_view(scene, camera, midpoint)
+                raw = world_to_camera_view(scene, projectors[name], midpoint)
                 uv = mapped_uv(raw, bounds[name], prepare["views"][name]["aligned_bbox"])
                 alpha = transparent_alpha(ref_images[name], uv)
                 alphas[name] = alpha
-                scores[name] = facing + (0.30 if alpha > 0.15 else -0.30)
+                scores[name] = 2.0 * facing + (0.15 if alpha > 0.15 else -0.15)
             choice = max(labels, key=lambda name: scores[name])
             poly.material_index = labels.index(choice)
             counts[choice] += 1
@@ -208,6 +217,7 @@ def main():
         if not metrics[obj.name]["retains_armature_modifier"]:
             raise RuntimeError(f"Skinning was lost on {obj.name}")
     set_view(camera, center, diameter, DIRECTIONS["SE"])
+    bpy.context.view_layer.update()
     scene.camera = camera
     frames = [start + 4 * i for i in range(8)]
     DEST.mkdir(parents=True, exist_ok=True)
@@ -226,6 +236,8 @@ def main():
         "blender_version": bpy.app.version_string,
         "frame_range": [start, end], "sampled_frames": frames, "camera": "SE: (1,-1,sqrt(2))",
         "rig": rig.name, "bone_count": len(rig.data.bones), "mesh_metrics": metrics,
+        "distinct_projector_locations": projector_separation,
+        "method_revision": "v2-independent-projection-cameras-corrected-panels",
         "view_assumptions": prepare["view_assignment_assumption"],
         "method": "Reference-pose projected per-loop UV maps; posed deforming Mixamo mesh; four angular face materials; opaque extended source albedo",
         "limitations": [

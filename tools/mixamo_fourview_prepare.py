@@ -18,7 +18,7 @@ SIZE = 512
 # Source image positions: upper-left, upper-right, lower-left, lower-right.
 # Old photo has bottom-row hair entering the last 27 px of the top half;
 # split at y = 600 / 1254, not at the exact vertical midpoint.
-PANELS = {"SE": (0, 0), "SW": (0, 1), "NE": (1, 0), "NW": (1, 1)}
+PANELS = {"SW": (0, 0), "SE": (0, 1), "NE": (1, 0), "NW": (1, 1)}
 
 
 def extend_albedo(im):
@@ -62,8 +62,11 @@ def prepare():
     # Cyan is an intentionally reserved chroma key outside the character palette.
     pixels = []
     for red, green, blue in rgb.getdata():
-        is_key = (green > 150 and blue > 150 and red < 145
-                  and green - red > 55 and blue - red > 55)
+        # Chroma spill in the lossy turquoise-key proxy must not become
+        # opaque fluorescent green/blue patches on the projected mesh.
+        is_key = (green > 110 and blue > 110 and
+                  green > red * 1.18 and blue > red * 1.18 and
+                  abs(green - blue) < 100)
         pixels.append((red, green, blue, 0 if is_key else 255))
     image.putdata(pixels)
     if image.size != (320, 320):
@@ -76,7 +79,7 @@ def prepare():
         "full_source_sha256": ORIGINAL_RGBA_SHA256,
         "proxy_sha256": sha, "proxy_dimensions": list(image.size),
         "quality_warning": "320px lossy cyan-key WebP proxy of the uploaded 1254px RGBA sheet; diagnostic only",
-        "view_assignment_assumption": "SE upper-left, SW upper-right, NE lower-left, NW lower-right",
+        "view_assignment_assumption": "SW upper-left, SE upper-right, NE lower-left, NW lower-right; compare camera projection with source to confirm",
         "views": {}
     }
     for name, (r, c) in PANELS.items():
