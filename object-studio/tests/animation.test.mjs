@@ -24,3 +24,18 @@ test('production build includes new animation page and both navigation links',()
  assert.match(fs.readFileSync(path.join(root,'dist/latest.html'),'utf8'),/href="\.\/animation\.html"/);
  assert.match(fs.readFileSync(path.join(root,'dist/terrain.html'),'utf8'),/href="\.\/animation\.html"/);
 });
+
+test('comparison page is packaged and preserves original frames',()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
+ for(const key of ['VARYANT KARŞILAŞTIRMA','OsmanAnimationStudioFramesV1','original','edited','variantA','variantB','readwrite']) {
+   if(key==='readwrite') assert.ok(!html.includes("transaction('frames','readwrite')"));
+   else assert.ok(html.includes(key),'missing '+key);
+ }
+ const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+ assert.ok(js);
+ const syntax=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
+ assert.equal(syntax.status,0,syntax.stderr);
+ const run=spawnSync(process.execPath,['scripts/build.mjs'],{cwd:root,env:{...process.env,BUILD_SHA:'0123456789abcdef0123456789abcdef01234567'},encoding:'utf8'});
+ assert.equal(run.status,0,run.stderr);
+ assert.ok(fs.existsSync(path.join(root,'dist/animation-compare.html')));
+});
