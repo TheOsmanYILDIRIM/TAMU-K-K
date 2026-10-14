@@ -1,0 +1,47 @@
+name: Mixamo four neutral isometric references
+on:
+  push:
+    branches: [experiment/blender-camera-reference-20261011]
+    paths: ['tools/mixamo_neutral4_render.py','tools/mixamo_neutral4_atlas.py','.github/workflows/mixamo-neutral4.yml']
+  workflow_dispatch:
+jobs:
+  neutral:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions: {contents: read}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Read-only pinned Walking FBX
+        run: |
+          mkdir -p input
+          git fetch origin 18fdb06e194a757b356de0668c7cd2246db80ece
+          git show 18fdb06e194a757b356de0668c7cd2246db80ece:Walking.fbx > input/Walking.fbx
+          python3 -m py_compile tools/mixamo_neutral4_render.py tools/mixamo_neutral4_atlas.py
+      - name: Install Blender and image dependencies
+        run: sudo apt-get update && sudo apt-get install -y blender python3-numpy python3-pil libegl1 libgl1
+      - name: Render actual rest pose from four directions
+        run: blender -b -t 2 --python-exit-code 2 --python tools/mixamo_neutral4_render.py
+      - name: Generate reference atlas and reversible noncontact grid
+        run: python3 tools/mixamo_neutral4_atlas.py
+      - name: Validate four images and mapping
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          from PIL import Image
+          p=pathlib.Path('rendered/mixamo_neutral4')
+          j=json.loads((p/'mapping.json').read_text())
+          assert j['manifest']['pose']=='ARMATURE_REST_POSE'
+          assert not j['manifest']['walking_action_used']
+          assert len(j['directions'])==4
+          for name in ('NE','NW','SW','SE'):
+           assert Image.open(p/(name+'_rest.png')).size==(1024,1024)
+          assert Image.open(p/'NEUTRAL_4_clean.png').size==(2048,2048)
+          print('NEUTRAL4_VERIFIED')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mixamo-neutral-4-direction-references
+          path: rendered/mixamo_neutral4/
+          if-no-files-found: warn
