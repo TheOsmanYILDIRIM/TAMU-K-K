@@ -14,7 +14,10 @@ test('terrain supports shared materials and biome-specific variants',()=>{
  assert.match(html,/TERRAIN MATERIAL VARIANT —/);
  assert.match(html,/Transform the supplied first-variant/);
  assert.match(html,/const APPEARANCES=/);
- assert.match(html,/physically apparent/);
+ assert.match(html,/deliberately REBUILD the physical microstructure/);
+ assert.match(html,/A recolor, darkened copy/);
+ assert.match(html,/broader, elongated soft woodland grass leaves/);
+ assert.match(html,/not shade, darkness, a green filter/);
  const recipes=html.match(/"(grass|soil|stone)::(meadow|forest|rocky)::[01]":/g)||[];
  assert.equal(recipes.length,18,'all 18 catalog keys require individual recipes');
  assert.equal(new Set(recipes).size,18);
