@@ -102,3 +102,11 @@ test('all four Studio pages show shared build and refresh-all control',()=>{
   for(const key of ['studioBuildBar','studioRefreshAll','Tüm sayfaları güncelle','0123456789abcdef0123456789abcdef01234567'])assert.ok(page.includes(key),name+' missing '+key);
  }
 });
+
+test('final alignment has independent reference and variant scales',()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
+ for(const key of ['editorScale','autoScale','g.refScale','referenceScaleFactor','v.scale'])assert.ok(html.includes(key),'missing '+key);
+ const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+ const check=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
+ assert.equal(check.status,0,check.stderr);
+});
