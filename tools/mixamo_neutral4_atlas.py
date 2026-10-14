@@ -34,6 +34,6 @@ manifest.update({'atlas_size':[2048,2048],'grid_color':'#FF00FF','grid_spacing':
 'roundtrip':'Original rest images are canonical. Grid overlay is separate. Crop clean atlas by atlas_rect for exact RGBA restoration. AI-modified output requires registration and geometry inspection.'},indent=2))
 # Exact RGBA round-trip for every quadrant.
 for name,m in mapping.items():
- assert clean.crop(tuple(m['atlas_rect'])).tobytes()==Image.open(P/m['source_file']).convert('RGBA').tobytes()
+ assert clean.crop((m['atlas_rect'][0],m['atlas_rect'][1],m['atlas_rect'][0]+m['atlas_rect'][2],m['atlas_rect'][1]+m['atlas_rect'][3])).tobytes()==Image.open(P/m['source_file']).convert('RGBA').tobytes()
 assert all(not (a and b) for a,b in zip(overlay.getchannel('A').tobytes(),protected.tobytes()))
 print('NEUTRAL4_ATLAS_SUCCESS',list(mapping))

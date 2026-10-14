@@ -1,5 +1,5 @@
 import bpy, math, pathlib, json, hashlib
-from mathutils import Vector
+from mathutils import Vector, Matrix
 P=pathlib.Path('rendered/mixamo_neutral4');P.mkdir(parents=True,exist_ok=True)
 src=pathlib.Path('input/Walking.fbx');assert src.stat().st_size>1000000
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -9,12 +9,37 @@ meshes=[o for o in bpy.data.objects if o.type=='MESH']
 rig=next(o for o in bpy.data.objects if o.type=='ARMATURE')
 assert len(meshes)>=1 and len(rig.data.bones)>=60
 # Explicit rest pose, NOT any Walking action frame.
-rig.data.pose_position='REST'
+rig.data.pose_position='POSE'
 if rig.animation_data:
  rig.animation_data.action=None
  for track in rig.animation_data.nla_tracks:track.mute=True
 scene.frame_set(0)
+for pb in rig.pose.bones:
+ pb.rotation_mode='QUATERNION'
+ pb.rotation_quaternion=(1,0,0,0)
+ pb.location=(0,0,0)
+ pb.scale=(1,1,1)
 bpy.context.view_layer.update()
+# Lower both arms from source rest T-pose without using any walking frame.
+# Rotate each upper arm around its own anatomical shoulder pivot.
+pose_report={}
+for side in ('Left','Right'):
+ bone_name=next((n for n in rig.pose.bones.keys() if n.endswith(side+'Arm') and 'Fore' not in n),None)
+ assert bone_name,'Upper arm bone not found: '+side
+ pb=rig.pose.bones[bone_name]
+ before=(pb.tail-pb.head).normalized()
+ # Natural standing: mostly down, slightly outwards from the body.
+ outward=1.0 if side=='Left' else -1.0
+ target=Vector((0.12*outward,0.0,-1.0)).normalized()
+ rot=before.rotation_difference(target)
+ pivot=pb.head.copy()
+ pb.matrix=Matrix.Translation(pivot)@rot.to_matrix().to_4x4()@Matrix.Translation(-pivot)@pb.matrix
+ bpy.context.view_layer.update()
+ after=(pb.tail-pb.head).normalized()
+ assert after.dot(target)>0.96,(bone_name,list(after),list(target))
+ pose_report[side]={'bone':bone_name,'before':list(before),'after':list(after),'target':list(target)}
+# Standing pose is a manually derived rest-pose correction, not a sourced Idle action.
+
 bb=[o.matrix_world@Vector(c) for o in meshes for c in o.bound_box]
 lo=Vector([min(v[i] for v in bb) for i in range(3)])
 hi=Vector([max(v[i] for v in bb) for i in range(3)])
@@ -55,9 +80,9 @@ for label,(x,y) in directions.items():
  scene.render.filepath=str((P/(label+'_rest.png')).resolve())
  bpy.ops.render.render(write_still=True)
 manifest={'source_sha256':hashlib.sha256(src.read_bytes()).hexdigest(),
-'pose':'ARMATURE_REST_POSE','walking_action_used':False,
+'pose':'DERIVED_NATURAL_STANDING_FROM_REST','walking_action_used':False,'arm_adjustments':pose_report,
 'camera':'orthographic','elevation_deg':45,'direction_vectors':directions,
 'lighting':'emission_albedo_no_directional_shadows','frame_size':[1024,1024],
-'warning':'Armature rest pose may be T/A pose, not relaxed idle. Inspect before AI design.'}
+'warning':'Procedurally lowered upper arms from rest pose; visual inspection required before AI design.'}
 (P/'render_manifest.json').write_text(json.dumps(manifest,indent=2))
 print('NEUTRAL4_RENDER_SUCCESS',list(directions))

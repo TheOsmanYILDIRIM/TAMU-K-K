@@ -31,7 +31,7 @@ jobs:
           from PIL import Image
           p=pathlib.Path('rendered/mixamo_neutral4')
           j=json.loads((p/'mapping.json').read_text())
-          assert j['manifest']['pose']=='ARMATURE_REST_POSE'
+          assert j['manifest']['pose']=='DERIVED_NATURAL_STANDING_FROM_REST'
           assert not j['manifest']['walking_action_used']
           assert len(j['directions'])==4
           for name in ('NE','NW','SW','SE'):
