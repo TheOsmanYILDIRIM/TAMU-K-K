@@ -27,7 +27,7 @@ test('production build includes new animation page and both navigation links',()
 
 test('comparison page is packaged and preserves original frames',()=>{
  const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
- for(const key of ['VARYANT KARŞILAŞTIRMA','OsmanAnimationStudioFramesV1','original','edited','variantA','variantB','readwrite']) {
+ for(const key of ['VARYANT KARŞILAŞTIRMA','OsmanAnimationStudioFramesV1','original','edited','addVariant','loadVariant','readwrite']) {
    if(key==='readwrite') assert.ok(!html.includes("transaction('frames','readwrite')"));
    else assert.ok(html.includes(key),'missing '+key);
  }
