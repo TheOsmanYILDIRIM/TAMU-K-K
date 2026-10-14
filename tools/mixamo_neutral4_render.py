@@ -108,15 +108,15 @@ for ob in meshes:
 world=bpy.data.worlds.new('NeutralStudioWorld');world.use_nodes=True;scene.world=world
 bg=world.node_tree.nodes.get('Background')
 bg.inputs['Color'].default_value=(0.72,0.79,0.88,1)
-bg.inputs['Strength'].default_value=0.65
+bg.inputs['Strength'].default_value=0.433333
 def area(name,location,power,size):
  data=bpy.data.lights.new(name,'AREA');data.energy=power;data.shape='DISK';data.size=size
  obj=bpy.data.objects.new(name,data);scene.collection.objects.link(obj)
  obj.location=center+Vector(location)*diam
  obj.rotation_euler=(center-obj.location).to_track_quat('-Z','Y').to_euler()
-area('Softbox_Key',(-1.5,-2,2.8),850,diam*2.4)
-area('Softbox_Fill',(1.8,0.7,1.5),420,diam*2.8)
-area('Softbox_Rim',(0.8,2.0,2.4),650,diam*2.0)
+area('Softbox_Key',(-1.5,-2,2.8),566.667,diam*2.4)
+area('Softbox_Fill',(1.8,0.7,1.5),280,diam*2.8)
+area('Softbox_Rim',(0.8,2.0,2.4),433.333,diam*2.0)
 directions={'NE':(1,1),'NW':(-1,1),'SW':(-1,-1),'SE':(1,-1)}
 for label,(x,y) in directions.items():
  cam.location=center+Vector((x,y,math.sqrt(2))).normalized()*diam*2.8
