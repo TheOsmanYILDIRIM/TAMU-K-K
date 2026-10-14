@@ -1,0 +1,31 @@
+name: Mixamo SE full 32 frames grid ZIP
+on:
+  push:
+    branches: [experiment/blender-camera-reference-20261011]
+    paths: ['tools/mixamo_se_full_render.py','tools/mixamo_se_full_grid.py','.github/workflows/mixamo-se-full-grid.yml']
+  workflow_dispatch:
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions: {contents: read}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Load pinned FBX
+        run: |
+          mkdir -p input
+          git fetch origin 18fdb06e194a757b356de0668c7cd2246db80ece
+          git show 18fdb06e194a757b356de0668c7cd2246db80ece:Walking.fbx > input/Walking.fbx
+          python3 -m py_compile tools/mixamo_se_full_render.py tools/mixamo_se_full_grid.py
+      - name: Install Blender and Pillow
+        run: sudo apt-get update && sudo apt-get install -y blender python3-pil python3-numpy libegl1 libgl1
+      - name: Render all SE walking frames
+        run: blender -b -t 2 --python-exit-code 2 --python tools/mixamo_se_full_render.py
+      - name: Apply noncontact grid and package individual PNG files
+        run: python3 tools/mixamo_se_full_grid.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mixamo-SE-32-individual-grid-frames
+          path: rendered/mixamo_se_full_grid/SE_32_frames_grid.zip
+          if-no-files-found: error
