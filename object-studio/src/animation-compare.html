@@ -29,13 +29,52 @@ if(align==='center'){x=W/2-(b[0]+b[2]/2)*s;y=H/2-(b[1]+b[3]/2)*s}
 if(align==='average'){x=W/2-(b[0]+b[2]/2)*s;y=H/2-(b[1]+b[3]/2)*s}
 ctx.save();ctx.globalAlpha=opacity;ctx.drawImage(im,x+dx*s,y+dy*s,im.width*s,im.height*s);ctx.restore()}
 async function draw(){let serial=++drawSerial,entries=getEntries(),max=maxCount(),pos=index%max;for(let e of entries){let cv=document.getElementById('cv-'+e.id);if(!cv)continue;let ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);let count=frameCount(e);if(!count)continue;if($('view').value==='average'){let countDraw=Math.min(count,128);for(let k=0;k<countDraw;k++){let f=await resolveFrame(e,Math.floor(k*max/countDraw));if(serial!==drawSerial)return;paint(ctx,f.im,f.dx,f.dy,1/countDraw)}}else{let f=await resolveFrame(e,pos);if(serial!==drawSerial)return;paint(ctx,f.im,f.dx,f.dy)}}$('counter').textContent=(pos+1)+' / '+max}
-function rebuild(){let list=getEntries(),cards=$('cards');cards.replaceChildren();cards.classList.toggle('solo',focus!==null);$('back').classList.toggle('hidden',focus===null);$('focusTitle').textContent=focus===null?'Tüm animasyonlar':(list.find(e=>e.id===focus)?.name||'Büyük önizleme');for(let e of list){if(focus!==null&&focus!==e.id)continue;let card=document.createElement('div');card.className='card'+(focus===e.id?' focused':'')+(finalId===e.id?' selectedFinal':'');card.tabIndex=0;let title=document.createElement('h3');title.textContent=e.name+' · '+frameCount(e)+' kare';card.append(title);if(e.kind==='variant'){let remove=document.createElement('button');remove.textContent='Sil';remove.className='remove';remove.onclick=ev=>{ev.stopPropagation();variants=variants.filter(v=>v.id!==e.id);if(focus===e.id)focus=null;if(finalId===e.id)finalId=null;rebuild();updateEditor();msg('Varyant silindi; orijinaller korundu')};title.append(remove);let choose=document.createElement('button');choose.className='finalButton';choose.textContent=finalId===e.id?'✓ Nihai seçildi':'Nihai seç';choose.disabled=!e.frames.length;choose.onclick=ev=>{ev.stopPropagation();finalId=e.id;editorIndex=0;rebuild();updateEditor()};card.append(choose)}let cv=document.createElement('canvas');cv.width=cv.height=focus===e.id?768:480;cv.id='cv-'+e.id;card.append(cv);if(e.kind==='variant'){let input=document.createElement('input');input.type='file';input.multiple=true;input.accept='image/png,image/webp';input.style.width='100%';input.onclick=ev=>ev.stopPropagation();input.onchange=ev=>{ev.stopPropagation();loadVariant(e.v,[...ev.target.files])};card.append(input);let text=document.createElement('small');text.textContent='Bir veya çok PNG seç · '+e.v.cols+'×'+e.v.rows+' · '+(e.v.parts?.length||0)+' parça';card.append(text)}card.onclick=ev=>{if(ev.target.closest('button,input'))return;if(focus!==e.id){focus=e.id;rebuild()}};card.onkeydown=ev=>{if(ev.key==='Enter'){focus=e.id;rebuild()}};cards.append(card)}$('variantInfo').textContent=variants.length+' varyant';draw()}
-function partStart(name){let m=name.match(/(?:frames?[_-]?)?(\\d+)[_-](\\d+)\\.(?:png|webp)$/i);return m?+m[1]:null}
-function partOrder(files){return files.sort((a,b)=>{let x=partStart(a.name),y=partStart(b.name);return (x??999999)-(y??999999)||a.name.localeCompare(b.name,undefined,{numeric:true})})}
-function combineParts(v){let all=[],cursor=0;for(let part of v.parts){let frames=split(part.image,part.cols,part.rows),start=partStart(part.name);if(start!==null){if(start<1||start>512)throw Error('Parça başlangıç karesi geçersiz');if(start-1<cursor)throw Error('Parça aralıkları çakışıyor: '+part.name);if(start-1>cursor)throw Error('Eksik kare aralığı: '+(cursor+1)+'–'+(start-1));cursor=start-1}all.push(...frames);cursor+=frames.length}if(all.length>512)throw Error('En fazla 512 kare');v.frames=all;v.offsets=[]}
-async function loadVariant(v,files){if(!files?.length)return;try{let ordered=partOrder([...files]);let parts=[];for(let file of ordered){let image=await loadImage(file);parts.push({name:file.name,image,cols:Math.max(1,Math.floor(+$('cols').value||4)),rows:Math.max(1,Math.floor(+$('rows').value||2))})}let previous=v.parts;v.parts=parts;try{combineParts(v)}catch(e){v.parts=previous;throw e}v.name=files.length===1?files[0].name.replace(/\\.[^.]+$/,''):('Birleşik varyant ('+files.length+' parça)');rebuild();updateEditor();msg(v.name+': '+v.frames.length+' kare birleştirildi')}catch(e){msg('Birleştirme hatası: '+e.message)}}
+function rebuild(){let list=getEntries(),cards=$('cards');cards.replaceChildren();cards.classList.toggle('solo',focus!==null);$('back').classList.toggle('hidden',focus===null);$('focusTitle').textContent=focus===null?'Tüm animasyonlar':(list.find(e=>e.id===focus)?.name||'Büyük önizleme');for(let e of list){if(focus!==null&&focus!==e.id)continue;let card=document.createElement('div');card.className='card'+(focus===e.id?' focused':'')+(finalId===e.id?' selectedFinal':'');card.tabIndex=0;let title=document.createElement('h3');title.textContent=e.name+' · '+frameCount(e)+' kare';card.append(title);if(e.kind==='variant'){let remove=document.createElement('button');remove.textContent='Sil';remove.className='remove';remove.onclick=ev=>{ev.stopPropagation();variants=variants.filter(v=>v.id!==e.id);if(focus===e.id)focus=null;if(finalId===e.id)finalId=null;rebuild();updateEditor();msg('Varyant silindi; orijinaller korundu')};title.append(remove);let choose=document.createElement('button');choose.className='finalButton';choose.textContent=finalId===e.id?'✓ Nihai seçildi':'Nihai seç';choose.disabled=!e.frames.length;choose.onclick=ev=>{ev.stopPropagation();finalId=e.id;editorIndex=0;rebuild();updateEditor()};card.append(choose)}let cv=document.createElement('canvas');cv.width=cv.height=focus===e.id?768:480;cv.id='cv-'+e.id;card.append(cv);if(e.kind==='variant'){let input=document.createElement('input');input.type='file';input.multiple=true;input.accept='image/png,image/webp';input.style.width='100%';input.onclick=ev=>ev.stopPropagation();input.onchange=ev=>{ev.stopPropagation();loadVariant(e.v,[...ev.target.files]);ev.target.value=''};card.append(input);let text=document.createElement('small');text.textContent='PNG ekle (sonraki seçim ilkini silmez) · '+(e.v.ranges||[]).map(p=>p.start+'–'+p.end).join(' + ');card.append(text)}card.onclick=ev=>{if(ev.target.closest('button,input'))return;if(focus!==e.id){focus=e.id;rebuild()}};card.onkeydown=ev=>{if(ev.key==='Enter'){focus=e.id;rebuild()}};cards.append(card)}$('variantInfo').textContent=variants.length+' varyant';draw()}
+function partRange(name){
+ const base=String(name).replace(/\\/g,'/').split('/').pop();
+ const m=base.match(/(?:^|[_-])(?:frames?[_-]?)?(\d+)[_-](\d+)(?:[_-]\d+)?\.(?:png|webp)$/i);
+ return m?{start:Number(m[1]),end:Number(m[2])}:null;
+}
+function partStart(name){return partRange(name)?.start??null}
+function partOrder(parts){return [...parts].sort((a,b)=>(partStart(a.name)??999999)-(partStart(b.name)??999999)||a.name.localeCompare(b.name,undefined,{numeric:true}))}
+function assembleParts(parts){
+ const ordered=partOrder(parts),frames=[],positions=[],labels=[];let cursor=1;
+ for(const part of ordered){
+  const extracted=split(part.image,part.cols,part.rows),range=partRange(part.name);
+  if(range){
+   if(range.start!==cursor)throw Error(range.start<cursor?'Kare aralıkları çakışıyor: '+part.name:'Eksik kare: '+cursor+'–'+(range.start-1));
+   if(range.end-range.start+1!==extracted.length)throw Error(part.name+' '+(range.end-range.start+1)+' kare olarak adlandırılmış ama grid '+extracted.length+' kare üretiyor. Sütun/satır ayarını kontrol et.');
+  }
+  frames.push(...extracted);labels.push(part.name);positions.push({start:cursor,end:cursor+extracted.length-1,name:part.name});cursor+=extracted.length;
+ }
+ if(frames.length>512)throw Error('En fazla 512 kare');
+ return {frames,positions,labels,parts:ordered};
+}
+function combineParts(v){
+ const result=assembleParts(v.parts);
+ v.frames=result.frames;v.parts=result.parts;v.ranges=result.positions;v.offsets=[];
+}
+async function loadVariant(v,files){
+ if(!files?.length)return;
+ try{
+  const incoming=[];
+  for(const file of files){
+   const image=await loadImage(file);
+   incoming.push({name:file.name,image,cols:Math.max(1,Math.floor(+$('cols').value||4)),rows:Math.max(1,Math.floor(+$('rows').value||2))});
+  }
+  // A second file selection APPENDS, instead of replacing the first 16 frames.
+  // If the same named part is selected again, replace only that part.
+  const byName=new Map((v.parts||[]).map(p=>[p.name,p]));
+  for(const part of incoming)byName.set(part.name,part);
+  const merged=assembleParts([...byName.values()]);
+  v.parts=merged.parts;v.frames=merged.frames;v.ranges=merged.positions;v.offsets=[];
+  v.name=v.parts.length===1?v.parts[0].name.replace(/\.[^.]+$/,''):'Birleşik varyant ('+v.parts.length+' parça)';
+  editorIndex=0;rebuild();updateEditor();
+  msg(v.name+': '+v.frames.length+' kare; '+v.ranges.map(p=>p.start+'–'+p.end).join(' + '));
+ }catch(e){msg('Birleştirme hatası: '+e.message)}
+}
 
-$('addVariant').onclick=()=>{let id='variant'+nextId++,v={id,name:'Varyant '+(nextId-1),parts:[],frames:[],offsets:[],scale:1,cols:4,rows:2};variants.push(v);rebuild()};
+$('addVariant').onclick=()=>{let id='variant'+nextId++,v={id,name:'Varyant '+(nextId-1),parts:[],ranges:[],frames:[],offsets:[],scale:1,cols:4,rows:2};variants.push(v);rebuild()};
 $('clear').onclick=()=>{variants=[];focus=null;finalId=null;rebuild();updateEditor()};
 $('reapply').onclick=()=>{try{for(let v of variants)if(v.parts?.length){for(let p of v.parts){p.cols=+$('cols').value||4;p.rows=+$('rows').value||2}combineParts(v)}rebuild();updateEditor()}catch(e){msg(e.message)}};
 $('back').onclick=()=>{focus=null;rebuild()};
@@ -55,7 +94,7 @@ function referenceScaleFactor(im,ref){if(!ref)return 1;let a=bounds(im),b=bounds
 $('editorScale').oninput=()=>{let v=finalVariant();if(v){v.scale=+$('editorScale').value/100;updateEditor()}};
 $('autoScale').onclick=async()=>{let v=finalVariant();if(!v)return;let refRec=stored[dir][Math.min(editorIndex,stored[dir].length-1)];if(!refRec){msg('Referans kare bulunamadı');return}let ref=await loadImage(refRec.source||refRec.blob);v.scale=referenceScaleFactor(v.frames[editorIndex],ref);updateEditor();msg('Varyant görünür yüksekliği referansa göre eşitlendi')};
 function offset(v,i){return v.offsets[i]||(v.offsets[i]={x:0,y:0})}
-async function updateEditor(){refreshChunkSource();let v=finalVariant(),canvas=$('editor'),ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);$('finalName').textContent=v?'Nihai: '+v.name:'Henüz nihai varyant seçilmedi';if(!v||!v.frames.length){$('editorFrame').textContent='0 / 0';return}editorIndex=Math.min(editorIndex,v.frames.length-1);let im=v.frames[editorIndex],o=offset(v,editorIndex),refRec=stored[dir][Math.min(editorIndex,stored[dir].length-1)],ref=refRec?await loadImage(refRec.source||refRec.blob):null,g=editorGeometry(im,ref,canvas.width,v);if(ref&&$('showReference').checked){ctx.save();ctx.globalAlpha=(+$('refOpacity').value)/100;let rx=(canvas.width-ref.width*g.refScale)/2,ry=(canvas.height-ref.height*g.refScale)/2;ctx.drawImage(ref,rx,ry,ref.width*g.refScale,ref.height*g.refScale);ctx.restore()}ctx.drawImage(im,g.x+o.x*g.s,g.y+o.y*g.s,im.width*g.s,im.height*g.s);$('editorFrame').textContent=(editorIndex+1)+' / '+v.frames.length;$('offsetX').value=o.x;$('offsetY').value=o.y;$('editorScale').value=Math.round((v.scale||1)*100);$('editorScaleText').textContent=Math.round((v.scale||1)*100)+'%'}
+async function updateEditor(){refreshChunkSource();let v=finalVariant(),canvas=$('editor'),ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);$('finalName').textContent=v?'Nihai: '+v.name:'Henüz nihai varyant seçilmedi';if(!v||!v.frames.length){$('editorFrame').textContent='0 / 0';return}editorIndex=Math.min(editorIndex,v.frames.length-1);let im=v.frames[editorIndex],o=offset(v,editorIndex),refRec=stored[dir][Math.min(editorIndex,stored[dir].length-1)],ref=refRec?await loadImage(refRec.source||refRec.blob):null,g=editorGeometry(im,ref,canvas.width,v);if(ref&&$('showReference').checked){ctx.save();ctx.globalAlpha=(+$('refOpacity').value)/100;let rx=(canvas.width-ref.width*g.refScale)/2,ry=(canvas.height-ref.height*g.refScale)/2;ctx.drawImage(ref,rx,ry,ref.width*g.refScale,ref.height*g.refScale);ctx.restore()}ctx.drawImage(im,g.x+o.x*g.s,g.y+o.y*g.s,im.width*g.s,im.height*g.s);$('editorFrame').textContent=(editorIndex+1)+' / '+v.frames.length+' · '+(v.ranges?.find(p=>editorIndex+1>=p.start&&editorIndex+1<=p.end)?.name||'');$('offsetX').value=o.x;$('offsetY').value=o.y;$('editorScale').value=Math.round((v.scale||1)*100);$('editorScaleText').textContent=Math.round((v.scale||1)*100)+'%'}
 $('editorPrev').onclick=()=>{editorIndex=Math.max(0,editorIndex-1);updateEditor()};
 $('editorNext').onclick=()=>{let v=finalVariant();if(v)editorIndex=Math.min(v.frames.length-1,editorIndex+1);updateEditor()};
 $('editorReset').onclick=()=>{let v=finalVariant();if(v){v.offsets[editorIndex]={x:0,y:0};updateEditor()}};
