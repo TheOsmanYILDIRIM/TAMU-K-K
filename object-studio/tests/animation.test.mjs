@@ -122,7 +122,7 @@ test('sequential 16+16 variant uploads preserve 32 frame indices',()=>{
 
 test('final alignment editor uses exact frame index and alpha bounds',()=>{
  const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
- for(const key of ["stored[dir][editorIndex]","id=\"editorJump\"","g.rx,g.ry","ib[0]+ib[2]/2"])assert.ok(html.includes(key),'missing '+key);
+ for(const key of ["getOriginalDisplayReference(v,editorIndex)","id=\"editorJump\"","g.rx,g.ry","ib[0]+ib[2]/2"])assert.ok(html.includes(key),'missing '+key);
  const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
  const check=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
  assert.equal(check.status,0,check.stderr);
@@ -167,7 +167,7 @@ test('color-aware iterative registration samples correct image source rectangle'
 
 test('iterative registration keeps alpha-derived size stable and supports repeat passes',()=>{
  const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
- for(const key of ['autoLockSize','autoAgain','off.registrationSeed','for(let p=0;p<passes;p++','if(onPass)onPass(p+1,best)','const globalScale=ratios.length'])assert.ok(html.includes(key),'missing '+key);
+ for(const key of ['autoLockSize','autoAgain','off.registrationSeed','for(let p=0;p<passes;p++','if(onPass)onPass(p+1,best)','const scales=await buildScaleTargets(v)'])assert.ok(html.includes(key),'missing '+key);
  const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
  const check=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
  assert.equal(check.status,0,check.stderr);
@@ -225,13 +225,62 @@ test('aligned sprite ZIP writer creates a valid local and central directory',asy
 
 test('size matching applies to every final variant frame and retains X/Y offsets',()=>{
  const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
- for(const key of ['id="autoScaleAll"','async function matchFrameSize(v,i)','for(let i=0;i<v.frames.length;i++)','o.scale=factor','await matchFrameSize(v,i)','await updateEditor()']){
+ for(const key of ['id="autoScaleAll"','async function matchFrameSize(v,i,targets=null)','for(let i=0;i<v.frames.length;i++)','o.scale=factor','await matchFrameSize(v,job.index,targets)','await updateEditor()']){
   assert.ok(html.includes(key),'missing '+key);
  }
- const fn=html.slice(html.indexOf('async function matchFrameSize(v,i)'),html.indexOf('let matchingAllSizes=',html.indexOf('async function matchFrameSize(v,i)')));
+ const fn=html.slice(html.indexOf('async function matchFrameSize(v,i,targets=null)'),html.indexOf('let matchingAllSizes=',html.indexOf('async function matchFrameSize(v,i)')));
  assert.ok(!fn.includes('o.x='),'matching size must not overwrite X');
  assert.ok(!fn.includes('o.y='),'matching size must not overwrite Y');
  const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
  const check=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
  assert.equal(check.status,0,check.stderr);
+});
+
+test('a two-part 16+16 variant gets all 32 alignment jobs even if original has 16',async()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
+ const core=html.match(/\/\/ ALIGNMENT_SEQUENCE_BEGIN([\s\S]*?)\/\/ ALIGNMENT_SEQUENCE_END/)?.[1];
+ assert.ok(core,'sequence alignment functions must be independently testable');
+ const {buildAlignmentPlan,executeAlignmentPlan}=vm.runInNewContext(core+'\n({buildAlignmentPlan,executeAlignmentPlan})');
+ const parts=[{start:1,end:16,name:'first_01-16.png'},{start:17,end:32,name:'second_17-32.png'}];
+ const jobs=buildAlignmentPlan(32,16,'original',null,parts);
+ assert.equal(jobs.length,32);
+ assert.equal(jobs[0].referenceIndex,0);
+ assert.equal(jobs[15].partName,'first_01-16.png');
+ assert.equal(jobs[16].partName,'second_17-32.png');
+ assert.equal(jobs[16].referenceIndex,8,'second half must use phase-mapped reference, not silently skip');
+ assert.equal(jobs[31].referenceIndex,15);
+ const touched=[];
+ const result=await executeAlignmentPlan(jobs,async job=>{touched.push(job.index);return {score:1}});
+ assert.equal(result.length,32);
+ assert.deepEqual(touched,Array.from({length:32},(_,i)=>i),'both PNGs must be evaluated');
+ const full=buildAlignmentPlan(32,32,'original',null,parts);
+ assert.ok(full.every((job,i)=>job.type==='original-exact'&&job.referenceIndex===i));
+ const noOriginal=buildAlignmentPlan(32,0,'original',null,parts);
+ assert.equal(noOriginal[0].type,'anchor');
+ assert.ok(noOriginal.slice(1).every((job,i)=>job.type==='previous'&&job.referenceIndex===i));
+ const prev=buildAlignmentPlan(32,16,'previous',null,parts);
+ assert.equal(prev[16].referenceIndex,15,'seam should see last frame of previous image');
+});
+test('size correction handles different resolutions in the two imported PNGs',async()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
+ const core=html.match(/\/\/ ALIGNMENT_SEQUENCE_BEGIN([\s\S]*?)\/\/ ALIGNMENT_SEQUENCE_END/)?.[1];
+ const {buildAlignmentPlan}=vm.runInNewContext(core+'\n({buildAlignmentPlan})');
+ const from=html.indexOf('async function buildScaleTargets(v){');
+ const to=html.indexOf('\nasync function matchFrameSize(',from);
+ assert.ok(from>=0&&to>from);
+ const calc=html.slice(from,to);
+ const medianOf=n=>n.length?[...n].sort((a,b)=>a-b)[Math.floor(n.length/2)]:null;
+ const context={
+  buildAlignmentPlan,stored:{SE:new Array(16).fill(true)},dir:'SE',
+  getAlignmentReference:async()=>({h:100}),
+  bounds:image=>[0,0,100,image.h],
+  medianOf,Math
+ };
+ const {buildScaleTargets}=vm.runInNewContext(calc+'\n({buildScaleTargets})',context);
+ const frames=Array.from({length:32},(_,i)=>({h:i<16?100:200}));
+ const parts=[{start:1,end:16,name:'first'},{start:17,end:32,name:'second'}];
+ const scales=await buildScaleTargets({frames,ranges:parts});
+ assert.equal(scales.length,32);
+ assert.ok(scales.slice(0,16).every(x=>Math.abs(x-1)<1e-8),'first PNG scale must remain 1x');
+ assert.ok(scales.slice(16).every(x=>Math.abs(x-.5)<1e-8),'second PNG must be scaled independently');
 });
