@@ -1,29 +1,37 @@
-# oyun — Android Portrait Crafting Survival (yeniden başlangıç)
+# oyun — 45° izometrik 2D hayatta kalma / crafting oyunu
 
-**Durum: Mimari ve veri sözleşmesi iskeleti. Henüz oynanabilir oyun veya APK değildir.**
+**Güncel yön (15 Ekim 2026): LÖVE2D, 45° izometrik 2D, dikey mobil ekran ve görünür karo ızgarası bulunmayan prosedürel dünya.** Godot 4.6.3 3D yeniden başlangıç planı artık aktif oyun mimarisi değildir; ancak tarihsel iskelet ve eski kaynaklar korunmaktadır.
 
-Godot 4 tabanlı, **dikey ekran öncelikli**, gerçek 3D ortamlı, döndürülebilir izometrik kamera kullanan ve 2 kişilik co-op hedefleyen kaynak toplama / crafting / inşa oyunu.
+## Şu anda çalışan temel (Aşama 1)
 
-## Önceki sürüm
+`game/love/` içinde gerçek LÖVE2D uygulaması: 45° dönüşüm, kamera kaydırma ve imleç çevresinde yakınlaştırma, mouse/WASD, dokunma/pinch, safe-area uyumlu portrait HUD, üç mevcut biyomla test sahnesi ve bölge seçimi. Gerçek LÖVE render döngüsü sanal ekranda CI ile açılıp doğrulanmıştır.
 
-11 Ekim 2026 öncesi `main` sürümü silinmedi: [backup/pre-portrait-reboot-20261011](https://github.com/TheOsmanYILDIRIM/oyun/tree/backup/pre-portrait-reboot-20261011), commit `e079890dac6b8beef2aaaf9f52539d5701953afc`. Yeni `main` çalışma ağacı sıfırdan kuruldu; Git geçmişi korunur.
+Dikkat: Üç biyom **şimdilik elle tanımlanan örnek çokgenlerden** oluşur. Marching Squares, prosedürel chunk, karakter, kaynak toplama, crafting, kayıt, APK ve iki oyuncu **henüz uygulanmadı**. Gerçek Android cihaz/oynanış doğrulaması yapılmadı. Texture üretimi daha sonraki aşamaya bırakıldı.
 
-## Temel ilkeler
+## Çalıştır
 
-- Android portrait 720x1280 referans; 9:16, 19.5:9, 20:9, 3:4 ve ekran kesikleri kontrol edilir.
-- Dokun → hareket et / topla; isteğe bağlı sanal joystick; agresif savaş becerisi değil üretim ve keşif.
-- `Definition` (ne?) / `Instance` (hangisi, nerede?) / `State` (anlık durum) / `Visual` (nasıl görünür?) ayrımı.
-- Tanımlar JSON + JSON Schema; Godot runtime adaptörü ayrı. Kayıt `user://` ve sürümlü.
-- İlk Android MVP için 2 eşzamanlı oyuncu, host yetkili komut onayı; genişletilebilir protokol.
-- İçerik taslağı ile üretim verisi ayrıdır; eksik tanım asla sessiz varsayılan objeye dönüşmez.
-- Model üretimi prosedürel/modüler; MTS ve üçüncü taraf varlıklar ancak lisans ve uyum kontrolünden sonra içe alınır.
+LÖVE 11.x ile repo kökünde `love game/love` çalıştır. Windows/macOS/Linux'ta `game/love/` klasörünü LÖVE ile açabilirsin.
 
-## Repo haritası
+Kamera için WASD/yön tuşları veya fare sürükleme; zoom için fare tekerleği veya ekrandaki +/−; R kamerayı sıfırlar. Dokunmatik ortamda bir parmakla sürükleme, dokunarak bölge seçimi, iki parmakla zoom ve R düğmesi kullanılabilir.
 
-`docs/` kararlar, UX, save/network, asset hattı, kaynaklar, açık sorular; `schemas/` JSON sözleşmeleri; `data/catalog/` örnek canlı içerik; `scripts/` Godot başlangıç iskeleti; `tests/` içerik ve yapı doğrulama; `.github/workflows/` CI.
+```sh
+cd game/love
+lua5.4 tests/run.lua
+lua5.4 tests/runtime.lua
+```
 
-## Başlangıç
+GitHub Actions'taki `LOVE biome core validation` hem Lua kontrolünü hem Xvfb üzerinde gerçek LÖVE açılış/render smoke testini yapar. Kök `quality` workflow'u mevcut JSON katalog/Python testlerini sürdürür.
 
-Godot **4.6.3-stable** ile `project.godot` aç. `python -m unittest discover -s tests -v` içerik testlerini çalıştır. Sözleşme doğrulayıcısı için `python tests/validate_content.py`. Yerel testler gerçek Android FPS veya multiplayer kanıtı değildir.
+## Proje haritası
 
-Önce [docs/01_VISION.md](docs/01_VISION.md), [docs/02_ARCHITECTURE.md](docs/02_ARCHITECTURE.md), [docs/03_OBJECT_MODEL.md](docs/03_OBJECT_MODEL.md) ve [docs/09_OPEN_DECISIONS.md](docs/09_OPEN_DECISIONS.md) oku.
+- [Uygulama yol haritası](docs/10_2D_GAME_IMPLEMENTATION_ROADMAP.md) — Aşama 1–9 hedefleri.
+- [Yeni runtime mimarisi](docs/13_LOVE_2D_RUNTIME_STAGE1.md) — güncel 2D motor durumu ve kabul sınırları.
+- [LÖVE runtime yönergeleri](game/love/README.md).
+- `object-studio/` — görsel araçlar, mevcut davranışı ve kullanıcı verilerini koru.
+- `data/catalog/`, `schemas/`, `tests/` — tanımlar ve doğrulayıcılar; motor adaptörleri sonraki aşama.
+- `project.godot`, `scenes/`, `scripts/main.gd` ve eski 3D tasarım belgeleri — **tarihsel Godot iskeleti**, silinmedi.
+- [Önceki yedek dalı](https://github.com/TheOsmanYILDIRIM/oyun/tree/backup/pre-portrait-reboot-20261011) — korunur.
+
+## Koruma
+
+`main` üzerindeki stüdyo ve veri dosyalarını, yedekleri, kayıtları, PNG'leri ve IndexedDB kullanıcı verilerini koru. `experiment/world-2d-design-20261012` dalında ayrı World Builder ve 2D tasarım çalışması bulunur; bu dal `main`in üzerine bütünüyle birleştirilmez. Varlıklar lisans/kaynak/hash doğrulaması sonrasında entegre edilir.
