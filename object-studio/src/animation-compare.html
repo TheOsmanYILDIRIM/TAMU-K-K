@@ -441,7 +441,7 @@ $('editorExport').onclick=async()=>{try{let v=finalVariant();if(!v)throw Error('
 
 async function paintAlignedFrame(canvas,v,i,x,y,size){
  const im=v.frames[i];if(!im)return;
- const rec=stored[dir][i],ref=rec?await loadImage(rec.source||rec.blob):null;
+ const ref=await getOriginalDisplayReference(v,i);
  const o=offset(v,i),g=editorGeometry(im,ref,size,{scale:o.scale||v.scale||1});
  canvas.getContext('2d').drawImage(im,x+g.x+o.x*g.s,y+g.y+o.y*g.s,im.width*g.s,im.height*g.s);
 }
