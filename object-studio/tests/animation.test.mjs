@@ -113,7 +113,7 @@ test('final alignment has independent reference and variant scales',()=>{
 
 test('sequential 16+16 variant uploads preserve 32 frame indices',()=>{
  const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
- for(const key of ['const byName=new Map','byName.set(part.name,part)','assembleParts([...byName.values()])','v.ranges=merged.positions','editorIndex+1>=p.start'])assert.ok(html.includes(key),'missing '+key);
+ for(const key of ['const previous=v.parts||[]','assembleParts([...previous,...incoming])','v.ranges=merged.positions','editorIndex+1>=p.start'])assert.ok(html.includes(key),'missing '+key);
  const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
  const check=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
  assert.equal(check.status,0,check.stderr);
@@ -137,4 +137,12 @@ test('comparison shows source and AI file names with selectable previous-frame g
   const check=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
   assert.equal(check.status,0,check.stderr);
  }
+});
+
+test('AI spritesheet parts retain upload order and support manual reordering',()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
+ for(const key of ['Parça sırası (elle değiştir)','p.manualOrder=true','part.manualOrder===true?null:partRange(part.name)','assembleParts([...previous,...incoming])'])assert.ok(html.includes(key),'missing '+key);
+ const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+ const check=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
+ assert.equal(check.status,0,check.stderr);
 });
