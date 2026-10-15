@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import vm from 'node:vm';
 import {spawnSync} from 'node:child_process';
 const root=path.resolve(import.meta.dirname,'..');
 test('standalone mobile animation page preserves independent project storage',()=>{
@@ -170,4 +171,29 @@ test('iterative registration keeps alpha-derived size stable and supports repeat
  const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
  const check=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
  assert.equal(check.status,0,check.stderr);
+});
+
+test('registration optimizer really improves across passes and ignores nearly-transparent RGB halos',()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
+ const core=html.match(/\/\/ ALIGNMENT_CORE_BEGIN([\s\S]*?)\/\/ ALIGNMENT_CORE_END/)?.[1];
+ assert.ok(core,'registration functions must be independently testable');
+ const {registrationScore,optimizeDescriptors}=vm.runInNewContext(core+'\n({registrationScore,optimizeDescriptors})');
+ const n=64;
+ function fixture(tx=0,ty=0){
+  const alpha=new Uint8Array(n*n),rgb=new Uint8Array(n*n*3);
+  for(let y=0;y<n;y++)for(let x=0;x<n;x++){
+   const px=x-tx,py=y-ty,inside=((px-32)**2/250+(py-30)**2/400<1)||(px>16&&px<29&&py>32&&py<58);
+   if(inside){const i=y*n+x;alpha[i]=255;rgb[i*3]=px>32?110:205;rgb[i*3+1]=py>35?150:83;rgb[i*3+2]=px>30?73:140;}
+  }
+  return {n,alpha,rgb};
+ }
+ const ref=fixture(),moved=fixture(11,-8);
+ const first=optimizeDescriptors(ref,moved,1,.7,{tx:0,ty:0,scale:1},true);
+ const refined=optimizeDescriptors(ref,moved,12,.7,{tx:0,ty:0,scale:1},true);
+ assert.ok(refined.score>first.score+.05,'additional iterations must materially improve overlap');
+ assert.ok(Math.abs(refined.tx+11)<2&&Math.abs(refined.ty-8)<2,'known movement should be recovered');
+ assert.equal(refined.scale,1,'locked scale must not drift');
+ const clean=registrationScore(ref,moved,-11,8,1,.7);
+ moved.alpha[0]=1;moved.rgb[0]=255;
+ assert.equal(registrationScore(ref,moved,-11,8,1,.7),clean,'alpha=1 RGB halo must not affect matching');
 });
