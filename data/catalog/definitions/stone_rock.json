@@ -1,0 +1,1 @@
+{"schema_version":1,"id":"core:stone_rock","kind":"resource","name_key":"resource.stone_rock","tags":["core:mineral","core:nature"],"components":{"core:harvestable":{"duration_ticks":120,"drops":[{"def_id":"core:stone","count":2}],"tool_tags":[]}},"visual":{"kind":"primitive","shape":"sphere","color":"#888D88"}}

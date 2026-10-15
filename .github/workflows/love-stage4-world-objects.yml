@@ -1,0 +1,54 @@
+name: LOVE Stage 4 world objects
+on:
+  push:
+    branches: [main, experiment/world-objects-harvesting-v1]
+    paths:
+      - 'game/love/**'
+      - 'data/catalog/**'
+      - '.github/workflows/love-stage4-world-objects.yml'
+  workflow_dispatch:
+jobs:
+  world-objects:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lua 5.4, LuaJIT and LOVE
+        run: sudo apt-get update && sudo apt-get install -y lua5.4 luajit love xvfb
+      - name: Previous stage regression tests
+        working-directory: game/love
+        run: |
+          lua5.4 tests/run.lua
+          lua5.4 tests/runtime.lua
+          lua5.4 tests/world_stage2.lua
+          lua5.4 tests/player_stage3.lua
+          lua5.4 tests/integration.lua
+      - name: Stage 4 pure Lua and LuaJIT checks
+        working-directory: game/love
+        run: |
+          lua5.4 tests/stage4_objects.lua
+          luajit tests/stage4_objects.lua
+          lua5.4 tests/stage4_deep.lua
+          luajit tests/stage4_deep.lua
+          lua5.4 tests/stage4_hash_fixture.lua > /tmp/stage4-hash-54.txt
+          luajit tests/stage4_hash_fixture.lua > /tmp/stage4-hash-jit.txt
+          diff -u /tmp/stage4-hash-54.txt /tmp/stage4-hash-jit.txt
+          tail -n 1 /tmp/stage4-hash-54.txt
+      - name: LOVE real renderer and screenshot
+        env:
+          OSMAN_LOVE_STAGE4_SMOKE: "1"
+        run: |
+          set -o pipefail
+          timeout 120s xvfb-run -a love game/love 2>&1 | tee /tmp/stage4-love.log
+          grep -q LOVE_STAGE4_SMOKE_OK /tmp/stage4-love.log
+          find "$HOME/.local/share/love" -name 'world-objects-smoke.png' -exec cp {} /tmp/world-objects-smoke.png \;
+          find "$HOME/.local/share/love" -name 'world-objects-before.png' -exec cp {} /tmp/world-objects-before.png \;
+          test -s /tmp/world-objects-smoke.png
+          test -s /tmp/world-objects-before.png
+      - name: Upload LÖVE screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: love-stage4-world-objects
+          path: |
+            /tmp/world-objects-smoke.png
+            /tmp/world-objects-before.png
+          if-no-files-found: error
