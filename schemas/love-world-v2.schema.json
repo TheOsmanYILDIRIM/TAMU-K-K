@@ -1,0 +1,296 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/TheOsmanYILDIRIM/oyun/schemas/love-world-v2.schema.json",
+  "title": "LÖVE2D world checkpoint v2 - planned persistence contract, not a live save",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "save_version",
+    "world_id",
+    "seed",
+    "generator_version",
+    "catalog_version",
+    "world_revision",
+    "player",
+    "generated_object_delta",
+    "placed_instances",
+    "applied_commands",
+    "applied_transactions",
+    "journal_sequence"
+  ],
+  "properties": {
+    "format": {
+      "const": "love-world-2d"
+    },
+    "save_version": {
+      "const": 2
+    },
+    "world_id": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    },
+    "generator_version": {
+      "const": 1
+    },
+    "catalog_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "world_revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "player": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "x",
+        "y",
+        "inventory"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "inventory": {
+          "$ref": "#/$defs/inventory"
+        }
+      }
+    },
+    "generated_object_delta": {
+      "$ref": "#/$defs/delta"
+    },
+    "placed_instances": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/placed"
+      }
+    },
+    "applied_commands": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/command"
+      }
+    },
+    "applied_transactions": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/transaction"
+      }
+    },
+    "journal_sequence": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "$defs": {
+    "inventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "catalog_version",
+        "capacity",
+        "slots"
+      ],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "catalog_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "capacity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 256
+        },
+        "slots": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "slot",
+              "def_id",
+              "count"
+            ],
+            "properties": {
+              "slot": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 256
+              },
+              "def_id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_-]*:[a-z][a-z0-9_-]*$"
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "delta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "seed",
+        "generator_version",
+        "objects"
+      ],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483646
+        },
+        "generator_version": {
+          "const": 1
+        },
+        "objects": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^worldobj:v1:[0-9]+:-?[0-9]+:-?[0-9]+$"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "depleted"
+            ],
+            "properties": {
+              "depleted": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "placed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "def_id",
+        "x",
+        "y",
+        "rotation",
+        "owner_id",
+        "command_id",
+        "revision"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+        },
+        "def_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]*:[a-z][a-z0-9_-]*$"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "rotation": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 7
+        },
+        "owner_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "command_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "status"
+      ],
+      "properties": {
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "enum": [
+            "started",
+            "complete",
+            "failed",
+            "interrupted",
+            "crafted",
+            "placed"
+          ]
+        },
+        "reason": {
+          "type": "string"
+        }
+      }
+    },
+    "transaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "item_id",
+        "amount"
+      ],
+      "properties": {
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "item_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]*:[a-z][a-z0-9_-]*$"
+        },
+        "amount": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  }
+}
