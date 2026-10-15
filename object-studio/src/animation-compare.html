@@ -129,32 +129,103 @@ function saveCanvas(canvas,name){return new Promise((ok,no)=>canvas.toBlob(blob=
 function editorGeometry(im,ref,size,v){const ib=bounds(im),rb=ref?bounds(ref):ib;const visibleW=Math.max(1,ib[2],rb[2]),visibleH=Math.max(1,ib[3],rb[3]);const refScale=Math.min(size*.78/visibleW,size*.78/visibleH);const scale=refScale*(v?.scale||1);return {s:scale,x:size/2-(ib[0]+ib[2]/2)*scale,y:size/2-(ib[1]+ib[3]/2)*scale,refScale,rx:ref?size/2-(rb[0]+rb[2]/2)*refScale:0,ry:ref?size/2-(rb[1]+rb[3]/2)*refScale:0}}
 function referenceScaleFactor(im,ref){if(!ref)return 1;let a=bounds(im),b=bounds(ref);return Math.min(4,Math.max(.25,(b[3]||ref.height)/(a[3]||im.height)))} 
 $('editorScale').oninput=()=>{let v=finalVariant();if(v){offset(v,editorIndex).scale=+$('editorScale').value/100;updateEditor()}};
-async function matchFrameSize(v,i){
- const record=stored[dir][i];
- if(!record)return false;
- const ref=await loadImage(record.source||record.blob);
- if(!ref||!v.frames[i])return false;
- const factor=referenceScaleFactor(v.frames[i],ref);
+// ALIGNMENT_SEQUENCE_BEGIN
+function buildAlignmentPlan(frameCount,referenceCount,mode='original',single=null,ranges=[]){
+ const total=Math.max(0,Math.floor(frameCount)),refs=Math.max(0,Math.floor(referenceCount));
+ const indices=single===null?Array.from({length:total},(_,i)=>i):[Math.max(0,Math.min(total-1,Math.floor(single)))];
+ return indices.filter(i=>i>=0&&i<total).map(i=>{
+  let type='anchor',referenceIndex=-1;
+  if(mode==='previous'&&i>0){type='previous';referenceIndex=i-1}
+  else if(refs>0){
+   type=refs===total?'original-exact':'original-phase';
+   referenceIndex=Math.min(refs-1,Math.floor((i+.5)*refs/total));
+  }else if(i>0){type='previous';referenceIndex=i-1}
+  const part=ranges.find(p=>i+1>=p.start&&i+1<=p.end);
+  return {index:i,type,referenceIndex,partName:part?.name||'Varyant',partStart:part?.start||1};
+ });
+}
+async function executeAlignmentPlan(plan,work,progress=null){
+ const results=[];
+ for(let k=0;k<plan.length;k++){
+  const job=plan[k],value=await work(job);
+  results.push({job,value});
+  if(progress)await progress(job,value,k+1,plan.length);
+ }
+ return results;
+}
+// ALIGNMENT_SEQUENCE_END
+function medianOf(numbers){
+ if(!numbers.length)return null;
+ const a=[...numbers].sort((a,b)=>a-b);
+ return a[Math.floor(a.length/2)];
+}
+async function getAlignmentReference(v,job){
+ if(job.type==='previous')return v.frames[job.referenceIndex]||null;
+ if(job.type==='original-exact'||job.type==='original-phase'){
+  const rec=stored[dir][job.referenceIndex];
+  return rec?await loadImage(rec.source||rec.blob):null;
+ }
+ return null;
+}
+async function buildScaleTargets(v){
+ const plan=buildAlignmentPlan(v.frames.length,stored[dir].length,'original',null,v.ranges||[]);
+ const partSamples=new Map(),allRefHeights=[],ownHeights=[];
+ const raw=new Array(v.frames.length).fill(null);
+ for(const job of plan){
+  const i=job.index,mh=bounds(v.frames[i])[3];ownHeights.push(mh);
+  const ref=await getAlignmentReference(v,job);
+  if(ref&&mh>2){
+   const rh=bounds(ref)[3];
+   if(rh>2){
+    const ratio=rh/mh;raw[i]=ratio;allRefHeights.push(rh);
+    if(!partSamples.has(job.partStart))partSamples.set(job.partStart,[]);
+    partSamples.get(job.partStart).push(ratio);
+   }
+  }
+ }
+ const targetH=medianOf(allRefHeights)||medianOf(ownHeights)||1;
+ const result=new Array(v.frames.length);
+ for(const job of plan){
+  const i=job.index,ownH=Math.max(1,bounds(v.frames[i])[3]);
+  const med=medianOf(partSamples.get(job.partStart)||[]);
+  const ratio=raw[i]??(targetH/ownH);
+  // A separate median for each imported PNG is essential when their resolutions differ.
+  const smoothed=med?Math.max(med*.85,Math.min(med*1.15,ratio)):ratio;
+  result[i]=Math.max(.25,Math.min(4,smoothed));
+ }
+ return result;
+}
+
+async function matchFrameSize(v,i,targets=null){
+ if(!v.frames[i])return false;
+ const scalePlan=targets||await buildScaleTargets(v);
+ const factor=scalePlan[i];
+ if(!Number.isFinite(factor)||factor<=0)return false;
  const o=offset(v,i);
  o.scale=factor;
- // The alpha size button changes scale only, preserving manual X/Y alignment.
  delete o.registrationSeed;
  return true;
 }
 let matchingAllSizes=false;
-$('autoScale').onclick=async()=>{const v=finalVariant();if(!v)return;try{const ok=await matchFrameSize(v,editorIndex);if(!ok)throw Error('Bu kare için orijinal referans bulunamadı');await updateEditor();msg('Kare '+(editorIndex+1)+' boyutu referansa eşitlendi')}catch(e){msg(e.message)}};
+$('autoScale').onclick=async()=>{
+ const v=finalVariant();if(!v)return;
+ try{const plan=await buildScaleTargets(v),ok=await matchFrameSize(v,editorIndex,plan);if(!ok)throw Error('Boyut hesabı yapılamadı');await updateEditor();msg('Kare '+(editorIndex+1)+' boyutu güncellendi')}
+ catch(e){msg(e.message)}
+};
 $('autoScaleAll').onclick=async()=>{
  const v=finalVariant();if(!v||matchingAllSizes)return;
  matchingAllSizes=true;$('autoScaleAll').disabled=true;
  try{
-  let matched=0,missing=0;
-  for(let i=0;i<v.frames.length;i++){
-   if(await matchFrameSize(v,i))matched++;else missing++;
-   $('autoStatus').textContent='Tüm karelerde boyut eşitleme: '+(i+1)+' / '+v.frames.length;
-   if(i%4===0)await new Promise(ok=>setTimeout(ok,0));
-  }
+  const targets=await buildScaleTargets(v);
+  const jobs=buildAlignmentPlan(v.frames.length,stored[dir].length,'original',null,v.ranges||[]);
+  let matched=0;
+  await executeAlignmentPlan(jobs,async job=>{const ok=await matchFrameSize(v,job.index,targets);if(ok)matched++;return ok},
+   async(job,ok,count,total)=>{
+    $('autoStatus').textContent='Boyut eşitleme: '+count+'/'+total+' • '+job.partName+(ok?'':' (atlandı)');
+    if(count%4===0)await new Promise(done=>setTimeout(done,0));
+   });
   await updateEditor();
-  msg(matched+' karenin boyutu orijinaline göre eşitlendi'+(missing?' · '+missing+' referans eksik':'')+'. Üst önizleme ve PNG/ZIP çıktısı güncellendi.');
+  msg(matched+'/'+v.frames.length+' kareye boyut düzeltmesi uygulandı. '+(v.ranges||[]).map(p=>p.start+'–'+p.end).join(' + '));
  }catch(e){msg('Toplu boyut eşitleme hatası: '+e.message)}
  finally{matchingAllSizes=false;$('autoScaleAll').disabled=false}
 };
