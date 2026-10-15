@@ -102,63 +102,73 @@ $('autoScale').onclick=async()=>{let v=finalVariant();if(!v)return;let refRec=st
 const registrationCache=new WeakMap();
 function alphaSample(image){
  if(registrationCache.has(image))return registrationCache.get(image);
- const N=128,canvas=document.createElement('canvas');canvas.width=canvas.height=N;
+ const N=144,canvas=document.createElement('canvas');canvas.width=canvas.height=N;
  const c=canvas.getContext('2d',{willReadFrequently:true}),b=bounds(image);
- // IMPORTANT: source rectangle is in the SOURCE image, destination fills the analysis canvas.
- c.drawImage(image,b[0],b[1],Math.max(1,b[2]),Math.max(1,b[3]),0,0,N,N);
- const p=c.getImageData(0,0,N,N).data,alpha=new Uint8Array(N*N),rgb=new Uint8Array(N*N*3);
- let area=0,cx=0,cy=0;
+ const factor=N*.79/Math.max(1,b[3]);
+ // Keep natural width-to-height ratio, unlike the old 128x128 stretched crop.
+ c.drawImage(image,b[0],b[1],Math.max(1,b[2]),Math.max(1,b[3]),N/2-b[2]*factor/2,N/2-b[3]*factor/2,b[2]*factor,b[3]*factor);
+ const pixels=c.getImageData(0,0,N,N).data,alpha=new Uint8Array(N*N),rgb=new Uint8Array(N*N*3);
+ let area=0,cx=0,cy=0,topSum=0,topX=0,topY=0;
  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
-  let i=y*N+x,a=p[i*4+3];alpha[i]=a;
-  if(a>16){area++;cx+=x;cy+=y}
-  // Chroma + brightness: robust to mild lighting changes, but still tracks armor and clothing color.
-  let R=p[i*4],G=p[i*4+1],B=p[i*4+2],sum=Math.max(1,R+G+B);
-  rgb[i*3]=Math.round(255*R/sum);rgb[i*3+1]=Math.round(255*G/sum);
-  rgb[i*3+2]=Math.round((R+G+B)/3);
+  const i=y*N+x,a=pixels[i*4+3];
+  alpha[i]=a>24?a:0; // Ignore near-transparent red/magenta fringe pixels.
+  if(a>24){area++;cx+=x;cy+=y;if(y<N*.60){topSum++;topX+=x;topY+=y}}
+  const R=pixels[i*4],G=pixels[i*4+1],B=pixels[i*4+2],m=Math.max(1,R,G,B);
+  rgb[i*3]=Math.round(255*R/m);rgb[i*3+1]=Math.round(255*G/m);rgb[i*3+2]=Math.round(255*B/m);
  }
- const result={n:N,alpha,rgb,b,area,cx:area?cx/area:64,cy:area?cy/area:64};
+ const result={n:N,alpha,rgb,b,area,cx:area?cx/area:N/2,cy:area?cy/area:N/2,hx:topSum?topX/topSum:N/2,hy:topSum?topY/topSum:N/2};
  registrationCache.set(image,result);return result;
 }
-// ALIGNMENT_CORE_BEGIN
-function registrationScore(ref,mov,tx,ty,scale,weight,step=2){
- const n=ref.n;let intersection=0,union=0,colorDist=0,cc=0;
+function registrationScore(ref,mov,tx,ty,scale,weight,step=3){
+ const n=ref.n;let inter=0,union=0,colorDist=0,overlapWeight=0;
  for(let y=0;y<n;y+=step)for(let x=0;x<n;x+=step){
   const i=y*n+x,xx=Math.round((x-n/2-tx)/scale+n/2),yy=Math.round((y-n/2-ty)/scale+n/2);
   const j=xx>=0&&xx<n&&yy>=0&&yy<n?yy*n+xx:-1,a=ref.alpha[i]>24,b=j>=0&&mov.alpha[j]>24;
-  if(a||b)union++;
-  if(a&&b){intersection++;let ri=i*3,mj=j*3;colorDist+=Math.abs(ref.rgb[ri]-mov.rgb[mj])+Math.abs(ref.rgb[ri+1]-mov.rgb[mj+1])+Math.abs(ref.rgb[ri+2]-mov.rgb[mj+2]);cc++;}
+  const region=y<n*.63?1.6:.9;
+  if(a||b)union+=region;
+  if(a&&b){
+   inter+=region;
+   const ri=i*3,mj=j*3;
+   const chroma=(Math.abs(ref.rgb[ri]-mov.rgb[mj])+Math.abs(ref.rgb[ri+1]-mov.rgb[mj+1])+Math.abs(ref.rgb[ri+2]-mov.rgb[mj+2]))/765;
+   colorDist+=chroma*region;overlapWeight+=region;
+  }
  }
- const overlap=union?intersection/union:0,similarity=cc?Math.max(0,1-colorDist/(cc*765)):0;
- return (1-weight)*overlap+weight*overlap*(.25+.75*similarity);
+ if(!union)return -1;
+ const overlap=inter/union,similarity=overlapWeight?Math.max(0,1-colorDist/overlapWeight):0;
+ // Color cannot win by matching empty pixels; silhouette always anchors alignment.
+ return overlap*(1-weight+weight*similarity);
 }
-async function optimizeDescriptors(ref,mov,passes=12,weight=.65,seed={tx:0,ty:0,scale:1},lockSize=true,step=2,onPass=null){
- let best={...seed,scale:lockSize?1:seed.scale};
- best.score=registrationScore(ref,mov,best.tx,best.ty,best.scale,weight,step);
+async function optimizeDescriptors(ref,mov,passes=12,weight=.45,seed=null,lockSize=true,step=3,onPass=null){
+ const initial=[
+  {tx:0,ty:0,scale:1},
+  {tx:ref.hx-mov.hx,ty:ref.hy-mov.hy,scale:1}
+ ];
+ if(seed)initial.push({tx:seed.tx,ty:seed.ty,scale:lockSize?1:seed.scale});
+ let best={score:-Infinity,tx:0,ty:0,scale:1};
+ // Search both alpha-center and torso/head-center hypotheses.
+ for(const first of initial)for(const dx of [-16,-8,0,8,16])for(const dy of [-16,-8,0,8,16]){
+  const tx=first.tx+dx,ty=first.ty+dy;
+  if(Math.abs(tx)>32||Math.abs(ty)>32)continue;
+  const score=registrationScore(ref,mov,tx,ty,first.scale,weight,step);
+  if(score>best.score)best={score,tx,ty,scale:first.scale};
+ }
  for(let p=0;p<passes;p++){
-  const d=Math.max(.5,14*Math.pow(.69,p)),scaleJump=lockSize?0:Math.max(.002,.04*Math.pow(.73,p));
-  for(let iteration=0;iteration<2;iteration++){
-   let candidate=best;
-   for(const dx of [-d,0,d])for(const dy of [-d,0,d])for(const ds of (lockSize?[0]:[-scaleJump,0,scaleJump])){
-    const tx=best.tx+dx,ty=best.ty+dy,scale=lockSize?1:Math.max(.96,Math.min(1.04,best.scale+ds));
-    if(Math.abs(tx)>36||Math.abs(ty)>36)continue;
-    const value=registrationScore(ref,mov,tx,ty,scale,weight,step);
-    if(value>candidate.score+1e-7)candidate={tx,ty,scale,score:value};
-   }
-   best=candidate;
+  const d=Math.max(.45,4*Math.pow(.69,p)),ds=lockSize?0:Math.max(.001,.02*Math.pow(.75,p));
+  const old=best;
+  for(const dx of [-d,0,d])for(const dy of [-d,0,d])for(const ss of (lockSize?[0]:[-ds,0,ds])){
+   const tx=old.tx+dx,ty=old.ty+dy,scale=lockSize?1:Math.max(.97,Math.min(1.03,old.scale+ss));
+   const score=registrationScore(ref,mov,tx,ty,scale,weight,step);
+   if(score>best.score+1e-8)best={score,tx,ty,scale};
   }
   if(onPass)onPass(p+1,best);
-  // Yield to UI between optimization passes; report each iteration in real time.
-  await new Promise(resolve=>setTimeout(resolve,0));
+  await new Promise(ok=>setTimeout(ok,0));
  }
  return {...best,passes};
 }
-// ALIGNMENT_CORE_END
 async function registerColor(moving,reference,quality,iterations,weight,seed=null,lockSize=true,onPass=null){
  const m=alphaSample(moving),r=alphaSample(reference);
  if(!m.area||!r.area)throw Error('Boş alpha maskesi');
- // Progressive, deterministic multi-pass optimization. Uses visible alpha & chroma.
- const initial=seed||{tx:r.cx-m.cx,ty:r.cy-m.cy,scale:1};
- return optimizeDescriptors(r,m,iterations,weight,initial,lockSize,quality==='fine'?2:quality==='fast'?5:3,onPass);
+ return optimizeDescriptors(r,m,iterations,Math.min(.6,weight),seed,lockSize,quality==='fine'?2:quality==='fast'?5:3,onPass);
 }
 async function autoRegisterFrame(v,i,quality,onPass,globalScale){
  const moving=v.frames[i],previous=$('ghostMode').value==='previous'&&i>0;
@@ -176,8 +186,8 @@ async function autoRegisterFrame(v,i,quality,onPass,globalScale){
  const scale=Math.max(.3,Math.min(3.5,baseScale*(lockSize?1:match.scale)));
  // tx,ty are in the 128x128 normalized visible-reference coordinate system.
  // Convert to moving-image pixels, respecting the actual reference dimensions.
- const dx=match.tx*rb[2]/128/Math.max(.001,scale);
- const dy=match.ty*rb[3]/128/Math.max(.001,scale);
+ const dx=match.tx*rb[3]/(144*.79)/Math.max(.001,scale);
+ const dy=match.ty*rb[3]/(144*.79)/Math.max(.001,scale);
  off.scale=scale;
  off.x=Math.round(dx+(previous?(offset(v,i-1).x||0):0));
  off.y=Math.round(dy+(previous?(offset(v,i-1).y||0):0));
