@@ -14,7 +14,7 @@
 <div class="formrow"><label>Hizalama<select id="align"><option value="feet">Ayak tabanı</option><option value="center">Merkez</option><option value="average">Ortalama konum</option><option value="original">Kaynak konumu</option></select></label><label>Görünüm<select id="view"><option value="animation">Animasyon / seçili kare</option><option value="reference">Orijinal referans</option><option value="average">Ortalama kare (üst üste)</option></select></label></div>
 <div class="note" id="averageInfo">“Ortalama kare” tüm seçili kareleri yarı saydam üst üste gösterir. “Ortalama konum” ise karelerin ağırlık merkezini ortak noktaya hizalar.</div>
 <div class="buttonrow"><button id="downloadFrame" class="primary">↓ Seçili kare PNG</button><button id="downloadAll">↓ Seçili set ZIP</button></div>
-<div class="formrow"><label>Kapsam<select id="exportScope"><option value="one">Seçili yön</option><option value="all">4 yön</option></select></label><label>Boyut<select id="exportSize"><option>2048</option><option selected>4096</option><option>8192</option></select></label><label>Sütun<select id="exportCols"><option value="auto">Otomatik</option><option>4</option><option>8</option><option>16</option><option>32</option></select></label><label>Parçalama<select id="exportChunk"><option value="0">Tek spritesheet</option><option value="16">16 karelik parçalar</option><option value="8">8 karelik parçalar</option><option value="custom">Özel kare sayısı</option></select></label><label>Özel parça boyutu<input id="exportChunkCustom" type="number" min="1" max="128" value="16" style="width:75px"></label><button id="exportSheet" class="primary">Spritesheet PNG dışa aktar</button><p class="hint">Hücre sınırları sabittir. Kareler kaynak koordinatlarıyla yerleştirilir; parçalar arasında karakterin konumu yeniden ortalanmaz. İçe aktarırken dışa aktarılan sütun ve satır sayısını kullan.</p></div><div class="status" id="status" role="status">Hazır. PNG veya ZIP yükle.</div></section>
+<div class="formrow"><label>Kapsam<select id="exportScope"><option value="one">Seçili yön</option><option value="all">4 yön</option></select></label><label>Boyut<select id="exportSize"><option>2048</option><option selected>4096</option><option>8192</option></select></label><label>Sütun<select id="exportCols"><option value="auto">Otomatik</option><option>4</option><option>8</option><option>16</option><option>32</option></select></label><label>Parçalama<select id="exportChunk"><option value="0">Tek spritesheet</option><option value="16">16 karelik parçalar</option><option value="8">8 karelik parçalar</option><option value="custom">Özel kare sayısı</option></select></label><label>Özel parça boyutu<input id="exportChunkCustom" type="number" min="1" max="128" value="16" style="width:75px"></label><label title="Parçalı spritesheet çıktılarında sayfa sırasını görselin köşesine yazar. Oyun için temiz PNG istiyorsan kapat."><input id="exportPageNumbers" type="checkbox" checked> Parçalara sayfa numarası yaz</label><button id="exportSheet" class="primary">Spritesheet PNG dışa aktar</button><p class="hint">Hücre sınırları sabittir. Kareler kaynak koordinatlarıyla yerleştirilir; parçalar arasında karakterin konumu yeniden ortalanmaz. İçe aktarırken dışa aktarılan sütun ve satır sayısını kullan.</p></div><div class="status" id="status" role="status">Hazır. PNG veya ZIP yükle.</div></section>
 <section class="panel"><div class="eyebrow">02 / FRAME EDITOR</div><h2>Kareleri düzenle</h2>
 <div class="formrow"><label>Çoklu PNG yükle<input id="loadPNG" type="file" accept="image/png" multiple></label><label>Blender ZIP yükle<input id="loadZIP" type="file" accept=".zip,application/zip"></label></div>
 <label class="stack">Spritesheet içe aktar (serbest grid)<input id="loadSheet" type="file" accept="image/png"></label>
@@ -140,7 +140,32 @@
  const groups=[];
  if(chunk){if($('exportScope').value==='all'){for(const d of DIRECTIONS){let subset=all.filter(e=>e.d===d);for(let k=0;k<subset.length;k+=chunk)groups.push({items:subset.slice(k,k+chunk),direction:d,start:k})}}else{for(let k=0;k<all.length;k+=chunk)groups.push({items:all.slice(k,k+chunk),direction,start:k})}}
  else groups.push({items:all,direction:$('exportScope').value==='all'?'4yon':direction,start:0});
- const renderGroup=async group=>{
+ // Page numbering is a *visual annotation* and can be disabled for game-ready PNG assets.
+ // The page count/order follows exported groups, not sprite-frame numbering.
+ function annotateSheetPage(ctx,canvas,page,total,group){
+  if(total<=1||!$('exportPageNumbers').checked)return;
+  const size=canvas.width;
+  const fontSize=Math.max(32,Math.round(size*.019));
+  const pad=Math.max(14,Math.round(fontSize*.48)),lineHeight=Math.round(fontSize*1.28);
+  const label='SAYFA '+String(page).padStart(2,'0')+' / '+String(total).padStart(2,'0');
+  const detail=group.direction+'  •  KARE '+String(group.start+1)+'–'+String(group.start+group.items.length);
+  ctx.save();
+  ctx.font='bold '+fontSize+'px system-ui, sans-serif';
+  const textWidth=Math.max(ctx.measureText(label).width,ctx.measureText(detail).width);
+  const w=Math.ceil(textWidth+pad*2),h=lineHeight*2+pad*2;
+  const x=size-w-pad,y=pad;
+  // Opaque high-contrast plate: readable over all source sprite colors.
+  ctx.fillStyle='rgba(10,18,15,.96)';
+  ctx.fillRect(x,y,w,h);
+  ctx.strokeStyle='#e8f6db';ctx.lineWidth=Math.max(3,fontSize*.09);
+  ctx.strokeRect(x,y,w,h);
+  ctx.fillStyle='#ffffff';ctx.textBaseline='top';ctx.textAlign='left';
+  ctx.fillText(label,x+pad,y+pad);
+  ctx.font='600 '+Math.round(fontSize*.78)+'px system-ui, sans-serif';
+  ctx.fillText(detail,x+pad,y+pad+lineHeight);
+  ctx.restore();
+ }
+ const renderGroup=async (group,page,total)=>{
  let list=group.items,n=list.length,cols=$('exportCols').value==='auto'?Math.ceil(Math.sqrt(n)):Math.min(n,+$('exportCols').value),rows=Math.ceil(n/cols),out=alphaCanvas();out.width=out.height=size;let g=out.getContext('2d');if(!g)throw Error('Canvas oluşturulamadı');
  // Each tile starts at the literal grid edge. Never center the entire grid on the square.
  // Keep the SAME source coordinate system for every frame and every exported chunk.
@@ -148,9 +173,10 @@
  for(let i=0;i<n;i++){let f=list[i].f,cx=i%cols,cy=Math.floor(i/cols),x0=Math.round(cx*size/cols),x1=Math.round((cx+1)*size/cols),y0=Math.round(cy*size/rows),y1=Math.round((cy+1)*size/rows),cw=x1-x0,ch=y1-y0,scale=Math.min(cw/sourceW,ch/sourceH),baseX=x0+(cw-sourceW*scale)/2,baseY=y0+(ch-sourceH*scale)/2;
  let fx=f.original?.x||0,fy=f.original?.y||0;
  g.drawImage(f.canvas,baseX+(fx+f.x)*scale,baseY+(fy+f.y)*scale,f.w*scale,f.h*scale)}
+ annotateSheetPage(g,out,page,total,group);
  let blob=await new Promise(ok=>out.toBlob(ok,'image/png'));if(!blob)throw Error('PNG oluşturulamadı');return blob};
- if(groups.length===1){let group=groups[0],blob=await renderGroup(group);await download(blob,'mineclonie_'+group.direction+'_frames_'+(group.start+1)+'-'+(group.start+group.items.length)+'_'+size+'.png')}
- else{let items=[];for(let group of groups){let blob=await renderGroup(group),bytes=new Uint8Array(await blob.arrayBuffer());items.push({name:group.direction+'/frames_'+String(group.start+1).padStart(2,'0')+'-'+String(group.start+group.items.length).padStart(2,'0')+'.png',data:bytes})}await download(zip(items),'mineclonie_spritesheet_'+groups.length+'parca.zip')}
+ if(groups.length===1){let group=groups[0],blob=await renderGroup(group,1,1);await download(blob,'mineclonie_'+group.direction+'_frames_'+(group.start+1)+'-'+(group.start+group.items.length)+'_'+size+'.png')}
+ else{let items=[];for(let page=0;page<groups.length;page++){let group=groups[page],blob=await renderGroup(group,page+1,groups.length),bytes=new Uint8Array(await blob.arrayBuffer());items.push({name:group.direction+'/sayfa_'+String(page+1).padStart(2,'0')+'_of_'+String(groups.length).padStart(2,'0')+'_frames_'+String(group.start+1).padStart(2,'0')+'-'+String(group.start+group.items.length).padStart(2,'0')+'.png',data:bytes})}await download(zip(items),'mineclonie_spritesheet_'+groups.length+'parca.zip')}
  info('Spritesheet dışa aktarıldı: '+groups.length+' parça, '+all.length+' kare. Orijinal kareler korunuyor.');
  });
  $('downloadFrame').onclick=()=>handle(async()=>{let f=frames[selected];if(!f)return;let b=await new Promise(r=>rendered(selected,true).toBlob(r,'image/png'));await download(b,frameName(selected));info('Gridli kare indirildi: '+frameName(selected))});
