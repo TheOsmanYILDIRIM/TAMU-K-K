@@ -1,7 +1,7 @@
 name: LOVE world-player integration
 on:
   push:
-    branches: [experiment/world-player-integration-v1]
+    branches: [main, experiment/world-player-integration-v1]
   workflow_dispatch:
 jobs:
   integration:
