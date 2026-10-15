@@ -328,7 +328,7 @@ test('magenta dual grid is optional, leaves the ninth slot visible and never tou
  ];
  renderGrid(g,900,3,3,sprites);
  assert.ok(paths.length>200,'fine coordinate grid was not drawn');
- assert.ok(paths.some(p=>p.x1>620&&p.y1>620),'unused ninth slot must retain visible grid');
+ assert.ok(paths.some(p=>(p.x1+p.x2)/2>620&&(p.y1+p.y2)/2>620),'unused ninth slot must retain visible grid');
  const gap=6;
  for(const art of sprites){
   const box={x0:art.x0-gap,y0:art.y0-gap,x1:art.x1+gap,y1:art.y1+gap};
