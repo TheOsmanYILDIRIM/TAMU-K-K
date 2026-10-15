@@ -3,7 +3,7 @@
 <header><h1>ANIMATION STUDIO / VARYANT KARŞILAŞTIRMA</h1><nav><a href="./animation.html">← Ana animasyon ekranı</a></nav></header><div id="versionBar" style="padding:8px 14px;background:#172c23;border-bottom:1px solid #668366;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font:12px system-ui"><strong>ANIMATION BUILD <code id="pageBuild">__ANIMATION_BUILD_SHA__</code></strong><span id="versionState">Sürüm kontrol ediliyor…</span><button id="versionRefresh" type="button" style="padding:5px 9px">Yeni sürümü aç ↻</button></div>
 <main><p class="muted">Bu ikinci ekran ana stüdyodaki orijinal ve düzenlenmiş kareleri yalnızca okur. Yeni spritesheet varyantlarını buraya yükleyip aynı hızda karşılaştırabilirsin. Ana ekranın verileri değiştirilmez.</p>
 <section><div class="row directions" id="dirs"></div><button id="refresh">Ana stüdyodan tekrar oku</button><span id="status" class="muted">Kayıtlar okunuyor…</span></section>
-<section><div class="row"><button id="addVariant">＋ Varyant ekle</button><button id="clear">Varyantları temizle</button><span id="variantInfo" class="muted">Henüz varyant eklenmedi</span></div><div class="row"><label>Sütun <input id="cols" type="number" min="1" max="128" value="4" style="width:65px"></label><label>Satır <input id="rows" type="number" min="1" max="128" value="2" style="width:65px"></label><button id="reapply">Tüm varyantları yeniden böl</button></div><p class="muted">＋ ile sınırsız sayıda varyant kartı ekleyebilirsin. Her varyanta birden fazla PNG yükleyip sırayla birleştirebilirsin (cihaz belleği sınırları geçerlidir). Her kartın kendi PNG dosyası ve sütun/satır düzeni vardır. Orijinal kayıtlar değişmez.</p></section>
+<section><div class="row"><button id="addVariant">＋ Varyant ekle</button><button id="clear">Varyantları temizle</button><span id="variantInfo" class="muted">Henüz varyant eklenmedi</span></div><div class="row"><label>Sütun <input id="cols" type="number" min="1" max="128" value="4" style="width:65px"></label><label>Satır <input id="rows" type="number" min="1" max="128" value="2" style="width:65px"></label><label>PNG başına dolu kare (0 = otomatik) <input id="defaultFilledFrames" type="number" min="0" max="512" value="0" style="width:75px"></label><button id="reapply">Tüm varyantları yeniden böl</button></div><p class="muted">＋ ile sınırsız sayıda varyant kartı ekleyebilirsin. Her varyanta birden fazla PNG yükleyip sırayla birleştirebilirsin (cihaz belleği sınırları geçerlidir). Her PNG için 3×3 dahil özgün grid korunur. Örneğin 3×3 içindeki 8 kareyi almak için dolu kareyi 8 seç: 9. boş slot animasyona eklenmez. Her PNG için sayıyı kartından ayrıca değiştirebilirsin. Orijinal kayıtlar değişmez.</p></section>
 <section><div class="row"><label>Hız <input id="fps" type="range" min="1" max="60" value="8"><span id="fpsText">8 FPS</span></label><button id="play">⏸ Duraklat</button><button id="prev">◀</button><button id="next">▶</button><label>Hizalama <select id="align"><option value="original">Kaynak konumu</option><option value="feet">Ayak tabanı</option><option value="center">Merkez</option><option value="average">Ortalama konum</option></select></label><label>Görüntü <select id="view"><option value="animation">Animasyon</option><option value="average">Ortalama kare (üst üste)</option></select></label><span id="counter" class="muted">0 / 0</span></div></section>
 <section><div class="focusbar"><b id="focusTitle">Tüm animasyonlar</b><button id="back" class="hidden">← Tümünü göster</button></div><div id="cards" class="cards"></div><p class="muted">Bir önizlemeye dokun: tek başına büyük gösterilir. Geri dönerek hepsini aynı anda karşılaştırabilirsin. Ortalama kare görünümü, tüm kareleri üst üste bindirir; Ortalama konum seçimi ise karakterlerin ağırlık merkezini hizalar.</p></section>
 <section><h2>Nihai varyant · Kare kare hizalama</h2><p class="muted">Bir varyant kartında “Nihai seç” düğmesine bas. Her kareyi orijinal referansla üst üste görüp parmağınla sürükleyerek hizala. Sadece nihai varyant hareket eder; orijinal hiç değişmez.</p><div class="row"><strong id="finalName">Henüz nihai varyant seçilmedi</strong><label>Varyant ölçeği <input id="editorScale" type="range" min="50" max="200" value="100"><span id="editorScaleText">100%</span></label><button id="autoScale" type="button">Bu karenin boyutunu eşitle</button><button id="autoScaleAll" type="button">Tüm karelerin boyutunu eşitle</button><button id="autoAlignOne" type="button">Bu kareyi otomatik hizala</button><button id="autoAlignAll" type="button">Tüm kareleri otomatik hizala (Rigid V9)</button><label><input id="v9Appearance" type="checkbox"> Korumacı renk/kenar tutarlılığı</label><label>İterasyon <input id="autoIterations" type="number" min="1" max="30" value="8" style="width:64px"></label><label><input id="autoLockSize" type="checkbox" checked> Boyutu alpha ile sabitle</label><button id="autoAgain" type="button">Bir tur daha iyileştir</button><label>Renk ağırlığı <input id="colorWeight" type="range" min="0" max="100" value="70"><span id="colorWeightText">70%</span></label><label>Arama hassasiyeti<select id="autoQuality"><option value="fast">Hızlı</option><option value="balanced" selected>Dengeli</option><option value="fine">Hassas</option></select></label><label>Hayalet referans<select id="ghostMode"><option value="original">Orijinal aynı kare</option><option value="previous">Nihai varyantın önceki karesi</option></select></label><label>Referans saydamlığı <input id="refOpacity" type="range" min="0" max="100" value="40"></label><label><input id="showReference" type="checkbox" checked> Referansı göster</label><label>Çıktı <select id="singlePixels"><option>512</option><option selected>1024</option><option>2048</option></select></label></div><p id="autoStatus" class="muted">Otomatik hizalama: bekliyor</p><p id="ghostInfo" class="muted">Referans: Orijinal aynı kare</p><canvas id="editor" class="editorCanvas" width="768" height="768"></canvas><div class="row"><button id="editorPrev">◀ Önceki kare</button><span id="editorFrame">0 / 0</span><button id="editorNext">Sonraki kare ▶</button><label>Kareye git <input id="editorJump" type="number" min="1" value="1" style="width:70px"></label><button id="editorReset">Kare hizalamasını sıfırla</button><button id="editorExport">Seçili kareyi şeffaf PNG indir</button></div><div class="row" style="margin:14px 0;padding:12px;border:1px solid #607f64;border-radius:12px"><strong>Hizalanmış nihai animasyonu dışa aktar</strong><label>Spritesheet düzeni <select id="alignedCols"><option value="auto">Otomatik</option><option>4</option><option>8</option><option>16</option></select></label><label>Spritesheet boyutu <select id="alignedSheetSize"><option>2048</option><option selected>4096</option><option>8192</option></select></label><button id="alignedSheetExport" type="button">Şeffaf spritesheet PNG</button><label>Tek kare çözünürlüğü <select id="alignedFrameSize"><option>512</option><option selected>1024</option><option>2048</option></select></label><button id="alignedZipExport" type="button">Hizalanmış kareler ZIP</button></div><div class="muted" id="exportProgress">Tüm kareler mevcut X/Y ve ölçek düzeltmeleriyle aktarılır. Orijinal referans dışa aktarılmaz.</div><div class="editorGrid"><label>Yatay X (kaynak piksel)<input id="offsetX" type="number" value="0"></label><label>Dikey Y (kaynak piksel)<input id="offsetY" type="number" value="0"></label></div><p class="muted">Hizalama bu ekrandaki varyant için tutulur. Nihai kare PNG'si referans olmadan, şeffaf arka planla çıkar. Her kareyi ayrı ayrı indirebilirsin.</p></section></main>
@@ -72,11 +72,67 @@ async function draw(){
  }
  $('counter').textContent=(pos+1)+' / '+max;
 }
-function rebuild(){let list=getEntries(),cards=$('cards');cards.replaceChildren();cards.classList.toggle('solo',focus!==null);$('back').classList.toggle('hidden',focus===null);$('focusTitle').textContent=focus===null?'Tüm animasyonlar':(list.find(e=>e.id===focus)?.name||'Büyük önizleme');for(let e of list){if(focus!==null&&focus!==e.id)continue;let card=document.createElement('div');card.className='card'+(focus===e.id?' focused':'')+(finalId===e.id?' selectedFinal':'');card.tabIndex=0;let title=document.createElement('h3');title.textContent=e.name+' · '+frameCount(e)+' kare';card.append(title);if(e.kind!=='variant'){let names=document.createElement('p');names.className='muted';names.style.overflowWrap='anywhere';let records=e.records||[],first=records[frameAt(e,index)];names.textContent=e.kind==='original'?'Dosya: '+(first?.source?.name||first?.name||'Kaynak dosya adı bulunamadı'):'AI çıktısı: '+(first?.editedName||((first?.blob&&first.blob.name)||'Eski kayıtta dosya adı saklanmamış'))+' · Kaynak: '+(first?.source?.name||first?.name||'—');card.append(names)}if(e.kind==='variant'){let remove=document.createElement('button');remove.textContent='Sil';remove.className='remove';remove.onclick=ev=>{ev.stopPropagation();variants=variants.filter(v=>v.id!==e.id);if(focus===e.id)focus=null;if(finalId===e.id)finalId=null;rebuild();updateEditor();msg('Varyant silindi; orijinaller korundu')};title.append(remove);let choose=document.createElement('button');choose.className='finalButton';choose.textContent=finalId===e.id?'✓ Nihai seçildi':'Nihai seç';choose.disabled=!e.frames.length;choose.onclick=ev=>{ev.stopPropagation();finalId=e.id;editorIndex=0;rebuild();updateEditor()};card.append(choose)}let cv=document.createElement('canvas');cv.width=cv.height=focus===e.id?768:480;cv.id='cv-'+e.id;card.append(cv);if(e.kind==='variant'){let input=document.createElement('input');input.type='file';input.multiple=true;input.accept='image/png,image/webp';input.style.width='100%';input.onclick=ev=>ev.stopPropagation();input.onchange=ev=>{ev.stopPropagation();loadVariant(e.v,[...ev.target.files]);ev.target.value=''};card.append(input);let text=document.createElement('small');text.style.display='block';text.style.overflowWrap='anywhere';text.textContent='Dosyalar: '+((e.v.parts||[]).map(p=>p.name+' ('+p.cols+'×'+p.rows+')').join(' + ')||'Henüz yüklenmedi')+' · Kare aralıkları: '+(e.v.ranges||[]).map(p=>p.start+'–'+p.end).join(' + ');card.append(text);
-  if(e.v.parts?.length>1){const control=document.createElement('div');control.className='muted';control.style.marginTop='8px';control.textContent='Parça sırası (elle değiştir):';
-   e.v.parts.forEach((part,partIndex)=>{let line=document.createElement('div');line.className='row';let name=document.createElement('span');name.style.overflowWrap='anywhere';name.textContent=(partIndex+1)+'. '+part.name;let up=document.createElement('button');up.textContent='↑';up.disabled=partIndex===0;let down=document.createElement('button');down.textContent='↓';down.disabled=partIndex===e.v.parts.length-1;
-    const move=delta=>{const next=[...e.v.parts],other=partIndex+delta;[next[partIndex],next[other]]=[next[other],next[partIndex]];next.forEach((p,i)=>{p.order=i;p.manualOrder=true});try{const merged=assembleParts(next);e.v.parts=merged.parts;e.v.frames=merged.frames;e.v.ranges=merged.positions;e.v.offsets=[];editorIndex=0;rebuild();updateEditor()}catch(err){msg(err.message)}};
-    up.onclick=ev=>{ev.stopPropagation();move(-1)};down.onclick=ev=>{ev.stopPropagation();move(1)};line.append(name,up,down);control.append(line)});card.append(control)}
+function rebuild(){let list=getEntries(),cards=$('cards');cards.replaceChildren();cards.classList.toggle('solo',focus!==null);$('back').classList.toggle('hidden',focus===null);$('focusTitle').textContent=focus===null?'Tüm animasyonlar':(list.find(e=>e.id===focus)?.name||'Büyük önizleme');for(let e of list){if(focus!==null&&focus!==e.id)continue;let card=document.createElement('div');card.className='card'+(focus===e.id?' focused':'')+(finalId===e.id?' selectedFinal':'');card.tabIndex=0;let title=document.createElement('h3');title.textContent=e.name+' · '+frameCount(e)+' kare';card.append(title);if(e.kind!=='variant'){let names=document.createElement('p');names.className='muted';names.style.overflowWrap='anywhere';let records=e.records||[],first=records[frameAt(e,index)];names.textContent=e.kind==='original'?'Dosya: '+(first?.source?.name||first?.name||'Kaynak dosya adı bulunamadı'):'AI çıktısı: '+(first?.editedName||((first?.blob&&first.blob.name)||'Eski kayıtta dosya adı saklanmamış'))+' · Kaynak: '+(first?.source?.name||first?.name||'—');card.append(names)}if(e.kind==='variant'){let remove=document.createElement('button');remove.textContent='Sil';remove.className='remove';remove.onclick=ev=>{ev.stopPropagation();variants=variants.filter(v=>v.id!==e.id);if(focus===e.id)focus=null;if(finalId===e.id)finalId=null;rebuild();updateEditor();msg('Varyant silindi; orijinaller korundu')};title.append(remove);let choose=document.createElement('button');choose.className='finalButton';choose.textContent=finalId===e.id?'✓ Nihai seçildi':'Nihai seç';choose.disabled=!e.frames.length;choose.onclick=ev=>{ev.stopPropagation();finalId=e.id;editorIndex=0;rebuild();updateEditor()};card.append(choose)}let cv=document.createElement('canvas');cv.width=cv.height=focus===e.id?768:480;cv.id='cv-'+e.id;card.append(cv);if(e.kind==='variant'){let input=document.createElement('input');input.type='file';input.multiple=true;input.accept='image/png,image/webp';input.style.width='100%';input.onclick=ev=>ev.stopPropagation();input.onchange=ev=>{ev.stopPropagation();loadVariant(e.v,[...ev.target.files]);ev.target.value=''};card.append(input);let text=document.createElement('small');text.style.display='block';text.style.overflowWrap='anywhere';text.textContent='Dosyalar: '+((e.v.parts||[]).map(p=>p.name+' ('+p.cols+'×'+p.rows+' • '+(p.usedFrames??p.cols*p.rows)+'/'+(p.cols*p.rows)+' dolu kare)').join(' + ')||'Henüz yüklenmedi')+' · Kare aralıkları: '+(e.v.ranges||[]).map(p=>p.start+'–'+p.end).join(' + ');card.append(text);
+  if(e.v.parts?.length){
+   const control=document.createElement('div');control.className='muted';
+   control.style.marginTop='8px';
+   control.textContent='PNG başına gerçek animasyon kareleri (kalan grid hücreleri boş sayılır):';
+   e.v.parts.forEach((part,partIndex)=>{
+    const line=document.createElement('div');line.className='row';
+    line.style.padding='6px 0';
+    const name=document.createElement('span');
+    name.style.overflowWrap='anywhere';name.textContent=(partIndex+1)+'. '+part.name+' ('+part.cols+'×'+part.rows+')';
+    const countLabel=document.createElement('label');
+    countLabel.textContent='Dolu kare: ';
+    const countInput=document.createElement('input');
+    countInput.type='number';countInput.min='1';countInput.max=String(part.cols*part.rows);
+    countInput.value=String(part.usedFrames??part.cols*part.rows);
+    countInput.style.width='72px';countInput.title='Bu PNG içindeki gerçek frame sayısı, sondaki boş slotlar atlanır';
+    countInput.onclick=ev=>ev.stopPropagation();
+    countInput.onchange=ev=>{
+     ev.stopPropagation();
+     const used=Math.floor(+countInput.value);
+     if(!Number.isFinite(used)||used<1||used>part.cols*part.rows){
+      countInput.value=String(part.usedFrames??part.cols*part.rows);
+      msg('Gerçek kare sayısı 1–'+(part.cols*part.rows)+' arasında olmalı');
+      return;
+     }
+     if(used===(part.usedFrames??part.cols*part.rows))return;
+     const edits=e.v.offsets?.some(o=>o&&(o.x||o.y||(o.scale&&o.scale!==1)));
+     if(edits&&!confirm('Kare indeksleri değişebilir. Bu varyantın manuel hizalama ayarları sıfırlansın mı?')){
+      countInput.value=String(part.usedFrames??part.cols*part.rows);return;
+     }
+     const next=e.v.parts.map(p=>({...p}));
+     next[partIndex].usedFrames=used;
+     next[partIndex].manualFrameCount=true;
+     try{
+      const merged=assembleParts(next);
+      e.v.parts=merged.parts;e.v.frames=merged.frames;e.v.ranges=merged.positions;e.v.offsets=[];
+      editorIndex=0;rebuild();updateEditor();
+      msg(part.name+': '+used+'/'+(part.cols*part.rows)+' dolu kare; boş hücreler atlandı');
+     }catch(err){countInput.value=String(part.usedFrames??part.cols*part.rows);msg(err.message)}
+    };
+    countLabel.append(countInput);
+    line.append(name,countLabel);
+    if(e.v.parts.length>1){
+     const up=document.createElement('button');up.textContent='↑';up.disabled=partIndex===0;
+     const down=document.createElement('button');down.textContent='↓';down.disabled=partIndex===e.v.parts.length-1;
+     const move=delta=>{
+      const next=[...e.v.parts],other=partIndex+delta;
+      [next[partIndex],next[other]]=[next[other],next[partIndex]];
+      next.forEach((p,i)=>{p.order=i;p.manualOrder=true});
+      try{const merged=assembleParts(next);e.v.parts=merged.parts;e.v.frames=merged.frames;
+       e.v.ranges=merged.positions;e.v.offsets=[];editorIndex=0;rebuild();updateEditor()}
+      catch(err){msg(err.message)}
+     };
+     up.onclick=ev=>{ev.stopPropagation();move(-1)};
+     down.onclick=ev=>{ev.stopPropagation();move(1)};
+     line.append(up,down);
+    }
+    control.append(line);
+   });
+   card.append(control);
+  }
  }card.onclick=ev=>{if(ev.target.closest('button,input'))return;if(focus!==e.id){focus=e.id;rebuild()}};card.onkeydown=ev=>{if(ev.key==='Enter'){focus=e.id;rebuild()}};cards.append(card)}$('variantInfo').textContent=variants.length+' varyant';draw()}
 function partRange(name){
  const base=String(name).replace(/\\/g,'/').split('/').pop();
@@ -88,12 +144,21 @@ function partOrder(parts){return [...parts].sort((a,b)=>((a.manualOrder??a.order
 function assembleParts(parts){
  const ordered=partOrder(parts),frames=[],positions=[],labels=[];let cursor=1;
  for(const part of ordered){
-  const extracted=split(part.image,part.cols,part.rows),range=part.manualOrder===true?null:partRange(part.name);
-  if(range){
+  const slots=split(part.image,part.cols,part.rows),capacity=slots.length;
+  const range=part.manualOrder===true?null:partRange(part.name);
+  const rangeCount=range?range.end-range.start+1:null;
+  const filled=part.usedFrames==null?(rangeCount>=1&&rangeCount<=capacity?rangeCount:capacity):Number(part.usedFrames);
+  if(!Number.isInteger(filled)||filled<1||filled>capacity)
+   throw Error(part.name+' için dolu kare sayısı 1–'+capacity+' olmalı (şu an '+filled+')');
+  const extracted=slots.slice(0,filled);
+  // User-set filled count takes priority over filename, e.g. 3×3 grid with 8 frames.
+  if(range&&!part.manualFrameCount){
    if(range.start!==cursor)throw Error(range.start<cursor?'Kare aralıkları çakışıyor: '+part.name:'Eksik kare: '+cursor+'–'+(range.start-1));
-   if(range.end-range.start+1!==extracted.length)throw Error(part.name+' '+(range.end-range.start+1)+' kare olarak adlandırılmış ama grid '+extracted.length+' kare üretiyor. Sütun/satır ayarını kontrol et.');
+   if(rangeCount!==filled)throw Error(part.name+' '+rangeCount+' kare olarak adlandırılmış ama '+filled+' dolu kare seçilmiş.');
   }
-  frames.push(...extracted);labels.push(part.name);positions.push({start:cursor,end:cursor+extracted.length-1,name:part.name});cursor+=extracted.length;
+  frames.push(...extracted);labels.push(part.name);
+  positions.push({start:cursor,end:cursor+filled-1,name:part.name,filled,slots:capacity});
+  cursor+=filled;
  }
  if(frames.length>512)throw Error('En fazla 512 kare');
  return {frames,positions,labels,parts:ordered};
@@ -108,7 +173,11 @@ async function loadVariant(v,files){
   const incoming=[];
   for(const file of files){
    const image=await loadImage(file);
-   incoming.push({name:file.name,image,cols:Math.max(1,Math.floor(+$('cols').value||4)),rows:Math.max(1,Math.floor(+$('rows').value||2))});
+   const cols=Math.max(1,Math.floor(+$('cols').value||4)),rows=Math.max(1,Math.floor(+$('rows').value||2));
+   const slots=cols*rows,declared=Math.max(0,Math.floor(+$('defaultFilledFrames').value||0));
+   const range=partRange(file.name),namedCount=range?range.end-range.start+1:0;
+   const filled=declared>0?Math.min(declared,slots):(namedCount>=1&&namedCount<=slots?namedCount:slots);
+   incoming.push({name:file.name,image,cols,rows,usedFrames:filled,manualFrameCount:declared>0});
   }
   // A second file selection APPENDS, instead of replacing the first 16 frames.
   // If the same named part is selected again, replace only that part.
@@ -124,7 +193,19 @@ async function loadVariant(v,files){
 
 $('addVariant').onclick=()=>{let id='variant'+nextId++,v={id,name:'Varyant '+(nextId-1),parts:[],ranges:[],frames:[],offsets:[],scale:1,cols:4,rows:2};variants.push(v);rebuild()};
 $('clear').onclick=()=>{variants=[];focus=null;finalId=null;rebuild();updateEditor()};
-$('reapply').onclick=()=>{try{for(let v of variants)if(v.parts?.length){for(let p of v.parts){p.cols=+$('cols').value||4;p.rows=+$('rows').value||2}combineParts(v)}rebuild();updateEditor()}catch(e){msg(e.message)}};
+$('reapply').onclick=()=>{
+ try{
+  const cols=Math.max(1,Math.floor(+$('cols').value||4)),rows=Math.max(1,Math.floor(+$('rows').value||2));
+  const updates=variants.filter(v=>v.parts?.length).map(v=>{
+   const parts=v.parts.map(p=>({...p,cols,rows,usedFrames:Math.min(cols*rows,p.usedFrames??p.cols*p.rows)}));
+   return {v,merged:assembleParts(parts)};
+  });
+  for(const {v,merged} of updates){
+   v.parts=merged.parts;v.frames=merged.frames;v.ranges=merged.positions;v.offsets=[];
+  }
+  rebuild();updateEditor();
+ }catch(e){msg('Grid düzeni hatası: '+e.message)}
+};
 $('back').onclick=()=>{focus=null;rebuild()};
 $('align').onchange=draw;$('view').onchange=draw;
 $('fps').oninput=()=>{$('fpsText').textContent=$('fps').value+' FPS'};
