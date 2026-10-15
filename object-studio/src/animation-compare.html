@@ -411,12 +411,12 @@ async function updateEditor(){
  editorIndex=Math.min(editorIndex,v.frames.length-1);
  const im=v.frames[editorIndex],o=offset(v,editorIndex),original=await getOriginalDisplayReference(v,editorIndex);
  if(serial!==editorDrawId)return;
- const ghost=ghostRecord(v,editorIndex,original),frameScale=o.scale||v.scale||1,g=editorGeometry(im,ghost.im,canvas.width,{scale:frameScale});
+ const ghost=ghostRecord(v,editorIndex,original),frameScale=o.scale||v.scale||1,g=editorGeometry(im,original,canvas.width,{scale:frameScale});
  $('ghostInfo').textContent='Hayalet: '+ghost.label+' · Nihai kaynak: '+(v.ranges?.find(p=>editorIndex+1>=p.start&&editorIndex+1<=p.end)?.name||'—');
  if(ghost.im&&$('showReference').checked){
   ctx.save();ctx.globalAlpha=(+$('refOpacity').value)/100;
   if(ghost.kind==='previous'){
-   const prevOffset=offset(v,editorIndex-1),pg=editorGeometry(ghost.im,ghost.im,canvas.width,{scale:prevOffset.scale||v.scale||1});
+   const prevOffset=offset(v,editorIndex-1),prevRef=await getOriginalDisplayReference(v,editorIndex-1),pg=editorGeometry(ghost.im,prevRef,canvas.width,{scale:prevOffset.scale||v.scale||1});
    ctx.drawImage(ghost.im,pg.x+prevOffset.x*pg.s,pg.y+prevOffset.y*pg.s,ghost.im.width*pg.s,ghost.im.height*pg.s);
   }else ctx.drawImage(ghost.im,g.rx,g.ry,ghost.im.width*g.refScale,ghost.im.height*g.refScale);
   ctx.restore();
