@@ -146,3 +146,11 @@ test('AI spritesheet parts retain upload order and support manual reordering',()
  const check=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
  assert.equal(check.status,0,check.stderr);
 });
+
+test('automatic silhouette registration and per-frame transforms are present',()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
+ for(const key of ['autoAlignOne','autoAlignAll','registerAlpha(moving,reference','maskSimilarity','alphaSample','off.scale=effectiveScale','runAutoAlignment(true)'])assert.ok(html.includes(key),'missing '+key);
+ const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+ const check=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
+ assert.equal(check.status,0,check.stderr);
+});
