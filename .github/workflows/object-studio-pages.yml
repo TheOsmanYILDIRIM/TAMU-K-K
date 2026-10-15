@@ -44,6 +44,9 @@ jobs:
             --preview-sha "$PREVIEW_SHA" \
             --main-sha "$GITHUB_SHA"
           test -s _site/index.html
+          test -s _site/world-builder.html
+          test -s _site/object-studio/character-rig.html
+          grep -q 'CHARACTER RIG STUDIO' _site/index.html
           test -s _site/assembly.html
           test -s _site/object-studio/latest.html
           test -s _site/object-studio/terrain.html
