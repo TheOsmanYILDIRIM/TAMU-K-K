@@ -21,7 +21,18 @@ function frameCount(e){return e.kind==='variant'?e.frames.length:e.records.lengt
 function maxCount(){return Math.max(1,...getEntries().map(frameCount))}
 function frameAt(e,i){let n=frameCount(e);return n?Math.min(n-1,Math.floor((i/maxCount())*n)):0}
 async function resolveFrame(e,i){let k=frameAt(e,i);if(e.kind==='variant')return {im:e.frames[k]||null,dx:0,dy:0};let r=e.records[k];if(!r)return {im:null,dx:0,dy:0};return {im:await loadImage(e.kind==='original'?(r.source||r.blob):r.blob),dx:e.kind==='edited'?(+r.x||0):0,dy:e.kind==='edited'?(+r.y||0):0}}
-function alphaBounds(im){if(!im)return null;let w=im.width,h=im.height;if(!w||!h)return null;let c=document.createElement('canvas');c.width=w;c.height=h;let ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(im,0,0);let p=ctx.getImageData(0,0,w,h).data,step=Math.max(1,Math.floor(Math.max(w,h)/320)),x0=w,y0=h,x1=-1,y1=-1;for(let y=0;y<h;y+=step)for(let x=0;x<w;x+=step)if(p[(y*w+x)*4+3]>16){x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y)}return x1<0?[0,0,w,h]:[x0,y0,x1-x0+1,y1-y0+1]}
+function alphaBounds(im){
+ if(!im)return null;
+ const w=im.width,h=im.height,c=document.createElement('canvas');c.width=w;c.height=h;
+ const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(im,0,0);
+ const p=ctx.getImageData(0,0,w,h).data,step=Math.max(1,Math.floor(Math.max(w,h)/320));
+ let x0=w,y0=h,x1=-1,y1=-1;
+ for(let y=0;y<h;y+=step)for(let x=0;x<w;x+=step){
+  const i=(y*w+x)*4,a=p[i+3],grid=p[i]>226&&p[i+1]<53&&p[i+2]>218;
+  if(a>24&&!grid){x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y)}
+ }
+ return x1<0?[0,0,w,h]:[x0,y0,x1-x0+1,y1-y0+1];
+}
 const boundCache=new WeakMap();function bounds(im){if(!im)return null;if(boundCache.has(im))return boundCache.get(im);let b=alphaBounds(im);boundCache.set(im,b);return b}
 function paint(ctx,im,dx,dy,opacity=1){if(!im)return;let W=ctx.canvas.width,H=ctx.canvas.height,s=Math.min(W/im.width,H/im.height)*.92,b=bounds(im),align=$('align').value,x=(W-im.width*s)/2,y=(H-im.height*s)/2;
 if(align==='feet')y=H*.94-(b[1]+b[3])*s;
@@ -32,7 +43,7 @@ async function paintEntry(ctx,e,at,opacity=1){
  if(e.kind==='variant'&&finalId===e.id){
   const i=frameAt(e,at),im=e.frames[i],v=e.v;
   if(!im)return;
-  const rec=stored[dir][i],ref=rec?await loadImage(rec.source||rec.blob):null;
+  const ref=await getOriginalDisplayReference(v,i);
   const o=offset(v,i),g=editorGeometry(im,ref,ctx.canvas.width,{scale:o.scale||v.scale||1});
   ctx.save();ctx.globalAlpha=opacity;
   ctx.drawImage(im,g.x+o.x*g.s,g.y+o.y*g.s,im.width*g.s,im.height*g.s);
@@ -167,6 +178,10 @@ async function getAlignmentReference(v,job){
  }
  return null;
 }
+async function getOriginalDisplayReference(v,i){
+ const job=buildAlignmentPlan(v.frames.length,stored[dir].length,'original',i,v.ranges||[])[0];
+ return job?await getAlignmentReference(v,job):null;
+}
 async function buildScaleTargets(v){
  const plan=buildAlignmentPlan(v.frames.length,stored[dir].length,'original',null,v.ranges||[]);
  const partSamples=new Map(),allRefHeights=[],ownHeights=[];
@@ -242,9 +257,10 @@ function alphaSample(image){
  let area=0,cx=0,cy=0,topSum=0,topX=0,topY=0;
  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
   const i=y*N+x,a=pixels[i*4+3];
-  alpha[i]=a>24?a:0; // Ignore near-transparent red/magenta fringe pixels.
-  if(a>24){area++;cx+=x;cy+=y;if(y<N*.60){topSum++;topX+=x;topY+=y}}
-  const R=pixels[i*4],G=pixels[i*4+1],B=pixels[i*4+2],m=Math.max(1,R,G,B);
+  const R=pixels[i*4],G=pixels[i*4+1],B=pixels[i*4+2],grid=R>226&&G<53&&B>218,valid=a>24&&!grid;
+  alpha[i]=valid?a:0;
+  if(valid){area++;cx+=x;cy+=y;if(y<N*.60){topSum++;topX+=x;topY+=y}}
+  const m=Math.max(1,R,G,B);
   rgb[i*3]=Math.round(255*R/m);rgb[i*3+1]=Math.round(255*G/m);rgb[i*3+2]=Math.round(255*B/m);
  }
  const result={n:N,alpha,rgb,b,area,cx:area?cx/area:N/2,cy:area?cy/area:N/2,hx:topSum?topX/topSum:N/2,hy:topSum?topY/topSum:N/2};
@@ -378,7 +394,13 @@ $('colorWeight').oninput=()=>{$('colorWeightText').textContent=$('colorWeight').
 $('autoAlignOne').onclick=()=>runAutoAlignment(false);
 $('autoAlignAll').onclick=()=>runAutoAlignment(true);
 $('autoAgain').onclick=()=>runAutoAlignment(false);
-function ghostRecord(v,i,originalRef){if($('ghostMode').value==='previous'){if(i===0)return {im:null,kind:'previous',label:'Önceki kare yok (1. kare)'};return {im:v.frames[i-1],kind:'previous',label:'Nihai varyant · '+i+'. kare'}}return {im:originalRef,kind:'original',label:'Orijinal · '+(i+1)+'. kare'}}
+function ghostRecord(v,i,originalRef){
+ if($('ghostMode').value==='previous'&&i>0)return {im:v.frames[i-1],kind:'previous',label:'Nihai varyant · '+i+'. kare'};
+ const total=stored[dir].length;
+ if(originalRef)return {im:originalRef,kind:'original',label:total===v.frames.length?'Orijinal · '+(i+1)+'. kare':'Orijinal faz eşlemesi · '+(Math.floor((i+.5)*total/v.frames.length)+1)+'/'+total};
+ if(i>0)return {im:v.frames[i-1],kind:'previous',label:'Orijinal referans yok · önceki kare kullanılıyor'};
+ return {im:null,kind:'anchor',label:'İlk kare referanssız sabit'};
+}
 function offset(v,i){return v.offsets[i]||(v.offsets[i]={x:0,y:0})}
 let editorDrawId=0;
 async function updateEditor(){
@@ -387,7 +409,7 @@ async function updateEditor(){
  $('finalName').textContent=v?'Nihai: '+v.name:'Henüz nihai varyant seçilmedi';
  if(!v||!v.frames.length){$('editorFrame').textContent='0 / 0';$('ghostInfo').textContent='Referans seçilmedi';return}
  editorIndex=Math.min(editorIndex,v.frames.length-1);
- const im=v.frames[editorIndex],o=offset(v,editorIndex),rec=stored[dir][editorIndex]||null,original=rec?await loadImage(rec.source||rec.blob):null;
+ const im=v.frames[editorIndex],o=offset(v,editorIndex),original=await getOriginalDisplayReference(v,editorIndex);
  if(serial!==editorDrawId)return;
  const ghost=ghostRecord(v,editorIndex,original),frameScale=o.scale||v.scale||1,g=editorGeometry(im,ghost.im,canvas.width,{scale:frameScale});
  $('ghostInfo').textContent='Hayalet: '+ghost.label+' · Nihai kaynak: '+(v.ranges?.find(p=>editorIndex+1>=p.start&&editorIndex+1<=p.end)?.name||'—');
@@ -414,7 +436,7 @@ $('ghostMode').onchange=updateEditor;$('showReference').onchange=updateEditor;$(
 $('editor').addEventListener('pointerdown',e=>{let v=finalVariant();if(!v)return;let im=v.frames[editorIndex],s=editorGeometry(im,null,768,{scale:offset(v,editorIndex).scale||v.scale||1}).s;drag={x:e.clientX,y:e.clientY,s,ox:offset(v,editorIndex).x,oy:offset(v,editorIndex).y};e.currentTarget.setPointerCapture(e.pointerId)});
 $('editor').addEventListener('pointermove',e=>{if(!drag)return;let v=finalVariant();if(!v)return;let rect=$('editor').getBoundingClientRect(),scale=768/rect.width,o=offset(v,editorIndex);o.x=Math.round(drag.ox+(e.clientX-drag.x)*scale/drag.s);o.y=Math.round(drag.oy+(e.clientY-drag.y)*scale/drag.s);updateEditor()});
 for(let event of ['pointerup','pointercancel'])$('editor').addEventListener(event,()=>drag=null);
-$('editorExport').onclick=async()=>{try{let v=finalVariant();if(!v)throw Error('Önce nihai varyant seç');let im=v.frames[editorIndex],o=offset(v,editorIndex),size=+$('singlePixels').value,canvas=document.createElement('canvas');canvas.width=canvas.height=size;let refRec=stored[dir][editorIndex],ref=refRec?await loadImage(refRec.source||refRec.blob):null,g=editorGeometry(im,ref,size,{scale:o.scale||v.scale||1});canvas.getContext('2d').drawImage(im,g.x+o.x*g.s,g.y+o.y*g.s,im.width*g.s,im.height*g.s);await saveCanvas(canvas,'mineclonie_'+dir+'_frame_'+String(editorIndex+1).padStart(2,'0')+'.png');msg('Tek kare şeffaf PNG indirildi')}catch(e){msg(e.message)}};
+$('editorExport').onclick=async()=>{try{let v=finalVariant();if(!v)throw Error('Önce nihai varyant seç');let im=v.frames[editorIndex],o=offset(v,editorIndex),size=+$('singlePixels').value,canvas=document.createElement('canvas');canvas.width=canvas.height=size;let ref=await getOriginalDisplayReference(v,editorIndex),g=editorGeometry(im,ref,size,{scale:o.scale||v.scale||1});canvas.getContext('2d').drawImage(im,g.x+o.x*g.s,g.y+o.y*g.s,im.width*g.s,im.height*g.s);await saveCanvas(canvas,'mineclonie_'+dir+'_frame_'+String(editorIndex+1).padStart(2,'0')+'.png');msg('Tek kare şeffaf PNG indirildi')}catch(e){msg(e.message)}};
 
 
 async function paintAlignedFrame(canvas,v,i,x,y,size){
