@@ -6,7 +6,7 @@
 <section><div class="row"><button id="addVariant">＋ Varyant ekle</button><button id="clear">Varyantları temizle</button><span id="variantInfo" class="muted">Henüz varyant eklenmedi</span></div><div class="row"><label>Sütun <input id="cols" type="number" min="1" max="128" value="4" style="width:65px"></label><label>Satır <input id="rows" type="number" min="1" max="128" value="2" style="width:65px"></label><button id="reapply">Tüm varyantları yeniden böl</button></div><p class="muted">＋ ile sınırsız sayıda varyant kartı ekleyebilirsin. Her varyanta birden fazla PNG yükleyip sırayla birleştirebilirsin (cihaz belleği sınırları geçerlidir). Her kartın kendi PNG dosyası ve sütun/satır düzeni vardır. Orijinal kayıtlar değişmez.</p></section>
 <section><div class="row"><label>Hız <input id="fps" type="range" min="1" max="60" value="8"><span id="fpsText">8 FPS</span></label><button id="play">⏸ Duraklat</button><button id="prev">◀</button><button id="next">▶</button><label>Hizalama <select id="align"><option value="original">Kaynak konumu</option><option value="feet">Ayak tabanı</option><option value="center">Merkez</option><option value="average">Ortalama konum</option></select></label><label>Görüntü <select id="view"><option value="animation">Animasyon</option><option value="average">Ortalama kare (üst üste)</option></select></label><span id="counter" class="muted">0 / 0</span></div></section>
 <section><div class="focusbar"><b id="focusTitle">Tüm animasyonlar</b><button id="back" class="hidden">← Tümünü göster</button></div><div id="cards" class="cards"></div><p class="muted">Bir önizlemeye dokun: tek başına büyük gösterilir. Geri dönerek hepsini aynı anda karşılaştırabilirsin. Ortalama kare görünümü, tüm kareleri üst üste bindirir; Ortalama konum seçimi ise karakterlerin ağırlık merkezini hizalar.</p></section>
-<section><h2>Nihai varyant · Kare kare hizalama</h2><p class="muted">Bir varyant kartında “Nihai seç” düğmesine bas. Her kareyi orijinal referansla üst üste görüp parmağınla sürükleyerek hizala. Sadece nihai varyant hareket eder; orijinal hiç değişmez.</p><div class="row"><strong id="finalName">Henüz nihai varyant seçilmedi</strong><label>Varyant ölçeği <input id="editorScale" type="range" min="50" max="200" value="100"><span id="editorScaleText">100%</span></label><button id="autoScale" type="button">Bu karenin boyutunu eşitle</button><button id="autoScaleAll" type="button">Tüm karelerin boyutunu eşitle</button><button id="autoAlignOne" type="button">Bu kareyi otomatik hizala</button><button id="autoAlignAll" type="button">Tüm kareleri otomatik hizala</button><label>İterasyon <input id="autoIterations" type="number" min="1" max="30" value="8" style="width:64px"></label><label><input id="autoLockSize" type="checkbox" checked> Boyutu alpha ile sabitle</label><button id="autoAgain" type="button">Bir tur daha iyileştir</button><label>Renk ağırlığı <input id="colorWeight" type="range" min="0" max="100" value="70"><span id="colorWeightText">70%</span></label><label>Arama hassasiyeti<select id="autoQuality"><option value="fast">Hızlı</option><option value="balanced" selected>Dengeli</option><option value="fine">Hassas</option></select></label><label>Hayalet referans<select id="ghostMode"><option value="original">Orijinal aynı kare</option><option value="previous">Nihai varyantın önceki karesi</option></select></label><label>Referans saydamlığı <input id="refOpacity" type="range" min="0" max="100" value="40"></label><label><input id="showReference" type="checkbox" checked> Referansı göster</label><label>Çıktı <select id="singlePixels"><option>512</option><option selected>1024</option><option>2048</option></select></label></div><p id="autoStatus" class="muted">Otomatik hizalama: bekliyor</p><p id="ghostInfo" class="muted">Referans: Orijinal aynı kare</p><canvas id="editor" class="editorCanvas" width="768" height="768"></canvas><div class="row"><button id="editorPrev">◀ Önceki kare</button><span id="editorFrame">0 / 0</span><button id="editorNext">Sonraki kare ▶</button><label>Kareye git <input id="editorJump" type="number" min="1" value="1" style="width:70px"></label><button id="editorReset">Kare hizalamasını sıfırla</button><button id="editorExport">Seçili kareyi şeffaf PNG indir</button></div><div class="row" style="margin:14px 0;padding:12px;border:1px solid #607f64;border-radius:12px"><strong>Hizalanmış nihai animasyonu dışa aktar</strong><label>Spritesheet düzeni <select id="alignedCols"><option value="auto">Otomatik</option><option>4</option><option>8</option><option>16</option></select></label><label>Spritesheet boyutu <select id="alignedSheetSize"><option>2048</option><option selected>4096</option><option>8192</option></select></label><button id="alignedSheetExport" type="button">Şeffaf spritesheet PNG</button><label>Tek kare çözünürlüğü <select id="alignedFrameSize"><option>512</option><option selected>1024</option><option>2048</option></select></label><button id="alignedZipExport" type="button">Hizalanmış kareler ZIP</button></div><div class="muted" id="exportProgress">Tüm kareler mevcut X/Y ve ölçek düzeltmeleriyle aktarılır. Orijinal referans dışa aktarılmaz.</div><div class="editorGrid"><label>Yatay X (kaynak piksel)<input id="offsetX" type="number" value="0"></label><label>Dikey Y (kaynak piksel)<input id="offsetY" type="number" value="0"></label></div><p class="muted">Hizalama bu ekrandaki varyant için tutulur. Nihai kare PNG'si referans olmadan, şeffaf arka planla çıkar. Her kareyi ayrı ayrı indirebilirsin.</p></section></main>
+<section><h2>Nihai varyant · Kare kare hizalama</h2><p class="muted">Bir varyant kartında “Nihai seç” düğmesine bas. Her kareyi orijinal referansla üst üste görüp parmağınla sürükleyerek hizala. Sadece nihai varyant hareket eder; orijinal hiç değişmez.</p><div class="row"><strong id="finalName">Henüz nihai varyant seçilmedi</strong><label>Varyant ölçeği <input id="editorScale" type="range" min="50" max="200" value="100"><span id="editorScaleText">100%</span></label><button id="autoScale" type="button">Bu karenin boyutunu eşitle</button><button id="autoScaleAll" type="button">Tüm karelerin boyutunu eşitle</button><button id="autoAlignOne" type="button">Bu kareyi otomatik hizala</button><button id="autoAlignAll" type="button">Tüm kareleri otomatik hizala (Rigid V9)</button><label><input id="v9Appearance" type="checkbox"> Korumacı renk/kenar tutarlılığı</label><label>İterasyon <input id="autoIterations" type="number" min="1" max="30" value="8" style="width:64px"></label><label><input id="autoLockSize" type="checkbox" checked> Boyutu alpha ile sabitle</label><button id="autoAgain" type="button">Bir tur daha iyileştir</button><label>Renk ağırlığı <input id="colorWeight" type="range" min="0" max="100" value="70"><span id="colorWeightText">70%</span></label><label>Arama hassasiyeti<select id="autoQuality"><option value="fast">Hızlı</option><option value="balanced" selected>Dengeli</option><option value="fine">Hassas</option></select></label><label>Hayalet referans<select id="ghostMode"><option value="original">Orijinal aynı kare</option><option value="previous">Nihai varyantın önceki karesi</option></select></label><label>Referans saydamlığı <input id="refOpacity" type="range" min="0" max="100" value="40"></label><label><input id="showReference" type="checkbox" checked> Referansı göster</label><label>Çıktı <select id="singlePixels"><option>512</option><option selected>1024</option><option>2048</option></select></label></div><p id="autoStatus" class="muted">Otomatik hizalama: bekliyor</p><p id="ghostInfo" class="muted">Referans: Orijinal aynı kare</p><canvas id="editor" class="editorCanvas" width="768" height="768"></canvas><div class="row"><button id="editorPrev">◀ Önceki kare</button><span id="editorFrame">0 / 0</span><button id="editorNext">Sonraki kare ▶</button><label>Kareye git <input id="editorJump" type="number" min="1" value="1" style="width:70px"></label><button id="editorReset">Kare hizalamasını sıfırla</button><button id="editorExport">Seçili kareyi şeffaf PNG indir</button></div><div class="row" style="margin:14px 0;padding:12px;border:1px solid #607f64;border-radius:12px"><strong>Hizalanmış nihai animasyonu dışa aktar</strong><label>Spritesheet düzeni <select id="alignedCols"><option value="auto">Otomatik</option><option>4</option><option>8</option><option>16</option></select></label><label>Spritesheet boyutu <select id="alignedSheetSize"><option>2048</option><option selected>4096</option><option>8192</option></select></label><button id="alignedSheetExport" type="button">Şeffaf spritesheet PNG</button><label>Tek kare çözünürlüğü <select id="alignedFrameSize"><option>512</option><option selected>1024</option><option>2048</option></select></label><button id="alignedZipExport" type="button">Hizalanmış kareler ZIP</button></div><div class="muted" id="exportProgress">Tüm kareler mevcut X/Y ve ölçek düzeltmeleriyle aktarılır. Orijinal referans dışa aktarılmaz.</div><div class="editorGrid"><label>Yatay X (kaynak piksel)<input id="offsetX" type="number" value="0"></label><label>Dikey Y (kaynak piksel)<input id="offsetY" type="number" value="0"></label></div><p class="muted">Hizalama bu ekrandaki varyant için tutulur. Nihai kare PNG'si referans olmadan, şeffaf arka planla çıkar. Her kareyi ayrı ayrı indirebilirsin.</p></section></main>
 <script>
 'use strict';(()=>{
 const $=id=>document.getElementById(id),D=['NE','NW','SE','SW'];
@@ -394,6 +394,119 @@ $('colorWeight').oninput=()=>{$('colorWeightText').textContent=$('colorWeight').
 $('autoAlignOne').onclick=()=>runAutoAlignment(false);
 $('autoAlignAll').onclick=()=>runAutoAlignment(true);
 $('autoAgain').onclick=()=>runAutoAlignment(false);
+
+/* MINECLONIE RIGID SEQUENCE V9 — no warp, no pose deformation, no blur.
+   Whole-series estimation, stable head/body anchor, bounded scale, optional appearance pass. */
+function v9Sample(im){
+ const N=256,cv=document.createElement('canvas');cv.width=cv.height=N;
+ const cx=cv.getContext('2d',{willReadFrequently:true});cx.drawImage(im,0,0,N,N);
+ const d=cx.getImageData(0,0,N,N).data,columns=[];
+ let x0=N,y0=N,x1=0,y1=0,area=0;
+ for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+  const k=(y*N+x)*4;
+  if(d[k+3]<35 || (d[k]>226&&d[k+1]<53&&d[k+2]>218))continue;
+  x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);area++;
+ }
+ if(!area)return {valid:false};
+ const h=y1-y0+1;
+ let headX=0,headN=0,headLeft=N,headRight=0,coreX=0,coreN=0,coreY=0;
+ for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+  let k=(y*N+x)*4;if(d[k+3]<35 || (d[k]>226&&d[k+1]<53&&d[k+2]>218))continue;
+  const t=(y-y0)/h;
+  if(t>=.035&&t<=.17){headX+=x;headN++;headLeft=Math.min(headLeft,x);headRight=Math.max(headRight,x)}
+  if(t>=.24&&t<=.54){coreX+=x;coreY+=y;coreN++}
+ }
+ return {valid:true,headX:headN?headX/headN:(x0+x1)/2,headW:headN?headRight-headLeft+1:0,
+  coreX:coreN?coreX/coreN:(x0+x1)/2,coreY:coreN?coreY/coreN:(y0+y1)/2,
+  h,sourceWidth:im.width,sourceHeight:im.height,
+  footY:y1,x0,y0,x1,y1};
+}
+function v9Median(a){if(!a.length)return 0;const b=[...a].sort((x,y)=>x-y);return b[Math.floor(b.length/2)]}
+function v9Smooth(a,i,radius=2){
+ let vals=[];for(let j=Math.max(0,i-radius);j<=Math.min(a.length-1,i+radius);j++)vals.push(a[j]);
+ return v9Median(vals);
+}
+function v9Appearance(frames){
+ // Conservative frame-wide chroma matching: only globally meaningful outliers.
+ // Keeps the alpha mask and all spatial pixels unchanged; never blends neighboring frames.
+ const stats=frames.map(im=>{
+  const cv=document.createElement('canvas');cv.width=im.width;cv.height=im.height;
+  const ctx=cv.getContext('2d',{willReadFrequently:true});ctx.drawImage(im,0,0);
+  const id=ctx.getImageData(0,0,cv.width,cv.height),d=id.data;
+  let sums=[0,0,0],count=0;
+  for(let k=0;k<d.length;k+=16){
+   if(d[k+3]<220)continue;
+   let mx=Math.max(d[k],d[k+1],d[k+2]),mn=Math.min(d[k],d[k+1],d[k+2]);
+   if(mx-mn<9)continue;
+   for(let p=0;p<3;p++)sums[p]+=d[k+p];
+   count++;
+  }
+  return {cv,ctx,id,mean:sums.map(x=>count?x/count:128)};
+ });
+ const target=[0,1,2].map(ch=>v9Median(stats.map(s=>s.mean[ch])));
+ return stats.map(s=>{
+  const shifts=target.map((t,ch)=>Math.max(-5,Math.min(5,(t-s.mean[ch])*.20)));
+  const d=s.id.data;
+  for(let k=0;k<d.length;k+=4){
+   const a=d[k+3];if(a===0)continue;
+   if(a<12){d[k+3]=0;d[k]=d[k+1]=d[k+2]=0;continue}
+   if(a>=160)for(let ch=0;ch<3;ch++)d[k+ch]=Math.max(0,Math.min(255,Math.round(d[k+ch]+shifts[ch])));
+  }
+  s.ctx.putImageData(s.id,0,0);return s.cv;
+ });
+}
+let v9Busy=false;
+async function v9Run(all=false,scaleOnly=false){
+ const v=finalVariant();if(!v||!v.frames.length||v9Busy)return;
+ v9Busy=true;
+ const buttons=['autoScale','autoScaleAll','autoAlignOne','autoAlignAll','autoAgain'].map($);
+ buttons.forEach(b=>b.disabled=true);
+ try{
+  const frames=v.frames,n=frames.length,descs=frames.map(v9Sample);
+  const valid=descs.filter(d=>d.valid);if(!valid.length)throw Error('Görünür karakter bulunamadı');
+  const headW=v9Median(valid.map(d=>d.headW).filter(x=>x>4)),headH=v9Median(valid.map(d=>d.h));
+  // Natural walk poses change silhouette height. Stabilize by head width first,
+  // and cap changes. No limb shape or non-uniform scaling.
+  const scales=descs.map(d=>{
+    if(!d.valid)return 1;
+    const head=d.headW>4?headW/d.headW:1;
+    const vscale=Math.max(.91,Math.min(1.09,head));
+    return Math.abs(vscale-1)<.012?1:vscale;
+  });
+  const hx=descs.map(d=>d.valid?d.headX:128),cx=descs.map(d=>d.valid?d.coreX:128);
+  const cy=descs.map(d=>d.valid?d.coreY:128);
+  const rawAnchor=hx.map((x,i)=>x*.65+cx[i]*.35);
+  const targetX=v9Median(rawAnchor);
+  const yTargets=cy.map((y,i)=>cy[i]*.6+v9Smooth(cy,i)*.4);
+  const chosen=all?Array.from({length:n},(_,i)=>i):[editorIndex];
+  for(const i of chosen){
+   const d=descs[i];if(!d.valid)continue;
+   const o=offset(v,i);
+   // Preserve original per-frame motion in Y. Only remove horizontal camera jitter.
+   const desiredX=targetX;
+   const deltaX=(desiredX-(d.headX*.65+d.coreX*.35))*d.sourceWidth/256;
+   const deltaY=(yTargets[i]-d.coreY)*d.sourceHeight/256;
+   // Stable target across all frames; idempotent, no cumulative previous-frame offsets.
+   o.scale=scales[i];
+   if(!scaleOnly){o.x=Math.round(deltaX / Math.max(.1,o.scale));o.y=Math.round(deltaY / Math.max(.1,o.scale))}
+   o.alignmentType='rigid-v9';o.score=null;o.registrationSeed=null;
+   $('autoStatus').textContent='Rigid V9 • '+(i+1)+'/'+n+' • ölçek '+Math.round(o.scale*100)+'%';
+   if(i%8===7)await new Promise(r=>setTimeout(r,0));
+  }
+  if(!scaleOnly && all && $('v9Appearance')?.checked){
+   v.frames=v9Appearance(v.frames);
+  }
+  await updateEditor();
+  msg('Rigid V9: '+chosen.length+' kare işlendi • warp yok • poz korunur • 32 FPS kaynağı değiştirilmez');
+ }catch(e){msg('Rigid V9 hatası: '+e.message)}
+ finally{v9Busy=false;buttons.forEach(b=>b.disabled=false)}
+}
+$('autoScale').onclick=()=>v9Run(false,true);
+$('autoScaleAll').onclick=()=>v9Run(true,true);
+$('autoAlignOne').onclick=()=>v9Run(false,false);
+$('autoAlignAll').onclick=()=>v9Run(true,false);
+$('autoAgain').onclick=()=>v9Run(true,false);
+
 function ghostRecord(v,i,originalRef){
  if($('ghostMode').value==='previous'&&i>0)return {im:v.frames[i-1],kind:'previous',label:'Nihai varyant · '+i+'. kare'};
  const total=stored[dir].length;
