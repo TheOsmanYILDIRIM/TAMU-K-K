@@ -1,0 +1,47 @@
+name: LOVE world-player integration
+on:
+  push:
+    branches: [experiment/world-player-integration-v1]
+  workflow_dispatch:
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lua and LOVE
+        run: sudo apt-get update && sudo apt-get install -y lua5.4 love xvfb
+      - name: Lua tests
+        working-directory: game/love
+        run: |
+          lua5.4 tests/run.lua
+          lua5.4 tests/runtime.lua
+          lua5.4 tests/world_stage2.lua
+          lua5.4 tests/player_stage3.lua
+          lua5.4 tests/integration.lua
+      - name: Real LOVE render smoke
+        env:
+          OSMAN_LOVE_INTEGRATION_SMOKE: "1"
+        run: |
+          set -o pipefail
+          timeout 90s xvfb-run -a love game/love 2>&1 | tee /tmp/love-log.txt
+          grep -q LOVE_INTEGRATION_SMOKE_OK /tmp/love-log.txt
+          find "$HOME/.local/share/love" -name world-player-smoke.png -exec cp {} /tmp/world-player-smoke.png \;
+          test -s /tmp/world-player-smoke.png
+      - name: Multi-biome diagnostic screenshot
+        env:
+          OSMAN_LOVE_INTEGRATION_SMOKE: "1"
+          OSMAN_LOVE_BIOME_SMOKE: "1"
+        run: |
+          set -o pipefail
+          timeout 90s xvfb-run -a love game/love 2>&1 | tee /tmp/love-biome-log.txt
+          grep -q LOVE_INTEGRATION_SMOKE_OK /tmp/love-biome-log.txt
+          find "$HOME/.local/share/love" -name world-player-biome-smoke.png -exec cp {} /tmp/world-player-biome-smoke.png \;
+          test -s /tmp/world-player-biome-smoke.png
+      - name: Upload render evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: world-player-smoke
+          path: |
+            /tmp/world-player-smoke.png
+            /tmp/world-player-biome-smoke.png
+          if-no-files-found: error
