@@ -219,5 +219,6 @@ test('aligned sprite ZIP writer creates a valid local and central directory',asy
  assert.equal(bytes.readUInt32LE(0),0x04034b50);
  assert.equal(bytes.readUInt32LE(bytes.length-22),0x06054b50);
  assert.equal(bytes.readUInt16LE(bytes.length-12),2,'ZIP end record entry count');
- assert.equal(bytes.readUInt32LE(bytes.length-10),2,'ZIP entry count in central directory');
+ assert.equal(bytes.readUInt16LE(bytes.length-14),2,'ZIP entry count on disk');
+ assert.ok(bytes.readUInt32LE(bytes.length-10)>0,'Central directory must not be empty');
 });
