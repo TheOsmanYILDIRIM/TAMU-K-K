@@ -222,3 +222,16 @@ test('aligned sprite ZIP writer creates a valid local and central directory',asy
  assert.equal(bytes.readUInt16LE(bytes.length-14),2,'ZIP entry count on disk');
  assert.ok(bytes.readUInt32LE(bytes.length-10)>0,'Central directory must not be empty');
 });
+
+test('size matching applies to every final variant frame and retains X/Y offsets',()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
+ for(const key of ['id="autoScaleAll"','async function matchFrameSize(v,i)','for(let i=0;i<v.frames.length;i++)','o.scale=factor','await matchFrameSize(v,i)','await updateEditor()']){
+  assert.ok(html.includes(key),'missing '+key);
+ }
+ const fn=html.slice(html.indexOf('async function matchFrameSize(v,i)'),html.indexOf('let matchingAllSizes=',html.indexOf('async function matchFrameSize(v,i)')));
+ assert.ok(!fn.includes('o.x='),'matching size must not overwrite X');
+ assert.ok(!fn.includes('o.y='),'matching size must not overwrite Y');
+ const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+ const check=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
+ assert.equal(check.status,0,check.stderr);
+});
