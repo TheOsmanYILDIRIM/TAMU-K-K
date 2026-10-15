@@ -6,7 +6,7 @@
 <section><div class="row"><button id="addVariant">＋ Varyant ekle</button><button id="clear">Varyantları temizle</button><span id="variantInfo" class="muted">Henüz varyant eklenmedi</span></div><div class="row"><label>Sütun <input id="cols" type="number" min="1" max="128" value="4" style="width:65px"></label><label>Satır <input id="rows" type="number" min="1" max="128" value="2" style="width:65px"></label><button id="reapply">Tüm varyantları yeniden böl</button></div><p class="muted">＋ ile sınırsız sayıda varyant kartı ekleyebilirsin. Her varyanta birden fazla PNG yükleyip sırayla birleştirebilirsin (cihaz belleği sınırları geçerlidir). Her kartın kendi PNG dosyası ve sütun/satır düzeni vardır. Orijinal kayıtlar değişmez.</p></section>
 <section><div class="row"><label>Hız <input id="fps" type="range" min="1" max="60" value="8"><span id="fpsText">8 FPS</span></label><button id="play">⏸ Duraklat</button><button id="prev">◀</button><button id="next">▶</button><label>Hizalama <select id="align"><option value="original">Kaynak konumu</option><option value="feet">Ayak tabanı</option><option value="center">Merkez</option><option value="average">Ortalama konum</option></select></label><label>Görüntü <select id="view"><option value="animation">Animasyon</option><option value="average">Ortalama kare (üst üste)</option></select></label><span id="counter" class="muted">0 / 0</span></div></section>
 <section><div class="focusbar"><b id="focusTitle">Tüm animasyonlar</b><button id="back" class="hidden">← Tümünü göster</button></div><div id="cards" class="cards"></div><p class="muted">Bir önizlemeye dokun: tek başına büyük gösterilir. Geri dönerek hepsini aynı anda karşılaştırabilirsin. Ortalama kare görünümü, tüm kareleri üst üste bindirir; Ortalama konum seçimi ise karakterlerin ağırlık merkezini hizalar.</p></section>
-<section><h2>Nihai varyant · Kare kare hizalama</h2><p class="muted">Bir varyant kartında “Nihai seç” düğmesine bas. Her kareyi orijinal referansla üst üste görüp parmağınla sürükleyerek hizala. Sadece nihai varyant hareket eder; orijinal hiç değişmez.</p><div class="row"><strong id="finalName">Henüz nihai varyant seçilmedi</strong><label>Varyant ölçeği <input id="editorScale" type="range" min="50" max="200" value="100"><span id="editorScaleText">100%</span></label><button id="autoScale" type="button">Boyutu referansa eşitle</button><label>Hayalet referans<select id="ghostMode"><option value="original">Orijinal aynı kare</option><option value="previous">Nihai varyantın önceki karesi</option></select></label><label>Referans saydamlığı <input id="refOpacity" type="range" min="0" max="100" value="40"></label><label><input id="showReference" type="checkbox" checked> Referansı göster</label><label>Çıktı <select id="singlePixels"><option>512</option><option selected>1024</option><option>2048</option></select></label></div><p id="ghostInfo" class="muted">Referans: Orijinal aynı kare</p><canvas id="editor" class="editorCanvas" width="768" height="768"></canvas><div class="row"><button id="editorPrev">◀ Önceki kare</button><span id="editorFrame">0 / 0</span><button id="editorNext">Sonraki kare ▶</button><label>Kareye git <input id="editorJump" type="number" min="1" value="1" style="width:70px"></label><button id="editorReset">Kare hizalamasını sıfırla</button><button id="editorExport">Seçili kareyi şeffaf PNG indir</button></div><div class="editorGrid"><label>Yatay X (kaynak piksel)<input id="offsetX" type="number" value="0"></label><label>Dikey Y (kaynak piksel)<input id="offsetY" type="number" value="0"></label></div><p class="muted">Hizalama bu ekrandaki varyant için tutulur. Nihai kare PNG'si referans olmadan, şeffaf arka planla çıkar. Her kareyi ayrı ayrı indirebilirsin.</p></section></main>
+<section><h2>Nihai varyant · Kare kare hizalama</h2><p class="muted">Bir varyant kartında “Nihai seç” düğmesine bas. Her kareyi orijinal referansla üst üste görüp parmağınla sürükleyerek hizala. Sadece nihai varyant hareket eder; orijinal hiç değişmez.</p><div class="row"><strong id="finalName">Henüz nihai varyant seçilmedi</strong><label>Varyant ölçeği <input id="editorScale" type="range" min="50" max="200" value="100"><span id="editorScaleText">100%</span></label><button id="autoScale" type="button">Boyutu referansa eşitle</button><button id="autoAlignOne" type="button">Bu kareyi otomatik hizala</button><button id="autoAlignAll" type="button">Tüm kareleri otomatik hizala</button><label>Arama hassasiyeti<select id="autoQuality"><option value="fast">Hızlı</option><option value="balanced" selected>Dengeli</option><option value="fine">Hassas</option></select></label><label>Hayalet referans<select id="ghostMode"><option value="original">Orijinal aynı kare</option><option value="previous">Nihai varyantın önceki karesi</option></select></label><label>Referans saydamlığı <input id="refOpacity" type="range" min="0" max="100" value="40"></label><label><input id="showReference" type="checkbox" checked> Referansı göster</label><label>Çıktı <select id="singlePixels"><option>512</option><option selected>1024</option><option>2048</option></select></label></div><p id="autoStatus" class="muted">Otomatik hizalama: bekliyor</p><p id="ghostInfo" class="muted">Referans: Orijinal aynı kare</p><canvas id="editor" class="editorCanvas" width="768" height="768"></canvas><div class="row"><button id="editorPrev">◀ Önceki kare</button><span id="editorFrame">0 / 0</span><button id="editorNext">Sonraki kare ▶</button><label>Kareye git <input id="editorJump" type="number" min="1" value="1" style="width:70px"></label><button id="editorReset">Kare hizalamasını sıfırla</button><button id="editorExport">Seçili kareyi şeffaf PNG indir</button></div><div class="editorGrid"><label>Yatay X (kaynak piksel)<input id="offsetX" type="number" value="0"></label><label>Dikey Y (kaynak piksel)<input id="offsetY" type="number" value="0"></label></div><p class="muted">Hizalama bu ekrandaki varyant için tutulur. Nihai kare PNG'si referans olmadan, şeffaf arka planla çıkar. Her kareyi ayrı ayrı indirebilirsin.</p></section></main>
 <script>
 'use strict';(()=>{
 const $=id=>document.getElementById(id),D=['NE','NW','SE','SW'];
@@ -96,8 +96,98 @@ function refreshChunkSource(){}
 function saveCanvas(canvas,name){return new Promise((ok,no)=>canvas.toBlob(blob=>{if(!blob){no(Error('PNG kodlanamadı'));return}let url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);ok()},'image/png'))}
 function editorGeometry(im,ref,size,v){const ib=bounds(im),rb=ref?bounds(ref):ib;const visibleW=Math.max(1,ib[2],rb[2]),visibleH=Math.max(1,ib[3],rb[3]);const refScale=Math.min(size*.78/visibleW,size*.78/visibleH);const scale=refScale*(v?.scale||1);return {s:scale,x:size/2-(ib[0]+ib[2]/2)*scale,y:size/2-(ib[1]+ib[3]/2)*scale,refScale,rx:ref?size/2-(rb[0]+rb[2]/2)*refScale:0,ry:ref?size/2-(rb[1]+rb[3]/2)*refScale:0}}
 function referenceScaleFactor(im,ref){if(!ref)return 1;let a=bounds(im),b=bounds(ref);return Math.min(4,Math.max(.25,(b[3]||ref.height)/(a[3]||im.height)))} 
-$('editorScale').oninput=()=>{let v=finalVariant();if(v){v.scale=+$('editorScale').value/100;updateEditor()}};
-$('autoScale').onclick=async()=>{let v=finalVariant();if(!v)return;let refRec=stored[dir][editorIndex];if(!refRec){msg('Referans kare bulunamadı');return}let ref=await loadImage(refRec.source||refRec.blob);v.scale=referenceScaleFactor(v.frames[editorIndex],ref);updateEditor();msg('Varyant görünür yüksekliği referansa göre eşitlendi')};
+$('editorScale').oninput=()=>{let v=finalVariant();if(v){offset(v,editorIndex).scale=+$('editorScale').value/100;updateEditor()}};
+$('autoScale').onclick=async()=>{let v=finalVariant();if(!v)return;let refRec=stored[dir][editorIndex];if(!refRec){msg('Referans kare bulunamadı');return}let ref=await loadImage(refRec.source||refRec.blob);offset(v,editorIndex).scale=referenceScaleFactor(v.frames[editorIndex],ref);updateEditor();msg('Varyant görünür yüksekliği referansa göre eşitlendi')};
+
+const registrationCache=new WeakMap();
+function alphaSample(image){
+ if(registrationCache.has(image))return registrationCache.get(image);
+ const canvas=document.createElement('canvas'),N=160;canvas.width=canvas.height=N;
+ const c=canvas.getContext('2d',{willReadFrequently:true}),b=bounds(image);
+ // Sample alpha from the VISIBLE sprite, independent of transparent margins.
+ c.drawImage(image,b[0],b[1],Math.max(1,b[2]),Math.max(1,b[3]),0,0,N,N);
+ const p=c.getImageData(0,0,N,N).data,mask=new Uint8Array(N*N);
+ let sum=0,cx=0,cy=0;
+ for(let y=0;y<N;y++)for(let x=0;x<N;x++){let a=p[(y*N+x)*4+3];if(a>32){mask[y*N+x]=1;sum++;cx+=x;cy+=y}}
+ const result={mask,n:N,b,cx:sum?cx/sum:N/2,cy:sum?cy/sum:N/2,area:sum};
+ registrationCache.set(image,result);return result;
+}
+function maskSimilarity(a,b,shiftX,shiftY,scale){
+ // Compare silhouettes on normalized grids; optimize overlap and penalize excessive shifts.
+ const N=a.n,A=a.mask,B=b.mask,center=N/2;
+ let intersection=0,union=0;
+ for(let y=0;y<N;y+=2)for(let x=0;x<N;x+=2){
+  const bx=Math.round((x-center-shiftX)/scale+center),by=Math.round((y-center-shiftY)/scale+center);
+  const av=A[y*N+x],bv=bx>=0&&bx<N&&by>=0&&by<N?B[by*N+bx]:0;
+  intersection+=av&bv;union+=av|bv;
+ }
+ return union?intersection/union:0;
+}
+function registerAlpha(moving,reference,quality='balanced',previous=false){
+ const m=alphaSample(moving),r=alphaSample(reference);
+ if(!m.area||!r.area)throw Error('Alpha maskesi boş');
+ // Alpha bounding-box height is the first size estimate; the search then refines scale and translation.
+ const base=Math.max(.45,Math.min(2.2,r.b[3]/Math.max(1,m.b[3])));
+ const factorSteps=quality==='fine'?[.88,.94,1,1.06,1.12]:quality==='fast'?[.95,1,1.05]:[.9,.95,1,1.05,1.1];
+ const shiftStep=quality==='fine'?2:quality==='fast'?6:4;
+ const shiftRadius=previous?12:24;
+ let best={score:-Infinity,scale:base,dx:0,dy:0};
+ for(const factor of factorSteps){
+  const scale=base*factor;
+  const initX=r.cx-(m.cx-80)*scale-80,initY=r.cy-(m.cy-80)*scale-80;
+  for(let dy=-shiftRadius;dy<=shiftRadius;dy+=shiftStep)for(let dx=-shiftRadius;dx<=shiftRadius;dx+=shiftStep){
+   const sx=Math.round(initX+dx),sy=Math.round(initY+dy);
+   const overlap=maskSimilarity(r,m,sx,sy,scale);
+   const penalty=(Math.abs(dx)+Math.abs(dy))*.00025+Math.abs(Math.log(factor))*.025;
+   const score=overlap-penalty;
+   if(score>best.score)best={score,scale,dx:sx,dy:sy};
+  }
+ }
+ return best;
+}
+async function autoRegisterFrame(v,i,quality){
+ const moving=v.frames[i];
+ let ref=null;
+ if($('ghostMode').value==='previous'&&i>0)ref=v.frames[i-1];
+ else{const record=stored[dir][i];if(record)ref=await loadImage(record.source||record.blob)}
+ if(!ref)return null;
+ const match=registerAlpha(moving,ref,quality,$('ghostMode').value==='previous');
+ const mb=bounds(moving),rb=bounds(ref);
+ // The editor uses visible-alpha centers, so only residual normalized-mask displacement is applied.
+ // Each frame has its own scale; do not mutate a global variant scale.
+ const ratio=Math.max(.25,Math.min(4,(rb[3]/Math.max(1,mb[3]))*match.scale/(rb[3]/Math.max(1,mb[3]))));
+ const effectiveScale=Math.max(.25,Math.min(4,match.scale));
+ const originalScale=Math.min(768*.78/Math.max(mb[2],rb[2]),768*.78/Math.max(mb[3],rb[3]));
+ const targetPixelShiftX=match.dx/160*rb[2]*originalScale;
+ const targetPixelShiftY=match.dy/160*rb[3]*originalScale;
+ const off=offset(v,i);
+ off.scale=effectiveScale;
+ off.x=Math.round(targetPixelShiftX/Math.max(1,originalScale*effectiveScale));
+ off.y=Math.round(targetPixelShiftY/Math.max(1,originalScale*effectiveScale));
+ off.score=match.score;
+ return match;
+}
+let autoRunning=false;
+async function runAutoAlignment(all){
+ const v=finalVariant();if(!v||autoRunning)return;
+ autoRunning=true;
+ const ids=all?Array.from({length:v.frames.length},(_,i)=>i):[editorIndex];
+ const btns=[$('autoAlignOne'),$('autoAlignAll')];btns.forEach(b=>b.disabled=true);
+ try{
+  let done=0;
+  for(const i of ids){
+   const result=await autoRegisterFrame(v,i,$('autoQuality').value);
+   done++;
+   $('autoStatus').textContent='Alpha hizalama: '+done+'/'+ids.length+(result?' · örtüşme '+Math.round(result.score*100)+'%':' · referans yok');
+   if(done%4===0)await new Promise(ok=>setTimeout(ok,0));
+  }
+  updateEditor();
+  msg(done+' kare için alpha siluet eşleştirmesi tamamlandı. Farklı pozlarda küçük manuel düzeltme gerekebilir.');
+ }catch(e){msg('Otomatik hizalama hatası: '+e.message)}
+ finally{autoRunning=false;btns.forEach(b=>b.disabled=false)}
+}
+$('autoAlignOne').onclick=()=>runAutoAlignment(false);
+$('autoAlignAll').onclick=()=>runAutoAlignment(true);
 function ghostRecord(v,i,originalRef){if($('ghostMode').value==='previous'){if(i===0)return {im:null,kind:'previous',label:'Önceki kare yok (1. kare)'};return {im:v.frames[i-1],kind:'previous',label:'Nihai varyant · '+i+'. kare'}}return {im:originalRef,kind:'original',label:'Orijinal · '+(i+1)+'. kare'}}
 function offset(v,i){return v.offsets[i]||(v.offsets[i]={x:0,y:0})}
 let editorDrawId=0;
@@ -109,12 +199,12 @@ async function updateEditor(){
  editorIndex=Math.min(editorIndex,v.frames.length-1);
  const im=v.frames[editorIndex],o=offset(v,editorIndex),rec=stored[dir][editorIndex]||null,original=rec?await loadImage(rec.source||rec.blob):null;
  if(serial!==editorDrawId)return;
- const ghost=ghostRecord(v,editorIndex,original),g=editorGeometry(im,ghost.im,canvas.width,v);
+ const ghost=ghostRecord(v,editorIndex,original),frameScale=o.scale||v.scale||1,g=editorGeometry(im,ghost.im,canvas.width,{scale:frameScale});
  $('ghostInfo').textContent='Hayalet: '+ghost.label+' · Nihai kaynak: '+(v.ranges?.find(p=>editorIndex+1>=p.start&&editorIndex+1<=p.end)?.name||'—');
  if(ghost.im&&$('showReference').checked){
   ctx.save();ctx.globalAlpha=(+$('refOpacity').value)/100;
   if(ghost.kind==='previous'){
-   const prevOffset=offset(v,editorIndex-1),pg=editorGeometry(ghost.im,ghost.im,canvas.width,v);
+   const prevOffset=offset(v,editorIndex-1),pg=editorGeometry(ghost.im,ghost.im,canvas.width,{scale:prevOffset.scale||v.scale||1});
    ctx.drawImage(ghost.im,pg.x+prevOffset.x*pg.s,pg.y+prevOffset.y*pg.s,ghost.im.width*pg.s,ghost.im.height*pg.s);
   }else ctx.drawImage(ghost.im,g.rx,g.ry,ghost.im.width*g.refScale,ghost.im.height*g.refScale);
   ctx.restore();
@@ -122,7 +212,7 @@ async function updateEditor(){
  ctx.drawImage(im,g.x+o.x*g.s,g.y+o.y*g.s,im.width*g.s,im.height*g.s);
  $('editorJump').max=v.frames.length;$('editorJump').value=editorIndex+1;
  $('editorFrame').textContent=(editorIndex+1)+' / '+v.frames.length+' · '+(v.ranges?.find(p=>editorIndex+1>=p.start&&editorIndex+1<=p.end)?.name||'');
- $('offsetX').value=o.x;$('offsetY').value=o.y;$('editorScale').value=Math.round((v.scale||1)*100);$('editorScaleText').textContent=Math.round((v.scale||1)*100)+'%';
+ $('offsetX').value=o.x;$('offsetY').value=o.y;$('editorScale').value=Math.round(frameScale*100);$('editorScaleText').textContent=Math.round(frameScale*100)+'%';
 }
 $('editorPrev').onclick=()=>{editorIndex=Math.max(0,editorIndex-1);updateEditor()};
 $('editorNext').onclick=()=>{let v=finalVariant();if(v)editorIndex=Math.min(v.frames.length-1,editorIndex+1);updateEditor()};
@@ -130,10 +220,10 @@ $('editorJump').onchange=()=>{let v=finalVariant();if(!v)return;editorIndex=Math
 $('editorReset').onclick=()=>{let v=finalVariant();if(v){v.offsets[editorIndex]={x:0,y:0};updateEditor()}};
 for(let id of ['offsetX','offsetY'])$(id).onchange=()=>{let v=finalVariant();if(!v)return;let o=offset(v,editorIndex);o.x=+$('offsetX').value||0;o.y=+$('offsetY').value||0;updateEditor()};
 $('ghostMode').onchange=updateEditor;$('showReference').onchange=updateEditor;$('refOpacity').oninput=updateEditor;
-$('editor').addEventListener('pointerdown',e=>{let v=finalVariant();if(!v)return;let im=v.frames[editorIndex],s=editorGeometry(im,null,768,v).s;drag={x:e.clientX,y:e.clientY,s,ox:offset(v,editorIndex).x,oy:offset(v,editorIndex).y};e.currentTarget.setPointerCapture(e.pointerId)});
+$('editor').addEventListener('pointerdown',e=>{let v=finalVariant();if(!v)return;let im=v.frames[editorIndex],s=editorGeometry(im,null,768,{scale:offset(v,editorIndex).scale||v.scale||1}).s;drag={x:e.clientX,y:e.clientY,s,ox:offset(v,editorIndex).x,oy:offset(v,editorIndex).y};e.currentTarget.setPointerCapture(e.pointerId)});
 $('editor').addEventListener('pointermove',e=>{if(!drag)return;let v=finalVariant();if(!v)return;let rect=$('editor').getBoundingClientRect(),scale=768/rect.width,o=offset(v,editorIndex);o.x=Math.round(drag.ox+(e.clientX-drag.x)*scale/drag.s);o.y=Math.round(drag.oy+(e.clientY-drag.y)*scale/drag.s);updateEditor()});
 for(let event of ['pointerup','pointercancel'])$('editor').addEventListener(event,()=>drag=null);
-$('editorExport').onclick=async()=>{try{let v=finalVariant();if(!v)throw Error('Önce nihai varyant seç');let im=v.frames[editorIndex],o=offset(v,editorIndex),size=+$('singlePixels').value,canvas=document.createElement('canvas');canvas.width=canvas.height=size;let refRec=stored[dir][editorIndex],ref=refRec?await loadImage(refRec.source||refRec.blob):null,g=editorGeometry(im,ref,size,v);canvas.getContext('2d').drawImage(im,g.x+o.x*g.s,g.y+o.y*g.s,im.width*g.s,im.height*g.s);await saveCanvas(canvas,'mineclonie_'+dir+'_frame_'+String(editorIndex+1).padStart(2,'0')+'.png');msg('Tek kare şeffaf PNG indirildi')}catch(e){msg(e.message)}};
+$('editorExport').onclick=async()=>{try{let v=finalVariant();if(!v)throw Error('Önce nihai varyant seç');let im=v.frames[editorIndex],o=offset(v,editorIndex),size=+$('singlePixels').value,canvas=document.createElement('canvas');canvas.width=canvas.height=size;let refRec=stored[dir][editorIndex],ref=refRec?await loadImage(refRec.source||refRec.blob):null,g=editorGeometry(im,ref,size,{scale:o.scale||v.scale||1});canvas.getContext('2d').drawImage(im,g.x+o.x*g.s,g.y+o.y*g.s,im.width*g.s,im.height*g.s);await saveCanvas(canvas,'mineclonie_'+dir+'_frame_'+String(editorIndex+1).padStart(2,'0')+'.png');msg('Tek kare şeffaf PNG indirildi')}catch(e){msg(e.message)}};
 
 $('refresh').onclick=reload;
 function tick(t){acc+=Math.min(200,t-(last||t));last=t;let step=1000/(+$('fps').value);if(playing&&acc>=step){let n=Math.floor(acc/step);acc%=step;advance(n)}requestAnimationFrame(tick)}requestAnimationFrame(tick);
