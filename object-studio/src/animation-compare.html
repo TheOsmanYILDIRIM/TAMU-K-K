@@ -127,7 +127,7 @@ function registerAlpha(moving,reference,quality='balanced',previous=false){
  const m=alphaSample(moving),r=alphaSample(reference);
  if(!m.area||!r.area)throw Error('Alpha maskesi boş');
  // Alpha bounding-box height is the first size estimate; the search then refines scale and translation.
- const base=Math.max(.45,Math.min(2.2,r.b[3]/Math.max(1,m.b[3])));
+ const base=1; // Masks are normalized to their visible bounding boxes.
  const factorSteps=quality==='fine'?[.88,.94,1,1.06,1.12]:quality==='fast'?[.95,1,1.05]:[.9,.95,1,1.05,1.1];
  const shiftStep=quality==='fine'?2:quality==='fast'?6:4;
  const shiftRadius=previous?12:24;
@@ -155,8 +155,7 @@ async function autoRegisterFrame(v,i,quality){
  const mb=bounds(moving),rb=bounds(ref);
  // The editor uses visible-alpha centers, so only residual normalized-mask displacement is applied.
  // Each frame has its own scale; do not mutate a global variant scale.
- const ratio=Math.max(.25,Math.min(4,(rb[3]/Math.max(1,mb[3]))*match.scale/(rb[3]/Math.max(1,mb[3]))));
- const effectiveScale=Math.max(.25,Math.min(4,match.scale));
+ const effectiveScale=Math.max(.25,Math.min(4,(rb[3]/Math.max(1,mb[3]))*match.scale));
  const originalScale=Math.min(768*.78/Math.max(mb[2],rb[2]),768*.78/Math.max(mb[3],rb[3]));
  const targetPixelShiftX=match.dx/160*rb[2]*originalScale;
  const targetPixelShiftY=match.dy/160*rb[3]*originalScale;
