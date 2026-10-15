@@ -151,6 +151,7 @@ function alphaSample(image){
  const result={n:N,alpha,rgb,b,area,cx:area?cx/area:N/2,cy:area?cy/area:N/2,hx:topSum?topX/topSum:N/2,hy:topSum?topY/topSum:N/2};
  registrationCache.set(image,result);return result;
 }
+// ALIGNMENT_CORE_BEGIN
 function registrationScore(ref,mov,tx,ty,scale,weight,step=3){
  const n=ref.n;let inter=0,union=0,colorDist=0,overlapWeight=0;
  for(let y=0;y<n;y+=step)for(let x=0;x<n;x+=step){
@@ -197,6 +198,7 @@ async function optimizeDescriptors(ref,mov,passes=12,weight=.45,seed=null,lockSi
  }
  return {...best,passes};
 }
+// ALIGNMENT_CORE_END
 async function registerColor(moving,reference,quality,iterations,weight,seed=null,lockSize=true,onPass=null){
  const m=alphaSample(moving),r=alphaSample(reference);
  if(!m.area||!r.area)throw Error('Boş alpha maskesi');
