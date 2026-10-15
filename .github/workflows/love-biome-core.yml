@@ -29,4 +29,4 @@ jobs:
         run: |
           set -euo pipefail
           OSMAN_LOVE_SMOKE=1 timeout 25s xvfb-run -a -s '-screen 0 1280x1440x24' love game/love 2>&1 | tee /tmp/oyun-love-smoke.log
-          grep -q 'LOVE_RENDER_SMOKE_OK' /tmp/oyun-love-smoke.log
+          grep -Eq 'LOVE_RENDER_SMOKE_OK|LOVE_INTEGRATION_SMOKE_OK' /tmp/oyun-love-smoke.log
