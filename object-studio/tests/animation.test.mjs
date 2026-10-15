@@ -173,7 +173,7 @@ test('iterative registration keeps alpha-derived size stable and supports repeat
  assert.equal(check.status,0,check.stderr);
 });
 
-test('registration optimizer really improves across passes and ignores nearly-transparent RGB halos',()=>{
+test('registration optimizer really improves across passes and ignores nearly-transparent RGB halos',async()=>{
  const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
  const core=html.match(/\/\/ ALIGNMENT_CORE_BEGIN([\s\S]*?)\/\/ ALIGNMENT_CORE_END/)?.[1];
  assert.ok(core,'registration functions must be independently testable');
@@ -188,8 +188,8 @@ test('registration optimizer really improves across passes and ignores nearly-tr
   return {n,alpha,rgb};
  }
  const ref=fixture(),moved=fixture(11,-8);
- const first=optimizeDescriptors(ref,moved,1,.7,{tx:0,ty:0,scale:1},true);
- const refined=optimizeDescriptors(ref,moved,12,.7,{tx:0,ty:0,scale:1},true);
+ const first=await optimizeDescriptors(ref,moved,1,.7,{tx:0,ty:0,scale:1},true);
+ const refined=await optimizeDescriptors(ref,moved,12,.7,{tx:0,ty:0,scale:1},true);
  assert.ok(refined.score>first.score+.05,'additional iterations must materially improve overlap');
  assert.ok(Math.abs(refined.tx+11)<2&&Math.abs(refined.ty-8)<2,'known movement should be recovered');
  assert.equal(refined.scale,1,'locked scale must not drift');
