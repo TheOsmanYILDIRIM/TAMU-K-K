@@ -225,10 +225,10 @@ test('aligned sprite ZIP writer creates a valid local and central directory',asy
 
 test('size matching applies to every final variant frame and retains X/Y offsets',()=>{
  const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
- for(const key of ['id="autoScaleAll"','async function matchFrameSize(v,i,targets=null)','for(let i=0;i<v.frames.length;i++)','o.scale=factor','await matchFrameSize(v,job.index,targets)','await updateEditor()']){
+ for(const key of ['id="autoScaleAll"','async function matchFrameSize(v,i,targets=null)','await executeAlignmentPlan(jobs','o.scale=factor','await matchFrameSize(v,job.index,targets)','await updateEditor()']){
   assert.ok(html.includes(key),'missing '+key);
  }
- const fn=html.slice(html.indexOf('async function matchFrameSize(v,i,targets=null)'),html.indexOf('let matchingAllSizes=',html.indexOf('async function matchFrameSize(v,i)')));
+ const fn=html.slice(html.indexOf('async function matchFrameSize(v,i,targets=null)'),html.indexOf('let matchingAllSizes=',html.indexOf('async function matchFrameSize(v,i,targets=null)')));
  assert.ok(!fn.includes('o.x='),'matching size must not overwrite X');
  assert.ok(!fn.includes('o.y='),'matching size must not overwrite Y');
  const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
