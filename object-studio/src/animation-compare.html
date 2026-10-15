@@ -297,6 +297,77 @@ $('editor').addEventListener('pointermove',e=>{if(!drag)return;let v=finalVarian
 for(let event of ['pointerup','pointercancel'])$('editor').addEventListener(event,()=>drag=null);
 $('editorExport').onclick=async()=>{try{let v=finalVariant();if(!v)throw Error('Önce nihai varyant seç');let im=v.frames[editorIndex],o=offset(v,editorIndex),size=+$('singlePixels').value,canvas=document.createElement('canvas');canvas.width=canvas.height=size;let refRec=stored[dir][editorIndex],ref=refRec?await loadImage(refRec.source||refRec.blob):null,g=editorGeometry(im,ref,size,{scale:o.scale||v.scale||1});canvas.getContext('2d').drawImage(im,g.x+o.x*g.s,g.y+o.y*g.s,im.width*g.s,im.height*g.s);await saveCanvas(canvas,'mineclonie_'+dir+'_frame_'+String(editorIndex+1).padStart(2,'0')+'.png');msg('Tek kare şeffaf PNG indirildi')}catch(e){msg(e.message)}};
 
+
+async function paintAlignedFrame(canvas,v,i,x,y,size){
+ const im=v.frames[i];if(!im)return;
+ const rec=stored[dir][i],ref=rec?await loadImage(rec.source||rec.blob):null;
+ const o=offset(v,i),g=editorGeometry(im,ref,size,{scale:o.scale||v.scale||1});
+ canvas.getContext('2d').drawImage(im,x+g.x+o.x*g.s,y+g.y+o.y*g.s,im.width*g.s,im.height*g.s);
+}
+function createSquare(n){const c=document.createElement('canvas');c.width=c.height=n;return c}
+async function canvasPNG(canvas){
+ const b=await new Promise(ok=>canvas.toBlob(ok,'image/png'));
+ if(!b)throw Error('PNG kodlanamadı; daha küçük çözünürlük deneyin');
+ return b;
+}
+function downloadBlob(blob,name){
+ const link=document.createElement('a'),url=URL.createObjectURL(blob);
+ link.href=url;link.download=name;document.body.append(link);link.click();link.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
+function zipStored(files){
+ const e=new TextEncoder(),local=[],central=[],u16=(dv,k,v)=>dv.setUint16(k,v,true),u32=(dv,k,v)=>dv.setUint32(k,v>>>0,true);
+ const crc=bytes=>{let n=0xffffffff;for(const b of bytes){n^=b;for(let i=0;i<8;i++)n=(n>>>1)^((n&1)?0xedb88320:0)}return (n^0xffffffff)>>>0};
+ let offset=0;
+ for(const file of files){
+  const name=e.encode(file.name),data=file.data,hash=crc(data);
+  const head=new ArrayBuffer(30+name.length),h=new DataView(head),hb=new Uint8Array(head);
+  u32(h,0,0x04034b50);u16(h,4,20);u32(h,14,hash);u32(h,18,data.length);u32(h,22,data.length);u16(h,26,name.length);hb.set(name,30);
+  local.push(head,data);
+  const centralHead=new ArrayBuffer(46+name.length),ch=new DataView(centralHead),cb=new Uint8Array(centralHead);
+  u32(ch,0,0x02014b50);u16(ch,4,20);u16(ch,6,20);u32(ch,16,hash);u32(ch,20,data.length);u32(ch,24,data.length);u16(ch,28,name.length);u32(ch,42,offset);cb.set(name,46);
+  central.push(centralHead);offset+=head.byteLength+data.length;
+ }
+ const cdlen=central.reduce((sum,b)=>sum+b.byteLength,0),end=new ArrayBuffer(22),dv=new DataView(end);
+ u32(dv,0,0x06054b50);u16(dv,8,files.length);u16(dv,10,files.length);u32(dv,12,cdlen);u32(dv,16,offset);
+ return new Blob([...local,...central,end],{type:'application/zip'});
+}
+async function exportAligned(kind){
+ const v=finalVariant();if(!v||!v.frames.length){msg('Önce nihai varyant seç');return}
+ const btns=[$('alignedSheetExport'),$('alignedZipExport')];btns.forEach(b=>b.disabled=true);
+ try{
+  const n=v.frames.length;
+  if(kind==='sheet'){
+   const size=+$('alignedSheetSize').value,cs=$('alignedCols').value,cols=cs==='auto'?Math.ceil(Math.sqrt(n)):Math.min(n,+cs),rows=Math.ceil(n/cols);
+   const cell=Math.floor(Math.min(size/cols,size/rows));
+   const sheet=createSquare(size),ox=Math.floor((size-cols*cell)/2),oy=Math.floor((size-rows*cell)/2);
+   for(let i=0;i<n;i++){
+    await paintAlignedFrame(sheet,v,i,ox+(i%cols)*cell,oy+Math.floor(i/cols)*cell,cell);
+    $('exportProgress').textContent='Spritesheet: '+(i+1)+' / '+n+' kare';
+    if(i%4===0)await new Promise(ok=>setTimeout(ok,0));
+   }
+   downloadBlob(await canvasPNG(sheet),'mineclonie_'+dir+'_nihai_'+n+'kare_'+size+'.png');
+  }else{
+   const size=+$('alignedFrameSize').value,files=[];
+   for(let i=0;i<n;i++){
+    const single=createSquare(size);
+    await paintAlignedFrame(single,v,i,0,0,size);
+    const bytes=new Uint8Array(await(await canvasPNG(single)).arrayBuffer());
+    files.push({name:dir+'/frame_'+String(i+1).padStart(2,'0')+'.png',data:bytes});
+    $('exportProgress').textContent='ZIP: '+(i+1)+' / '+n+' kare';
+    await new Promise(ok=>setTimeout(ok,0));
+   }
+   const meta={format:'mineclonie-aligned-frames',direction:dir,frameCount:n,frameSize:size,sourceParts:(v.parts||[]).map(p=>p.name),transforms:v.frames.map((f,i)=>({frame:i+1,dx:offset(v,i).x||0,dy:offset(v,i).y||0,scale:offset(v,i).scale||v.scale||1}))};
+   files.push({name:'manifest.json',data:new TextEncoder().encode(JSON.stringify(meta,null,2))});
+   downloadBlob(zipStored(files),'mineclonie_'+dir+'_nihai_'+n+'kare.zip');
+  }
+  $('exportProgress').textContent=n+' hizalanmış kare aktarıldı. Orijinal referanslar korunuyor.';
+ }catch(err){msg('Dışa aktarma hatası: '+err.message);$('exportProgress').textContent='Aktarım başarısız; daha düşük çözünürlük seç.'}
+ finally{btns.forEach(b=>b.disabled=false)}
+}
+$('alignedSheetExport').onclick=()=>exportAligned('sheet');
+$('alignedZipExport').onclick=()=>exportAligned('zip');
+
 $('refresh').onclick=reload;
 function tick(t){acc+=Math.min(200,t-(last||t));last=t;let step=1000/(+$('fps').value);if(playing&&acc>=step){let n=Math.floor(acc/step);acc%=step;advance(n)}requestAnimationFrame(tick)}requestAnimationFrame(tick);
 dirButtons();rebuild();updateEditor();reload();
