@@ -6,7 +6,7 @@
 <section><div class="row"><button id="addVariant">＋ Varyant ekle</button><button id="clear">Varyantları temizle</button><span id="variantInfo" class="muted">Henüz varyant eklenmedi</span></div><div class="row"><label>Sütun <input id="cols" type="number" min="1" max="128" value="4" style="width:65px"></label><label>Satır <input id="rows" type="number" min="1" max="128" value="2" style="width:65px"></label><button id="reapply">Tüm varyantları yeniden böl</button></div><p class="muted">＋ ile sınırsız sayıda varyant kartı ekleyebilirsin. Her varyanta birden fazla PNG yükleyip sırayla birleştirebilirsin (cihaz belleği sınırları geçerlidir). Her kartın kendi PNG dosyası ve sütun/satır düzeni vardır. Orijinal kayıtlar değişmez.</p></section>
 <section><div class="row"><label>Hız <input id="fps" type="range" min="1" max="60" value="8"><span id="fpsText">8 FPS</span></label><button id="play">⏸ Duraklat</button><button id="prev">◀</button><button id="next">▶</button><label>Hizalama <select id="align"><option value="original">Kaynak konumu</option><option value="feet">Ayak tabanı</option><option value="center">Merkez</option><option value="average">Ortalama konum</option></select></label><label>Görüntü <select id="view"><option value="animation">Animasyon</option><option value="average">Ortalama kare (üst üste)</option></select></label><span id="counter" class="muted">0 / 0</span></div></section>
 <section><div class="focusbar"><b id="focusTitle">Tüm animasyonlar</b><button id="back" class="hidden">← Tümünü göster</button></div><div id="cards" class="cards"></div><p class="muted">Bir önizlemeye dokun: tek başına büyük gösterilir. Geri dönerek hepsini aynı anda karşılaştırabilirsin. Ortalama kare görünümü, tüm kareleri üst üste bindirir; Ortalama konum seçimi ise karakterlerin ağırlık merkezini hizalar.</p></section>
-<section><h2>Nihai varyant · Kare kare hizalama</h2><p class="muted">Bir varyant kartında “Nihai seç” düğmesine bas. Her kareyi orijinal referansla üst üste görüp parmağınla sürükleyerek hizala. Sadece nihai varyant hareket eder; orijinal hiç değişmez.</p><div class="row"><strong id="finalName">Henüz nihai varyant seçilmedi</strong><label>Varyant ölçeği <input id="editorScale" type="range" min="50" max="200" value="100"><span id="editorScaleText">100%</span></label><button id="autoScale" type="button">Boyutu referansa eşitle</button><button id="autoAlignOne" type="button">Bu kareyi otomatik hizala</button><button id="autoAlignAll" type="button">Tüm kareleri otomatik hizala</button><label>Arama hassasiyeti<select id="autoQuality"><option value="fast">Hızlı</option><option value="balanced" selected>Dengeli</option><option value="fine">Hassas</option></select></label><label>Hayalet referans<select id="ghostMode"><option value="original">Orijinal aynı kare</option><option value="previous">Nihai varyantın önceki karesi</option></select></label><label>Referans saydamlığı <input id="refOpacity" type="range" min="0" max="100" value="40"></label><label><input id="showReference" type="checkbox" checked> Referansı göster</label><label>Çıktı <select id="singlePixels"><option>512</option><option selected>1024</option><option>2048</option></select></label></div><p id="autoStatus" class="muted">Otomatik hizalama: bekliyor</p><p id="ghostInfo" class="muted">Referans: Orijinal aynı kare</p><canvas id="editor" class="editorCanvas" width="768" height="768"></canvas><div class="row"><button id="editorPrev">◀ Önceki kare</button><span id="editorFrame">0 / 0</span><button id="editorNext">Sonraki kare ▶</button><label>Kareye git <input id="editorJump" type="number" min="1" value="1" style="width:70px"></label><button id="editorReset">Kare hizalamasını sıfırla</button><button id="editorExport">Seçili kareyi şeffaf PNG indir</button></div><div class="editorGrid"><label>Yatay X (kaynak piksel)<input id="offsetX" type="number" value="0"></label><label>Dikey Y (kaynak piksel)<input id="offsetY" type="number" value="0"></label></div><p class="muted">Hizalama bu ekrandaki varyant için tutulur. Nihai kare PNG'si referans olmadan, şeffaf arka planla çıkar. Her kareyi ayrı ayrı indirebilirsin.</p></section></main>
+<section><h2>Nihai varyant · Kare kare hizalama</h2><p class="muted">Bir varyant kartında “Nihai seç” düğmesine bas. Her kareyi orijinal referansla üst üste görüp parmağınla sürükleyerek hizala. Sadece nihai varyant hareket eder; orijinal hiç değişmez.</p><div class="row"><strong id="finalName">Henüz nihai varyant seçilmedi</strong><label>Varyant ölçeği <input id="editorScale" type="range" min="50" max="200" value="100"><span id="editorScaleText">100%</span></label><button id="autoScale" type="button">Boyutu referansa eşitle</button><button id="autoAlignOne" type="button">Bu kareyi otomatik hizala</button><button id="autoAlignAll" type="button">Tüm kareleri otomatik hizala</button><label>İterasyon <input id="autoIterations" type="number" min="1" max="30" value="8" style="width:64px"></label><label>Renk ağırlığı <input id="colorWeight" type="range" min="0" max="100" value="70"><span id="colorWeightText">70%</span></label><label>Arama hassasiyeti<select id="autoQuality"><option value="fast">Hızlı</option><option value="balanced" selected>Dengeli</option><option value="fine">Hassas</option></select></label><label>Hayalet referans<select id="ghostMode"><option value="original">Orijinal aynı kare</option><option value="previous">Nihai varyantın önceki karesi</option></select></label><label>Referans saydamlığı <input id="refOpacity" type="range" min="0" max="100" value="40"></label><label><input id="showReference" type="checkbox" checked> Referansı göster</label><label>Çıktı <select id="singlePixels"><option>512</option><option selected>1024</option><option>2048</option></select></label></div><p id="autoStatus" class="muted">Otomatik hizalama: bekliyor</p><p id="ghostInfo" class="muted">Referans: Orijinal aynı kare</p><canvas id="editor" class="editorCanvas" width="768" height="768"></canvas><div class="row"><button id="editorPrev">◀ Önceki kare</button><span id="editorFrame">0 / 0</span><button id="editorNext">Sonraki kare ▶</button><label>Kareye git <input id="editorJump" type="number" min="1" value="1" style="width:70px"></label><button id="editorReset">Kare hizalamasını sıfırla</button><button id="editorExport">Seçili kareyi şeffaf PNG indir</button></div><div class="editorGrid"><label>Yatay X (kaynak piksel)<input id="offsetX" type="number" value="0"></label><label>Dikey Y (kaynak piksel)<input id="offsetY" type="number" value="0"></label></div><p class="muted">Hizalama bu ekrandaki varyant için tutulur. Nihai kare PNG'si referans olmadan, şeffaf arka planla çıkar. Her kareyi ayrı ayrı indirebilirsin.</p></section></main>
 <script>
 'use strict';(()=>{
 const $=id=>document.getElementById(id),D=['NE','NW','SE','SW'];
@@ -102,67 +102,83 @@ $('autoScale').onclick=async()=>{let v=finalVariant();if(!v)return;let refRec=st
 const registrationCache=new WeakMap();
 function alphaSample(image){
  if(registrationCache.has(image))return registrationCache.get(image);
- const canvas=document.createElement('canvas'),N=160;canvas.width=canvas.height=N;
+ const N=128,canvas=document.createElement('canvas');canvas.width=canvas.height=N;
  const c=canvas.getContext('2d',{willReadFrequently:true}),b=bounds(image);
- // Sample alpha from the VISIBLE sprite, independent of transparent margins.
+ // IMPORTANT: source rectangle is in the SOURCE image, destination fills the analysis canvas.
  c.drawImage(image,b[0],b[1],Math.max(1,b[2]),Math.max(1,b[3]),0,0,N,N);
- const p=c.getImageData(0,0,N,N).data,mask=new Uint8Array(N*N);
- let sum=0,cx=0,cy=0;
- for(let y=0;y<N;y++)for(let x=0;x<N;x++){let a=p[(y*N+x)*4+3];if(a>32){mask[y*N+x]=1;sum++;cx+=x;cy+=y}}
- const result={mask,n:N,b,cx:sum?cx/sum:N/2,cy:sum?cy/sum:N/2,area:sum};
+ const p=c.getImageData(0,0,N,N).data,alpha=new Uint8Array(N*N),rgb=new Uint8Array(N*N*3);
+ let area=0,cx=0,cy=0;
+ for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+  let i=y*N+x,a=p[i*4+3];alpha[i]=a;
+  if(a>32){area++;cx+=x;cy+=y}
+  // Chroma + brightness: robust to mild lighting changes, but still tracks armor and clothing color.
+  let R=p[i*4],G=p[i*4+1],B=p[i*4+2],sum=Math.max(1,R+G+B);
+  rgb[i*3]=Math.round(255*R/sum);rgb[i*3+1]=Math.round(255*G/sum);
+  rgb[i*3+2]=Math.round((R+G+B)/3);
+ }
+ const result={n:N,alpha,rgb,b,area,cx:area?cx/area:64,cy:area?cy/area:64};
  registrationCache.set(image,result);return result;
 }
-function maskSimilarity(a,b,shiftX,shiftY,scale){
- // Compare silhouettes on normalized grids; optimize overlap and penalize excessive shifts.
- const N=a.n,A=a.mask,B=b.mask,center=N/2;
- let intersection=0,union=0;
- for(let y=0;y<N;y+=2)for(let x=0;x<N;x+=2){
-  const bx=Math.round((x-center-shiftX)/scale+center),by=Math.round((y-center-shiftY)/scale+center);
-  const av=A[y*N+x],bv=bx>=0&&bx<N&&by>=0&&by<N?B[by*N+bx]:0;
-  intersection+=av&bv;union+=av|bv;
- }
- return union?intersection/union:0;
-}
-function registerAlpha(moving,reference,quality='balanced',previous=false){
- const m=alphaSample(moving),r=alphaSample(reference);
- if(!m.area||!r.area)throw Error('Alpha maskesi boş');
- // Alpha bounding-box height is the first size estimate; the search then refines scale and translation.
- const base=1; // Masks are normalized to their visible bounding boxes.
- const factorSteps=quality==='fine'?[.88,.94,1,1.06,1.12]:quality==='fast'?[.95,1,1.05]:[.9,.95,1,1.05,1.1];
- const shiftStep=quality==='fine'?2:quality==='fast'?6:4;
- const shiftRadius=previous?12:24;
- let best={score:-Infinity,scale:base,dx:0,dy:0};
- for(const factor of factorSteps){
-  const scale=base*factor;
-  const initX=r.cx-(m.cx-80)*scale-80,initY=r.cy-(m.cy-80)*scale-80;
-  for(let dy=-shiftRadius;dy<=shiftRadius;dy+=shiftStep)for(let dx=-shiftRadius;dx<=shiftRadius;dx+=shiftStep){
-   const sx=Math.round(initX+dx),sy=Math.round(initY+dy);
-   const overlap=maskSimilarity(r,m,sx,sy,scale);
-   const penalty=(Math.abs(dx)+Math.abs(dy))*.00025+Math.abs(Math.log(factor))*.025;
-   const score=overlap-penalty;
-   if(score>best.score)best={score,scale,dx:sx,dy:sy};
+function registrationScore(ref,mov,tx,ty,scale,weight,step){
+ const N=ref.n,ra=ref.alpha,ma=mov.alpha,rc=ref.rgb,mc=mov.rgb;
+ let overlap=0,union=0,colorError=0,colorCount=0;
+ for(let y=0;y<N;y+=step)for(let x=0;x<N;x+=step){
+  const j=y*N+x,bx=Math.round((x-64-tx)/scale+64),by=Math.round((y-64-ty)/scale+64);
+  const ai=ra[j]>40;
+  const k=bx>=0&&bx<N&&by>=0&&by<N?by*N+bx:-1,bi=k>=0&&ma[k]>40;
+  if(ai||bi)union++;
+  if(ai&&bi){
+   overlap++;
+   const a3=j*3,b3=k*3;
+   const chroma=(Math.abs(rc[a3]-mc[b3])+Math.abs(rc[a3+1]-mc[b3+1]))/510;
+   const light=Math.abs(rc[a3+2]-mc[b3+2])/255;
+   colorError+=.75*chroma+.25*light;colorCount++;
   }
+ }
+ if(!union)return -1;
+ const silhouette=overlap/union;
+ // Only reward color where alpha overlaps; prevents matching background/transparent pixels.
+ const color=colorCount?1-colorError/colorCount:0;
+ return (1-weight)*silhouette+weight*(.35*silhouette+.65*color)*silhouette;
+}
+function registerColor(moving,reference,quality,iterations,weight){
+ const m=alphaSample(moving),r=alphaSample(reference);
+ if(!m.area||!r.area)throw Error('Görünür alpha bulunamadı');
+ const step=quality==='fine'?2:quality==='fast'?5:3;
+ const evalScore=(tx,ty,scale)=>registrationScore(r,m,tx,ty,scale,weight,step);
+ // Center of alpha mass initializes the search. All coordinates are normalized to visible sprite bounds.
+ let best={tx:r.cx-m.cx,ty:r.cy-m.cy,scale:1,score:-Infinity};
+ best.score=evalScore(best.tx,best.ty,best.scale);
+ let jump=quality==='fine'?16:quality==='fast'?24:20,scaleJump=.14;
+ for(let iter=0;iter<iterations;iter++){
+  let improved=false,candidate=best;
+  for(const ds of [-scaleJump,0,scaleJump])for(const dx of [-jump,0,jump])for(const dy of [-jump,0,jump]){
+   let scale=Math.max(.7,Math.min(1.35,best.scale+ds)),tx=best.tx+dx,ty=best.ty+dy;
+   if(Math.abs(tx)>60||Math.abs(ty)>60)continue;
+   const score=evalScore(tx,ty,scale);
+   if(score>candidate.score+1e-6){candidate={tx,ty,scale,score};improved=true}
+  }
+  best=candidate;
+  jump=Math.max(.35,jump*.58);scaleJump=Math.max(.003,scaleJump*.58);
+  if(!improved&&jump<1)break;
  }
  return best;
 }
 async function autoRegisterFrame(v,i,quality){
- const moving=v.frames[i];
- let ref=null;
- if($('ghostMode').value==='previous'&&i>0)ref=v.frames[i-1];
+ const moving=v.frames[i];let ref=null,previous=$('ghostMode').value==='previous'&&i>0;
+ if(previous)ref=v.frames[i-1];
  else{const record=stored[dir][i];if(record)ref=await loadImage(record.source||record.blob)}
  if(!ref)return null;
- const match=registerAlpha(moving,ref,quality,$('ghostMode').value==='previous');
- const mb=bounds(moving),rb=bounds(ref);
- // The editor uses visible-alpha centers, so only residual normalized-mask displacement is applied.
- // Each frame has its own scale; do not mutate a global variant scale.
- const effectiveScale=Math.max(.25,Math.min(4,(rb[3]/Math.max(1,mb[3]))*match.scale));
- const originalScale=Math.min(768*.78/Math.max(mb[2],rb[2]),768*.78/Math.max(mb[3],rb[3]));
- const targetPixelShiftX=match.dx/160*rb[2]*originalScale;
- const targetPixelShiftY=match.dy/160*rb[3]*originalScale;
- const off=offset(v,i);
- off.scale=effectiveScale;
- off.x=Math.round(targetPixelShiftX/Math.max(1,originalScale*effectiveScale));
- off.y=Math.round(targetPixelShiftY/Math.max(1,originalScale*effectiveScale));
+ const iterations=Math.max(1,Math.min(30,+$('autoIterations').value||8)),weight=(+$('colorWeight').value)/100;
+ const match=registerColor(moving,ref,quality,iterations,weight);
+ const mb=bounds(moving),rb=bounds(ref),off=offset(v,i);
+ // The editor uses alpha-bound centers, so convert normalized shifts to source-image pixel offsets.
+ const refScale=previous?(offset(v,i-1).scale||v.scale||1):1;
+ const scale=Math.max(.3,Math.min(3.5,(rb[3]/Math.max(1,mb[3]))*match.scale*refScale));
+ const dx=match.tx/128*rb[2]/scale,dy=match.ty/128*rb[3]/scale;
+ off.scale=scale;
+ off.x=Math.round(dx+(previous?(offset(v,i-1).x||0):0));
+ off.y=Math.round(dy+(previous?(offset(v,i-1).y||0):0));
  off.score=match.score;
  return match;
 }
@@ -177,14 +193,15 @@ async function runAutoAlignment(all){
   for(const i of ids){
    const result=await autoRegisterFrame(v,i,$('autoQuality').value);
    done++;
-   $('autoStatus').textContent='Alpha hizalama: '+done+'/'+ids.length+(result?' · örtüşme '+Math.round(result.score*100)+'%':' · referans yok');
+   $('autoStatus').textContent='Renk + alpha iterasyonu: '+done+'/'+ids.length+(result?' · örtüşme '+Math.round(result.score*100)+'%':' · referans yok');
    if(done%4===0)await new Promise(ok=>setTimeout(ok,0));
   }
   updateEditor();
-  msg(done+' kare için alpha siluet eşleştirmesi tamamlandı. Farklı pozlarda küçük manuel düzeltme gerekebilir.');
+  msg(done+' kare için renk + alpha eşleştirmesi tamamlandı. Farklı pozlarda küçük manuel düzeltme gerekebilir.');
  }catch(e){msg('Otomatik hizalama hatası: '+e.message)}
  finally{autoRunning=false;btns.forEach(b=>b.disabled=false)}
 }
+$('colorWeight').oninput=()=>{$('colorWeightText').textContent=$('colorWeight').value+'%'};
 $('autoAlignOne').onclick=()=>runAutoAlignment(false);
 $('autoAlignAll').onclick=()=>runAutoAlignment(true);
 function ghostRecord(v,i,originalRef){if($('ghostMode').value==='previous'){if(i===0)return {im:null,kind:'previous',label:'Önceki kare yok (1. kare)'};return {im:v.frames[i-1],kind:'previous',label:'Nihai varyant · '+i+'. kare'}}return {im:originalRef,kind:'original',label:'Orijinal · '+(i+1)+'. kare'}}
