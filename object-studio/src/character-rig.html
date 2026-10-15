@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mineclonie · Character Rig Studio</title>
+<style>
+:root{color-scheme:dark;--bg:#101714;--panel:#19231f;--line:#33443a;--text:#e8efdf;--muted:#9bad9d;--accent:#b6da86}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px system-ui,sans-serif}
+header{padding:15px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+h1{font-size:19px;margin:0}h2{font-size:15px;margin:0 0 12px}p{color:var(--muted);line-height:1.5}a{color:var(--accent)}
+main{display:grid;grid-template-columns:minmax(285px,340px) minmax(320px,1fr) minmax(270px,340px);gap:14px;padding:14px;max-width:1800px;margin:auto}
+section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;min-width:0}
+button,select,input[type=number]{background:#26352c;border:1px solid #496049;border-radius:8px;color:var(--text);padding:9px;cursor:pointer}
+button:hover{border-color:var(--accent)}button.primary{background:var(--accent);color:#17221a;font-weight:700}
+button.active{background:#466643;border-color:var(--accent)}input[type=file]{max-width:100%;font-size:12px}input[type=range]{accent-color:var(--accent);width:100%}
+label{display:block;margin:9px 0;color:var(--muted);font-size:12px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pad{border:1px solid var(--line);border-radius:10px;overflow:hidden;background-color:#26302a;background-image:linear-gradient(45deg,#303a33 25%,transparent 25%),linear-gradient(-45deg,#303a33 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#303a33 75%),linear-gradient(-45deg,transparent 75%,#303a33 75%);background-size:22px 22px;background-position:0 0,0 11px,11px -11px,-11px 0}
+canvas{display:block;width:100%;height:auto;touch-action:none}#stage{max-width:640px;margin:auto}#refPreview{max-width:220px;max-height:190px;object-fit:contain;display:block;margin:10px auto}
+.part{display:flex;align-items:center;justify-content:space-between;gap:6px;border-bottom:1px solid var(--line);padding:7px 0}
+.part b{font-size:12px}.part small{color:var(--muted)}.part input{width:128px}
+pre{white-space:pre-wrap;max-height:300px;overflow:auto;background:#101913;border:1px solid #354a3a;border-radius:8px;padding:12px;font:12px/1.5 monospace}
+details{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}summary{cursor:pointer}
+.status{font-size:12px;color:var(--accent);padding-top:6px}#partList{max-height:440px;overflow:auto}
+@media(max-width:1100px){main{grid-template-columns:1fr 1fr}main section:nth-child(2){grid-row:span 2}}
+@media(max-width:690px){main{grid-template-columns:1fr}main section:nth-child(2){grid-row:auto}header{padding:12px}main{padding:8px;gap:8px}}
+</style></head><body>
+<header><div><h1>MINECLONIE / CHARACTER RIG STUDIO</h1><div style="color:var(--muted);font-size:12px">2 referans yönü · 6 vücut parçası · 4 görüntü yönü · yerel 2D animasyon önizleme</div></div><div class="row"><a href="./world-builder.html">Eski World Builder</a><a href="./object-studio/latest.html">Object Studio</a><a href="./object-studio/animation.html">Eski Animasyon</a></div></header>
+<main>
+<section><h2>1 · Referans ve GPT Image 2.5</h2>
+<p>Ön çapraz ve arka çapraz yönleri ayrı ayrı üret. Karşı yönler yatay aynalanır. Referansları ve AI çıktısı parçaları burada yükle. Görseller cihazından dışarı gönderilmez.</p>
+<div class="row"><button id="vFront" class="active">Ön çapraz</button><button id="vBack">Arka çapraz</button></div>
+<label>Seçili yöne ait bütün karakter görseli <input id="reference" type="file" accept="image/png,image/webp,image/jpeg"></label>
+<img id="refPreview" alt="Referans önizleme" hidden>
+<label>GPT Image 2.5 ile üretilecek hedef parça</label>
+<select id="partSelect" style="width:100%"></select>
+<div class="row" style="margin-top:10px"><button id="copyPrompt" class="primary">Parça promptunu kopyala</button><button id="copyAll">Tüm promptları kopyala</button></div>
+<details open><summary>Üretim promptu</summary><pre id="prompt"></pre></details>
+<p><b>Önerilen sıra:</b> Önce gövdeyi, sonra kolları ve bacakları, en son başı tamamla. Her çıktı tek parçalı, şeffaf PNG olsun. Kol ve bacakların eklem altında kalan dokusunu AI tamamlasın.</p>
+</section>
+<section><div class="row" style="justify-content:space-between"><h2>2 · Birleştirme ve animasyon</h2><span id="status" class="status">Hazır</span></div>
+<div class="row"><button data-view="front" class="view active">Ön</button><button data-view="frontMirror" class="view">Ön ayna</button><button data-view="back" class="view">Arka</button><button data-view="backMirror" class="view">Arka ayna</button></div>
+<div class="pad" id="stage" style="margin-top:12px"><canvas id="canvas" width="640" height="640"></canvas></div>
+<div class="row" style="margin-top:12px"><button data-anim="idle" class="anim active">Bekleme</button><button data-anim="walk" class="anim">Yürüme</button><button data-anim="chop" class="anim">Odun kesme</button><button id="toggle" class="primary">Durdur</button></div>
+<label>Animasyon hızı <input id="speed" type="range" min="25" max="200" value="100"><span id="speedText">100%</span></label>
+<label>Karakter ölçeği <input id="scale" type="range" min="25" max="180" value="100"><span id="scaleText">100%</span></label>
+<div class="row"><button id="reset">Yerleşimleri sıfırla</button><button id="snap">PNG kare kaydet</button><button id="saveJson">Rig JSON indir</button></div>
+<p>Parçayı seçip tuvalde sürükleyerek konumunu düzelt. Pivotları sağdaki ayarlardan değiştirebilirsin. Yürüme ve odun kesme burada basit kemik-dönüşlü prototiplerdir.</p>
+</section>
+<section><h2>3 · Parça yükleme ve hizalama</h2>
+<p>Toplam 6 parça: <b>baş, gövde, sağ/sol kol, sağ/sol bacak</b>. Her iki yönde de aynı isimler kullanılır. Şeffaf PNG’ler ayrı yüklenir.</p>
+<div id="partList"></div>
+<div style="margin-top:12px"><b id="selectedLabel">Seçilen: gövde</b><label>X konumu <input id="x" type="range" min="-240" max="240" value="0"></label><label>Y konumu <input id="y" type="range" min="-240" max="240" value="0"></label><label>Pivot X (parça genişliği %) <input id="px" type="range" min="0" max="100" value="50"></label><label>Pivot Y (parça yüksekliği %) <input id="py" type="range" min="0" max="100" value="50"></label><label>Elle dönüş (derece) <input id="angle" type="range" min="-180" max="180" value="0"></label></div>
+<details><summary>Dosyalar ve kayıt</summary><p>Resimler tarayıcı IndexedDB içine kaydedilir. Konumlar ve yön ayarları da yerel saklanır. Bu sayfa GPT Image API'ye bağlanmaz; promptu kopyalayıp çıktı PNG'yi içe aktarırsın.</p><button id="clear">Bu stüdyonun kayıtlarını temizle</button></details>
+</section>
+</main>
+<script>
+(() => {
+'use strict';
+const names=['head','torso','armL','armR','legL','legR'];
+const labels={head:'Baş',torso:'Gövde',armL:'Sol kol',armR:'Sağ kol',legL:'Sol bacak',legR:'Sağ bacak'};
+const bases={head:{x:0,y:-126,px:50,py:85},torso:{x:0,y:-25,px:50,py:28},armL:{x:-52,y:-45,px:60,py:12},armR:{x:52,y:-45,px:40,py:12},legL:{x:-24,y:62,px:50,py:12},legR:{x:24,y:62,px:50,py:12}};
+const state={dir:'front',view:'front',selected:'torso',anim:'idle',running:true,time:0,speed:1,scale:1,parts:{front:{},back:{}},images:{front:{},back:{}},refs:{}};
+const $=id=>document.getElementById(id),canvas=$('canvas'),ctx=canvas.getContext('2d');let db;
+function dir(){return state.view.startsWith('back')?'back':'front'}
+function layer(d,n){if(!state.parts[d][n])state.parts[d][n]={...bases[n],angle:0};return state.parts[d][n]}
+function key(d,n){return d+':'+n}
+function persist(){localStorage.setItem('mineclonie:rig:v1',JSON.stringify({parts:state.parts,scale:state.scale,speed:state.speed}))}
+try{const v=JSON.parse(localStorage.getItem('mineclonie:rig:v1')||'null');if(v){state.parts=v.parts||state.parts;state.scale=v.scale||1;state.speed=v.speed||1}}catch(e){}
+function openDB(){return new Promise((ok,fail)=>{let r=indexedDB.open('MineclonieRigStudioV1',1);r.onupgradeneeded=()=>r.result.createObjectStore('png');r.onsuccess=()=>ok(r.result);r.onerror=()=>fail(r.error)})}
+function dbWrite(k,b){if(!db)return;const t=db.transaction('png','readwrite');t.objectStore('png').put(b,k)}
+function blobImage(b){return new Promise(ok=>{const url=URL.createObjectURL(b),im=new Image;im.onload=()=>{URL.revokeObjectURL(url);ok(im)};im.onerror=()=>{URL.revokeObjectURL(url);ok(null)};im.src=url})}
+async function loadDB(){if(!db)return;const t=db.transaction('png','readonly');const store=t.objectStore('png');for(const d of ['front','back'])for(const n of names){const k=key(d,n);const r=store.get(k);r.onsuccess=async()=>{if(r.result){state.images[d][n]=await blobImage(r.result);renderList()}}}for(const d of ['front','back']){const r=store.get('ref:'+d);r.onsuccess=async()=>{if(r.result){state.refs[d]=await blobImage(r.result);updateRef()}}}}
+async function upload(d,n,file){if(!file)return;if(!file.type.startsWith('image/')){alert('Görsel dosyası seç.');return}const im=await blobImage(file);if(!im){alert('PNG açılamadı');return}state.images[d][n]=im;dbWrite(key(d,n),file);renderList();setStatus(labels[n]+' yüklendi')}
+async function uploadRef(d,file){if(!file)return;const im=await blobImage(file);if(!im)return;state.refs[d]=im;dbWrite('ref:'+d,file);updateRef();setStatus('Referans kaydedildi')}
+function setStatus(s){$('status').textContent=s}
+function updateRef(){const i=state.refs[state.dir];$('refPreview').hidden=!i;if(i)$('refPreview').src=i.src}
+function setupDirections(){for(const id of ['vFront','vBack'])$(id).onclick=()=>{state.dir=id==='vFront'?'front':'back';$('vFront').classList.toggle('active',state.dir==='front');$('vBack').classList.toggle('active',state.dir==='back');$('reference').value='';updateRef();renderList();prompt()};$('reference').onchange=e=>uploadRef(state.dir,e.target.files[0]);document.querySelectorAll('.view').forEach(b=>b.onclick=()=>{state.view=b.dataset.view;state.dir=dir();document.querySelectorAll('.view').forEach(a=>a.classList.toggle('active',a===b));$('vFront').classList.toggle('active',state.dir==='front');$('vBack').classList.toggle('active',state.dir==='back');renderList();updateRef();prompt()})}
+function renderList(){const d=state.dir;const list=$('partList');list.replaceChildren();for(const n of names){const div=document.createElement('div');div.className='part';const b=document.createElement('button');b.textContent=labels[n];b.classList.toggle('active',state.selected===n);b.onclick=()=>select(n);const small=document.createElement('small');small.textContent=state.images[d][n]?'✓':'—';const f=document.createElement('input');f.type='file';f.accept='image/png,image/webp';f.title=labels[n]+' PNG yükle';f.onchange=e=>upload(d,n,e.target.files[0]);div.append(b,small,f);list.append(div)}syncSliders()}
+function select(n){state.selected=n;$('partSelect').value=n;renderList();prompt()}
+function syncSliders(){const p=layer(state.dir,state.selected);$('selectedLabel').textContent='Seçilen: '+labels[state.selected];for(const k of ['x','y','px','py','angle'])$(k).value=p[k]}
+function promptText(n,d){const direction=d==='front'?'FRONT THREE-QUARTER ISOMETRIC VIEW':'BACK THREE-QUARTER ISOMETRIC VIEW';const description={head:'complete head, hair, face/beard where visible and neck overlap',torso:'complete torso, tunic, belt and fabric concealed behind arms and head; no limbs',armL:'CHARACTER ANATOMICAL LEFT ARM from shoulder through hand, as ONE piece',armR:'CHARACTER ANATOMICAL RIGHT ARM from shoulder through hand, as ONE piece',legL:'CHARACTER ANATOMICAL LEFT LEG from hip through boot, as ONE piece',legR:'CHARACTER ANATOMICAL RIGHT LEG from hip through boot, as ONE piece'}[n];return `MINECLONIE — GPT IMAGE 2.5 / SINGLE RIG PART
+SOURCE IMAGE: The uploaded character reference is the ONLY appearance authority.
+VIEW: ${direction}
+TARGET PART: ${n} — ${description}
+
+Extract ONLY this target part as a separate intact 2D puppet cutout.
+Preserve the reference's exact anatomy, colors, materials, texture, worn medieval clothing, shading, scale, isometric camera and visual identity.
+Keep the visible original surface as faithful as possible. Do not redesign or stylize.
+RECONSTRUCT the normally hidden section of this SAME body part: under fabric overlaps, at shoulder/hip/neck joints, and where other body parts occlude it. Continue natural textures and anatomy. Allow generous hidden overlap for rotation without holes.
+One complete continuous anatomical part; NO other body parts or disconnected fragments.
+Keep the original viewing direction, not front-on, not profile, not a newly rotated angle.
+Output exactly ONE isolated PNG on fully transparent background, with clean antialiased edges, no outlines, shadows, white/checkerboard background, guides, labels, text or extra assets.
+Center the part in a square transparent canvas with enough margin to avoid clipping.
+This is an ASSET EXTRACTION task, NOT a new character design or animation frame.`}
+function prompt(){const n=$('partSelect').value||state.selected;$('prompt').textContent=promptText(n,state.dir)}
+function copy(s){navigator.clipboard.writeText(s).then(()=>setStatus('Prompt kopyalandı')).catch(()=>{const t=document.createElement('textarea');t.value=s;document.body.append(t);t.select();document.execCommand('copy');t.remove();setStatus('Prompt kopyalandı')})}
+function setupPrompt(){for(const n of names){let o=new Option(labels[n],n);$('partSelect').add(o)}$('partSelect').value=state.selected;$('partSelect').onchange=e=>select(e.target.value);$('copyPrompt').onclick=()=>copy(promptText($('partSelect').value,state.dir));$('copyAll').onclick=()=>copy(names.map(n=>promptText(n,state.dir)).join('\n\n---------------------\n\n'));prompt()}
+function drawPart(d,n,t,mirrored){const im=state.images[d][n];if(!im)return;const p=layer(d,n);let w=im.width,h=im.height;const ratio=Math.min(155/w,195/h,1.3);w*=ratio;h*=ratio;let swing=0,shift=0;if(state.anim==='idle')shift=n==='torso'||n==='head'?Math.sin(t*2)*1.5:0;else if(state.anim==='walk'){let phase=t*7;let s=Math.sin(phase);if(n==='armL')swing=-s*.4;if(n==='armR')swing=s*.4;if(n==='legL')swing=s*.48;if(n==='legR')swing=-s*.48;if(n==='torso'||n==='head')shift=Math.abs(s)*2}else if(state.anim==='chop'){const cycle=(t*1.25)%1,wind=Math.sin(cycle*Math.PI*2);if(n==='armL'||n==='armR')swing=-.5-1.0*wind;if(n==='torso')swing=.09*wind;if(n==='head')swing=.05*wind}
+ctx.save();ctx.translate(p.x,p.y+shift);ctx.rotate((p.angle*Math.PI/180)+swing);ctx.drawImage(im,-w*p.px/100,-h*p.py/100,w,h);if(n===state.selected){ctx.strokeStyle='#c3e593';ctx.lineWidth=1/state.scale;ctx.strokeRect(-w*p.px/100,-h*p.py/100,w,h);ctx.fillStyle='#e9a86d';ctx.beginPath();ctx.arc(0,0,3/state.scale,0,Math.PI*2);ctx.fill()}ctx.restore()}
+function draw(){const d=dir(),mirrored=state.view.endsWith('Mirror');ctx.clearRect(0,0,640,640);ctx.save();ctx.translate(320,345);ctx.scale(state.scale*(mirrored?-1:1),state.scale);const time=state.time;for(const n of ['legL','legR','armL','torso','head','armR'])drawPart(d,n,time,mirrored);ctx.restore();if(!names.some(n=>state.images[d][n])){ctx.fillStyle='#a6bba8';ctx.textAlign='center';ctx.font='15px system-ui';ctx.fillText('Sağ panelden PNG parçalarını yükle',320,310);ctx.fillText('Ön ve arka çapraz yön yeterli',320,334)}}
+let prev=performance.now();function tick(now){const delta=Math.min(.05,(now-prev)/1000);prev=now;if(state.running)state.time+=delta*state.speed;draw();requestAnimationFrame(tick)}
+function setupControls(){for(const k of ['x','y','px','py','angle'])$(k).oninput=e=>{layer(state.dir,state.selected)[k]=Number(e.target.value);persist()};document.querySelectorAll('.anim').forEach(b=>b.onclick=()=>{state.anim=b.dataset.anim;state.time=0;document.querySelectorAll('.anim').forEach(a=>a.classList.toggle('active',a===b))});$('toggle').onclick=()=>{state.running=!state.running;$('toggle').textContent=state.running?'Durdur':'Oynat'};$('speed').value=state.speed*100;$('scale').value=state.scale*100;for(const n of ['speed','scale'])$(n).oninput=e=>{state[n]=Number(e.target.value)/100;$(n+'Text').textContent=e.target.value+'%';persist()};$('reset').onclick=()=>{for(const n of names)state.parts[state.dir][n]={...bases[n],angle:0};persist();syncSliders()};$('snap').onclick=()=>{canvas.toBlob(b=>download(b,'mineclonie-rig-'+state.view+'.png'),'image/png')};$('saveJson').onclick=()=>download(new Blob([JSON.stringify({version:1,parts:state.parts,view:state.view,scale:state.scale,animations:['idle','walk','chop']},null,2)],{type:'application/json'}),'mineclonie-rig.json');$('clear').onclick=()=>{if(!confirm('Yalnızca Character Rig Studio yerel kayıtları silinsin mi?'))return;localStorage.removeItem('mineclonie:rig:v1');if(db){db.close();indexedDB.deleteDatabase('MineclonieRigStudioV1')}location.reload()};let drag=null;canvas.onpointerdown=e=>{const r=canvas.getBoundingClientRect();const x=(e.clientX-r.left)*640/r.width,y=(e.clientY-r.top)*640/r.height;const mx=(x-320)/(state.scale*(state.view.endsWith('Mirror')?-1:1)),my=(y-345)/state.scale;let nearest=null,min=65;for(const n of [...names].reverse()){if(!state.images[dir()][n])continue;const p=layer(dir(),n),dist=Math.hypot(mx-p.x,my-p.y);if(dist<min){nearest=n;min=dist}}if(!nearest)return;state.dir=dir();select(nearest);drag={x:mx,y:my,px:layer(state.dir,nearest).x,py:layer(state.dir,nearest).y};canvas.setPointerCapture(e.pointerId)};canvas.onpointermove=e=>{if(!drag)return;const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*640/r.width,y=(e.clientY-r.top)*640/r.height;const mx=(x-320)/(state.scale*(state.view.endsWith('Mirror')?-1:1)),my=(y-345)/state.scale,p=layer(state.dir,state.selected);p.x=Math.max(-240,Math.min(240,Math.round(drag.px+mx-drag.x)));p.y=Math.max(-240,Math.min(240,Math.round(drag.py+my-drag.y)));syncSliders();persist()};canvas.onpointerup=()=>{drag=null};canvas.onpointercancel=()=>{drag=null}}
+function download(blob,name){if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000)}
+setupDirections();setupPrompt();setupControls();renderList();requestAnimationFrame(tick);openDB().then(async d=>{db=d;loadDB()}).catch(()=>setStatus('IndexedDB kullanılamıyor; görseller geçici'));
+})();
+</script></body></html>
