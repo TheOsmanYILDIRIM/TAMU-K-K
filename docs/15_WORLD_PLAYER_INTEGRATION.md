@@ -23,3 +23,6 @@ Android real-device, FPS and APK builds have not been verified.
 2026-10-15: A* now checks start-to-raster connector with the same swept-square collision solver. Touch pointer pairs exclude the joystick owner, preventing joystick+one-world-finger from becoming a pinch pair. Android actual-device validation and exact Marching-triangle physics collision remain open acceptance gates.\n
 ## Marching geometry collision (revision)
 Physics derives conservative 8-unit AABBs from triangle-vs-square SAT of the *same* Marching.build water patches (global 32-unit sampling and threshold zero) used by the rendered chunk. The entire visible water fill is covered by colliders; the boundary may block up to one collision cell outside the visible shoreline. This is intentionally conservative, not exact polygon physics. Physics remains seed-based independent of visual streaming. No object placement or editor data changes.
+
+## Current authority (post Stage 4, 2026-10-15)
+Earlier water-as-solid and 'no object colliders' statements above document the superseded integration experiment. Current gameplay uses `objects.query:obstacles()` for solid resources only. Liquid water is a traversable surface (`world.liquids`), at 0.55 movement speed and 0.5 immersion; `world.collision_adapter` is retained only for conservative dry resource placement. See `docs/16_LOVE_LIQUID_TRAVERSAL.md`.

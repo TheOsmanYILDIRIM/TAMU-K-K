@@ -2,11 +2,11 @@
 
 **Güncel yön (15 Ekim 2026): LÖVE2D, 45° izometrik 2D, dikey mobil ekran ve görünür karo ızgarası bulunmayan prosedürel dünya.** Godot 4.6.3 3D yeniden başlangıç planı artık aktif oyun mimarisi değildir; ancak tarihsel iskelet ve eski kaynaklar korunmaktadır.
 
-## Şu anda çalışan temel (Aşama 1)
+## Güncel çalışan temel (Aşama 1–4)
 
 `game/love/` içinde gerçek LÖVE2D uygulaması: 45° dönüşüm, kamera kaydırma ve imleç çevresinde yakınlaştırma, mouse/WASD, dokunma/pinch, safe-area uyumlu portrait HUD, üç mevcut biyomla test sahnesi ve bölge seçimi. Gerçek LÖVE render döngüsü sanal ekranda CI ile açılıp doğrulanmıştır.
 
-Dikkat: Üç biyom **şimdilik elle tanımlanan örnek çokgenlerden** oluşur. Marching Squares, prosedürel chunk, karakter, kaynak toplama, crafting, kayıt, APK ve iki oyuncu **henüz uygulanmadı**. Gerçek Android cihaz/oynanış doğrulaması yapılmadı. Texture üretimi daha sonraki aşamaya bırakıldı.
+Dikkat: Üç biyomlu prosedürel seed/chunk ve Marching Squares dünyası, karakter/A*/CCD, deterministik kaynaklar ve geçici Wallet ile tek seferlik toplama **uygulandı**. Su geçilebilir: hareket çarpanı %55, görsel batma %50. JSON katalogdan türetilen paket içi kaynak tanımları CI ile kontrol edilir. Tam envanter, crafting, inşa, kalıcı kayıt, APK ve iki oyuncu **henüz uygulanmadı**. Gerçek Android cihaz/oynanış doğrulaması yapılmadı. Texture üretimi daha sonraki aşamaya bırakıldı.
 
 ## Çalıştır
 

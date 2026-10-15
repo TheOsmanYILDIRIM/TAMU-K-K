@@ -144,8 +144,42 @@
               ]
             }
           }
+        },
+        "core:world_resource": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "radius",
+            "biomes",
+            "render_kind"
+          ],
+          "properties": {
+            "radius": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "biomes": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "meadow",
+                  "forest",
+                  "rocky"
+                ]
+              }
+            },
+            "render_kind": {
+              "enum": [
+                "tree",
+                "rock"
+              ]
+            }
+          }
         }
-      }
+      },
+      "additionalProperties": false
     },
     "visual": {
       "type": "object",

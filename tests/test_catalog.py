@@ -11,7 +11,7 @@ CATALOG = ROOT / "data" / "catalog"
 SCHEMAS = ROOT / "schemas"
 IDENT = re.compile(r"^[a-z][a-z0-9_-]*:[a-z][a-z0-9_-]*$")
 KINDS = {"item", "resource", "structure", "creature", "block", "machine"}
-COMPONENTS = {"core:stackable", "core:harvestable", "core:inventory", "core:craft_station", "core:placeable", "core:health", "core:growable"}
+COMPONENTS = {"core:stackable", "core:harvestable", "core:inventory", "core:craft_station", "core:placeable", "core:health", "core:growable", "core:world_resource"}
 
 def read(path):
     return json.loads(Path(path).read_text(encoding="utf-8"))
@@ -81,6 +81,18 @@ class CatalogTests(unittest.TestCase):
         validate("world.json", template)
         self.assertEqual(template["palette"][0], "core:air")
         self.assertEqual(template["instances"], [])
+    def test_runtime_love_catalog_matches_json(self):
+        from scripts.generate_love_catalog import render_lua, OUTPUT
+        self.assertEqual(OUTPUT.read_text(encoding="utf-8"), render_lua())
+
+    def test_resource_gameplay_metadata(self):
+        defs, _ = load_catalog()
+        self.assertEqual(defs["core:oak_tree"]["components"]["core:world_resource"]["radius"], 11)
+        self.assertEqual(defs["core:stone_rock"]["components"]["core:world_resource"]["radius"], 12)
+        for d in defs.values():
+            if "core:world_resource" in d["components"]:
+                self.assertIn("core:harvestable", d["components"])
+
     def test_negative_missing_reference(self):
         defs, _ = load_catalog()
         with self.assertRaises(ValueError):

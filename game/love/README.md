@@ -20,11 +20,12 @@ one-finger drag pans, tap selects, two-finger pinch zooms; on-screen
 +/−/R controls work with touch. UI accommodates portrait dimensions,
 resizes and safe-area insets.
 
-The authored three-biome polygons are *only* a render/runtime fixture.
-There is **no** procedural chunk generation, Marching Squares,
-character movement, pathfinding, save data, texture integration, Android APK,
-or two-player networking yet. These belong to later phases; do not represent
-the visual baseline as terrain generation. World units are continuous,
+The main entrypoint now includes seeded continuous terrain, Marching Squares,
+chunk streaming, player physics/A*, object harvesting and traversable water.
+Resource gameplay constants are generated from JSON catalog for packaged LÖVE.
+The older polygon scene remains a Stage 1 test fixture. There is **no**
+persistent disk save, crafting, finished texture integration, Android APK,
+or two-player networking yet. World units are continuous,
 no visible tilemap.
 
 ## Test

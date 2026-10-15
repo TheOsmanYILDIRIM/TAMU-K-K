@@ -1,13 +1,13 @@
 # 2D İzometrik Oyun — Uygulama Yol Haritası
 
-> **Durum:** Plan / henüz uygulanmış kabul edilmez. **Tarih:** 2026-10-15.
+> **Durum:** Aşama 1–4 main üzerinde; aşağıdaki Aşama 5–9 kabul maddeleri plandır. **Tarih:** 2026-10-15.
 > **Repo:** `TheOsmanYILDIRIM/oyun`; **referans HEAD:** `eb80926e77fb3d83d7a7637b22e2be1ef90eaecb`.
 > **Öncelik:** Çalışan oyun sistemleri; texture/sprite üretimi sonraya bırakıldı.
 
 ## Başlangıç ilkeleri ve mimari kararı
 
 - Hedef oyun deneyimi: **45° izometrik 2D**, organik geçişli, görünür tile-ızgarası olmayan prosedürel dünya; mobil/dikey ekran öncelikli hayatta kalma, kaynak toplama, crafting, inşa ve ileride iki oyunculu ortak dünya.
-- Daha sonraki tasarım görüşmelerinde **LÖVE2D** ve **Marching Squares** tercih edildi. Ancak mevcut `main` README/AGENTS.md hâlâ **Godot 4.6.3 ve 3D yeniden başlangıç** mimarisini tanımlar. Bu uyuşmazlık **çözülmüş veya repoya uygulanmış sayılmaz**. İlk geliştirme oturumunda gerçek kaynak, deney dalları, son HEAD, çalışan testler, cihaz/paketleme olanakları ve karar belgeleri okunmalı; 2D hedefe uygun uygulama yolunun açıkça gerekçelendirilmesi gerekir.
+- Daha sonraki tasarım görüşmelerinde **LÖVE2D** ve **Marching Squares** tercih edildi. `main` artık LÖVE2D 2D çekirdeğiyle Aşama 1–4'ü uygular; tarihsel Godot 3D iskeleti korunmaktadır. İlk geliştirme oturumunda gerçek kaynak, deney dalları, son HEAD, çalışan testler, cihaz/paketleme olanakları ve karar belgeleri okunmalı; 2D hedefe uygun uygulama yolunun açıkça gerekçelendirilmesi gerekir.
 - Önceden tamamlanmış çalışan kodu yeniden yazma. Eski yedek `backup/pre-portrait-reboot-20261011`, mevcut `main`, World Builder, Object Studio, Terrain Studio, PNG'ler, kayıtlar, IndexedDB ve kullanıcı verisi korunur.
 - Placeholder şekil/renklerle işlevsellik ve testleri doğrula. **Terrain Studio'daki 18 ayrı fiziksel materyal varyantı kaydı korunur**; gerçek texture, karakter sprite'ı, animasyon ve görsel son kalite **9. aşamaya** bırakılır.
 - Her aşamada önce veri/kontrat, sonra modüler sistem, sonra test ve gerçek çalışan çıktı; commit sonrası HEAD ve CI denetimi. Gerçek cihazda denenmeyen performans, APK veya iki oyuncu başarısı iddia edilmez.
