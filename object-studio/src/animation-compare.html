@@ -13,7 +13,82 @@ const $=id=>document.getElementById(id),D=['NE','NW','SE','SW'];
 let finalId=null,editorIndex=0,drag=null;let dir='SE',stored={NE:[],NW:[],SE:[],SW:[]},variants=[],nextId=1,focus=null,index=0,playing=true,last=0,acc=0,drawSerial=0;
 const cache=new WeakMap();
 function msg(t){$('status').textContent=t}
-function dirButtons(){$('dirs').replaceChildren();for(const d of D){let b=document.createElement('button');b.textContent=d+' · '+stored[d].length;b.className=d===dir?'active':'';b.onclick=()=>{dir=d;index=0;dirButtons();draw();updateEditor()};$('dirs').append(b)}}
+
+ // UI settings are saved separately from main Animation Studio's original DB.
+ // Browsers cannot restore <input type=file> selections after a page reload.
+ const COMPARE_PREFS='osman:animation-compare:v1:ui';
+ const PART_COUNTS='osman:animation-compare:v1:part-counts';
+ const COMPARE_IDS=[
+  'cols','rows','defaultFilledFrames','fps','align','view','editorScale',
+  'autoIterations','autoLockSize','v9Appearance','colorWeight','autoQuality',
+  'ghostMode','refOpacity','showReference','singlePixels','alignedCols',
+  'alignedSheetSize','alignedFrameSize'
+ ];
+ function comparePrefValue(id){
+  const el=$(id);return el?.type==='checkbox'?el.checked:el?.value;
+ }
+ function persistComparePrefs(){
+  const values={dir};
+  for(const id of COMPARE_IDS)values[id]=comparePrefValue(id);
+  try{localStorage.setItem(COMPARE_PREFS,JSON.stringify(values))}catch{}
+ }
+ function restoreComparePrefs(){
+  let saved={};
+  try{saved=JSON.parse(localStorage.getItem(COMPARE_PREFS)||'{}')||{}}catch{}
+  if(!saved||typeof saved!=='object'||Array.isArray(saved))return;
+  if(D.includes(saved.dir))dir=saved.dir;
+  for(const id of COMPARE_IDS){
+   const el=$(id),value=saved[id];
+   if(!el||value===undefined||value===null)continue;
+   if(el.type==='checkbox'){if(typeof value==='boolean')el.checked=value;continue}
+   if(el.tagName==='SELECT'){
+    if([...el.options].some(option=>option.value===String(value)))el.value=String(value);
+    continue;
+   }
+   if(el.type==='number'||el.type==='range'){
+    const n=Number(value),lo=el.min===''?-Infinity:Number(el.min),hi=el.max===''?Infinity:Number(el.max);
+    if(Number.isFinite(n)&&n>=lo&&n<=hi)el.value=String(n);
+   }
+  }
+  $('fpsText').textContent=$('fps').value+' FPS';
+  $('colorWeightText').textContent=$('colorWeight').value+'%';
+  $('editorScaleText').textContent=$('editorScale').value+'%';
+ }
+ function initComparePrefs(){
+  restoreComparePrefs();
+  for(const id of COMPARE_IDS){
+   const el=$(id);if(!el)continue;
+   el.addEventListener('input',persistComparePrefs);
+   el.addEventListener('change',persistComparePrefs);
+  }
+ }
+ function partPrefKey(name,image){
+  return JSON.stringify([String(name).replace(/\\/g,'/').split('/').pop().toLowerCase(),image.width,image.height]);
+ }
+ function partPrefMap(){
+  try{
+   const obj=JSON.parse(localStorage.getItem(PART_COUNTS)||'{}');
+   return obj&&typeof obj==='object'&&!Array.isArray(obj)?obj:{};
+  }catch{return {}}
+ }
+ function savePartFrameCount(part){
+  const map=partPrefMap();
+  const key=partPrefKey(part.name,part.image);
+  map[key]={
+   usedFrames:part.usedFrames,
+   cols:part.cols,rows:part.rows,
+   manualFrameCount:!!part.manualFrameCount
+  };
+  try{localStorage.setItem(PART_COUNTS,JSON.stringify(map))}catch{}
+ }
+ function savedPartFrameCount(name,image,cols,rows){
+  const saved=partPrefMap()[partPrefKey(name,image)];
+  if(!saved||saved.cols!==cols||saved.rows!==rows)return null;
+  const count=Number(saved.usedFrames);
+  return Number.isInteger(count)&&count>=1&&count<=cols*rows?count:null;
+ }
+
+function dirButtons(){$('dirs').replaceChildren();for(const d of D){let b=document.createElement('button');b.textContent=d+' · '+stored[d].length;b.className=d===dir?'active':'';b.onclick=()=>{dir=d;index=0;dirButtons();draw();updateEditor();persistComparePrefs()};$('dirs').append(b)}}
 function loadImage(blob){if(!blob)return Promise.resolve(null);if(cache.has(blob))return Promise.resolve(cache.get(blob));return new Promise((ok,no)=>{let url=URL.createObjectURL(blob),im=new Image;im.onload=()=>{URL.revokeObjectURL(url);cache.set(blob,im);ok(im)};im.onerror=()=>{URL.revokeObjectURL(url);no(Error('Görsel açılamadı'))};im.src=url})}
 function split(im,c,r){let a=[];c=Math.max(1,Math.floor(c||1));r=Math.max(1,Math.floor(r||1));if(c*r>512)throw Error('Bir varyantta en fazla 512 kare');for(let y=0;y<r;y++)for(let x=0;x<c;x++){let x0=Math.round(x*im.width/c),x1=Math.round((x+1)*im.width/c),y0=Math.round(y*im.height/r),y1=Math.round((y+1)*im.height/r),w=Math.max(1,x1-x0),h=Math.max(1,y1-y0),cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.getContext('2d').drawImage(im,x0,y0,w,h,0,0,w,h);a.push(cv)}return a}
 function getEntries(){return [{id:'original',name:'Orijinal referans',records:stored[dir],kind:'original'},{id:'edited',name:'Üretilen / düzenlenen',records:stored[dir],kind:'edited'},...variants.map(v=>({id:v.id,name:v.name,frames:v.frames,kind:'variant',v}))]}
@@ -105,6 +180,7 @@ function rebuild(){let list=getEntries(),cards=$('cards');cards.replaceChildren(
      const next=e.v.parts.map(p=>({...p}));
      next[partIndex].usedFrames=used;
      next[partIndex].manualFrameCount=true;
+     savePartFrameCount(next[partIndex]);
      try{
       const merged=assembleParts(next);
       e.v.parts=merged.parts;e.v.frames=merged.frames;e.v.ranges=merged.positions;e.v.offsets=[];
@@ -176,8 +252,9 @@ async function loadVariant(v,files){
    const cols=Math.max(1,Math.floor(+$('cols').value||4)),rows=Math.max(1,Math.floor(+$('rows').value||2));
    const slots=cols*rows,declared=Math.max(0,Math.floor(+$('defaultFilledFrames').value||0));
    const range=partRange(file.name),namedCount=range?range.end-range.start+1:0;
-   const filled=declared>0?Math.min(declared,slots):(namedCount>=1&&namedCount<=slots?namedCount:slots);
-   incoming.push({name:file.name,image,cols,rows,usedFrames:filled,manualFrameCount:declared>0});
+   const savedFilled=savedPartFrameCount(file.name,image,cols,rows);
+   const filled=declared>0?Math.min(declared,slots):(savedFilled??(namedCount>=1&&namedCount<=slots?namedCount:slots));
+   incoming.push({name:file.name,image,cols,rows,usedFrames:filled,manualFrameCount:declared>0||savedFilled!==null});
   }
   // A second file selection APPENDS, instead of replacing the first 16 frames.
   // If the same named part is selected again, replace only that part.
@@ -705,7 +782,7 @@ $('alignedZipExport').onclick=()=>exportAligned('zip');
 
 $('refresh').onclick=reload;
 function tick(t){acc+=Math.min(200,t-(last||t));last=t;let step=1000/(+$('fps').value);if(playing&&acc>=step){let n=Math.floor(acc/step);acc%=step;advance(n)}requestAnimationFrame(tick)}requestAnimationFrame(tick);
-dirButtons();rebuild();updateEditor();reload();
+initComparePrefs();dirButtons();rebuild();updateEditor();reload();
 })();
 </script><script>
 (()=>{const stamp='__ANIMATION_BUILD_SHA__',label=document.getElementById('versionState'),button=document.getElementById('versionRefresh');document.getElementById('pageBuild').textContent=stamp.slice(0,10);async function check(){if(stamp==='local-dev'){label.textContent='Yerel geliştirme';return}try{const response=await fetch('./build.json?version_check='+Date.now(),{cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);const latest=(await response.json()).sha;if(!latest)throw Error('SHA bulunamadı');if(latest===stamp){label.textContent='✓ Güncel yayın · cache sorunu yok';label.style.color='#b6e7a3'}else{label.textContent='⚠ Eski HTML / cache: yayın '+latest.slice(0,10);label.style.color='#ffd48b'}}catch(e){label.textContent='Sürüm doğrulanamadı: '+e.message}}button.onclick=()=>{const url=new URL(location.href);url.searchParams.set('build',Date.now().toString());location.replace(url.toString())};check()})();

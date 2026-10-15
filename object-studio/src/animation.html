@@ -266,6 +266,53 @@ Return one transparent PNG with the character in the same place and pose.`;
  }
  $('exportAIGrid').addEventListener('change',refreshTransferPrompts);
  refreshTransferPrompts();
+
+ // Additional UI preferences. Keep v1 IndexedDB and META untouched for backward compatibility.
+ const EXTRA_PREFS='osman:animation-studio:v2:ui';
+ const EXTRA_IDS=[
+  'exportScope','exportSize','exportCols','exportChunk','exportChunkCustom',
+  'exportAIGrid','exportGridDensity','sheetCols','sheetRows'
+ ];
+ function captureExtraPrefs(){
+  const out={};
+  for(const id of EXTRA_IDS){
+   const el=$(id);if(!el)continue;
+   out[id]=el.type==='checkbox'?el.checked:el.value;
+  }
+  return out;
+ }
+ function saveExtraPrefs(){
+  try{localStorage.setItem(EXTRA_PREFS,JSON.stringify(captureExtraPrefs()))}catch{}
+ }
+ function restoreExtraPrefs(){
+  let stored;
+  try{stored=JSON.parse(localStorage.getItem(EXTRA_PREFS)||'{}')}catch{return}
+  if(!stored||typeof stored!=='object'||Array.isArray(stored))return;
+  for(const id of EXTRA_IDS){
+   const el=$(id),value=stored[id];
+   if(!el||value===undefined||value===null)continue;
+   if(el.type==='checkbox'){if(typeof value==='boolean')el.checked=value;continue}
+   if(el.tagName==='SELECT'){
+    if([...el.options].some(option=>option.value===String(value)))el.value=String(value);
+    continue;
+   }
+   if(el.type==='number'){
+    const number=Number(value),min=el.min===''?-Infinity:Number(el.min),max=el.max===''?Infinity:Number(el.max);
+    if(Number.isFinite(number)&&number>=min&&number<=max)el.value=String(number);
+   }
+  }
+ }
+ function initExtraPrefs(){
+  restoreExtraPrefs();
+  for(const id of EXTRA_IDS){
+   const el=$(id);if(!el)continue;
+   el.addEventListener('input',saveExtraPrefs);
+   el.addEventListener('change',saveExtraPrefs);
+  }
+ }
+
+ initExtraPrefs();
+ refreshTransferPrompts();
  $('copySheetPrompt').onclick=async()=>{try{await navigator.clipboard.writeText($('sheetPrompt').value);info('Spritesheet promptu kopyalandı.')}catch{ $('sheetPrompt').select();document.execCommand('copy');info('Spritesheet promptu seçildi / kopyalandı.')}};
  $('copy').onclick=()=>handle(async()=>{try{await navigator.clipboard.writeText($('prompt').value);info('Prompt kopyalandı.')}catch{ $('prompt').select();document.execCommand('copy');info('Prompt seçildi / kopyalandı.')}});
  $('resetAll').onclick=()=>handle(async()=>{if(!frames.length)return;if(!confirm('Yalnız '+direction+' yönündeki kareler ve değişiklikler silinsin mi?'))return;await clearDirection(direction);sets[direction]=[];frames=sets[direction];selected=0;playing=false;sync();info(direction+' yönü sıfırlandı. Diğer yönler ve Terrain / Obje kayıtları korundu.')});
