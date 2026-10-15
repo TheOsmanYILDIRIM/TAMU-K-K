@@ -39,7 +39,8 @@ function P:at(gx,gy)
   end
   if not kind then return nil end
   local def=Defs.get(kind)
-  -- Water uses the same conservative Marching collider as the player.
+  -- Keep resources on dry ground using the conservative Marching water mask;
+  -- only objects collide with the player.
   if not Collision.can_stand(self.water,x,y,def.radius+4) then return nil end
   return {id=("worldobj:v1:%d:%d:%d"):format(seed,gx,gy),
     def_id=kind,kind=def.kind,x=x,y=y,radius=def.radius,

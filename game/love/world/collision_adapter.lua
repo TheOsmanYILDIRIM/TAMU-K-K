@@ -1,4 +1,4 @@
--- Conservative raster collider derived from the exact Marching water triangles.
+-- Conservative Marching water footprint mask for resource placement only.
 -- Same field, global 32-unit origin, level and triangle clipping as the renderer.
 local Marching=require("world.marching")
 local M={};M.__index=M

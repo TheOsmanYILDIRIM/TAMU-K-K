@@ -6,6 +6,16 @@ local Depth=require('player.depth')
 local Path=require('navigation.pathfinder')
 local M={};M.__index=M
 local STEP=1/60
+local DEFAULT_SURFACE={speed_multiplier=1,immersion=0}
+local function surface_at(query,x,y)
+  if type(query.surface_at)~="function" then return DEFAULT_SURFACE end
+  local surface=query:surface_at(x,y)
+  assert(type(surface)=="table" and W.finite(surface.speed_multiplier)
+    and surface.speed_multiplier>0 and surface.speed_multiplier<=1
+    and W.finite(surface.immersion) and surface.immersion>=0
+    and surface.immersion<=1,"invalid traversal surface")
+  return surface
+end
 function M.new(query,options)
   W.assert_query(query)
   options=options or {}
@@ -14,7 +24,9 @@ function M.new(query,options)
   assert(W.finite(x) and W.finite(y) and W.finite(r) and r>=0
     and W.finite(speed) and speed>0, 'invalid player options')
   assert(C.can_stand(query,x,y,r),'initial spawn is blocked')
+  local surface=surface_at(query,x,y)
   return setmetatable({query=query,x=x,y=y,radius=r,speed=speed,
+    surface_multiplier=surface.speed_multiplier,immersion=surface.immersion,
     facing='S',state='idle',time=0,accumulator=0,path=nil,path_index=1,
     frame=0,blocked=false},M)
 end
@@ -41,9 +53,14 @@ function M:step(ax,ay)
   end
   local len=math.sqrt(ax*ax+ay*ay)
   if len>1 then ax,ay=ax/len,ay/len end
-  local dx,dy=ax*self.speed*STEP,ay*self.speed*STEP
+  local surface=surface_at(self.query,self.x,self.y)
+  local speed=self.speed*surface.speed_multiplier
+  local dx,dy=ax*speed*STEP,ay*speed*STEP
   local ox,oy=self.x,self.y
   self.x,self.y,self.blocked=C.move(self.query,self.x,self.y,dx,dy,self.radius)
+  local new_surface=surface_at(self.query,self.x,self.y)
+  self.surface_multiplier=new_surface.speed_multiplier
+  self.immersion=new_surface.immersion
   local moved_x,moved_y=self.x-ox,self.y-oy
   local moving=math.abs(moved_x)+math.abs(moved_y)>1e-7
   self.state=moving and 'walk' or (self.blocked and 'blocked' or 'idle')

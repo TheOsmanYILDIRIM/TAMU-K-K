@@ -4,12 +4,34 @@ local R={}
 local function player_sprite(g,camera,w,h,player)
   local px,py=camera:project(player.x,player.y,w,h)
   local z=camera.zoom
-  g.setColor(.06,.12,.15,.55)
-  g.ellipse("fill",px,py+4*z,player.radius*z*1.4,player.radius*z*.65)
-  g.setColor(.98,.76,.28)
-  g.polygon("fill",px,py-31*z,px-11*z,py-4*z,px,py+2*z,px+11*z,py-4*z)
-  g.setColor(.19,.22,.29)
-  g.circle("fill",px,py-36*z,8*z)
+  local immersion=player.immersion or 0
+  assert(immersion>=0 and immersion<=1,"invalid liquid immersion")
+  local function figure(alpha)
+    g.setColor(.98,.76,.28,alpha)
+    g.polygon("fill",px,py-31*z,px-11*z,py-4*z,px,py+2*z,px+11*z,py-4*z)
+    g.setColor(.19,.22,.29,alpha)
+    g.circle("fill",px,py-36*z,8*z)
+  end
+  if immersion==0 then
+    g.setColor(.06,.12,.15,.55)
+    g.ellipse("fill",px,py+4*z,player.radius*z*1.4,player.radius*z*.65)
+    figure(1)
+    return
+  end
+  -- Waterline rises through the body. Upper portion remains opaque while
+  -- the immersed lower half is faintly visible under the water surface.
+  local surface_y=py-(2+35*immersion)*z
+  local cut=math.max(0,math.min(h,math.floor(surface_y+.5)))
+  g.setScissor(0,0,w,cut)
+  figure(1)
+  g.setScissor(0,cut,w,h-cut)
+  figure(.18)
+  g.setScissor()
+  g.setColor(.45,.80,.85,.78)
+  g.setLineWidth(math.max(1,1.2*z))
+  g.ellipse("line",px,surface_y,player.radius*z*2.1,player.radius*z*.72)
+  g.setColor(.16,.40,.49,.30)
+  g.ellipse("fill",px,surface_y+1.7*z,player.radius*z*1.7,player.radius*z*.52)
 end
 local function object_sprite(g,camera,w,h,o,selected)
   local x,y=camera:project(o.x,o.y,w,h)

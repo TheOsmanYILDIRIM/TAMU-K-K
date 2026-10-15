@@ -1,0 +1,47 @@
+name: LOVE liquid traversal and immersion
+on:
+  push:
+    branches: [experiment/liquid-traversal-v1, main]
+    paths:
+      - 'game/love/**'
+      - '.github/workflows/love-liquid-traversal.yml'
+      - 'docs/16_LOVE_LIQUID_TRAVERSAL.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  liquid-regressions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lua 5.4 LuaJIT LOVE Xvfb
+        run: sudo apt-get update -qq && sudo apt-get install -y lua5.4 luajit love xvfb
+      - name: Syntax and complete runtime regression
+        working-directory: game/love
+        run: |
+          find . -name '*.lua' -print0 | xargs -0 -n1 luac5.4 -p
+          lua5.4 tests/run.lua
+          lua5.4 tests/runtime.lua
+          lua5.4 tests/world_stage2.lua
+          lua5.4 tests/player_stage3.lua
+          lua5.4 tests/integration.lua
+          lua5.4 tests/stage4_objects.lua
+          lua5.4 tests/stage4_deep.lua
+          lua5.4 tests/liquid_traversal.lua
+          luajit tests/liquid_traversal.lua
+      - name: Real LOVE submerged player smoke PNG
+        env:
+          OSMAN_LOVE_LIQUID_SMOKE: "1"
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120s xvfb-run -a love game/love 2>&1 | tee /tmp/liquid.log
+          grep -q 'LOVE_LIQUID_SMOKE_OK' /tmp/liquid.log
+          find "$HOME/.local/share/love" -name water-immersion-smoke.png -exec cp {} /tmp/water-immersion-smoke.png \;
+          test -s /tmp/water-immersion-smoke.png
+      - name: Preserve screenshot evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: love-liquid-immersion
+          path: /tmp/water-immersion-smoke.png
+          if-no-files-found: error

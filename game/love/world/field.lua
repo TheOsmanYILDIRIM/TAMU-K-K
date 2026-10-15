@@ -75,7 +75,7 @@ function Field:sample(x, y)
   end
   return {
     biome = biome, feature = feature, height = scores.height,
-    moisture = scores.moisture, walkable = feature ~= "water"
+    moisture = scores.moisture, walkable = true -- liquids are traversable media, not solids
   }
 end
 

@@ -27,7 +27,8 @@ local w,h=720,1100
 local fingers={}
 local pinch_distance=nil
 local stage4_smoke=os.getenv("OSMAN_LOVE_STAGE4_SMOKE")=="1"
-local smoke=stage4_smoke or os.getenv("OSMAN_LOVE_SMOKE")=="1" or os.getenv("OSMAN_LOVE_INTEGRATION_SMOKE")=="1"
+local liquid_smoke=os.getenv("OSMAN_LOVE_LIQUID_SMOKE")=="1"
+local smoke=stage4_smoke or liquid_smoke or os.getenv("OSMAN_LOVE_SMOKE")=="1" or os.getenv("OSMAN_LOVE_INTEGRATION_SMOKE")=="1"
 local frames=0
 local screenshot_done=false
 local stats={loaded=0,needed=0,pending=0}
@@ -53,6 +54,20 @@ end
 function love.load()
   w,h=love.graphics.getDimensions()
   player=spawn()
+  if liquid_smoke then
+    local found=false
+    for y=-128,128,32 do
+      for x=1408,1792,32 do
+        if query:get_feature(x,y)=="water" and Collision.can_stand(solid,x,y,player.radius) then
+          player=Controller.new(solid,{x=x,y=y,radius=5,speed=96})
+          found=true
+          break
+        end
+      end
+      if found then break end
+    end
+    assert(found and player.immersion==0.5,"liquid screenshot requires safe wet spawn")
+  end
   camera.x,camera.y=player.x,player.y
   if debug_view then camera.x,camera.y=-960,-960 end
   if stage4_smoke then
@@ -153,9 +168,9 @@ function love.draw()
       wallet:count("core:wood_log")+wallet:count("core:stone")>0)) then
     if not screenshot_done then
       screenshot_done=true
-      love.graphics.captureScreenshot(stage4_smoke and "world-objects-smoke.png" or (debug_view and "world-player-biome-smoke.png" or "world-player-smoke.png"))
+      love.graphics.captureScreenshot(liquid_smoke and "water-immersion-smoke.png" or (stage4_smoke and "world-objects-smoke.png" or (debug_view and "world-player-biome-smoke.png" or "world-player-smoke.png")))
     end
-    print(string.format("%s frames=%d chunks=%d objects=%d wood=%d stone=%d player=(%.1f,%.1f)",stage4_smoke and "LOVE_STAGE4_SMOKE_OK" or "LOVE_INTEGRATION_SMOKE_OK",frames,stats.loaded,object_count,wallet:count("core:wood_log"),wallet:count("core:stone"),player.x,player.y))
+    print(string.format("%s frames=%d chunks=%d objects=%d wood=%d stone=%d player=(%.1f,%.1f)",liquid_smoke and "LOVE_LIQUID_SMOKE_OK" or (stage4_smoke and "LOVE_STAGE4_SMOKE_OK" or "LOVE_INTEGRATION_SMOKE_OK"),frames,stats.loaded,object_count,wallet:count("core:wood_log"),wallet:count("core:stone"),player.x,player.y))
     io.stdout:flush()
     love.event.quit()
   end
