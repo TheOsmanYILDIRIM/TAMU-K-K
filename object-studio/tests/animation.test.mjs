@@ -163,3 +163,11 @@ test('color-aware iterative registration samples correct image source rectangle'
  const check=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
  assert.equal(check.status,0,check.stderr);
 });
+
+test('iterative registration keeps alpha-derived size stable and supports repeat passes',()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
+ for(const key of ['autoLockSize','autoAgain','off.registrationSeed','for(let iter=0;iter<iterations;iter++)','onPass(passes,best)','Math.max(.92,Math.min(1.08'])assert.ok(html.includes(key),'missing '+key);
+ const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+ const check=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
+ assert.equal(check.status,0,check.stderr);
+});
