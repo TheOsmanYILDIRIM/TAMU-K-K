@@ -158,7 +158,7 @@ test('automatic silhouette registration and per-frame transforms are present',()
 
 test('color-aware iterative registration samples correct image source rectangle',()=>{
  const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
- assert.ok(html.includes('c.drawImage(image,b[0],b[1],Math.max(1,b[2]),Math.max(1,b[3]),0,0,N,N)'));
+ assert.ok(html.includes('N/2-b[2]*factor/2,N/2-b[3]*factor/2'),'visual sprite must preserve natural aspect ratio');
  assert.ok(html.includes('for(let p=0;p<passes;p++'));
  const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
  const check=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
@@ -196,4 +196,13 @@ test('registration optimizer really improves across passes and ignores nearly-tr
  const clean=registrationScore(ref,moved,-11,8,1,.7);
  moved.alpha[0]=1;moved.rgb[0]=255;
  assert.equal(registrationScore(ref,moved,-11,8,1,.7),clean,'alpha=1 RGB halo must not affect matching');
+});
+
+test('aligned variant preview uses the editor transform and can export PNG and ZIP',()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
+ for(const key of ['paintEntry(ctx,e','finalId===e.id','editorGeometry(im,ref,ctx.canvas.width','draw(); // The selected variant preview','alignedSheetExport','alignedZipExport','paintAlignedFrame(sheet','zipStored(files)','manifest.json']){
+  assert.ok(html.includes(key),'missing '+key);
+ }
+ const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
+ for(const match of scripts){const check=spawnSync(process.execPath,['--check'],{input:match[1],encoding:'utf8'});assert.equal(check.status,0,check.stderr)}
 });
