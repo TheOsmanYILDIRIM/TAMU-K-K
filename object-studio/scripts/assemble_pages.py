@@ -22,7 +22,7 @@ def assemble(preview: Path, studio: Path, destination: Path, preview_sha: str, m
     for p in ("index.html", "style.css", "app.js", "assembly.html", "assembly.js"):
         if not (preview / p).is_file():
             raise FileNotFoundError("Missing existing World Builder asset: " + p)
-    for p in ("index.html", "latest.html", "build.json"):
+    for p in ("index.html", "latest.html", "build.json", "character-rig.html"):
         if not (studio / p).is_file():
             raise FileNotFoundError("Missing Object Studio build: " + p)
     obj_build = json.loads((studio / "build.json").read_text("utf-8"))
@@ -59,8 +59,10 @@ def assemble(preview: Path, studio: Path, destination: Path, preview_sha: str, m
         if '<div class="legend">' not in root_html:
             raise ValueError("World Builder navigation insertion point missing")
         root_html = root_html.replace('<div class="legend">', link + '<div class="legend">', 1)
-    (destination / "index.html").write_text(root_html, "utf-8")
-    (destination / "latest.html").write_text(root_html, "utf-8")
+    (destination / "world-builder.html").write_text(root_html, "utf-8")
+    rig_html = (studio / "character-rig.html").read_text("utf-8")
+    (destination / "index.html").write_text(rig_html, "utf-8")
+    (destination / "latest.html").write_text(rig_html, "utf-8")
     (destination / "build.json").write_text(json.dumps({"sha": preview_sha, "entry": "latest.html"}), "utf-8")
     (destination / ".nojekyll").write_text("", "utf-8")
     shutil.copytree(studio, destination / "object-studio")
