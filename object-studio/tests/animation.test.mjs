@@ -126,3 +126,15 @@ test('final alignment editor uses exact frame index and alpha bounds',()=>{
  const check=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
  assert.equal(check.status,0,check.stderr);
 });
+
+test('comparison shows source and AI file names with selectable previous-frame ghost',()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
+ const main=fs.readFileSync(path.join(root,'src/animation.html'),'utf8');
+ for(const key of ['ghostMode','ghostRecord(v,i,originalRef)','Nihai varyantın önceki karesi','AI çıktısı:','Dosyalar:','ghostInfo'])assert.ok(html.includes(key),'missing '+key);
+ assert.ok(main.includes('editedName:file.name'),'AI replacement filename must be stored');
+ for(const page of [html,main])for(const match of page.matchAll(/<script>([\s\S]*?)<\/script>/g)){
+  const js=match[1].replaceAll('__ANIMATION_BUILD_SHA__','0123456789abcdef0123456789abcdef01234567');
+  const check=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
+  assert.equal(check.status,0,check.stderr);
+ }
+});
