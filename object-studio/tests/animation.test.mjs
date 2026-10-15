@@ -177,7 +177,7 @@ test('registration optimizer really improves across passes and ignores nearly-tr
  const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
  const core=html.match(/\/\/ ALIGNMENT_CORE_BEGIN([\s\S]*?)\/\/ ALIGNMENT_CORE_END/)?.[1];
  assert.ok(core,'registration functions must be independently testable');
- const {registrationScore,optimizeDescriptors}=vm.runInNewContext(core+'\n({registrationScore,optimizeDescriptors})');
+ const {registrationScore,optimizeDescriptors}=vm.runInNewContext(core+'\n({registrationScore,optimizeDescriptors})',{setTimeout});
  const n=64;
  function fixture(tx=0,ty=0){
   const alpha=new Uint8Array(n*n),rgb=new Uint8Array(n*n*3);
