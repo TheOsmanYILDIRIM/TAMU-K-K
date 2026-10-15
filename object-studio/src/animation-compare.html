@@ -303,58 +303,76 @@ async function registerColor(moving,reference,quality,iterations,weight,seed=nul
  if(!m.area||!r.area)throw Error('Boş alpha maskesi');
  return optimizeDescriptors(r,m,iterations,Math.min(.6,weight),seed,lockSize,quality==='fine'?2:quality==='fast'?5:3,onPass);
 }
-async function autoRegisterFrame(v,i,quality,onPass,globalScale){
- const moving=v.frames[i],previous=$('ghostMode').value==='previous'&&i>0;
- let ref=null;
- if(previous)ref=v.frames[i-1];
- else{const record=stored[dir][i];if(record)ref=await loadImage(record.source||record.blob)}
- if(!ref)return null;
+async function autoRegisterFrame(v,job,quality,onPass,scales){
+ const i=job.index,moving=v.frames[i],off=offset(v,i);
+ let ref=null,previous=job.type==='previous';
+ try{ref=await getAlignmentReference(v,job)}catch(e){console.warn('Reference missing',job.index,e)}
+ if(!ref&&i>0){ref=v.frames[i-1];previous=true}
+ const baseScale=scales[i]||off.scale||1;
+ if(!ref){
+  off.scale=baseScale;off.score=null;off.alignmentType='anchor';off.alignmentPart=job.partName;
+  return {score:null,anchored:true};
+ }
  const iterations=Math.max(1,Math.min(30,+$('autoIterations').value||8)),weight=(+$('colorWeight').value)/100,lockSize=$('autoLockSize').checked;
- const mb=bounds(moving),rb=bounds(ref),off=offset(v,i);
- const refFactor=previous?(offset(v,i-1).scale||v.scale||1):1;
- // Preserve the measured visible height. Allow at most ±8% refinement when unlocked.
- const baseScale=globalScale||rb[3]/Math.max(1,mb[3])*refFactor;
- const prior=off.registrationSeed||null;
+ const rb=bounds(ref),prior=off.registrationType===(previous?'previous':job.type)?(off.registrationSeed||null):null;
  const match=await registerColor(moving,ref,quality,iterations,weight,prior,lockSize,onPass);
- const scale=Math.max(.3,Math.min(3.5,baseScale*(lockSize?1:match.scale)));
- // tx,ty are in the 128x128 normalized visible-reference coordinate system.
- // Convert to moving-image pixels, respecting the actual reference dimensions.
+ const scale=Math.max(.25,Math.min(4,baseScale*(lockSize?1:match.scale)));
+ // Coordinates are normalized to 144x144, at a natural-aspect viewport with 79% character height.
  const dx=match.tx*rb[3]/(144*.79)/Math.max(.001,scale);
  const dy=match.ty*rb[3]/(144*.79)/Math.max(.001,scale);
  off.scale=scale;
  off.x=Math.round(dx+(previous?(offset(v,i-1).x||0):0));
  off.y=Math.round(dy+(previous?(offset(v,i-1).y||0):0));
  off.score=match.score;
+ off.alignmentType=previous?'previous':job.type;
+ off.alignmentPart=job.partName;
+ off.registrationType=off.alignmentType;
  off.registrationSeed={tx:match.tx,ty:match.ty,scale:match.scale};
  return match;
 }
+function stabilizePartSeams(v){
+ if(!v.ranges||v.ranges.length<2)return 0;
+ let adjusted=0;
+ for(const part of v.ranges.slice(1)){
+  const i=part.start-1;
+  if(i<=1||i>=v.frames.length-2)continue;
+  // Compare a short neighborhood on BOTH sides, not just one boundary pose.
+  const med=(axis,indices)=>medianOf(indices.map(n=>offset(v,n)[axis]||0));
+  for(const axis of ['x','y']){
+   const left=med(axis,[i-3,i-2,i-1].filter(j=>j>=0)),right=med(axis,[i,i+1,i+2].filter(j=>j<v.frames.length));
+   const delta=left-right;
+   if(Math.abs(delta)>9){
+    const correction=Math.round(Math.max(-9,Math.min(9,delta*.45)));
+    // Apply one shared small correction to the next imported part, avoiding a seam discontinuity.
+    for(let j=i;j<Math.min(v.frames.length,part.end);j++)offset(v,j)[axis]=(offset(v,j)[axis]||0)+correction;
+    adjusted++;
+   }
+  }
+ }
+ return adjusted;
+}
 let autoRunning=false;
 async function runAutoAlignment(all){
- const v=finalVariant();if(!v||autoRunning)return;
+ const v=finalVariant();if(!v||autoRunning||!v.frames.length)return;
  autoRunning=true;
- const ids=all?Array.from({length:v.frames.length},(_,i)=>i):[editorIndex];
- // Common size estimate across the entire cycle prevents per-frame scale flicker.
- const ratios=[];
- if($('ghostMode').value==='original')for(let k=0;k<Math.min(v.frames.length,stored[dir].length);k++){
-   const rec=stored[dir][k];if(!rec)continue;
-   const image=await loadImage(rec.source||rec.blob),mh=bounds(v.frames[k])[3],rh=bounds(image)[3];
-   if(mh>20&&rh>20)ratios.push(rh/mh);
- }
- ratios.sort((x,y)=>x-y);
- const globalScale=ratios.length?Math.max(.5,Math.min(2.5,ratios[Math.floor(ratios.length/2)])):null;
- const btns=[$('autoAlignOne'),$('autoAlignAll'),$('autoAgain')];btns.forEach(b=>b.disabled=true);
+ const buttons=[$('autoAlignOne'),$('autoAlignAll'),$('autoAgain')];
+ buttons.forEach(b=>b.disabled=true);
  try{
-  let done=0;
-  for(const i of ids){
-   const result=await autoRegisterFrame(v,i,$('autoQuality').value,(pass,best)=>{$('autoStatus').textContent='Kare '+(i+1)+'/'+v.frames.length+' · iterasyon '+pass+'/'+$('autoIterations').value+' · eşleşme '+Math.round(best.score*100)+'%'},globalScale);
-   done++;
-   $('autoStatus').textContent='Renk + alpha iterasyonu: '+done+'/'+ids.length+(result?' · örtüşme '+Math.round(result.score*100)+'%':' · referans yok');
-   if(done%4===0)await new Promise(ok=>setTimeout(ok,0));
-  }
-  updateEditor();
-  msg(done+' kare için renk + alpha eşleştirmesi tamamlandı. Farklı pozlarda küçük manuel düzeltme gerekebilir.');
- }catch(e){msg('Otomatik hizalama hatası: '+e.message)}
- finally{autoRunning=false;btns.forEach(b=>b.disabled=false)}
+  const jobs=buildAlignmentPlan(v.frames.length,stored[dir].length,$('ghostMode').value,all?null:editorIndex,v.ranges||[]);
+  const scales=await buildScaleTargets(v);
+  const results=await executeAlignmentPlan(jobs,async job=>await autoRegisterFrame(v,job,$('autoQuality').value,(pass,best)=>{
+    $('autoStatus').textContent='Kare '+(job.index+1)+'/'+v.frames.length+' • '+job.partName+' • iterasyon '+pass+'/'+$('autoIterations').value+' • '+Math.round(best.score*100)+'%';
+  },scales),async(job,result,count,total)=>{
+    $('autoStatus').textContent='Hizalama '+count+'/'+total+' • '+job.partName+' • kare '+(job.index+1)+' • '+(result?.anchored?'ilk kare sabitlendi':result?.score==null?'referans eksik':Math.round(result.score*100)+'%');
+    if(count%4===0)await new Promise(ok=>setTimeout(ok,0));
+  });
+  const anchors=results.filter(r=>r.value?.anchored).length;
+  const seams=all?stabilizePartSeams(v):0;
+  await updateEditor();
+  const pieces=(v.ranges||[]).map(p=>p.start+'–'+p.end+' '+p.name).join(' | ');
+  msg(results.length+'/'+jobs.length+' kare işlendi'+(anchors?' • '+anchors+' ilk kare referanssız sabitlendi':'')+(seams?' • '+seams+' parça sınırı düzeltildi':'')+'. Parçalar: '+pieces);
+ }catch(e){msg('Toplu hizalama hatası: '+e.message)}
+ finally{autoRunning=false;buttons.forEach(b=>b.disabled=false)}
 }
 $('colorWeight').oninput=()=>{$('colorWeightText').textContent=$('colorWeight').value+'%'};
 $('autoAlignOne').onclick=()=>runAutoAlignment(false);
