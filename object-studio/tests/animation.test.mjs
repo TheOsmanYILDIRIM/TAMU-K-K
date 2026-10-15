@@ -206,3 +206,18 @@ test('aligned variant preview uses the editor transform and can export PNG and Z
  const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
  for(const match of scripts){const check=spawnSync(process.execPath,['--check'],{input:match[1],encoding:'utf8'});assert.equal(check.status,0,check.stderr)}
 });
+
+test('aligned sprite ZIP writer creates a valid local and central directory',async()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
+ const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];assert.ok(js);
+ const begin=js.indexOf('function zipStored(files){'),end=js.indexOf('\nasync function exportAligned(',begin);
+ assert.ok(begin>=0&&end>begin,'ZIP writer source missing');
+ const src=js.slice(begin,end);
+ const zipStored=vm.runInNewContext(src+'\nzipStored',{Blob,TextEncoder,Uint8Array,DataView,ArrayBuffer});
+ const blob=zipStored([{name:'SE/frame_01.png',data:Uint8Array.from([137,80,78,71])},{name:'manifest.json',data:new TextEncoder().encode('{}')}]);
+ const bytes=Buffer.from(await blob.arrayBuffer());
+ assert.equal(bytes.readUInt32LE(0),0x04034b50);
+ assert.equal(bytes.readUInt32LE(bytes.length-22),0x06054b50);
+ assert.equal(bytes.readUInt16LE(bytes.length-12),2,'ZIP end record entry count');
+ assert.equal(bytes.readUInt32LE(bytes.length-10),2,'ZIP entry count in central directory');
+});
