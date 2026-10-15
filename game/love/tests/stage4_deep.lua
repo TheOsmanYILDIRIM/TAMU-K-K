@@ -36,9 +36,13 @@ for _,o in ipairs(world:objects_in({min_x=same.x-1,min_y=same.y-1,
   assert(o.id~=same.id,"depleted object reappeared after cache eviction")
 end
 local state=world:export_delta()
-assert(state.version==1 and state.seed==fixture.seed and state.objects[same.id].depleted)
+assert(state.version==1 and state.seed==fixture.seed and state.generator_version==1
+  and state.objects[same.id].depleted)
 state.objects[same.id].depleted=false
 assert(world:is_depleted(same.id),"mutable delta leaked through export")
+assert(not pcall(function()
+  World.new({seed=fixture.seed,generator_version=2,sample=fixture.sample},noWater)
+end), "unsupported generator version accepted")
 local anotherSeed={seed=20261016,sample=fixture.sample}
 local other=World.new(anotherSeed,noWater)
 assert(not other:get(same.id),"cross-world instance lookup succeeded")

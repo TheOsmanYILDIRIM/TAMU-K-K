@@ -3,7 +3,10 @@ local Placement=require("objects.placement")
 local W={};W.__index=W
 local function finite(n) return type(n)=="number" and n==n and math.abs(n)<math.huge end
 function W.new(query,water)
-  return setmetatable({seed=query.seed,placement=Placement.new(query,water),
+  local generator_version=query.generator_version or 1 -- independent test fixtures default to v1
+  assert(generator_version==1, "unsupported world generator version")
+  return setmetatable({seed=query.seed,generator_version=generator_version,
+    placement=Placement.new(query,water),
     delta={},site_cache={},cache_size=0,max_cache=4096},W)
 end
 function W:site(gx,gy)
@@ -62,7 +65,7 @@ function W:deplete(id)
 end
 function W:is_depleted(id) return self.delta[id] and self.delta[id].depleted or false end
 function W:export_delta()
-  local copy={version=1,seed=self.seed,objects={}}
+  local copy={version=1,seed=self.seed,generator_version=self.generator_version,objects={}}
   for id,state in pairs(self.delta) do copy.objects[id]={depleted=state.depleted==true} end
   return copy
 end

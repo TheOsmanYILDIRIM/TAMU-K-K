@@ -76,7 +76,8 @@ local replay=h:begin("harvest:2",tree.id,from_x,from_y)
 assert(not replay.ok and replay.status=="depleted")
 assert(#h:drain_events()==0 and bag:count("core:wood_log")==3)
 local delta=a:export_delta()
-assert(delta.version==1 and delta.seed==q.seed and delta.objects[tree.id].depleted)
+assert(delta.version==1 and delta.seed==q.seed and delta.generator_version==1
+  and delta.objects[tree.id].depleted)
 delta.objects[tree.id].depleted=false
 assert(a:is_depleted(tree.id),"delta snapshot must be a copy")
 assert(a:get(tree.id).id==tree.id,"object ID changed after depletion")
