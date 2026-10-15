@@ -284,3 +284,17 @@ test('size correction handles different resolutions in the two imported PNGs',as
  assert.ok(scales.slice(0,16).every(x=>Math.abs(x-1)<1e-8),'first PNG scale must remain 1x');
  assert.ok(scales.slice(16).every(x=>Math.abs(x-.5)<1e-8),'second PNG must be scaled independently');
 });
+
+test('editor, live preview and exports share the same mapped original geometry for all segments',()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
+ for(const key of [
+  'g=editorGeometry(im,original,canvas.width',
+  'prevRef=await getOriginalDisplayReference(v,editorIndex-1)',
+  'const ref=await getOriginalDisplayReference(v,i);',
+  'ref=await getOriginalDisplayReference(v,editorIndex)',
+  'async function paintAlignedFrame'
+ ])assert.ok(html.includes(key),'missing '+key);
+ const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+ const result=spawnSync(process.execPath,['--check'],{input:script,encoding:'utf8'});
+ assert.equal(result.status,0,result.stderr);
+});
