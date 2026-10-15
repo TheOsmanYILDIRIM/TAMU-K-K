@@ -149,7 +149,16 @@ test('AI spritesheet parts retain upload order and support manual reordering',()
 
 test('automatic silhouette registration and per-frame transforms are present',()=>{
  const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
- for(const key of ['autoAlignOne','autoAlignAll','registerAlpha(moving,reference','maskSimilarity','alphaSample','off.scale=effectiveScale','runAutoAlignment(true)'])assert.ok(html.includes(key),'missing '+key);
+ for(const key of ['autoAlignOne','autoAlignAll','registerColor(moving,reference','registrationScore','alphaSample','off.scale=scale','runAutoAlignment(true)','autoIterations','colorWeight'])assert.ok(html.includes(key),'missing '+key);
+ const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+ const check=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
+ assert.equal(check.status,0,check.stderr);
+});
+
+test('color-aware iterative registration samples correct image source rectangle',()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
+ assert.ok(html.includes('c.drawImage(image,b[0],b[1],Math.max(1,b[2]),Math.max(1,b[3]),0,0,N,N)'));
+ assert.ok(html.includes('for(let iter=0;iter<iterations;iter++)'));
  const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
  const check=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
  assert.equal(check.status,0,check.stderr);
