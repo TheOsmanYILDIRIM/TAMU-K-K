@@ -76,7 +76,7 @@ function rebuild(){let list=getEntries(),cards=$('cards');cards.replaceChildren(
   if(e.v.parts?.length){
    const control=document.createElement('div');control.className='muted';
    control.style.marginTop='8px';
-   control.textContent='PNG başına gerçek animasyon kareleri (kalan grid hücreleri boş sayılır):';
+   control.textContent='PNG başına gerçek animasyon kareleri (kalan grid hücreleri boş sayılır):'+(e.v.parts.length>1?' Parça sırası (elle değiştir):':'');
    e.v.parts.forEach((part,partIndex)=>{
     const line=document.createElement('div');line.className='row';
     line.style.padding='6px 0';

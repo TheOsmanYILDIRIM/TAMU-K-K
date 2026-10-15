@@ -298,3 +298,73 @@ test('editor, live preview and exports share the same mapped original geometry f
  const result=spawnSync(process.execPath,['--check'],{input:script,encoding:'utf8'});
  assert.equal(result.status,0,result.stderr);
 });
+
+
+test('magenta dual grid is optional, leaves the ninth slot visible and never touches sprite rectangles',()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation.html'),'utf8');
+ assert.ok(html.includes('id="exportAIGrid"'));
+ assert.ok(html.includes('id="exportGridDensity"'));
+ assert.ok(!html.includes('id="exportPageNumbers"'));
+ assert.ok(!html.includes('annotateSheetPage('));
+ const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+ const begin=js.indexOf('function drawDualMagentaGuide('),end=js.indexOf('const renderGroup=async group=>',begin);
+ assert.ok(begin>=0&&end>begin);
+ const renderGrid=vm.runInNewContext(js.slice(begin,end)+'\ndrawDualMagentaGuide',{$:()=>({checked:true,value:'16'})});
+ const paths=[];let current=null;
+ const g={
+  save(){},restore(){},beginPath(){current=null},stroke(){},
+  moveTo(x,y){current={x,y}},
+  lineTo(x,y){assert.ok(current);paths.push({x1:current.x,y1:current.y,x2:x,y2:y});current={x,y}}
+ };
+ const sprites=[
+  {x0:75,y0:60,x1:215,y1:240},
+  {x0:375,y0:45,x1:485,y1:220},
+  {x0:640,y0:80,x1:790,y1:235},
+  {x0:100,y0:350,x1:225,y1:575},
+  {x0:365,y0:380,x1:500,y1:555},
+  {x0:680,y0:360,x1:760,y1:590},
+  {x0:110,y0:660,x1:220,y1:855},
+  {x0:390,y0:690,x1:490,y1:830}
+ ];
+ renderGrid(g,900,3,3,sprites);
+ assert.ok(paths.length>200,'fine coordinate grid was not drawn');
+ assert.ok(paths.some(p=>p.x1>620&&p.y1>620),'unused ninth slot must retain visible grid');
+ const gap=6;
+ for(const art of sprites){
+  const box={x0:art.x0-gap,y0:art.y0-gap,x1:art.x1+gap,y1:art.y1+gap};
+  for(const p of paths){
+   if(p.x1===p.x2){
+    assert.ok(!(p.x1>=box.x0&&p.x1<=box.x1&&Math.min(p.y1,p.y2)<box.y1&&Math.max(p.y1,p.y2)>box.y0),
+     'grid line touched sprite safe rectangle');
+   }else if(p.y1===p.y2){
+    assert.ok(!(p.y1>=box.y0&&p.y1<=box.y1&&Math.min(p.x1,p.x2)<box.x1&&Math.max(p.x1,p.x2)>box.x0),
+     'grid line touched sprite safe rectangle');
+   }
+  }
+ }
+});
+
+test('3×3 PNGs preserve 8 real frames and omit trailing ninth blank slot when merging pages',()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
+ for(const key of ['defaultFilledFrames','countInput.onchange','manualFrameCount','slots.slice(0,filled)']){
+  assert.ok(html.includes(key),'missing per-part frame count logic: '+key);
+ }
+ const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+ const begin=js.indexOf('function partRange(name){'),end=js.indexOf('function combineParts(v){',begin);
+ assert.ok(begin>=0&&end>begin);
+ const {assembleParts}=vm.runInNewContext(js.slice(begin,end)+'\n({assembleParts})',{
+  split:(image,cols,rows)=>Array.from({length:cols*rows},(_,i)=>image.tag+'-'+i)
+ });
+ const page1={name:'SE/sayfa_01_of_02_frames_01-08.png',image:{tag:'a'},cols:3,rows:3,order:0};
+ const page2={name:'SE/sayfa_02_of_02_frames_09-16.png',image:{tag:'b'},cols:3,rows:3,order:1};
+ const merged=assembleParts([page1,page2]);
+ assert.equal(merged.frames.length,16);
+ assert.equal(merged.frames[7],'a-7');
+ assert.equal(merged.frames[8],'b-0');
+ assert.equal(merged.positions[1].start,9);
+ const renamed=assembleParts([{name:'AI_generated.png',image:{tag:'x'},cols:3,rows:3,usedFrames:8,manualFrameCount:true}]);
+ assert.equal(renamed.frames.length,8);
+ const nine=assembleParts([{name:'full_nine.png',image:{tag:'x'},cols:3,rows:3}]);
+ assert.equal(nine.frames.length,9,'true 9-frame sheet must remain supported');
+ assert.throws(()=>assembleParts([{name:'invalid.png',image:{tag:'x'},cols:3,rows:3,usedFrames:10}]));
+});
