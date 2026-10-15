@@ -52,5 +52,8 @@ fs.writeFileSync(path.join(dist,'animation.html'),sharedVersionUI(animation.repl
 const comparison=fs.readFileSync(path.join(root,'src','animation-compare.html'),'utf8');
 if(!comparison.includes('VARYANT KARŞILAŞTIRMA'))throw new Error('Animation comparison page missing');
 fs.writeFileSync(path.join(dist,'animation-compare.html'),sharedVersionUI(comparison.replaceAll('__ANIMATION_BUILD_SHA__',sha),sha));
+const rig=fs.readFileSync(path.join(root,'src','character-rig.html'),'utf8');
+if(!rig.includes('CHARACTER RIG STUDIO'))throw Error('Character Rig Studio missing');
+fs.writeFileSync(path.join(dist,'character-rig.html'),rig);
 fs.writeFileSync(path.join(dist,'build.json'),JSON.stringify({sha,kind:'object-studio',entry:'latest.html',content_sha256:crypto.createHash('sha256').update(html).digest('hex'),source_modules:moduleNames},null,2));
 console.log('Bundled '+modules.length+' ES modules into stand-alone HTML ('+Buffer.byteLength(html)+' bytes) SHA '+sha);
