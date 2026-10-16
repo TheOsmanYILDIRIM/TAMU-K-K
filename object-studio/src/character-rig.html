@@ -139,7 +139,7 @@ function nodes(d,t){
  const sway=walk?Math.sin(phase)*1.5:0,bob=walk?Math.abs(Math.sin(phase))*1.5:state.anim==='idle'?Math.sin(t*2)*1.1:0;
  const root={x:torso.x,y:torso.y+bob};
  const left=-1,right=1,anchor=(x,y)=>({x:root.x+x+sway,y:root.y+y});
- return {root,neck:anchor(0,-80),shoulderL:anchor(-53,-22),shoulderR:anchor(53,-22),hipL:anchor(-24,84),hipR:anchor(24,84)};
+ return {root,neck:anchor(0,-101),shoulderL:anchor(-53,-22),shoulderR:anchor(53,-22),hipL:anchor(-24,87),hipR:anchor(24,87)};
 }
 function pointFor(d,n,joints,t){
  const p=layer(d,n),base=bases[n];
