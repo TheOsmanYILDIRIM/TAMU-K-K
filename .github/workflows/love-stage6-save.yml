@@ -9,6 +9,7 @@ on:
       - 'game/love/tests/save_*'
       - 'game/love/tests/stage5_save_adapter.lua'
       - 'game/love/tests/stage5_checkpoint.lua'
+      - 'game/love/tests/stage5_transaction_boundary.lua'
       - '.github/workflows/love-stage6-save.yml'
       - 'docs/19_LOVE_STAGE6_SAVE_ENGINE.md'
   workflow_dispatch:
@@ -38,6 +39,12 @@ jobs:
           cd game/love
           lua5.4 tests/stage5_checkpoint.lua | tee ../../stage5-checkpoint-lua54.log
           luajit tests/stage5_checkpoint.lua | tee ../../stage5-checkpoint-luajit.log
+      - name: Transaction boundary and fail-closed publish (Lua 5.4 + LuaJIT)
+        run: |
+          set -o pipefail
+          cd game/love
+          lua5.4 tests/stage5_transaction_boundary.lua | tee ../../stage5-transaction-lua54.log
+          luajit tests/stage5_transaction_boundary.lua | tee ../../stage5-transaction-luajit.log
       - name: Real LÖVE filesystem smoke
         run: |
           set -o pipefail
@@ -66,4 +73,6 @@ jobs:
             stage5-save-luajit.log
             stage5-checkpoint-lua54.log
             stage5-checkpoint-luajit.log
+            stage5-transaction-lua54.log
+            stage5-transaction-luajit.log
           if-no-files-found: warn
