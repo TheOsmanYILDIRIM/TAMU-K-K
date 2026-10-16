@@ -6,11 +6,12 @@ local function finite(n) return type(n)=="number" and n==n and math.abs(n)<math.
 local function within(o,x,y,range)
   return (o.x-x)^2+(o.y-y)^2 <= (range+o.radius)^2
 end
-function H.new(world,range)
+function H.new(world,range,inventory)
   assert(world and world.get and world.deplete)
   range=range or 38
   assert(finite(range) and range>0)
-  return setmetatable({world=world,range=range,active=nil,commands={},events={}},H)
+  if inventory then assert(type(inventory.preview)=="function" and type(inventory.validate_preview)=="function") end
+  return setmetatable({world=world,range=range,inventory=inventory,active=nil,commands={},events={}},H)
 end
 function H:begin(command_id,object_id,x,y)
   assert(type(command_id)=="string" and #command_id>0 and #command_id<=128,
@@ -47,11 +48,34 @@ function H:update(dt,x,y)
   local def=Definitions.get(obj.def_id)
   local duration=def.duration_ticks/60
   if a.elapsed+1e-9 < duration then return end
+  -- Stage 5: stage ALL drops before touching depletion. Inventory-full
+  -- leaves the resource and both ledgers intact, including multi-drop objects.
+  local candidate
+  if self.inventory then
+    candidate=self.inventory:preview()
+    for i,drop in ipairs(def.drops) do
+      local transaction_id=a.command_id..":"..i
+      if self.inventory.applied[transaction_id] then
+        self.commands[a.command_id]={ok=false,status="duplicate_transaction"}
+        self.active=nil
+        return
+      end
+      if not self.inventory:preview_add(candidate,drop.def_id,drop.count) then
+        self.commands[a.command_id]={ok=false,status="inventory_full"}
+        self.active=nil
+        return
+      end
+    end
+    self.inventory:validate_preview(candidate)
+  end
   local ok,reason=self.world:deplete(obj.id)
   if not ok then
     self.commands[a.command_id]={ok=false,status=reason}
   else
+    -- No user callbacks/IO between domain changes. Preview was validated above.
+    if candidate then self.inventory:commit_preview(candidate) end
     for i,drop in ipairs(def.drops) do
+      if candidate then self.inventory.applied[a.command_id..":"..i]=true end
       self.events[#self.events+1]={
         type="HarvestCompleted",transaction_id=a.command_id..":"..i,
         command_id=a.command_id,object_id=obj.id,

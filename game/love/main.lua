@@ -6,7 +6,12 @@ local Adapter=require("world.collision_adapter")
 local ObjectWorld=require("objects.world")
 local ObjectQuery=require("objects.query")
 local Harvest=require("objects.harvesting")
-local Wallet=require("objects.wallet")
+local Inventory=require("systems.inventory")
+local Craft=require("systems.crafting")
+local Building=require("systems.building")
+local Uuid=require("systems.uuid")
+local StageHUD=require("core.stage5_hud")
+local PlacedRenderer=require("systems.placed_renderer")
 local ObjectRenderer=require("objects.renderer")
 local Controller=require("player.controller")
 local Collision=require("physics.collision")
@@ -17,8 +22,13 @@ local query=Query.new(20261015)
 local water=Adapter.new(query,8)
 local objects=ObjectWorld.new(query,water)
 local solid=ObjectQuery.new(water,objects)
-local harvesting=Harvest.new(objects,38)
-local wallet=Wallet.new()
+local inventory=Inventory.new(12)
+local crafting=Craft.new(inventory)
+local harvesting=Harvest.new(objects,38,inventory)
+local stage_hud=StageHUD.new()
+local building
+local placement_target=nil
+local placement_rotation=0
 local stream=Stream.new(query,{size=256,step=32,max_loaded=100,build_budget=5})
 local camera=Camera.new()
 local joystick=Joystick.new(64)
@@ -26,11 +36,15 @@ local player
 local w,h=720,1100
 local fingers={}
 local pinch_distance=nil
+local stage5_runtime_smoke=os.getenv("OSMAN_LOVE_STAGE5_RUNTIME_SMOKE")=="1"
+local stage5_display=os.getenv("OSMAN_STAGE5_DISPLAY")
+local stage5_smoke_step=0
 local stage4_smoke=os.getenv("OSMAN_LOVE_STAGE4_SMOKE")=="1"
 local liquid_smoke=os.getenv("OSMAN_LOVE_LIQUID_SMOKE")=="1"
 local smoke=stage4_smoke or liquid_smoke or os.getenv("OSMAN_LOVE_SMOKE")=="1" or os.getenv("OSMAN_LOVE_INTEGRATION_SMOKE")=="1"
 local frames=0
 local screenshot_done=false
+local stage5_world_shot=false
 local stats={loaded=0,needed=0,pending=0}
 local joystick_center
 local route_status=""
@@ -39,12 +53,64 @@ local command_number=0
 local safe_area
 local object_count=0
 local stage4_before=false
+local function next_command(prefix)
+  command_number=command_number+1
+  return prefix..":"..command_number
+end
+local function begin_recipe(id)
+  local result=crafting:begin(next_command("craft"),id,
+    building:station_tags_near(player.x,player.y,60))
+  route_status=result.status
+  return result
+end
+local function place_workbench()
+  if not placement_target then route_status="Tap dry ground to preview";return end
+  local target=placement_target
+  local allowed,reason=building:preview("core:workbench",target.x,target.y,
+    placement_rotation,player.x,player.y)
+  if not allowed then route_status=reason;return end
+  local result=building:place(next_command("place"),Uuid.new(love.math.random),
+    "core:workbench",target.x,target.y,placement_rotation,player.x,player.y,
+    "player:local")
+  route_status=result.status
+  if result.ok then stage_hud.placing=false;placement_target=nil end
+  return result
+end
+local function hud_action(id)
+  if id=="inventory" then stage_hud.open=not stage_hud.open
+  elseif id=="build" then
+    if inventory:count("core:workbench")<1 then route_status="Craft a bench first"
+    else stage_hud.placing=true;stage_hud.open=false
+      placement_target=nil;route_status="Tap dry ground, then CONFIRM" end
+  elseif id=="rotate" then placement_rotation=(placement_rotation+1)%4
+  elseif id=="confirm" then place_workbench()
+  elseif id=="cancel" then stage_hud.placing=false;placement_target=nil
+  elseif id:sub(1,5)=="slot:" then
+    stage_hud.selected=tonumber(id:sub(6))
+  elseif id:sub(1,7)=="recipe:" then
+    begin_recipe(id:sub(8))
+  end
+end
+local function smoke_tap(id)
+  local sx,sy,sw,sh=safe_area()
+  local safe={x=sx,y=sy,w=sw,h=sh}
+  for _,b in ipairs(stage_hud:layout(safe)) do
+    if b.id==id then
+      local x,y=b.x+b.w*.5,b.y+b.h*.5
+      assert(stage_hud:hit(x,y,safe)==id,"smoke control overlap: "..id)
+      love.touchpressed("stage5_ui_"..id,x,y)
+      love.touchreleased("stage5_ui_"..id,x,y)
+      return
+    end
+  end
+  error("missing smoke touch control "..id)
+end
 local debug_view=os.getenv("OSMAN_LOVE_BIOME_SMOKE")=="1"
 local function spawn()
   for radius=0,512,16 do
     for y=-radius,radius,16 do for x=-radius,radius,16 do
       if radius==0 or math.max(math.abs(x),math.abs(y))==radius then
-        local ok,p=pcall(Controller.new,solid,{x=x,y=y,radius=5,speed=96})
+        local ok,p=pcall(Controller.new,building,{x=x,y=y,radius=5,speed=96})
         if ok then return p end
       end
     end end
@@ -52,14 +118,24 @@ local function spawn()
   error("No safe player spawn found within 512 world units")
 end
 function love.load()
+  if stage5_runtime_smoke and stage5_display then
+    local vw,vh=stage5_display:match("^(%d+)x(%d+)$")
+    assert(vw and vh and tonumber(vw)>=320 and tonumber(vh)>=700,
+      "unsupported Stage5 smoke viewport")
+    assert(love.window.setMode(tonumber(vw),tonumber(vh),{resizable=false}),
+      "unable to set Stage5 portrait viewport")
+    if tonumber(vw)==320 then love.graphics.setNewFont(16) end
+  end
   w,h=love.graphics.getDimensions()
+  -- Session-local v4 ID: no disk save or network host claim.
+  building=Building.new(inventory,query,solid,Uuid.new(love.math.random))
   player=spawn()
   if liquid_smoke then
     local found=false
     for y=-128,128,32 do
       for x=1408,1792,32 do
-        if query:get_feature(x,y)=="water" and Collision.can_stand(solid,x,y,player.radius) then
-          player=Controller.new(solid,{x=x,y=y,radius=5,speed=96})
+        if query:get_feature(x,y)=="water" and Collision.can_stand(building,x,y,player.radius) then
+          player=Controller.new(building,{x=x,y=y,radius=5,speed=96})
           found=true
           break
         end
@@ -70,6 +146,29 @@ function love.load()
   end
   camera.x,camera.y=player.x,player.y
   if debug_view then camera.x,camera.y=-960,-960 end
+  if stage5_runtime_smoke then
+    -- Same COLLECT touch callback used by real players; no direct item injection.
+    local selected=false
+    for _,o in ipairs(objects:objects_in({min_x=-384,min_y=-384,max_x=384,max_y=384})) do
+      if o.kind=="tree" then
+        for _,d in ipairs({{1,0},{-1,0},{0,1},{0,-1}}) do
+          local x=o.x+d[1]*(o.radius+23)
+          local y=o.y+d[2]*(o.radius+23)
+          if Collision.can_stand(building,x,y,player.radius) then
+            player.x,player.y=x,y
+            camera.x,camera.y=x,y
+            local sx,sy,sw,sh=safe_area()
+            love.touchpressed("stage5_test",sx+sw-75,sy+sh-140)
+            love.touchreleased("stage5_test",sx+sw-75,sy+sh-140)
+            if selected_target then selected=true;break end
+          end
+        end
+        if selected then break end
+      end
+    end
+    assert(selected,"No Stage5 interactive harvest fixture")
+    stage_hud.open=true
+  end
   if stage4_smoke then
     -- Exercise the real touch-button interaction callback, not direct deplete.
     local selected=false
@@ -113,8 +212,7 @@ function love.update(dt)
     local o=objects:get(selected_target)
     if not o or objects:is_depleted(selected_target) then selected_target=nil
     elseif (o.x-player.x)^2+(o.y-player.y)^2<=(harvesting.range+o.radius)^2 then
-      command_number=command_number+1
-      local result=harvesting:begin("harvest:"..command_number,o.id,player.x,player.y)
+      local result=harvesting:begin(next_command("harvest"),o.id,player.x,player.y)
       route_status=result.ok and "Gathering "..o.kind or result.status
       selected_target=nil
       player:stop_navigation()
@@ -122,8 +220,45 @@ function love.update(dt)
   end
   harvesting:update(dt,player.x,player.y)
   for _,event in ipairs(harvesting:drain_events()) do
-    wallet:apply(event)
+    -- Harvest already atomically credited the inventory before emitting.
+    assert(inventory.applied[event.transaction_id],"uncredited harvest event")
     route_status="Collected "..event.amount.." "..event.item_id
+  end
+  local result=crafting:update(dt,building:station_tags_near(player.x,player.y,60))
+  if result then route_status=result.status end
+  if stage5_runtime_smoke then
+    if stage5_smoke_step==0 and inventory:count("core:wood_log")>=3 then
+      stage5_smoke_step=1;smoke_tap("recipe:core:planks_from_log")
+    elseif stage5_smoke_step==1 and inventory:count("core:wood_plank")>=4 then
+      stage5_smoke_step=2;smoke_tap("recipe:core:bench_from_planks")
+    elseif stage5_smoke_step==2 and inventory:count("core:workbench")>=1 then
+      stage5_smoke_step=3
+      smoke_tap("build")
+      local sx,sy,sw,sh=safe_area()
+      local safe={x=sx,y=sy,w=sw,h=sh}
+      for oy=-80,80,16 do
+        for ox=-80,80,16 do
+          if ox~=0 or oy~=0 then
+            local x=math.floor((player.x+ox)/16+.5)*16
+            local y=math.floor((player.y+oy)/16+.5)*16
+            local px,py=camera:project(x,y,w,h)
+            if px>sx+10 and px<sx+sw-10 and py>sy+150 and py<sy+sh-390
+              and not stage_hud:hit(px,py,safe)
+              and building:preview("core:workbench",x,y,0,player.x,player.y) then
+              love.touchpressed("stage5_ground",px,py)
+              love.touchreleased("stage5_ground",px,py)
+              if placement_target and placement_target.x==x
+                and placement_target.y==y then break end
+            end
+          end
+        end
+        if placement_target then break end
+      end
+      assert(placement_target,"Stage5 smoke no valid touch placement")
+      smoke_tap("confirm")
+      assert(building.revision==1,"Stage5 smoke placement failed")
+      stage_hud.open=true
+    end
   end
   if not debug_view then camera.x,camera.y=player.x,player.y end
   stats=stream:update(camera,w,h)
@@ -131,14 +266,32 @@ end
 function love.draw()
   Terrain.draw(stream,camera,w,h)
   object_count=ObjectRenderer.draw(objects,stream,camera,w,h,player,selected_target)
+  local ghost
+  if stage_hud.placing and placement_target then
+    local ok=building:preview("core:workbench",placement_target.x,placement_target.y,
+      placement_rotation,player.x,player.y)
+    ghost={x=placement_target.x,y=placement_target.y,ok=ok}
+  end
+  PlacedRenderer.draw(building,camera,w,h,ghost)
   local g=love.graphics
   local safe_x,safe_y,safe_w,safe_h=safe_area()
   g.setColor(.05,.12,.12,.75)
   g.rectangle("fill",safe_x+8,safe_y+8,math.min(safe_w-16,600),124,12,12)
   g.setColor(1,1,1)
-  g.print("WORLD OBJECTS / seed "..query.seed,safe_x+18,safe_y+15)
-  g.print(string.format("Chunks %d/%d  Objects %d  State %s",stats.loaded,stats.needed,object_count,player.state),safe_x+18,safe_y+38)
-  g.print(string.format("Wood %d  Stone %d  (E / tap object)",wallet:count("core:wood_log"),wallet:count("core:stone")),safe_x+18,safe_y+61)
+  if safe_w<420 then
+    g.print("WORLD / "..query.seed,safe_x+18,safe_y+15)
+    g.print(string.format("Chunks %d  Objects %d",stats.loaded,object_count),
+      safe_x+18,safe_y+38)
+    g.print(string.format("Log %d  Plank %d  Bench %d",
+      inventory:count("core:wood_log"),inventory:count("core:wood_plank"),
+      building.revision),safe_x+18,safe_y+61)
+  else
+    g.print("WORLD OBJECTS / seed "..query.seed,safe_x+18,safe_y+15)
+    g.print(string.format("Chunks %d/%d  Objects %d  State %s",stats.loaded,stats.needed,object_count,player.state),safe_x+18,safe_y+38)
+    g.print(string.format("Logs %d  Planks %d  Stone %d  Benches %d",
+      inventory:count("core:wood_log"),inventory:count("core:wood_plank"),
+      inventory:count("core:stone"),building.revision),safe_x+18,safe_y+61)
+  end
   if route_status~="" then g.print(route_status,safe_x+18,safe_y+84) end
   if harvesting.active then
     g.setColor(.14,.25,.23,.85)
@@ -150,6 +303,8 @@ function love.draw()
   g.rectangle("fill",safe_x+safe_w-136,safe_y+safe_h-175,122,66,13,13)
   g.setColor(1,.95,.83)
   g.print("COLLECT",safe_x+safe_w-120,safe_y+safe_h-149)
+  stage_hud:draw(inventory,crafting,
+    {x=safe_x,y=safe_y,w=safe_w,h=safe_h},placement_rotation,route_status)
   local bx,by=joystick_center()
   g.setColor(.2,.3,.34,.6)
   g.circle("fill",bx,by,72)
@@ -157,6 +312,21 @@ function love.draw()
   g.circle("fill",bx+joystick.dx*55,by+joystick.dy*55,22)
   g.setColor(1,1,1)
   frames=frames+1
+  if stage5_runtime_smoke and building.revision==1 and frames>=30
+    and stats.loaded>0 and stats.pending==0 and not screenshot_done then
+    screenshot_done=true
+    love.graphics.captureScreenshot("stage5-production-touch"
+      ..(stage5_display and "-"..stage5_display or "")..".png")
+    stage_hud.open=false
+  elseif stage5_runtime_smoke and screenshot_done and not stage5_world_shot then
+    stage5_world_shot=true
+    love.graphics.captureScreenshot("stage5-production-world"
+      ..(stage5_display and "-"..stage5_display or "")..".png")
+    print(string.format("LOVE_STAGE5_RUNTIME_SMOKE_OK chunks=%d placed=%d logs=%d",
+      stats.loaded,building.revision,inventory:count("core:wood_log")))
+    io.stdout:flush()
+    love.event.quit()
+  end
   if stage4_smoke and not stage4_before and frames>=20
      and stats.loaded>0 and stats.pending==0 then
     stage4_before=true
@@ -165,12 +335,12 @@ function love.draw()
   if stage4_smoke and frames>1800 then error("Harvest smoke timed out before resource credit") end
   if smoke and frames>=20 and stats.loaded>0 and stats.pending==0
     and (not stage4_smoke or (stage4_before and
-      wallet:count("core:wood_log")+wallet:count("core:stone")>0)) then
+      inventory:count("core:wood_log")+inventory:count("core:stone")>0)) then
     if not screenshot_done then
       screenshot_done=true
       love.graphics.captureScreenshot(liquid_smoke and "water-immersion-smoke.png" or (stage4_smoke and "world-objects-smoke.png" or (debug_view and "world-player-biome-smoke.png" or "world-player-smoke.png")))
     end
-    print(string.format("%s frames=%d chunks=%d objects=%d wood=%d stone=%d player=(%.1f,%.1f)",liquid_smoke and "LOVE_LIQUID_SMOKE_OK" or (stage4_smoke and "LOVE_STAGE4_SMOKE_OK" or "LOVE_INTEGRATION_SMOKE_OK"),frames,stats.loaded,object_count,wallet:count("core:wood_log"),wallet:count("core:stone"),player.x,player.y))
+    print(string.format("%s frames=%d chunks=%d objects=%d wood=%d stone=%d player=(%.1f,%.1f)",liquid_smoke and "LOVE_LIQUID_SMOKE_OK" or (stage4_smoke and "LOVE_STAGE4_SMOKE_OK" or "LOVE_INTEGRATION_SMOKE_OK"),frames,stats.loaded,object_count,inventory:count("core:wood_log"),inventory:count("core:stone"),player.x,player.y))
     io.stdout:flush()
     love.event.quit()
   end
@@ -217,6 +387,11 @@ end
 local function press(id,x,y)
   fingers[id]={x=x,y=y,origin_x=x,origin_y=y,move=false}
   local sx,sy,sw,sh=safe_area()
+  local action=stage_hud:hit(x,y,{x=sx,y=sy,w=sw,h=sh})
+  if action then
+    fingers[id].ui=action
+    return
+  end
   if x>=sx+sw-136 and x<=sx+sw-14 and y>=sy+sh-175 and y<=sy+sh-109 then
     fingers[id].button=true
     return
@@ -238,7 +413,7 @@ end
 local function move(id,x,y)
   local p=fingers[id];if not p then return end
   if p.joystick then joystick:move(id,x,y);return end
-  if p.button then return end
+  if p.button or p.ui then return end
   if p.multi then
     local partner
     for other,q in pairs(fingers) do if other~=id and not q.joystick and not q.button then partner=q;break end end
@@ -254,8 +429,22 @@ end
 local function release(id,x,y)
   local p=fingers[id];if not p then return end
   if p.joystick then joystick:release(id)
+  elseif p.ui then
+    local sx,sy,sw,sh=safe_area()
+    if stage_hud:hit(x,y,{x=sx,y=sy,w=sw,h=sh})==p.ui then
+      hud_action(p.ui)
+    end
   elseif p.button then interact_nearest()
   elseif not p.move and not p.multi then
+    if stage_hud.placing then
+      local gx,gy=camera:unproject(x,y,w,h)
+      placement_target={x=math.floor(gx/16+.5)*16,y=math.floor(gy/16+.5)*16}
+      local ok,reason=building:preview("core:workbench",placement_target.x,
+        placement_target.y,placement_rotation,player.x,player.y)
+      route_status=ok and "Valid placement: CONFIRM" or reason
+      fingers[id]=nil
+      return
+    end
     local target=ObjectRenderer.pick(objects,stream,camera,w,h,x,y)
     if target then select_object(target)
     else
@@ -285,4 +474,10 @@ function love.keypressed(key)
   if key=="r" then camera.x,camera.y=player.x,player.y;camera.zoom=1.7 end
   if key=="escape" then player:stop_navigation();selected_target=nil end
   if key=="e" then interact_nearest() end
+  if key=="i" then hud_action("inventory") end
+  if key=="1" then hud_action("recipe:core:planks_from_log") end
+  if key=="2" then hud_action("recipe:core:bench_from_planks") end
+  if key=="b" then hud_action("build") end
+  if key=="return" then hud_action("confirm") end
+  if key=="q" then hud_action("rotate") end
 end

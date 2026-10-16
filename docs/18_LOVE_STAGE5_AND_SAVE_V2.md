@@ -115,3 +115,18 @@ plus semantic validation. The schema is an interface contract only:
 no `love.filesystem` writes, migration, replays or durability implementation
 have been added. Inventory `:snapshot()` now exports a dense list of
 `{slot,def_id,count}` entries for JSON-safe round trips.
+
+## Stage5 live runtime integration (experiment only)
+
+Real `game/love/main.lua` uses 12-slot inventory, safe-area portrait HUD,
+5 hotbar selectors, canonical recipe selection, timed 30/60-tick crafting,
+station proximity validation, touch/keyboard placement preview, rotate and
+confirm. Harvest stages inventory drops before resource depletion, checks
+duplicate transaction IDs, and credits only once in RAM. Inventory-full
+rejects the harvest without depletion. A successful placement adds a workbench
+collider for player and pathfinding queries, maintaining the existing water
+surface behavior. Local UUIDv4 values are session-ephemeral; multiplayer
+authoritative IDs are **not** implemented. `love.filesystem` persistent
+save and crash durability remain Stage6 scope. Running the new
+`OSMAN_LOVE_STAGE5_RUNTIME_SMOKE=1` exercises the main LÖVE scene and
+produces `stage5-production-touch.png` in Xvfb Actions.
