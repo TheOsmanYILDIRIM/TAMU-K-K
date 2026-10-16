@@ -5,6 +5,22 @@
 - `README.md`, `docs/10_2D_GAME_IMPLEMENTATION_ROADMAP.md`, `docs/13_LOVE_2D_RUNTIME_STAGE1.md` güncel durum/planın kaynaklarıdır. Eski `docs/01-09` içindeki Godot 3D/voxel, `project.godot`, `scenes/main.tscn`, `scripts/main.gd` önceki reboot tasarımıdır. 3D çalışma yönü olarak yeniden uygulanmaz.
 - Stüdyo, katalog, schema ve kullanıcı verileri ayrı katmanlardır; var olan çalışan çözümleri yeniden yazma. Üç biyom (`meadow`, `forest`, `rocky`), varyantlar veri ile tanımlı; su ve patika üst özelliklerdir. Texture üretimi Aşama 9.
 
+## Yeni oyuncu kararı — 2026-10-16
+- Kanonik oyun karakteri insan/golem/insansı rig değil, **bilinci taşıyan
+  metal büyülü-teknolojik core ve kontrollü plazma**:
+  `docs/14_CORE_PLASMA_PROGRESSION_DESIGN.md`.
+- Aktif LÖVE görsel uygulama `game/love/player/core_visual.lua`,
+  `core_aura.lua`, `docs/20_CORE_PLASMA_AVATAR_STAGE1.md`.
+  Özgün karakter hareketi ve çarpışması world-space 2D motorundadır;
+  tool hareketini kemik animasyonu değil konum/açı/zaman eğrisi sağlar.
+- Mixamo/Character Rig Studio, 2D segmented/mesh rig ve Blender testleri
+  **şimdilik rafa kaldırıldı**. Bu kaynakları/yedekleri silme, aktüel
+  karakter çözümüymüş gibi oyuna taşıma.
+- Stat listesi ve renk paleti, Tech Level/Magic Level eğrileri,
+  core türleri/ödüller henüz kararlaştırılmadı; bunları otomatik olarak
+  kalıcı katalog/save modeline uydurma. Aura %10 bucket/5 puan
+  histerezis sadece görsel prototip varsayımıdır.
+
 ## Değiştirilemez korumalar
 - `backup/pre-portrait-reboot-20261011`, bağımsız deney dalları, World Builder, Terrain Studio, Object Studio, PNG, kullanıcı kaydı ve IndexedDB kaybına neden olacak dönüşüm yapma. Dalı tümüyle `main` üstüne geri birleştirme. Godot iskeletini doğrulanmış geçiş dışında silme.
 - Asset ithalinde lisans, sürüm, kaynak ve hash doğrula; izinsiz Mineclonia/MTS/üçüncü taraf içeriğini gömme.
