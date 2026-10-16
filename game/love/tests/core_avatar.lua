@@ -9,6 +9,9 @@ local stats={alpha=51,beta=49,gamma=0}
 local a=Aura.resolve(stats,palette,nil,{step=10,hysteresis=5})
 assert(a.primary=="alpha" and a.secondary=="beta")
 assert(a.buckets.alpha==50 and a.buckets.beta==40)
+local stable=Aura.resolve({alpha=52,beta=48},palette,nil,{step=10})
+assert(stable.buckets.alpha==a.buckets.alpha
+  and stable.buckets.beta==a.buckets.beta,"bucket changed between 51:49 and 52:48")
 local b=Aura.resolve({alpha=49,beta=51},palette,a,{step=10,hysteresis=5})
 assert(b.primary=="alpha","hysteresis must prevent jitter")
 local c=Aura.resolve({alpha=44,beta=56},palette,b,{step=10,hysteresis=5})

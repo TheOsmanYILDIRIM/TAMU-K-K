@@ -48,3 +48,14 @@ Gerçek Android cihaz veya bağımsız game-save entegrasyonu iddia edilmez.
 **Korunacaklar:** `main`, backup, world generator, Stage5, açık Stage6
 deney dalı, Object/Terrain/World Builder, PNG, IndexedDB ve tüm eski
 karakter/rig kaynakları. Bu prototip bir deney dalında doğrulanmalıdır.
+
+## İlk gerçek CI kanıtı
+
+Deney `a61f5bdf5f4c500f20a6777a0782e4b13c134b94`,
+[LÖVE Core CI #38936706128](https://github.com/TheOsmanYILDIRIM/oyun/actions/runs/38936706128)
+success, kalite #38936705939 success. Artifact
+`core-plasma-character-prototype` (ID 12060839070) içinde gerçek üretim
+sahnesi ve dört varyantlı görsel karşılaştırma PNG'leri bulunur. Görsel
+incelemede core'un sahnede karakter yerine geçtiği, nötr renk/iki stat
+örneği, bağımsız kazma ve suda yarım batma görüldü. Bu görüntüler son
+karakter tasarımının sanatsal onayı veya Android performans kanıtı değildir.

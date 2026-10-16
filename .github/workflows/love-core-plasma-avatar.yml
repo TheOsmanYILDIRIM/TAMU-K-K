@@ -1,7 +1,7 @@
 name: LOVE core plasma character prototype
 on:
   push:
-    branches: [experiment/core-plasma-avatar-v1]
+    branches: [main, experiment/core-plasma-avatar-v1]
     paths:
       - 'game/love/**'
       - '.github/workflows/love-core-plasma-avatar.yml'

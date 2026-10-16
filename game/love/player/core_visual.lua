@@ -66,6 +66,9 @@ function V.draw(g,camera,width,height,player,context)
   local core_radius=9*z
   local aura= Aura.resolve(context.stats,context.palette,context.previous,context.options)
   local main,accent=aura.primary_color,aura.secondary_color
+  -- Visible secondary aura strength changes only at percent BUCKET edges.
+  -- A small stat increment within a bucket does not churn the aura look.
+  local secondary_share=aura.secondary and (aura.buckets[aura.secondary] or 0)/100 or .5
 
   g.push("all")
   -- Foot anchor remains at original projected world point (not visual bob).
@@ -83,7 +86,7 @@ function V.draw(g,camera,width,height,player,context)
         px+dx,cy-12*z-wave,
         px+dx+side*6*z,cy-2*z,
         px+dx-side*2*z,cy+10*z)
-      color(g,accent,alpha*.55)
+      color(g,accent,alpha*(.25+.6*secondary_share))
       g.setLineWidth(math.max(1,z*1.2))
       g.arc("line","open",px+side*2*z,cy,18*z,
         side==1 and -.9 or 2.1,side==1 and .9 or 4.0)
@@ -91,7 +94,7 @@ function V.draw(g,camera,width,height,player,context)
     -- Plasma shell; multi-layer alpha, no bloom shader needed.
     color(g,main,alpha*.18)
     g.circle("fill",px,cy,17*z)
-    color(g,accent,alpha*.45)
+    color(g,accent,alpha*(.15+.6*secondary_share))
     g.circle("line",px,cy,15*z)
     -- Alloy shell with metallic band + distinct inner luminous chamber.
     g.setColor(.10,.19,.25,alpha)
@@ -109,7 +112,7 @@ function V.draw(g,camera,width,height,player,context)
       local theta=i*TAU/4 + math.pi/4
       local x0,y0=px+math.cos(theta)*9*z,cy+math.sin(theta)*9*z
       local x1,y1=px+math.cos(theta)*12*z,cy+math.sin(theta)*12*z
-      color(g,accent,alpha*.95)
+      color(g,accent,alpha*(.35+.6*secondary_share))
       g.line(x0,y0,x1,y1)
     end
     if context.tool then tool_draw(g,context.tool,t,px,cy,z,alpha) end
