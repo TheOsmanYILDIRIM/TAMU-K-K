@@ -1,0 +1,50 @@
+name: LOVE Stage 6 save/recovery
+on:
+  push:
+    branches:
+      - experiment/stage6-save-v2
+    paths:
+      - 'game/love/save/**'
+      - 'game/love/tests/save_*'
+      - '.github/workflows/love-stage6-save.yml'
+      - 'docs/19_LOVE_STAGE6_SAVE_ENGINE.md'
+  workflow_dispatch:
+jobs:
+  save_v2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lua 5.4, LuaJIT, LÖVE and virtual display
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lua5.4 luajit love xvfb
+      - name: SHA-256, schema, transactional and recovery regression (Lua 5.4)
+        run: set -o pipefail; cd game/love && lua5.4 tests/save_v2_spec.lua | tee ../../stage6-lua54.log
+      - name: SHA-256, schema, transactional and recovery regression (LuaJIT)
+        run: set -o pipefail; cd game/love && luajit tests/save_v2_spec.lua | tee ../../stage6-luajit.log
+      - name: Real LÖVE filesystem smoke
+        run: |
+          set -o pipefail
+          mkdir -p "$RUNNER_TEMP/stage6-love"
+          cp -R game/love/save "$RUNNER_TEMP/stage6-love/"
+          cp game/love/tests/save_v2_fixture.lua "$RUNNER_TEMP/stage6-love/fixture.lua"
+          cp game/love/tests/save_love_smoke.lua "$RUNNER_TEMP/stage6-love/main.lua"
+          xvfb-run -a timeout 45 love "$RUNNER_TEMP/stage6-love" 2>&1 | tee stage6-love-fs.log
+          grep -q LOVE_FS_SAVE_V2_OK stage6-love-fs.log
+          grep -q LOVE_FS_RECOVERY_OK stage6-love-fs.log
+      - name: Python save schema contract (unchanged production data)
+        run: |
+          set -o pipefail
+          python -m pip install jsonschema
+          python -m unittest discover -s tests -p 'test_love_world_v2_contract.py' -v 2>&1 | tee stage6-schema.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stage6-save-checkpoint-evidence
+          path: |
+            stage6-lua54.log
+            stage6-luajit.log
+            stage6-love-fs.log
+            stage6-schema.log
+          if-no-files-found: warn
