@@ -37,7 +37,7 @@ details{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}summar
 </section>
 <section><div class="row" style="justify-content:space-between"><h2>2 · Birleştirme ve animasyon</h2><span id="status" class="status">Hazır</span></div>
 <div class="row"><button data-view="front" class="view active">Ön</button><button data-view="frontMirror" class="view">Ön ayna</button><button data-view="back" class="view">Arka</button><button data-view="backMirror" class="view">Arka ayna</button></div>
-<div class="pad" id="stage" style="margin-top:12px"><canvas id="canvas" width="640" height="640"></canvas></div>
+<div class="row" style="margin-top:10px"><label style="margin:0"><input type="checkbox" id="gridOn" checked> İzometrik 2:1 grid</label><label style="margin:0"><input type="checkbox" id="guidesOn" checked> Eksenler ve ayak izleri</label></div><div class="pad" id="stage" style="margin-top:12px"><canvas id="canvas" width="640" height="640"></canvas></div>
 <div class="row" style="margin-top:12px"><button data-anim="idle" class="anim active">Bekleme</button><button data-anim="walk" class="anim">Yürüme</button><button data-anim="chop" class="anim">Odun kesme</button><button id="toggle" class="primary">Durdur</button></div>
 <label>Animasyon hızı <input id="speed" type="range" min="25" max="200" value="100"><span id="speedText">100%</span></label>
 <label>Karakter ölçeği <input id="scale" type="range" min="25" max="180" value="100"><span id="scaleText">100%</span></label>
@@ -93,9 +93,85 @@ This is an ASSET EXTRACTION task, NOT a new character design or animation frame.
 function prompt(){const n=$('partSelect').value||state.selected;$('prompt').textContent=promptText(n,state.dir)}
 function copy(s){navigator.clipboard.writeText(s).then(()=>setStatus('Prompt kopyalandı')).catch(()=>{const t=document.createElement('textarea');t.value=s;document.body.append(t);t.select();document.execCommand('copy');t.remove();setStatus('Prompt kopyalandı')})}
 function setupPrompt(){for(const n of names){let o=new Option(labels[n],n);$('partSelect').add(o)}$('partSelect').value=state.selected;$('partSelect').onchange=e=>select(e.target.value);$('copyPrompt').onclick=()=>copy(promptText($('partSelect').value,state.dir));$('copyAll').onclick=()=>copy(names.map(n=>promptText(n,state.dir)).join('\n\n---------------------\n\n'));prompt()}
-function drawPart(d,n,t,mirrored){const im=state.images[d][n];if(!im)return;const p=layer(d,n);let w=im.width,h=im.height;const ratio=Math.min(155/w,195/h,1.3);w*=ratio;h*=ratio;let swing=0,shift=0;if(state.anim==='idle')shift=n==='torso'||n==='head'?Math.sin(t*2)*1.5:0;else if(state.anim==='walk'){let phase=t*7;let s=Math.sin(phase);if(n==='armL')swing=-s*.4;if(n==='armR')swing=s*.4;if(n==='legL')swing=s*.48;if(n==='legR')swing=-s*.48;if(n==='torso'||n==='head')shift=Math.abs(s)*2}else if(state.anim==='chop'){const cycle=(t*1.25)%1,wind=Math.sin(cycle*Math.PI*2);if(n==='armL'||n==='armR')swing=-.5-1.0*wind;if(n==='torso')swing=.09*wind;if(n==='head')swing=.05*wind}
-ctx.save();ctx.translate(p.x,p.y+shift);ctx.rotate((p.angle*Math.PI/180)+swing);ctx.drawImage(im,-w*p.px/100,-h*p.py/100,w,h);if(n===state.selected){ctx.strokeStyle='#c3e593';ctx.lineWidth=1/state.scale;ctx.strokeRect(-w*p.px/100,-h*p.py/100,w,h);ctx.fillStyle='#e9a86d';ctx.beginPath();ctx.arc(0,0,3/state.scale,0,Math.PI*2);ctx.fill()}ctx.restore()}
-function draw(){const d=dir(),mirrored=state.view.endsWith('Mirror');ctx.clearRect(0,0,640,640);ctx.save();ctx.translate(320,345);ctx.scale(state.scale*(mirrored?-1:1),state.scale);const time=state.time;for(const n of ['legL','legR','armL','torso','head','armR'])drawPart(d,n,time,mirrored);ctx.restore();if(!names.some(n=>state.images[d][n])){ctx.fillStyle='#a6bba8';ctx.textAlign='center';ctx.font='15px system-ui';ctx.fillText('Sağ panelden PNG parçalarını yükle',320,310);ctx.fillText('Ön ve arka çapraz yön yeterli',320,334)}}
+// 2:1 ground plane: diagonal projected world axes (2 horizontal : 1 vertical).
+const walking=(n,t,d)=>{
+  const phase=t*6.2+(n.endsWith('R')?Math.PI:0),s=Math.sin(phase),lift=Math.max(0,Math.cos(phase));
+  // Feet travel on the ground's projected depth axis, not in a side-view pendulum.
+  const back=d==='back'?-1:1;
+  const lateral=n==='legL'?-1:1;
+  return {dx:back*s*8+lateral*1.5,dy:back*s*4-lift*11,rot:s*.095,footX:back*s*8+lateral*1.5,footY:back*s*4-lift*11};
+};
+function groundGuides(d,mirrored,t){
+ const grid=$('gridOn').checked,guides=$('guidesOn').checked;
+ if(!grid&&!guides)return;
+ ctx.save();ctx.translate(320,345);ctx.scale(state.scale*(mirrored?-1:1),state.scale);
+ const Y=185; // floor plane below canvas rig origin
+ if(grid){
+   ctx.lineWidth=1/state.scale;ctx.strokeStyle='rgba(170,210,170,.20)';
+   // projected 2:1 ground lattice centered at the character.
+   for(let i=-8;i<=8;i++){
+     ctx.beginPath();ctx.moveTo(-310,Y-155+i*22);ctx.lineTo(310,Y+155+i*22);ctx.stroke();
+     ctx.beginPath();ctx.moveTo(-310,Y+155+i*22);ctx.lineTo(310,Y-155+i*22);ctx.stroke();
+   }
+ }
+ if(guides){
+   ctx.setLineDash([6,5]);ctx.lineWidth=1.5/state.scale;
+   ctx.strokeStyle='rgba(116,215,241,.85)';ctx.beginPath();ctx.moveTo(-190,Y-95);ctx.lineTo(190,Y+95);ctx.stroke();
+   ctx.strokeStyle='rgba(244,197,103,.85)';ctx.beginPath();ctx.moveTo(-190,Y+95);ctx.lineTo(190,Y-95);ctx.stroke();ctx.setLineDash([]);
+   ctx.strokeStyle='rgba(255,255,255,.7)';ctx.beginPath();ctx.moveTo(0,Y-140);ctx.lineTo(0,Y+40);ctx.stroke();
+   for(const n of ['legL','legR']){
+     const p=layer(d,n),w=walking(n,t,d),moving=state.anim==='walk',fx=p.x+(moving?w.dx:0),fy=Y+(moving?w.dy:0);
+     ctx.fillStyle=n==='legL'?'#9cd2ef':'#f3c77b';
+     ctx.beginPath();ctx.ellipse(fx,fy,10,5,-Math.PI/4,0,Math.PI*2);ctx.fill();
+     ctx.font='12px system-ui';ctx.fillText(n==='legL'?'L':'R',fx+12,fy);
+   }
+   ctx.font='12px system-ui';ctx.fillStyle='#d1e3d0';ctx.fillText('2:1 IZOMETRIK ZEMIN',-288,Y-130);
+ }
+ ctx.restore();
+}
+function drawPart(d,n,t){
+ const im=state.images[d][n];if(!im)return;
+ const p=layer(d,n);let w=im.width,h=im.height;
+ const ratio=Math.min(155/w,195/h,1.3);w*=ratio;h*=ratio;
+ let dx=0,dy=0,swing=0;
+ if(state.anim==='idle'){if(n==='torso'||n==='head')dy=Math.sin(t*2)*1.1}
+ else if(state.anim==='walk'){
+  const step=Math.sin(t*6.2),bob=1.5*Math.abs(step);
+  if(n.startsWith('leg')){const a=walking(n,t,d);dx=a.dx;dy=a.dy;swing=a.rot}
+  else if(n.startsWith('arm'))swing=(n==='armL'?1:-1)*step*.13;
+  else if(n==='torso'){dy=bob;swing=step*.014}
+  else if(n==='head')dy=bob*.7;
+ }else if(state.anim==='chop'){
+  const cycle=(t*1.25)%1,wind=Math.sin(cycle*Math.PI*2);
+  if(n==='armL'||n==='armR')swing=-.5-.65*wind;
+  if(n==='torso')swing=.06*wind;
+  if(n==='head')swing=.04*wind;
+ }
+ ctx.save();ctx.translate(p.x+dx,p.y+dy);ctx.rotate((p.angle*Math.PI/180)+swing);
+ ctx.drawImage(im,-w*p.px/100,-h*p.py/100,w,h);
+ if(n===state.selected){
+  ctx.strokeStyle='#c3e593';ctx.lineWidth=1/state.scale;
+  ctx.strokeRect(-w*p.px/100,-h*p.py/100,w,h);
+  ctx.fillStyle='#e9a86d';ctx.beginPath();ctx.arc(0,0,3/state.scale,0,Math.PI*2);ctx.fill();
+ }
+ ctx.restore();
+}
+function draw(){
+ const d=dir(),mirrored=state.view.endsWith('Mirror');
+ ctx.clearRect(0,0,640,640);
+ groundGuides(d,mirrored,state.time);
+ ctx.save();ctx.translate(320,345);ctx.scale(state.scale*(mirrored?-1:1),state.scale);
+ const time=state.time;
+ // Grounded depth-order: the front leg draws after the body, preventing crossing illusions.
+ const order=d==='front'?['legR','armR','torso','legL','armL','head']:['legL','armL','torso','legR','armR','head'];
+ for(const n of order)drawPart(d,n,time);
+ ctx.restore();
+ if(!names.some(n=>state.images[d][n])){
+  ctx.fillStyle='#a6bba8';ctx.textAlign='center';ctx.font='15px system-ui';
+  ctx.fillText('Sağ panelden PNG parçalarını yükle',320,310);
+  ctx.fillText('Ön ve arka çapraz yön yeterli',320,334);
+ }
+}
 let prev=performance.now();function tick(now){const delta=Math.min(.05,(now-prev)/1000);prev=now;if(state.running)state.time+=delta*state.speed;draw();requestAnimationFrame(tick)}
 function setupControls(){for(const k of ['x','y','px','py','angle'])$(k).oninput=e=>{layer(state.dir,state.selected)[k]=Number(e.target.value);persist()};document.querySelectorAll('.anim').forEach(b=>b.onclick=()=>{state.anim=b.dataset.anim;state.time=0;document.querySelectorAll('.anim').forEach(a=>a.classList.toggle('active',a===b))});$('toggle').onclick=()=>{state.running=!state.running;$('toggle').textContent=state.running?'Durdur':'Oynat'};$('speed').value=state.speed*100;$('scale').value=state.scale*100;for(const n of ['speed','scale'])$(n).oninput=e=>{state[n]=Number(e.target.value)/100;$(n+'Text').textContent=e.target.value+'%';persist()};$('reset').onclick=()=>{for(const n of names)state.parts[state.dir][n]={...bases[n],angle:0};persist();syncSliders()};$('snap').onclick=()=>{canvas.toBlob(b=>download(b,'mineclonie-rig-'+state.view+'.png'),'image/png')};$('saveJson').onclick=()=>download(new Blob([JSON.stringify({version:1,parts:state.parts,view:state.view,scale:state.scale,animations:['idle','walk','chop']},null,2)],{type:'application/json'}),'mineclonie-rig.json');$('clear').onclick=()=>{if(!confirm('Yalnızca Character Rig Studio yerel kayıtları silinsin mi?'))return;localStorage.removeItem('mineclonie:rig:v1');if(db){db.close();indexedDB.deleteDatabase('MineclonieRigStudioV1')}location.reload()};let drag=null;canvas.onpointerdown=e=>{const r=canvas.getBoundingClientRect();const x=(e.clientX-r.left)*640/r.width,y=(e.clientY-r.top)*640/r.height;const mx=(x-320)/(state.scale*(state.view.endsWith('Mirror')?-1:1)),my=(y-345)/state.scale;let nearest=null,min=65;for(const n of [...names].reverse()){if(!state.images[dir()][n])continue;const p=layer(dir(),n),dist=Math.hypot(mx-p.x,my-p.y);if(dist<min){nearest=n;min=dist}}if(!nearest)return;state.dir=dir();select(nearest);drag={x:mx,y:my,px:layer(state.dir,nearest).x,py:layer(state.dir,nearest).y};canvas.setPointerCapture(e.pointerId)};canvas.onpointermove=e=>{if(!drag)return;const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*640/r.width,y=(e.clientY-r.top)*640/r.height;const mx=(x-320)/(state.scale*(state.view.endsWith('Mirror')?-1:1)),my=(y-345)/state.scale,p=layer(state.dir,state.selected);p.x=Math.max(-240,Math.min(240,Math.round(drag.px+mx-drag.x)));p.y=Math.max(-240,Math.min(240,Math.round(drag.py+my-drag.y)));syncSliders();persist()};canvas.onpointerup=()=>{drag=null};canvas.onpointercancel=()=>{drag=null}}
 function download(blob,name){if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000)}
