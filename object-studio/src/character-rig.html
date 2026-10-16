@@ -21,10 +21,49 @@ details{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}summar
 .status{font-size:12px;color:var(--accent);padding-top:6px}#partList{max-height:440px;overflow:auto}
 @media(max-width:1100px){main{grid-template-columns:1fr 1fr}main section:nth-child(2){grid-row:span 2}}
 @media(max-width:690px){main{grid-template-columns:1fr}main section:nth-child(2){grid-row:auto}header{padding:12px}main{padding:8px;gap:8px}}
+
+/* First-class MRIG package controls: legacy manual rig remains intact below */
+.rig-package-main{grid-column:1/-1;background:linear-gradient(135deg,#1e3027,#1b2921);border-color:#68866b}
+.rig-package-main h2{font-size:17px;margin-bottom:8px}
+.rig-package-main .rig-package-grid{display:grid;grid-template-columns:minmax(240px,1fr) minmax(280px,1.6fr);gap:16px}
+.rig-package-main .rig-box{padding:12px;background:#15251d;border:1px solid #3b5540;border-radius:10px;min-width:0}
+.rig-package-main input[type=file]{display:block;margin:10px 0;padding:10px 0;min-height:44px}
+.rig-package-main button{min-height:40px}
+#rigInfo{font:12px/1.5 system-ui;color:#cce5bf;overflow-wrap:anywhere}
+#rigErrors{white-space:pre-wrap;background:#442c2a;color:#ffd6cf;border:1px solid #985c4e;border-radius:8px;padding:10px;margin-top:8px}
+#rigPatchText{width:100%;min-height:175px;resize:vertical;color:#deedde;background:#0e1d14;border:1px solid #526d54;border-radius:8px;padding:11px;font:12px/1.45 ui-monospace,monospace}
+#rigPatchDiff{font-size:12px;color:#b5dcab;white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0}
+.rig-compare{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.rig-compare figure{margin:0;border:1px solid #425b45;border-radius:8px;overflow:hidden}
+.rig-compare figcaption{background:#263b2b;padding:6px 9px;font-size:12px}
+.rig-compare img{display:block;width:100%;aspect-ratio:1/1;background:#27332b;object-fit:contain}
+@media(max-width:790px){.rig-package-main .rig-package-grid{grid-template-columns:1fr}.rig-compare{grid-template-columns:1fr 1fr}}
 </style></head><body>
 <header><div><h1>MINECLONIE / CHARACTER RIG STUDIO</h1><div style="color:var(--muted);font-size:12px">2 referans yönü · 6 vücut parçası · 4 görüntü yönü · yerel 2D animasyon önizleme</div></div><div class="row"><a href="./world-builder.html">Eski World Builder</a><a href="./object-studio/latest.html">Object Studio</a><a href="./object-studio/animation.html">Eski Animasyon</a></div></header>
 <main>
-<section><h2>1 · Referans ve GPT Image 2.5</h2>
+<section class="rig-package-main" aria-label="Karakter paketleri ve güvenli güncellemeler">
+ <h2>Karakter paketi ve animasyon güncellemeleri</h2>
+ <p>Tek dosyalık .mrig yükle; baş, gövde, anatomik L/R kollar ve bacaklar, mesh, pivot, Z sıralaması ve üç animasyon birlikte açılsın. PNG yükleme araçları aşağıda gelişmiş seçenek olarak korunur.</p>
+ <div class="rig-package-grid">
+  <div class="rig-box">
+   <h2>Karakter</h2>
+   <label for="rigPackageFile">Karakter Paketi Yükle (.mrig)</label>
+   <input id="rigPackageFile" type="file" accept=".mrig,application/octet-stream">
+   <div class="row"><button id="rigLoadSaved">Kayıtlı Karakteri Aç</button><button id="rigExport" class="primary">Karakter Paketi İndir</button></div>
+   <p id="rigInfo">Henüz .mrig yüklenmedi. Eski Character Rig Studio dosyaları değiştirilmez.</p>
+   <div id="rigErrors" role="alert" aria-live="assertive" hidden></div>
+  </div>
+  <div class="rig-box">
+   <h2>Rig / Animasyon Güncellemesi Uygula</h2>
+   <label for="rigPatchText">Revision kontrollü JSON patch (kopyala–yapıştır)</label>
+   <textarea id="rigPatchText" spellcheck="false" placeholder='{"format":"mineclonie-rig-patch","schemaVersion":1,...}'></textarea>
+   <div class="row"><button id="rigSamplePatch">Örnek Walk Patch</button><button id="rigPatchValidate">Güncellemeyi Doğrula</button><button id="rigPatchApply" class="primary">Güncellemeyi Uygula</button><button id="rigUndo">Geri Al</button></div>
+   <div id="rigPatchDiff" role="status" aria-live="polite">Değişiklik önizlemesi doğrulamadan sonra gösterilir.</div>
+   <div class="rig-compare"><figure><figcaption>Önce</figcaption><img id="rigBefore" alt="Patch öncesi karakter görüntüsü"></figure><figure><figcaption>Sonra</figcaption><img id="rigAfter" alt="Patch sonrası karakter görüntüsü"></figure></div>
+  </div>
+ </div>
+</section>
+<section><h2>Gelişmiş · Referans ve GPT Image 2.5</h2>
 <p>Ön çapraz ve arka çapraz yönleri ayrı ayrı üret. Karşı yönler yatay aynalanır. Referansları ve AI çıktısı parçaları burada yükle. Görseller cihazından dışarı gönderilmez.</p>
 <div class="row"><button id="vFront" class="active">Ön çapraz</button><button id="vBack">Arka çapraz</button></div>
 <label>Seçili yöne ait bütün karakter görseli <input id="reference" type="file" accept="image/png,image/webp,image/jpeg"></label>
@@ -44,7 +83,7 @@ details{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}summar
 <div class="row"><button id="reset">Yerleşimleri sıfırla</button><button id="snap">PNG kare kaydet</button><button id="saveJson">Rig JSON indir</button><button id="reviewExport" class="primary">Görsel denetim paketi üret</button></div>
 <p id="reviewNote">Denetim: dört yön × üç animasyon × dört faz = 48 karelik karşılaştırma sayfası. PNG ile JSON raporunu birlikte bu sohbete yükleyebilirsin.</p><p>Anatomik L/R kimliği aynalamada korunur. Gövde kök düğüm; boyun, omuz ve kalçalar gövdeye bağlıdır. Parçalar vertex ağıyla yumuşak bükülür. Düğüm ve ağ görünümünü açarak birleşim yerlerini incele.</p>
 </section>
-<section><h2>3 · Parça yükleme ve hizalama</h2>
+<section><h2>Gelişmiş · Manuel parça hizalama</h2>
 <p>Toplam 6 parça: <b>baş, gövde, sağ/sol kol, sağ/sol bacak</b>. Her iki yönde de aynı isimler kullanılır. Şeffaf PNG’ler ayrı yüklenir.</p>
 <div id="partList"></div>
 <div style="margin-top:12px"><b id="selectedLabel">Seçilen: gövde</b><label>X konumu <input id="x" type="range" min="-240" max="240" value="0"></label><label>Y konumu <input id="y" type="range" min="-240" max="240" value="0"></label><label>Pivot X (parça genişliği %) <input id="px" type="range" min="0" max="100" value="50"></label><label>Pivot Y (parça yüksekliği %) <input id="py" type="range" min="0" max="100" value="50"></label><label>Vertex bükülmesi <input id="bend" type="range" min="-35" max="35" value="0"></label><label>Elle dönüş (derece) <input id="angle" type="range" min="-180" max="180" value="0"></label></div>
@@ -238,6 +277,7 @@ function drawNodes(d,joints){
  ctx.restore();
 }
 function draw(){
+ if(state.rigDocument && window.MineclonieRigBridge?.drawModern?.())return;
  const d=dir(),mirrored=state.view.endsWith('Mirror'),joints=nodes(d,state.time);
  ctx.clearRect(0,0,640,640);
  groundGuides(d,mirrored,state.time);
@@ -252,7 +292,7 @@ function draw(){
  }
 }
 let prev=performance.now();function tick(now){const delta=Math.min(.05,(now-prev)/1000);prev=now;if(state.running)state.time+=delta*state.speed;draw();requestAnimationFrame(tick)}
-function setupControls(){for(const k of ['x','y','px','py','angle','bend'])$(k).oninput=e=>{layer(state.dir,state.selected)[k]=Number(e.target.value);persist()};document.querySelectorAll('.anim').forEach(b=>b.onclick=()=>{state.anim=b.dataset.anim;state.time=0;document.querySelectorAll('.anim').forEach(a=>a.classList.toggle('active',a===b))});$('toggle').onclick=()=>{state.running=!state.running;$('toggle').textContent=state.running?'Durdur':'Oynat'};$('speed').value=state.speed*100;$('scale').value=state.scale*100;for(const n of ['speed','scale'])$(n).oninput=e=>{state[n]=Number(e.target.value)/100;$(n+'Text').textContent=e.target.value+'%';persist()};$('reset').onclick=()=>{for(const n of names)state.parts[state.dir][n]={...bases[n],angle:0};persist();syncSliders()};$('snap').onclick=()=>{canvas.toBlob(b=>download(b,'mineclonie-rig-'+state.view+'.png'),'image/png')};$('reviewExport').onclick=exportReview;$('saveJson').onclick=()=>download(new Blob([JSON.stringify({version:1,parts:state.parts,view:state.view,scale:state.scale,animations:['idle','walk','chop']},null,2)],{type:'application/json'}),'mineclonie-rig.json');$('clear').onclick=()=>{if(!confirm('Yalnızca Character Rig Studio yerel kayıtları silinsin mi?'))return;localStorage.removeItem('mineclonie:rig:v1');if(db){db.close();indexedDB.deleteDatabase('MineclonieRigStudioV1')}location.reload()};let drag=null;canvas.onpointerdown=e=>{const r=canvas.getBoundingClientRect();const x=(e.clientX-r.left)*640/r.width,y=(e.clientY-r.top)*640/r.height;const mx=(x-320)/(state.scale*(state.view.endsWith('Mirror')?-1:1)),my=(y-345)/state.scale;let nearest=null,min=65;for(const n of [...names].reverse()){if(!state.images[dir()][n])continue;const p=layer(dir(),n),dist=Math.hypot(mx-p.x,my-p.y);if(dist<min){nearest=n;min=dist}}if(!nearest)return;state.dir=dir();select(nearest);drag={x:mx,y:my,px:layer(state.dir,nearest).x,py:layer(state.dir,nearest).y};canvas.setPointerCapture(e.pointerId)};canvas.onpointermove=e=>{if(!drag)return;const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*640/r.width,y=(e.clientY-r.top)*640/r.height;const mx=(x-320)/(state.scale*(state.view.endsWith('Mirror')?-1:1)),my=(y-345)/state.scale,p=layer(state.dir,state.selected);p.x=Math.max(-240,Math.min(240,Math.round(drag.px+mx-drag.x)));p.y=Math.max(-240,Math.min(240,Math.round(drag.py+my-drag.y)));syncSliders();persist()};canvas.onpointerup=()=>{drag=null};canvas.onpointercancel=()=>{drag=null}}
+function setupControls(){for(const k of ['x','y','px','py','angle','bend'])$(k).oninput=e=>{layer(state.dir,state.selected)[k]=Number(e.target.value);if(state.rigDocument)state.rigDocument.pivots[state.dir][state.selected][k]=Number(e.target.value);persist()};document.querySelectorAll('.anim').forEach(b=>b.onclick=()=>{state.anim=b.dataset.anim;state.time=0;document.querySelectorAll('.anim').forEach(a=>a.classList.toggle('active',a===b))});$('toggle').onclick=()=>{state.running=!state.running;$('toggle').textContent=state.running?'Durdur':'Oynat'};$('speed').value=state.speed*100;$('scale').value=state.scale*100;for(const n of ['speed','scale'])$(n).oninput=e=>{state[n]=Number(e.target.value)/100;$(n+'Text').textContent=e.target.value+'%';persist()};$('reset').onclick=()=>{for(const n of names)state.parts[state.dir][n]={...bases[n],angle:0};persist();syncSliders()};$('snap').onclick=()=>{canvas.toBlob(b=>download(b,'mineclonie-rig-'+state.view+'.png'),'image/png')};$('reviewExport').onclick=exportReview;$('saveJson').onclick=()=>download(new Blob([JSON.stringify({version:1,parts:state.parts,view:state.view,scale:state.scale,animations:['idle','walk','chop']},null,2)],{type:'application/json'}),'mineclonie-rig.json');$('clear').onclick=()=>{if(!confirm('Yalnızca Character Rig Studio yerel kayıtları silinsin mi?'))return;localStorage.removeItem('mineclonie:rig:v1');if(db){db.close();indexedDB.deleteDatabase('MineclonieRigStudioV1')}location.reload()};let drag=null;canvas.onpointerdown=e=>{const r=canvas.getBoundingClientRect();const x=(e.clientX-r.left)*640/r.width,y=(e.clientY-r.top)*640/r.height;const mx=(x-320)/(state.scale*(state.view.endsWith('Mirror')?-1:1)),my=(y-345)/state.scale;let nearest=null,min=65;for(const n of [...names].reverse()){if(!state.images[dir()][n])continue;const p=layer(dir(),n),dist=Math.hypot(mx-p.x,my-p.y);if(dist<min){nearest=n;min=dist}}if(!nearest)return;state.dir=dir();select(nearest);drag={x:mx,y:my,px:layer(state.dir,nearest).x,py:layer(state.dir,nearest).y};canvas.setPointerCapture(e.pointerId)};canvas.onpointermove=e=>{if(!drag)return;const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*640/r.width,y=(e.clientY-r.top)*640/r.height;const mx=(x-320)/(state.scale*(state.view.endsWith('Mirror')?-1:1)),my=(y-345)/state.scale,p=layer(state.dir,state.selected);p.x=Math.max(-240,Math.min(240,Math.round(drag.px+mx-drag.x)));p.y=Math.max(-240,Math.min(240,Math.round(drag.py+my-drag.y)));syncSliders();persist()};canvas.onpointerup=()=>{drag=null};canvas.onpointercancel=()=>{drag=null}}
 
 function inspectionReport(){
  const missing={front:names.filter(n=>!state.images.front[n]),back:names.filter(n=>!state.images.back[n])};
@@ -304,6 +344,7 @@ async function exportReview(){
  setStatus('48 karelik denetim PNG + JSON hazır');
 }
 function download(blob,name){if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000)}
+window.MineclonieRigBridge={state,canvas,ctx,renderList,setStatus,layer,persist};
 setupDirections();setupPrompt();setupControls();renderList();requestAnimationFrame(tick);openDB().then(async d=>{db=d;loadDB()}).catch(()=>setStatus('IndexedDB kullanılamıyor; görseller geçici'));
 })();
-</script></body></html>
+</script><script type="module" src="./rig-workspace.js"></script></body></html>

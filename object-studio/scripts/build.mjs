@@ -55,5 +55,6 @@ fs.writeFileSync(path.join(dist,'animation-compare.html'),sharedVersionUI(compar
 const rig=fs.readFileSync(path.join(root,'src','character-rig.html'),'utf8');
 if(!rig.includes('CHARACTER RIG STUDIO'))throw Error('Character Rig Studio missing');
 fs.writeFileSync(path.join(dist,'character-rig.html'),rig);
+for(const sidecar of ['rig-package.js','rig-workspace.js'])fs.copyFileSync(path.join(root,'src',sidecar),path.join(dist,sidecar));
 fs.writeFileSync(path.join(dist,'build.json'),JSON.stringify({sha,kind:'object-studio',entry:'latest.html',content_sha256:crypto.createHash('sha256').update(html).digest('hex'),source_modules:moduleNames},null,2));
 console.log('Bundled '+modules.length+' ES modules into stand-alone HTML ('+Buffer.byteLength(html)+' bytes) SHA '+sha);
