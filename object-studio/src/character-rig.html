@@ -37,17 +37,17 @@ details{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}summar
 </section>
 <section><div class="row" style="justify-content:space-between"><h2>2 · Birleştirme ve animasyon</h2><span id="status" class="status">Hazır</span></div>
 <div class="row"><button data-view="front" class="view active">Ön</button><button data-view="frontMirror" class="view">Ön ayna</button><button data-view="back" class="view">Arka</button><button data-view="backMirror" class="view">Arka ayna</button></div>
-<div class="row" style="margin-top:10px"><label style="margin:0"><input type="checkbox" id="gridOn" checked> İzometrik 2:1 grid</label><label style="margin:0"><input type="checkbox" id="guidesOn" checked> Eksenler ve ayak izleri</label></div><div class="pad" id="stage" style="margin-top:12px"><canvas id="canvas" width="640" height="640"></canvas></div>
+<div class="row" style="margin-top:10px"><label style="margin:0"><input type="checkbox" id="gridOn" checked> İzometrik 2:1 grid</label><label style="margin:0"><input type="checkbox" id="guidesOn" checked> Eksenler ve ayak izleri</label><label style="margin:0"><input type="checkbox" id="nodesOn" checked> Eklem düğümleri</label><label style="margin:0"><input type="checkbox" id="meshOn"> Vertex ağı</label></div><div class="pad" id="stage" style="margin-top:12px"><canvas id="canvas" width="640" height="640"></canvas></div>
 <div class="row" style="margin-top:12px"><button data-anim="idle" class="anim active">Bekleme</button><button data-anim="walk" class="anim">Yürüme</button><button data-anim="chop" class="anim">Odun kesme</button><button id="toggle" class="primary">Durdur</button></div>
 <label>Animasyon hızı <input id="speed" type="range" min="25" max="200" value="100"><span id="speedText">100%</span></label>
 <label>Karakter ölçeği <input id="scale" type="range" min="25" max="180" value="100"><span id="scaleText">100%</span></label>
 <div class="row"><button id="reset">Yerleşimleri sıfırla</button><button id="snap">PNG kare kaydet</button><button id="saveJson">Rig JSON indir</button></div>
-<p>Parçayı seçip tuvalde sürükleyerek konumunu düzelt. Pivotları sağdaki ayarlardan değiştirebilirsin. Yürüme ve odun kesme burada basit kemik-dönüşlü prototiplerdir.</p>
+<p>Anatomik L/R kimliği aynalamada korunur. Gövde kök düğüm; boyun, omuz ve kalçalar gövdeye bağlıdır. Parçalar vertex ağıyla yumuşak bükülür. Düğüm ve ağ görünümünü açarak birleşim yerlerini incele.</p>
 </section>
 <section><h2>3 · Parça yükleme ve hizalama</h2>
 <p>Toplam 6 parça: <b>baş, gövde, sağ/sol kol, sağ/sol bacak</b>. Her iki yönde de aynı isimler kullanılır. Şeffaf PNG’ler ayrı yüklenir.</p>
 <div id="partList"></div>
-<div style="margin-top:12px"><b id="selectedLabel">Seçilen: gövde</b><label>X konumu <input id="x" type="range" min="-240" max="240" value="0"></label><label>Y konumu <input id="y" type="range" min="-240" max="240" value="0"></label><label>Pivot X (parça genişliği %) <input id="px" type="range" min="0" max="100" value="50"></label><label>Pivot Y (parça yüksekliği %) <input id="py" type="range" min="0" max="100" value="50"></label><label>Elle dönüş (derece) <input id="angle" type="range" min="-180" max="180" value="0"></label></div>
+<div style="margin-top:12px"><b id="selectedLabel">Seçilen: gövde</b><label>X konumu <input id="x" type="range" min="-240" max="240" value="0"></label><label>Y konumu <input id="y" type="range" min="-240" max="240" value="0"></label><label>Pivot X (parça genişliği %) <input id="px" type="range" min="0" max="100" value="50"></label><label>Pivot Y (parça yüksekliği %) <input id="py" type="range" min="0" max="100" value="50"></label><label>Vertex bükülmesi <input id="bend" type="range" min="-35" max="35" value="0"></label><label>Elle dönüş (derece) <input id="angle" type="range" min="-180" max="180" value="0"></label></div>
 <details><summary>Dosyalar ve kayıt</summary><p>Resimler tarayıcı IndexedDB içine kaydedilir. Konumlar ve yön ayarları da yerel saklanır. Bu sayfa GPT Image API'ye bağlanmaz; promptu kopyalayıp çıktı PNG'yi içe aktarırsın.</p><button id="clear">Bu stüdyonun kayıtlarını temizle</button></details>
 </section>
 </main>
@@ -55,7 +55,10 @@ details{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}summar
 (() => {
 'use strict';
 const names=['head','torso','armL','armR','legL','legR'];
-const labels={head:'Baş',torso:'Gövde',armL:'Sol kol',armR:'Sağ kol',legL:'Sol bacak',legR:'Sağ bacak'};
+const labels={head:'Baş',torso:'Gövde',armL:'Anatomik sol kol (L)',armR:'Anatomik sağ kol (R)',legL:'Anatomik sol bacak (L)',legR:'Anatomik sağ bacak (R)'};
+// L/R always means the character's anatomy, never screen-left/screen-right.
+const depth={front:['legR','armR','torso','legL','armL','head'],back:['legL','armL','torso','legR','armR','head']};
+const parents={head:'neck',armL:'shoulderL',armR:'shoulderR',legL:'hipL',legR:'hipR',torso:'root'};
 const bases={head:{x:0,y:-126,px:50,py:85},torso:{x:0,y:-25,px:50,py:28},armL:{x:-52,y:-45,px:60,py:12},armR:{x:52,y:-45,px:40,py:12},legL:{x:-24,y:62,px:50,py:12},legR:{x:24,y:62,px:50,py:12}};
 const state={dir:'front',view:'front',selected:'torso',anim:'idle',running:true,time:0,speed:1,scale:1,parts:{front:{},back:{}},images:{front:{},back:{}},refs:{}};
 const $=id=>document.getElementById(id),canvas=$('canvas'),ctx=canvas.getContext('2d');let db;
@@ -75,7 +78,7 @@ function updateRef(){const i=state.refs[state.dir];$('refPreview').hidden=!i;if(
 function setupDirections(){for(const id of ['vFront','vBack'])$(id).onclick=()=>{state.dir=id==='vFront'?'front':'back';$('vFront').classList.toggle('active',state.dir==='front');$('vBack').classList.toggle('active',state.dir==='back');$('reference').value='';updateRef();renderList();prompt()};$('reference').onchange=e=>uploadRef(state.dir,e.target.files[0]);document.querySelectorAll('.view').forEach(b=>b.onclick=()=>{state.view=b.dataset.view;state.dir=dir();document.querySelectorAll('.view').forEach(a=>a.classList.toggle('active',a===b));$('vFront').classList.toggle('active',state.dir==='front');$('vBack').classList.toggle('active',state.dir==='back');renderList();updateRef();prompt()})}
 function renderList(){const d=state.dir;const list=$('partList');list.replaceChildren();for(const n of names){const div=document.createElement('div');div.className='part';const b=document.createElement('button');b.textContent=labels[n];b.classList.toggle('active',state.selected===n);b.onclick=()=>select(n);const small=document.createElement('small');small.textContent=state.images[d][n]?'✓':'—';const f=document.createElement('input');f.type='file';f.accept='image/png,image/webp';f.title=labels[n]+' PNG yükle';f.onchange=e=>upload(d,n,e.target.files[0]);div.append(b,small,f);list.append(div)}syncSliders()}
 function select(n){state.selected=n;$('partSelect').value=n;renderList();prompt()}
-function syncSliders(){const p=layer(state.dir,state.selected);$('selectedLabel').textContent='Seçilen: '+labels[state.selected];for(const k of ['x','y','px','py','angle'])$(k).value=p[k]}
+function syncSliders(){const p=layer(state.dir,state.selected);$('selectedLabel').textContent='Seçilen: '+labels[state.selected];for(const k of ['x','y','px','py','angle','bend'])$(k).value=p[k]||0}
 function promptText(n,d){const direction=d==='front'?'FRONT THREE-QUARTER ISOMETRIC VIEW':'BACK THREE-QUARTER ISOMETRIC VIEW';const description={head:'complete head, hair, face/beard where visible and neck overlap',torso:'complete torso, tunic, belt and fabric concealed behind arms and head; no limbs',armL:'CHARACTER ANATOMICAL LEFT ARM from shoulder through hand, as ONE piece',armR:'CHARACTER ANATOMICAL RIGHT ARM from shoulder through hand, as ONE piece',legL:'CHARACTER ANATOMICAL LEFT LEG from hip through boot, as ONE piece',legR:'CHARACTER ANATOMICAL RIGHT LEG from hip through boot, as ONE piece'}[n];return `MINECLONIE — GPT IMAGE 2.5 / SINGLE RIG PART
 SOURCE IMAGE: The uploaded character reference is the ONLY appearance authority.
 VIEW: ${direction}
@@ -129,51 +132,127 @@ function groundGuides(d,mirrored,t){
  }
  ctx.restore();
 }
-function drawPart(d,n,t){
- const im=state.images[d][n];if(!im)return;
- const p=layer(d,n);let w=im.width,h=im.height;
- const ratio=Math.min(155/w,195/h,1.3);w*=ratio;h*=ratio;
- let dx=0,dy=0,swing=0;
- if(state.anim==='idle'){if(n==='torso'||n==='head')dy=Math.sin(t*2)*1.1}
- else if(state.anim==='walk'){
-  const step=Math.sin(t*6.2),bob=1.5*Math.abs(step);
-  if(n.startsWith('leg')){const a=walking(n,t,d);dx=a.dx;dy=a.dy;swing=a.rot}
-  else if(n.startsWith('arm'))swing=(n==='armL'?1:-1)*step*.13;
-  else if(n==='torso'){dy=bob;swing=step*.014}
-  else if(n==='head')dy=bob*.7;
- }else if(state.anim==='chop'){
-  const cycle=(t*1.25)%1,wind=Math.sin(cycle*Math.PI*2);
-  if(n==='armL'||n==='armR')swing=-.5-.65*wind;
-  if(n==='torso')swing=.06*wind;
-  if(n==='head')swing=.04*wind;
+// Each limb is attached to a single anatomical node on the torso.
+// The final mesh is a tessellated PNG quad. Vertices bend locally; no extra sprite assets needed.
+function nodes(d,t){
+ const torso=layer(d,'torso'),walk=state.anim==='walk',phase=t*6.2;
+ const sway=walk?Math.sin(phase)*1.5:0,bob=walk?Math.abs(Math.sin(phase))*1.5:state.anim==='idle'?Math.sin(t*2)*1.1:0;
+ const root={x:torso.x,y:torso.y+bob};
+ const left=-1,right=1,anchor=(x,y)=>({x:root.x+x+sway,y:root.y+y});
+ return {root,neck:anchor(0,-80),shoulderL:anchor(-53,-22),shoulderR:anchor(53,-22),hipL:anchor(-24,84),hipR:anchor(24,84)};
+}
+function pointFor(d,n,joints,t){
+ const p=layer(d,n),base=bases[n];
+ if(n==='torso')return {x:joints.root.x,y:joints.root.y};
+ const attached=joints[parents[n]];
+ const origin=n==='head'?{x:base.x,y:base.y}:base;
+ const rest=layer(d,'torso'),torsoBase=bases.torso;
+ // Stored position is still an editable coordinate in character-local space.
+ // The joint follows body translation, so moving the torso never tears the limbs apart.
+ return {x:attached.x+(p.x-origin.x),y:attached.y+(p.y-origin.y)};
+}
+function motion(n,t,d){
+ let dx=0,dy=0,rot=0,bend=0;
+ if(state.anim==='walk'){
+  const step=Math.sin(t*6.2);
+  if(n.startsWith('leg')){
+   const a=walking(n,t,d);
+   dx=a.dx;dy=a.dy;rot=a.rot;bend=Math.sin(t*6.2+(n.endsWith('R')?Math.PI:0))*.085;
+  } else if(n.startsWith('arm')){rot=(n==='armL'?1:-1)*step*.13;bend=-rot*.7}
+  else if(n==='head')dy=Math.abs(step)*.5;
+  else if(n==='torso')bend=step*.012;
+ } else if(state.anim==='chop'){
+  const wind=Math.sin(t*1.25*Math.PI*2);
+  if(n.startsWith('arm')){rot=-.5-.65*wind;bend=.12*wind}
+  else if(n==='torso')bend=.065*wind;
+  else if(n==='head')rot=.04*wind;
+ } else if(n==='head')dy=Math.sin(t*2)*.5;
+ return {dx,dy,rot,bend};
+}
+// Image uv triangle -> deformed triangle, with antialiased clip.
+// This produces actual changing vertex positions instead of rotating a rigid PNG.
+function triangle(im,source,target){
+ const [a,b,c]=source,[A,B,C]=target;
+ const det=(a.x*(b.y-c.y)+b.x*(c.y-a.y));
+ if(Math.abs(det)<1e-6)return;
+ const m11=(A.x*(b.y-c.y)+B.x*(c.y-a.y)+C.x*(a.y-b.y))/det;
+ const m12=(A.y*(b.y-c.y)+B.y*(c.y-a.y)+C.y*(a.y-b.y))/det;
+ const m21=(A.x*(c.x-b.x)+B.x*(a.x-c.x)+C.x*(b.x-a.x))/det;
+ const m22=(A.y*(c.x-b.x)+B.y*(a.x-c.x)+C.y*(b.x-a.x))/det;
+ const tx=(A.x*(b.x*c.y-c.x*b.y)+B.x*(c.x*a.y-a.x*c.y)+C.x*(a.x*b.y-b.x*a.y))/det;
+ const ty=(A.y*(b.x*c.y-c.x*b.y)+B.y*(c.x*a.y-a.x*c.y)+C.y*(a.x*b.y-b.x*a.y))/det;
+ ctx.save();ctx.beginPath();
+ ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.lineTo(C.x,C.y);ctx.closePath();ctx.clip();
+ ctx.transform(m11,m12,m21,m22,tx,ty);
+ ctx.drawImage(im,0,0);ctx.restore();
+}
+function meshDraw(im,w,h,px,py,bend,n,highlight){
+ const cols=3,rows=5,verts=[],uv=[];
+ const amp=Math.max(-.55,Math.min(.55,bend));
+ for(let y=0;y<=rows;y++){
+  const v=y/rows,rr=[],ss=[];
+  for(let x=0;x<=cols;x++){
+   const u=x/cols,ax=(u-px)*w,ay=(v-py)*h;
+   // Anchor row stays at its joint. Lower vertices bend increasingly.
+   const weight=n==='head'?1-v:v;
+   const displacedX=ax+amp*weight*weight*h*.34;
+   const displacedY=ay+amp*(u-.5)*weight*w*.14;
+   rr.push({x:displacedX,y:displacedY});ss.push({x:u*im.width,y:v*im.height});
+  }verts.push(rr);uv.push(ss);
  }
- ctx.save();ctx.translate(p.x+dx,p.y+dy);ctx.rotate((p.angle*Math.PI/180)+swing);
- ctx.drawImage(im,-w*p.px/100,-h*p.py/100,w,h);
- if(n===state.selected){
-  ctx.strokeStyle='#c3e593';ctx.lineWidth=1/state.scale;
-  ctx.strokeRect(-w*p.px/100,-h*p.py/100,w,h);
+ for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){
+  const p00=verts[y][x],p10=verts[y][x+1],p01=verts[y+1][x],p11=verts[y+1][x+1];
+  const s00=uv[y][x],s10=uv[y][x+1],s01=uv[y+1][x],s11=uv[y+1][x+1];
+  triangle(im,[s00,s10,s01],[p00,p10,p01]);
+  triangle(im,[s10,s11,s01],[p10,p11,p01]);
+ }
+ if($('meshOn').checked){
+  ctx.strokeStyle='rgba(68,236,226,.65)';ctx.lineWidth=.8/state.scale;
+  for(let y=0;y<=rows;y++)for(let x=0;x<=cols;x++){
+   if(x<cols){const a=verts[y][x],b=verts[y][x+1];ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()}
+   if(y<rows){const a=verts[y][x],b=verts[y+1][x];ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()}
+  }
+ }
+ if(highlight){
   ctx.fillStyle='#e9a86d';ctx.beginPath();ctx.arc(0,0,3/state.scale,0,Math.PI*2);ctx.fill();
+ }
+}
+function drawPart(d,n,t,joints){
+ const im=state.images[d][n];if(!im)return;
+ const p=layer(d,n),point=pointFor(d,n,joints,t),m=motion(n,t,d);
+ const ratio=Math.min(155/im.width,195/im.height,1.3),w=im.width*ratio,h=im.height*ratio;
+ ctx.save();
+ ctx.translate(point.x+m.dx,point.y+m.dy);
+ ctx.rotate((p.angle*Math.PI/180)+m.rot);
+ meshDraw(im,w,h,p.px/100,p.py/100,(Number(p.bend)||0)*Math.PI/180+m.bend,n,n===state.selected);
+ ctx.restore();
+}
+function drawNodes(d,joints){
+ if(!$('nodesOn').checked)return;
+ ctx.save();ctx.strokeStyle='#eed77c';ctx.fillStyle='#ffeaa3';ctx.lineWidth=1.5/state.scale;
+ for(const name of ['neck','shoulderL','shoulderR','hipL','hipR']){
+  const p=joints[name];ctx.beginPath();ctx.moveTo(joints.root.x,joints.root.y);ctx.lineTo(p.x,p.y);ctx.stroke();
+  ctx.beginPath();ctx.arc(p.x,p.y,4/state.scale,0,Math.PI*2);ctx.fill();
+  ctx.font='10px system-ui';ctx.fillText(name,p.x+7,p.y-7);
  }
  ctx.restore();
 }
 function draw(){
- const d=dir(),mirrored=state.view.endsWith('Mirror');
+ const d=dir(),mirrored=state.view.endsWith('Mirror'),joints=nodes(d,state.time);
  ctx.clearRect(0,0,640,640);
  groundGuides(d,mirrored,state.time);
  ctx.save();ctx.translate(320,345);ctx.scale(state.scale*(mirrored?-1:1),state.scale);
- const time=state.time;
- // Grounded depth-order: the front leg draws after the body, preventing crossing illusions.
- const order=d==='front'?['legR','armR','torso','legL','armL','head']:['legL','armL','torso','legR','armR','head'];
- for(const n of order)drawPart(d,n,time);
+ for(const n of depth[d])drawPart(d,n,state.time,joints);
+ drawNodes(d,joints);
  ctx.restore();
  if(!names.some(n=>state.images[d][n])){
   ctx.fillStyle='#a6bba8';ctx.textAlign='center';ctx.font='15px system-ui';
   ctx.fillText('Sağ panelden PNG parçalarını yükle',320,310);
-  ctx.fillText('Ön ve arka çapraz yön yeterli',320,334);
+  ctx.fillText('Anatomik L/R ve eklem düğümleri korundu',320,334);
  }
 }
 let prev=performance.now();function tick(now){const delta=Math.min(.05,(now-prev)/1000);prev=now;if(state.running)state.time+=delta*state.speed;draw();requestAnimationFrame(tick)}
-function setupControls(){for(const k of ['x','y','px','py','angle'])$(k).oninput=e=>{layer(state.dir,state.selected)[k]=Number(e.target.value);persist()};document.querySelectorAll('.anim').forEach(b=>b.onclick=()=>{state.anim=b.dataset.anim;state.time=0;document.querySelectorAll('.anim').forEach(a=>a.classList.toggle('active',a===b))});$('toggle').onclick=()=>{state.running=!state.running;$('toggle').textContent=state.running?'Durdur':'Oynat'};$('speed').value=state.speed*100;$('scale').value=state.scale*100;for(const n of ['speed','scale'])$(n).oninput=e=>{state[n]=Number(e.target.value)/100;$(n+'Text').textContent=e.target.value+'%';persist()};$('reset').onclick=()=>{for(const n of names)state.parts[state.dir][n]={...bases[n],angle:0};persist();syncSliders()};$('snap').onclick=()=>{canvas.toBlob(b=>download(b,'mineclonie-rig-'+state.view+'.png'),'image/png')};$('saveJson').onclick=()=>download(new Blob([JSON.stringify({version:1,parts:state.parts,view:state.view,scale:state.scale,animations:['idle','walk','chop']},null,2)],{type:'application/json'}),'mineclonie-rig.json');$('clear').onclick=()=>{if(!confirm('Yalnızca Character Rig Studio yerel kayıtları silinsin mi?'))return;localStorage.removeItem('mineclonie:rig:v1');if(db){db.close();indexedDB.deleteDatabase('MineclonieRigStudioV1')}location.reload()};let drag=null;canvas.onpointerdown=e=>{const r=canvas.getBoundingClientRect();const x=(e.clientX-r.left)*640/r.width,y=(e.clientY-r.top)*640/r.height;const mx=(x-320)/(state.scale*(state.view.endsWith('Mirror')?-1:1)),my=(y-345)/state.scale;let nearest=null,min=65;for(const n of [...names].reverse()){if(!state.images[dir()][n])continue;const p=layer(dir(),n),dist=Math.hypot(mx-p.x,my-p.y);if(dist<min){nearest=n;min=dist}}if(!nearest)return;state.dir=dir();select(nearest);drag={x:mx,y:my,px:layer(state.dir,nearest).x,py:layer(state.dir,nearest).y};canvas.setPointerCapture(e.pointerId)};canvas.onpointermove=e=>{if(!drag)return;const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*640/r.width,y=(e.clientY-r.top)*640/r.height;const mx=(x-320)/(state.scale*(state.view.endsWith('Mirror')?-1:1)),my=(y-345)/state.scale,p=layer(state.dir,state.selected);p.x=Math.max(-240,Math.min(240,Math.round(drag.px+mx-drag.x)));p.y=Math.max(-240,Math.min(240,Math.round(drag.py+my-drag.y)));syncSliders();persist()};canvas.onpointerup=()=>{drag=null};canvas.onpointercancel=()=>{drag=null}}
+function setupControls(){for(const k of ['x','y','px','py','angle','bend'])$(k).oninput=e=>{layer(state.dir,state.selected)[k]=Number(e.target.value);persist()};document.querySelectorAll('.anim').forEach(b=>b.onclick=()=>{state.anim=b.dataset.anim;state.time=0;document.querySelectorAll('.anim').forEach(a=>a.classList.toggle('active',a===b))});$('toggle').onclick=()=>{state.running=!state.running;$('toggle').textContent=state.running?'Durdur':'Oynat'};$('speed').value=state.speed*100;$('scale').value=state.scale*100;for(const n of ['speed','scale'])$(n).oninput=e=>{state[n]=Number(e.target.value)/100;$(n+'Text').textContent=e.target.value+'%';persist()};$('reset').onclick=()=>{for(const n of names)state.parts[state.dir][n]={...bases[n],angle:0};persist();syncSliders()};$('snap').onclick=()=>{canvas.toBlob(b=>download(b,'mineclonie-rig-'+state.view+'.png'),'image/png')};$('saveJson').onclick=()=>download(new Blob([JSON.stringify({version:1,parts:state.parts,view:state.view,scale:state.scale,animations:['idle','walk','chop']},null,2)],{type:'application/json'}),'mineclonie-rig.json');$('clear').onclick=()=>{if(!confirm('Yalnızca Character Rig Studio yerel kayıtları silinsin mi?'))return;localStorage.removeItem('mineclonie:rig:v1');if(db){db.close();indexedDB.deleteDatabase('MineclonieRigStudioV1')}location.reload()};let drag=null;canvas.onpointerdown=e=>{const r=canvas.getBoundingClientRect();const x=(e.clientX-r.left)*640/r.width,y=(e.clientY-r.top)*640/r.height;const mx=(x-320)/(state.scale*(state.view.endsWith('Mirror')?-1:1)),my=(y-345)/state.scale;let nearest=null,min=65;for(const n of [...names].reverse()){if(!state.images[dir()][n])continue;const p=layer(dir(),n),dist=Math.hypot(mx-p.x,my-p.y);if(dist<min){nearest=n;min=dist}}if(!nearest)return;state.dir=dir();select(nearest);drag={x:mx,y:my,px:layer(state.dir,nearest).x,py:layer(state.dir,nearest).y};canvas.setPointerCapture(e.pointerId)};canvas.onpointermove=e=>{if(!drag)return;const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*640/r.width,y=(e.clientY-r.top)*640/r.height;const mx=(x-320)/(state.scale*(state.view.endsWith('Mirror')?-1:1)),my=(y-345)/state.scale,p=layer(state.dir,state.selected);p.x=Math.max(-240,Math.min(240,Math.round(drag.px+mx-drag.x)));p.y=Math.max(-240,Math.min(240,Math.round(drag.py+my-drag.y)));syncSliders();persist()};canvas.onpointerup=()=>{drag=null};canvas.onpointercancel=()=>{drag=null}}
 function download(blob,name){if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000)}
 setupDirections();setupPrompt();setupControls();renderList();requestAnimationFrame(tick);openDB().then(async d=>{db=d;loadDB()}).catch(()=>setStatus('IndexedDB kullanılamıyor; görseller geçici'));
 })();
