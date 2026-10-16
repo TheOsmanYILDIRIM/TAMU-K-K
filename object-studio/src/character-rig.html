@@ -41,8 +41,8 @@ details{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}summar
 <div class="row" style="margin-top:12px"><button data-anim="idle" class="anim active">Bekleme</button><button data-anim="walk" class="anim">Yürüme</button><button data-anim="chop" class="anim">Odun kesme</button><button id="toggle" class="primary">Durdur</button></div>
 <label>Animasyon hızı <input id="speed" type="range" min="25" max="200" value="100"><span id="speedText">100%</span></label>
 <label>Karakter ölçeği <input id="scale" type="range" min="25" max="180" value="100"><span id="scaleText">100%</span></label>
-<div class="row"><button id="reset">Yerleşimleri sıfırla</button><button id="snap">PNG kare kaydet</button><button id="saveJson">Rig JSON indir</button></div>
-<p>Anatomik L/R kimliği aynalamada korunur. Gövde kök düğüm; boyun, omuz ve kalçalar gövdeye bağlıdır. Parçalar vertex ağıyla yumuşak bükülür. Düğüm ve ağ görünümünü açarak birleşim yerlerini incele.</p>
+<div class="row"><button id="reset">Yerleşimleri sıfırla</button><button id="snap">PNG kare kaydet</button><button id="saveJson">Rig JSON indir</button><button id="reviewExport" class="primary">Görsel denetim paketi üret</button></div>
+<p id="reviewNote">Denetim: dört yön × üç animasyon × dört faz = 48 karelik karşılaştırma sayfası. PNG ile JSON raporunu birlikte bu sohbete yükleyebilirsin.</p><p>Anatomik L/R kimliği aynalamada korunur. Gövde kök düğüm; boyun, omuz ve kalçalar gövdeye bağlıdır. Parçalar vertex ağıyla yumuşak bükülür. Düğüm ve ağ görünümünü açarak birleşim yerlerini incele.</p>
 </section>
 <section><h2>3 · Parça yükleme ve hizalama</h2>
 <p>Toplam 6 parça: <b>baş, gövde, sağ/sol kol, sağ/sol bacak</b>. Her iki yönde de aynı isimler kullanılır. Şeffaf PNG’ler ayrı yüklenir.</p>
@@ -252,7 +252,57 @@ function draw(){
  }
 }
 let prev=performance.now();function tick(now){const delta=Math.min(.05,(now-prev)/1000);prev=now;if(state.running)state.time+=delta*state.speed;draw();requestAnimationFrame(tick)}
-function setupControls(){for(const k of ['x','y','px','py','angle','bend'])$(k).oninput=e=>{layer(state.dir,state.selected)[k]=Number(e.target.value);persist()};document.querySelectorAll('.anim').forEach(b=>b.onclick=()=>{state.anim=b.dataset.anim;state.time=0;document.querySelectorAll('.anim').forEach(a=>a.classList.toggle('active',a===b))});$('toggle').onclick=()=>{state.running=!state.running;$('toggle').textContent=state.running?'Durdur':'Oynat'};$('speed').value=state.speed*100;$('scale').value=state.scale*100;for(const n of ['speed','scale'])$(n).oninput=e=>{state[n]=Number(e.target.value)/100;$(n+'Text').textContent=e.target.value+'%';persist()};$('reset').onclick=()=>{for(const n of names)state.parts[state.dir][n]={...bases[n],angle:0};persist();syncSliders()};$('snap').onclick=()=>{canvas.toBlob(b=>download(b,'mineclonie-rig-'+state.view+'.png'),'image/png')};$('saveJson').onclick=()=>download(new Blob([JSON.stringify({version:1,parts:state.parts,view:state.view,scale:state.scale,animations:['idle','walk','chop']},null,2)],{type:'application/json'}),'mineclonie-rig.json');$('clear').onclick=()=>{if(!confirm('Yalnızca Character Rig Studio yerel kayıtları silinsin mi?'))return;localStorage.removeItem('mineclonie:rig:v1');if(db){db.close();indexedDB.deleteDatabase('MineclonieRigStudioV1')}location.reload()};let drag=null;canvas.onpointerdown=e=>{const r=canvas.getBoundingClientRect();const x=(e.clientX-r.left)*640/r.width,y=(e.clientY-r.top)*640/r.height;const mx=(x-320)/(state.scale*(state.view.endsWith('Mirror')?-1:1)),my=(y-345)/state.scale;let nearest=null,min=65;for(const n of [...names].reverse()){if(!state.images[dir()][n])continue;const p=layer(dir(),n),dist=Math.hypot(mx-p.x,my-p.y);if(dist<min){nearest=n;min=dist}}if(!nearest)return;state.dir=dir();select(nearest);drag={x:mx,y:my,px:layer(state.dir,nearest).x,py:layer(state.dir,nearest).y};canvas.setPointerCapture(e.pointerId)};canvas.onpointermove=e=>{if(!drag)return;const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*640/r.width,y=(e.clientY-r.top)*640/r.height;const mx=(x-320)/(state.scale*(state.view.endsWith('Mirror')?-1:1)),my=(y-345)/state.scale,p=layer(state.dir,state.selected);p.x=Math.max(-240,Math.min(240,Math.round(drag.px+mx-drag.x)));p.y=Math.max(-240,Math.min(240,Math.round(drag.py+my-drag.y)));syncSliders();persist()};canvas.onpointerup=()=>{drag=null};canvas.onpointercancel=()=>{drag=null}}
+function setupControls(){for(const k of ['x','y','px','py','angle','bend'])$(k).oninput=e=>{layer(state.dir,state.selected)[k]=Number(e.target.value);persist()};document.querySelectorAll('.anim').forEach(b=>b.onclick=()=>{state.anim=b.dataset.anim;state.time=0;document.querySelectorAll('.anim').forEach(a=>a.classList.toggle('active',a===b))});$('toggle').onclick=()=>{state.running=!state.running;$('toggle').textContent=state.running?'Durdur':'Oynat'};$('speed').value=state.speed*100;$('scale').value=state.scale*100;for(const n of ['speed','scale'])$(n).oninput=e=>{state[n]=Number(e.target.value)/100;$(n+'Text').textContent=e.target.value+'%';persist()};$('reset').onclick=()=>{for(const n of names)state.parts[state.dir][n]={...bases[n],angle:0};persist();syncSliders()};$('snap').onclick=()=>{canvas.toBlob(b=>download(b,'mineclonie-rig-'+state.view+'.png'),'image/png')};$('reviewExport').onclick=exportReview;$('saveJson').onclick=()=>download(new Blob([JSON.stringify({version:1,parts:state.parts,view:state.view,scale:state.scale,animations:['idle','walk','chop']},null,2)],{type:'application/json'}),'mineclonie-rig.json');$('clear').onclick=()=>{if(!confirm('Yalnızca Character Rig Studio yerel kayıtları silinsin mi?'))return;localStorage.removeItem('mineclonie:rig:v1');if(db){db.close();indexedDB.deleteDatabase('MineclonieRigStudioV1')}location.reload()};let drag=null;canvas.onpointerdown=e=>{const r=canvas.getBoundingClientRect();const x=(e.clientX-r.left)*640/r.width,y=(e.clientY-r.top)*640/r.height;const mx=(x-320)/(state.scale*(state.view.endsWith('Mirror')?-1:1)),my=(y-345)/state.scale;let nearest=null,min=65;for(const n of [...names].reverse()){if(!state.images[dir()][n])continue;const p=layer(dir(),n),dist=Math.hypot(mx-p.x,my-p.y);if(dist<min){nearest=n;min=dist}}if(!nearest)return;state.dir=dir();select(nearest);drag={x:mx,y:my,px:layer(state.dir,nearest).x,py:layer(state.dir,nearest).y};canvas.setPointerCapture(e.pointerId)};canvas.onpointermove=e=>{if(!drag)return;const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*640/r.width,y=(e.clientY-r.top)*640/r.height;const mx=(x-320)/(state.scale*(state.view.endsWith('Mirror')?-1:1)),my=(y-345)/state.scale,p=layer(state.dir,state.selected);p.x=Math.max(-240,Math.min(240,Math.round(drag.px+mx-drag.x)));p.y=Math.max(-240,Math.min(240,Math.round(drag.py+my-drag.y)));syncSliders();persist()};canvas.onpointerup=()=>{drag=null};canvas.onpointercancel=()=>{drag=null}}
+
+function inspectionReport(){
+ const missing={front:names.filter(n=>!state.images.front[n]),back:names.filter(n=>!state.images.back[n])};
+ const badCoords=[];
+ for(const d of ['front','back'])for(const n of names){
+  const p=layer(d,n);
+  if(!['x','y','px','py','angle','bend'].every(k=>Number.isFinite(Number(p[k]||0))))badCoords.push(d+'/'+n);
+ }
+ return {format:'mineclonie-visual-review-v1',generatedAt:new Date().toISOString(),source:'Character Rig Studio',viewSemantics:'L/R anatomical, mirror flips image only',depthOrder:depth,missing,badCoords,parts:JSON.parse(JSON.stringify(state.parts)),scale:state.scale,gridEnabled:$('gridOn').checked,nodeGuides:$('nodesOn').checked,meshEnabled:$('meshOn').checked,frames:{views:['front','frontMirror','back','backMirror'],animations:['idle','walk','chop'],phaseCount:4},instructions:'Upload the review PNG and this JSON in the same ChatGPT message. Inspect anatomical L/R, Z ordering, intersection, alpha gaps, foot sliding, vertex distortion and frame-to-frame consistency.'};
+}
+async function exportReview(){
+ const report=inspectionReport();
+ const missingCount=report.missing.front.length+report.missing.back.length;
+ if(missingCount&&!confirm(missingCount+' PNG parçası henüz yüklenmedi. Eksik görüntülerin boş göründüğü kısmi rapor üretilsin mi?'))return;
+ const was={view:state.view,dir:state.dir,anim:state.anim,time:state.time,selected:state.selected};
+ const guideWas={grid:$('gridOn').checked,nodes:$('nodesOn').checked,mesh:$('meshOn').checked,guides:$('guidesOn').checked};
+ const tile=240,head=38,cols=4,rows=12,margin=18;
+ const sheet=document.createElement('canvas');sheet.width=cols*tile+2*margin;sheet.height=rows*(tile+head)+2*margin;
+ const g=sheet.getContext('2d');g.fillStyle='#121c17';g.fillRect(0,0,sheet.width,sheet.height);
+ const views=['front','frontMirror','back','backMirror'],anims=['idle','walk','chop'];
+ const phases=[0,.25,.50,.75];let row=0;
+ try{
+  state.selected='__none__';
+  $('gridOn').checked=true;$('guidesOn').checked=true;$('nodesOn').checked=true;$('meshOn').checked=false;
+  for(const anim of anims)for(const phase of phases){
+   for(let c=0;c<4;c++){
+    state.view=views[c];state.dir=dir();state.anim=anim;
+    // Four deterministic samples across one loop, independent of current play time.
+    state.time=anim==='walk'?phase*(Math.PI*2/6.2):anim==='chop'?phase/1.25:phase*Math.PI;
+    draw();
+    const x=margin+c*tile,y=margin+row*(tile+head);
+    g.fillStyle='#23382a';g.fillRect(x,y,tile,head);
+    g.font='bold 13px system-ui';g.fillStyle='#dce8d1';
+    g.fillText(views[c]+'  •  '+anim+'  '+Math.round(phase*100)+'%',x+8,y+24);
+    g.fillStyle='#26302a';g.fillRect(x,y+head,tile,tile);
+    g.drawImage(canvas,0,0,640,640,x,y+head,tile,tile);
+   }
+   row++;
+  }
+ }finally{
+  Object.assign(state,was);
+  $('gridOn').checked=guideWas.grid;$('nodesOn').checked=guideWas.nodes;$('meshOn').checked=guideWas.mesh;$('guidesOn').checked=guideWas.guides;
+  draw();
+ }
+ const png=await new Promise(resolve=>sheet.toBlob(resolve,'image/png'));
+ if(!png){setStatus('PNG paketi oluşturulamadı');return}
+ download(png,'mineclonie-rig-visual-review.png');
+ download(new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),'mineclonie-rig-visual-review.json');
+ setStatus('48 karelik denetim PNG + JSON hazır');
+}
 function download(blob,name){if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000)}
 setupDirections();setupPrompt();setupControls();renderList();requestAnimationFrame(tick);openDB().then(async d=>{db=d;loadDB()}).catch(()=>setStatus('IndexedDB kullanılamıyor; görseller geçici'));
 })();
