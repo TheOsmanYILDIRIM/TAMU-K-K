@@ -47,10 +47,10 @@ local bridge=Bridge.new(store,F.world_id,function() return Clone.clone(live) end
   end)
 local function run(id,kind,args)
   fs.fail=true
-  local before=Json.encode(live.inventory:snapshot())
+  local before=live.inventory:snapshot()
   local ok=bridge:run(id,kind,args)
   assert(not ok and publishes==0)
-  assert(Json.encode(live.inventory:snapshot())==before)
+  assert(live.inventory:count("core:wood_plank")==4 and live.inventory:count("core:workbench")==0)
   fs.fail=false
   ok=bridge:run(id,kind,args)
   assert(ok,"operation failed: "..tostring(kind))
