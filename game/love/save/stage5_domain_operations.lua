@@ -36,6 +36,14 @@ function M.run(domain,kind,args,state,previous,id)
   local status=kind=="harvest" and "complete"
     or kind=="craft" and "crafted" or "placed"
   mark(state,id,status)
+  if kind=="harvest" then
+    for _,event in ipairs(domain.harvesting.events) do
+      if event.command_id==id then
+        state.applied_transactions[event.transaction_id]={revision=state.world_revision,
+          item_id=event.item_id,amount=event.amount}
+      end
+    end
+  end
   -- Materialize actual domain state only after successful detached mutation.
   local snapshot=Checkpoint.compose({
     inventory=domain.inventory,world=domain.world,building=domain.building,
