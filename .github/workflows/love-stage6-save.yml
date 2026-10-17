@@ -10,6 +10,7 @@ on:
       - 'game/love/tests/stage5_save_adapter.lua'
       - 'game/love/tests/stage5_checkpoint.lua'
       - 'game/love/tests/stage5_transaction_boundary.lua'
+      - 'game/love/tests/stage5_transaction_bridge.lua'
       - '.github/workflows/love-stage6-save.yml'
       - 'docs/19_LOVE_STAGE6_SAVE_ENGINE.md'
   workflow_dispatch:
@@ -45,6 +46,12 @@ jobs:
           cd game/love
           lua5.4 tests/stage5_transaction_boundary.lua | tee ../../stage5-transaction-lua54.log
           luajit tests/stage5_transaction_boundary.lua | tee ../../stage5-transaction-luajit.log
+      - name: Detached Stage5 operations fail-closed (Lua 5.4 + LuaJIT)
+        run: |
+          set -o pipefail
+          cd game/love
+          lua5.4 tests/stage5_transaction_bridge.lua
+          luajit tests/stage5_transaction_bridge.lua
       - name: Real LÖVE filesystem smoke
         run: |
           set -o pipefail
