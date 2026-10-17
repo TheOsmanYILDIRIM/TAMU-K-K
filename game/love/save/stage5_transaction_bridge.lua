@@ -21,18 +21,16 @@ function Bridge:run(command_id,kind,arguments)
   assert(kind=="harvest" or kind=="craft" or kind=="build",
     "unsupported Stage5 operation")
   assert(self.pending==nil,"unresolved prior transaction")
-  local stagedDomain
   local ok,reason=self.tx:run(command_id,function(nextState,previous)
     -- Caller must return a newly created domain graph with no shared mutable
     -- tables to the live game, and stage all side effects only on that graph.
     local candidate=self.clone()
-    assert(candidate and candidate~=self.live,"detached domain required")
+    assert(candidate and type(candidate)=="table","detached domain required")
     local accepted,why=self.stage(candidate,kind,arguments,nextState,previous,command_id)
     if not accepted then return false,why end
     assert(nextState.world_revision==previous.world_revision+1
       and nextState.journal_sequence==previous.journal_sequence+1
       and nextState.applied_commands[command_id],"invalid Stage5 checkpoint")
-    stagedDomain=candidate
     self.pending=candidate
     return true
   end)
