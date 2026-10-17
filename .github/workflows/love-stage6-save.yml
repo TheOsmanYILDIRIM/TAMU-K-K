@@ -12,6 +12,7 @@ on:
       - 'game/love/tests/stage5_transaction_boundary.lua'
       - 'game/love/tests/stage5_transaction_bridge.lua'
       - 'game/love/tests/stage5_domain_clone.lua'
+      - 'game/love/tests/stage5_domain_operations.lua'
       - '.github/workflows/love-stage6-save.yml'
       - 'docs/19_LOVE_STAGE6_SAVE_ENGINE.md'
   workflow_dispatch:
@@ -59,6 +60,12 @@ jobs:
           cd game/love
           lua5.4 tests/stage5_domain_clone.lua
           luajit tests/stage5_domain_clone.lua
+      - name: Real Stage5 operation detached commit and replay (Lua 5.4 + LuaJIT)
+        run: |
+          set -o pipefail
+          cd game/love
+          lua5.4 tests/stage5_domain_operations.lua
+          luajit tests/stage5_domain_operations.lua
       - name: Real LÖVE filesystem smoke
         run: |
           set -o pipefail
