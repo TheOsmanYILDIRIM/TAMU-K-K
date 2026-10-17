@@ -187,6 +187,7 @@ function love.load()
   end
   player=spawn()
   if stage6_session then
+    player.query=building
     player.x,player.y=stage6_session.position.x,stage6_session.position.y
     camera.x,camera.y=player.x,player.y
   end
