@@ -14,6 +14,7 @@ function Session.open(live,opts)
   local store=Store.new(opts.fs or Fs.new(),{
     catalog=Catalog.items(),catalog_version=Catalog.version(),
     generator_version=live.world.generator_version,seed=live.world.seed})
+  assert(live.building.world_id==opts.world_id,"world ID mismatch")
   local state,meta=store:load(opts.world_id)
   if meta.status=="quarantined" or meta.status=="recovered_previous" then
     return nil,meta.status -- Never overwrite a corrupt/recovered save.
