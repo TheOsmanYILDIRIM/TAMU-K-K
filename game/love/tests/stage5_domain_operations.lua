@@ -115,3 +115,30 @@ local hs=hstore:load(F.world_id)
 assert(hs.world_revision==1 and hs.generated_object_delta.objects[obj.id].depleted)
 assert(next(hs.applied_transactions)~=nil)
 print("STAGE5_REAL_OPS_HARVEST_PASS")
+
+local bd,bfs,bstore,btx,bpub=fresh("build")
+local bx,by
+for y=-256,256,32 do
+  if bx then break end
+  for x=-256,256,32 do
+    local ok,valid=pcall(bd.building.preview,bd.building,
+      "core:workbench",x,y,0,x+50,y)
+    if ok and valid then bx,by=x,y;break end
+  end
+end
+assert(bx,"real valid dry building site required")
+local bargs={instance_id=F.placed_id,def_id="core:workbench",
+  x=bx,y=by,rotation=0,player_x=bx+50,player_y=by,
+  owner_id="player:local"}
+bfs.fail=true
+local bok=btx:run("build:real","build",bargs)
+assert(not bok and bpub()==0 and bd.inventory:count("core:workbench")==1)
+assert(next(bd.building.placed)==nil)
+bfs.fail=false
+bok=btx:run("build:real","build",bargs)
+assert(bok and bpub()==1 and bd.inventory:count("core:workbench")==0)
+assert(bd.building.placed[F.placed_id])
+assert(not btx:run("build:real","build",bargs))
+local bs=bstore:load(F.world_id)
+assert(bs.world_revision==1 and bs.placed_instances[F.placed_id])
+print("STAGE5_REAL_OPS_BUILD_PASS")
