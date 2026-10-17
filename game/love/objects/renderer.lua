@@ -79,7 +79,7 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting)
       local elapsed=harvesting.active.elapsed
       -- One independent 0.88s strike cycle, synchronized to harvest elapsed.
       AxeStrike.draw(g,axe_image,elapsed,{x=px,y=foot-21*camera.zoom},
-        {x=tx,y=ty-29*camera.zoom},math.min(.048*camera.zoom,.085))
+        {x=tx,y=ty-29*camera.zoom},math.min(.034*camera.zoom,.065))
     end
   end
   g.pop()
