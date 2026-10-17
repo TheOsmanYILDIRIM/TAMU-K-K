@@ -18,6 +18,28 @@ local Collision=require("physics.collision")
 local Joystick=require("player.joystick")
 local Camera=require("core.camera")
 local Iso=require("world.iso")
+local Stage6Session=require("save.production_session")
+local Stage6Clone=require("save.stage5_domain_clone")
+local stage6_enabled=os.getenv("OSMAN_STAGE6_EXPLICIT")=="1"
+local stage6_create=os.getenv("OSMAN_STAGE6_CREATE")=="1"
+local stage6_world_id=os.getenv("OSMAN_STAGE6_WORLD_ID")
+local stage6_session,stage6_bridge,stage6_domain
+local function publish_stage6(staged)
+  -- All production references are rebound in one non-yielding callback.
+  assert(staged and staged.inventory and staged.world and staged.solid
+    and staged.crafting and staged.harvesting and staged.building)
+  objects=staged.world
+  solid=staged.solid
+  inventory=staged.inventory
+  crafting=staged.crafting
+  harvesting=staged.harvesting
+  building=staged.building
+  if player then
+    player.world=building
+    player.collision=building
+  end
+end
+
 local query=Query.new(20261015)
 local water=Adapter.new(query,8)
 local objects=ObjectWorld.new(query,water)
@@ -129,6 +151,23 @@ function love.load()
   w,h=love.graphics.getDimensions()
   -- Session-local v4 ID: no disk save or network host claim.
   building=Building.new(inventory,query,solid,Uuid.new(love.math.random))
+  if stage6_enabled then
+    assert(stage6_world_id and #stage6_world_id>0,
+      "Stage6 explicit world ID required; no implicit save creation")
+    building=Building.new(inventory,query,solid,stage6_world_id)
+    stage6_domain={query=query,solid=solid,world=objects,inventory=inventory,
+      crafting=crafting,harvesting=harvesting,building=building}
+    local session,reason=Stage6Session.open(stage6_domain,{
+      world_id=stage6_world_id,create=stage6_create,
+      player_id="player:local",x=0,y=0})
+    assert(session,"Stage6 refused to open: "..tostring(reason))
+    stage6_session=session
+    publish_stage6(stage6_domain)
+    stage6_bridge=session:bridge(stage6_domain,function(staged)
+      Stage6Clone.publish(stage6_domain,staged)
+      publish_stage6(stage6_domain)
+    end)
+  end
   player=spawn()
   if liquid_smoke then
     local found=false
