@@ -13,7 +13,7 @@ function M.pose(t,core,target,scale)
   local a0,a1,a2=-.12,-1.28,.30
   -- Scale-relative reach keeps the 1254px original artwork proportional to
   -- the small autonomous core at portrait zoom levels.
-  local gx,gy=core.x+28*(scale/.08),core.y-17*(scale/.08)
+  local gx,gy=core.x+19*(scale/.08),core.y-11*(scale/.08)
   local hx,hy=rotate(dx,dy,a1)
   local contactx,contacty=target.x-hx,target.y-hy
   local angle,x,y,phase
