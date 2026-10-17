@@ -13,6 +13,7 @@ on:
       - 'game/love/tests/stage5_transaction_bridge.lua'
       - 'game/love/tests/stage5_domain_clone.lua'
       - 'game/love/tests/stage5_domain_operations.lua'
+      - 'game/love/tests/stage5_domain_restore.lua'
       - '.github/workflows/love-stage6-save.yml'
       - 'docs/19_LOVE_STAGE6_SAVE_ENGINE.md'
   workflow_dispatch:
@@ -66,6 +67,12 @@ jobs:
           cd game/love
           lua5.4 tests/stage5_domain_operations.lua
           luajit tests/stage5_domain_operations.lua
+      - name: Stage6 restore actual Stage5 objects and fail closed (Lua 5.4 + LuaJIT)
+        run: |
+          set -o pipefail
+          cd game/love
+          lua5.4 tests/stage5_domain_restore.lua
+          luajit tests/stage5_domain_restore.lua
       - name: Real LÖVE filesystem smoke
         run: |
           set -o pipefail
