@@ -2,6 +2,8 @@
 local Depth=require("player.depth")
 local R={}
 local CoreVisual=require("player.core_visual")
+local AxeStrike=require("player.axe_strike")
+local axe_image=nil
 local function player_sprite(g,camera,w,h,player,visual_context)
   return CoreVisual.draw(g,camera,w,h,player,visual_context)
 end
@@ -58,11 +60,24 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting)
   local visual={}
   if harvesting and harvesting.active then
     local source=world:get(harvesting.active.object_id)
-    if source then visual.tool=source.kind=="rock" and "pickaxe" or "axe" end
+    if source and source.kind=="rock" then visual.tool="pickaxe" end
   end
   for _,entry in ipairs(order) do
     if entry.player then player_sprite(g,camera,w,h,player,visual)
     else object_sprite(g,camera,w,h,entry.object,entry.id==selected_id) end
+  end
+  -- Visual-only strike on actual tree harvest; never changes inventory or collision.
+  if harvesting and harvesting.active then
+    local source=world:get(harvesting.active.object_id)
+    if source and source.kind=="tree" then
+      if not axe_image then axe_image=love.graphics.newImage("assets/axe_121227.png") end
+      local px,foot=camera:project(player.x,player.y,w,h)
+      local tx,ty=camera:project(source.x,source.y,w,h)
+      local elapsed=harvesting.active.elapsed
+      -- One independent 0.88s strike cycle, synchronized to harvest elapsed.
+      AxeStrike.draw(g,axe_image,elapsed,{x=px,y=foot-21*camera.zoom},
+        {x=tx,y=ty-29*camera.zoom},math.min(.18*camera.zoom,.28))
+    end
   end
   g.pop()
   return #all
