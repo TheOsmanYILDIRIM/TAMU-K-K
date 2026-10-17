@@ -16,9 +16,17 @@ function M.clone(live)
   local world=setmetatable({},getmetatable(live.world))
   for k,v in pairs(live.world) do world[k]=v end
   world.delta=copy(live.world.delta)
+  -- Building obstacle queries must see the staged world, not the live world.
+  -- Reject unknown query adapters instead of silently aliasing mutable state.
+  assert(live.solid.world==live.world or live.solid.objects==live.world,
+    "unsupported Stage5 solid-query shape")
+  local solid=setmetatable({},getmetatable(live.solid))
+  for k,v in pairs(live.solid) do solid[k]=v end
+  if solid.world==live.world then solid.world=world end
+  if solid.objects==live.world then solid.objects=world end
   -- placement/cache objects remain read-only during the staged operation;
   -- only mutable delta and domain ledgers are copied.
-  local building=Building.new(inv,live.query,live.solid,live.building.world_id)
+  local building=Building.new(inv,live.query,solid,live.building.world_id)
   building.placed=copy(live.building.placed)
   building.commands=copy(live.building.commands)
   building.revision=live.building.revision
@@ -29,7 +37,7 @@ function M.clone(live)
   harvest.commands=copy(live.harvesting.commands)
   harvest.active=copy(live.harvesting.active)
   harvest.events=copy(live.harvesting.events)
-  return {inventory=inv,world=world,building=building,
+  return {inventory=inv,world=world,solid=solid,building=building,
     crafting=craft,harvesting=harvest}
 end
 function M.publish(live,staged)
@@ -37,6 +45,7 @@ function M.publish(live,staged)
   -- Caller must quiesce gameplay during publication; one coherent graph swap.
   live.inventory=staged.inventory
   live.world=staged.world
+  live.solid=staged.solid
   live.building=staged.building
   live.crafting=staged.crafting
   live.harvesting=staged.harvesting
