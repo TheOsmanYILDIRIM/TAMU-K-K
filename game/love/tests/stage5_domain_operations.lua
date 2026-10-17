@@ -64,3 +64,54 @@ assert(live.inventory:count("core:workbench")==1)
 local saved=store:load(F.world_id)
 assert(saved.world_revision==1 and saved.player.inventory.slots[1])
 print("STAGE5_REAL_OPS_CRAFT_PASS")
+
+-- Actual procedural harvest in a fresh checkpoint/world, with no live mutation
+-- on failed commit and idempotent replay.
+local function fresh(kind)
+  local w=World.new(query,water)
+  local so=Solid.new(water,w)
+  local inv=Inventory.new(12)
+  local b=Building.new(inv,query,so,F.world_id)
+  local domain={query=query,solid=so,world=w,inventory=inv,building=b,
+    crafting=Craft.new(inv),harvesting=Harvest.new(w,38,inv)}
+  local storage={files={},fail=false}
+  function storage:mkdir(_) return true end
+  function storage:read(path) return self.files[path] end
+  function storage:write(path,bytes)
+    if self.fail and path:find("/current.json",1,true) then return false end
+    self.files[path]=bytes;return true
+  end
+  local st=Store.new(storage,{catalog=Catalog.items(),catalog_version=1,generator_version=1})
+  local init=F.empty()
+  if kind=="build" then
+    local pr=inv:preview()
+    assert(inv:preview_add(pr,"core:workbench",1))
+    inv:commit_preview(pr)
+    init.player.inventory.slots=Json.array({{slot=1,def_id="core:workbench",count=1}})
+  end
+  assert(st:commit(init))
+  local published=0
+  local tx=Bridge.new(st,F.world_id,function() return Clone.clone(domain) end,
+    Ops.run,function(candidate) Clone.publish(domain,candidate);published=published+1 end)
+  return domain,storage,st,tx,function() return published end
+end
+local hd,hfs,hstore,htx,hpub=fresh("harvest")
+local obj
+for _,o in ipairs(hd.world:objects_in({min_x=-384,min_y=-384,max_x=384,max_y=384})) do
+  if o.kind=="tree" then obj=o;break end
+end
+assert(obj,"real procedural tree required")
+local hargs={object_id=obj.id,x=obj.x,y=obj.y,duration=8}
+hfs.fail=true
+local hok=htx:run("harvest:real","harvest",hargs)
+assert(not hok and hpub()==0 and not hd.world:is_depleted(obj.id))
+assert(hd.inventory:count("core:wood_log")==0)
+hfs.fail=false
+hok=htx:run("harvest:real","harvest",hargs)
+assert(hok and hpub()==1 and hd.world:is_depleted(obj.id))
+assert(hd.inventory:count("core:wood_log")>0)
+assert(not htx:run("harvest:real","harvest",hargs))
+local hs=hstore:load(F.world_id)
+assert(hs.world_revision==1 and hs.generated_object_delta.objects[obj.id].depleted)
+assert(next(hs.applied_transactions)~=nil)
+print("STAGE5_REAL_OPS_HARVEST_PASS")
