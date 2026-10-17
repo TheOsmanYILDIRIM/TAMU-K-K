@@ -36,6 +36,14 @@ for _,method in ipairs({"push","pop","setColor","ellipse","polygon","setLineWidt
   "arc","circle","line","setScissor","translate","rotate","scale"}) do
   g[method]=function(...) operations[#operations+1]={method,...} end
 end
+-- Mock the new image-only Core dependency; no actual PNG decoding in Lua unit tests.
+love={filesystem={getInfo=function(path)
+  assert(path=="assets/file_000000007cf082119c4dde3e346c2bcb.png")
+  return {type="file"}
+end},graphics={newImage=function(path)
+  return {setFilter=function() end,getDimensions=function() return 512,512 end}
+end}}
+g.draw=function(...) operations[#operations+1]={"draw",...} end
 local camera={zoom=1.7,project=function(self,x,y,w,h)
   return w/2+(x-y)*.7*self.zoom,h/2+(x+y)*.35*self.zoom end}
 local player={x=-13.25,y=17.6,radius=5,time=1.25,state="walk",
