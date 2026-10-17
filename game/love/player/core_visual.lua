@@ -4,6 +4,17 @@
 -- optional aura (external stats) and a harvesting tool pose.
 local Aura=require("player.core_aura")
 local V={}
+-- User-uploaded Core is the production visual candidate, not historical 121222.
+local CORE_PATH="assets/file_000000007cf082119c4dde3e346c2bcb.png"
+local coreImage
+local function getCoreImage()
+  if coreImage then return coreImage end
+  assert(love and love.graphics and love.filesystem and love.filesystem.getInfo(CORE_PATH),
+    "approved user Core PNG missing")
+  coreImage=love.graphics.newImage(CORE_PATH)
+  coreImage:setFilter("linear","linear")
+  return coreImage
+end
 local TAU=math.pi*2
 local function color(g,c,alpha)
   g.setColor(c[1],c[2],c[3],alpha or 1)
@@ -96,25 +107,12 @@ function V.draw(g,camera,width,height,player,context)
     g.circle("fill",px,cy,17*z)
     color(g,accent,alpha*(.15+.6*secondary_share))
     g.circle("line",px,cy,15*z)
-    -- Alloy shell with metallic band + distinct inner luminous chamber.
-    g.setColor(.10,.19,.25,alpha)
-    g.circle("fill",px,cy,core_radius+2.4*z)
-    g.setColor(.47,.62,.69,alpha)
-    g.circle("line",px,cy,core_radius+2.5*z)
-    g.setColor(.17,.27,.34,alpha)
-    g.circle("fill",px,cy,core_radius)
-    color(g,main,alpha*.90)
-    g.circle("fill",px,cy,4.8*z)
-    g.setColor(.90,.97,.96,alpha*.72)
-    g.circle("fill",px-1.5*z,cy-1.6*z,1.8*z)
-    g.setLineWidth(math.max(1,1.2*z))
-    for i=0,3 do
-      local theta=i*TAU/4 + math.pi/4
-      local x0,y0=px+math.cos(theta)*9*z,cy+math.sin(theta)*9*z
-      local x1,y1=px+math.cos(theta)*12*z,cy+math.sin(theta)*12*z
-      color(g,accent,alpha*(.35+.6*secondary_share))
-      g.line(x0,y0,x1,y1)
-    end
+    -- Original user-drawn Core PNG; no fabricated crystal mask or shader.
+    local img=getCoreImage()
+    local iw,ih=img:getDimensions()
+    local fit=25*z/math.max(iw,ih)
+    g.setColor(1,1,1,alpha)
+    g.draw(img,px,cy,0,fit,fit,iw/2,ih/2)
     if context.tool then
       tool_draw(g,context.tool,context.tool_seconds or t,px,cy,z,alpha)
     end
