@@ -32,6 +32,12 @@ function fs:write(path,data)
 end
 local store=Store.new(fs,{catalog=Catalog.items(),catalog_version=1,generator_version=1})
 local zero=F.empty()
+-- Seed initial checkpoint with the same inventory as the live domain.
+-- A Stage6 transaction must start from a checkpoint matching live RAM.
+local initial=live.inventory:preview()
+assert(live.inventory:preview_add(initial,"core:wood_plank",4))
+live.inventory:commit_preview(initial)
+zero.player.inventory.slots=Json.array({{slot=1,def_id="core:wood_plank",count=4}})
 assert(store:commit(zero))
 local publishes=0
 local bridge=Bridge.new(store,F.world_id,function() return Clone.clone(live) end,
@@ -53,9 +59,6 @@ local function run(id,kind,args)
   assert(not replay,"duplicate command published")
 end
 -- Real Crafting recipe: workbench from planks, prepared only in detached inventory.
-local candidate=live.inventory:preview()
-assert(live.inventory:preview_add(candidate,"core:wood_plank",4))
-live.inventory:commit_preview(candidate)
 run("craft:one","craft",{recipe_id="core:bench_from_planks",station_tags={}})
 assert(live.inventory:count("core:workbench")==1)
 local saved=store:load(F.world_id)
