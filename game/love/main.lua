@@ -548,4 +548,13 @@ function love.keypressed(key)
   if key=="b" then hud_action("build") end
   if key=="return" then hud_action("confirm") end
   if key=="q" then hud_action("rotate") end
+  if key=="f5" and stage6_session then
+    local ok,why=stage6_session:reload(stage6_domain)
+    if ok then
+      publish_stage6(stage6_domain)
+      player.x,player.y=why.x,why.y
+      camera.x,camera.y=player.x,player.y
+      route_status="Stage6 checkpoint reloaded"
+    else route_status="Stage6 reload refused: "..tostring(why) end
+  end
 end
