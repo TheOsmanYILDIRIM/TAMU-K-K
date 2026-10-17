@@ -15,7 +15,16 @@ function M.run(domain,kind,args,state,previous,id)
     -- Real Harvesting.begin/update, including inventory, depletion and events.
     result=domain.harvesting:begin(id,assert(args.object_id),assert(args.x),assert(args.y))
     if not result.ok then return false,result.status end
-    domain.harvesting:update(assert(args.duration),args.x,args.y)
+    local duration=assert(args.duration)
+    assert(type(duration)=="number" and duration>0 and duration<=30,
+      "bounded harvest duration required")
+    -- Harvesting clamps each update to 0.1s; stage bounded simulation steps.
+    local remaining=duration
+    while remaining>0 and domain.harvesting.active do
+      local dt=math.min(.1,remaining)
+      domain.harvesting:update(dt,args.x,args.y)
+      remaining=remaining-dt
+    end
     result=domain.harvesting.commands[id]
     if not result or not result.ok or result.status~="complete" then
       return false,result and result.status or "incomplete"
