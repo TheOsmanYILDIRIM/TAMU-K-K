@@ -13,16 +13,16 @@ function M.pose(t,core,target,scale)
   local a0,a1,a2=-.12,-1.28,.30
   -- Scale-relative reach keeps the 1254px original artwork proportional to
   -- the small autonomous core at portrait zoom levels.
-  local gx,gy=core.x+19*(scale/.08),core.y-11*(scale/.08)
+  local gx,gy=core.x+11*(scale/.08),core.y-7*(scale/.08)
   local hx,hy=rotate(dx,dy,a1)
   local contactx,contacty=target.x-hx,target.y-hy
   local angle,x,y,phase
   if t<.28 then
     local u=smooth(t/.28)
-    angle=lerp(a0,a2,u);x=lerp(gx,gx+10,u);y=lerp(gy,gy-25,u);phase="prepare"
+    angle=lerp(a0,a2,u);x=lerp(gx,gx+5,u);y=lerp(gy,gy-17,u);phase="prepare"
   elseif t<.53 then
     local u=smooth((t-.28)/.25)
-    angle=lerp(a2,a1,u);x=lerp(gx+10,contactx,u);y=lerp(gy-25,contacty,u);phase="strike"
+    angle=lerp(a2,a1,u);x=lerp(gx+5,contactx,u);y=lerp(gy-17,contacty,u);phase="strike"
   elseif t<.60 then
     angle=a1;x=contactx;y=contacty;phase="impact"
   else
