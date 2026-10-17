@@ -6,6 +6,7 @@ on:
       - experiment/stage5-stage6-integration-v1
     paths:
       - 'game/love/save/**'
+      - 'game/love/main.lua'
       - 'game/love/tests/save_*'
       - 'game/love/tests/stage5_save_adapter.lua'
       - 'game/love/tests/stage5_checkpoint.lua'
@@ -80,6 +81,10 @@ jobs:
           cd game/love
           lua5.4 tests/production_session.lua
           luajit tests/production_session.lua
+      - name: Production main.lua syntax
+        run: |
+          luac5.4 -p game/love/main.lua
+          luajit -b game/love/main.lua /tmp/stage6-main.luac
       - name: Real LÖVE filesystem smoke
         run: |
           set -o pipefail
