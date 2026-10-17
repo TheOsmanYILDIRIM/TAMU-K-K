@@ -272,19 +272,27 @@ function love.update(dt)
     local o=objects:get(selected_target)
     if not o or objects:is_depleted(selected_target) then selected_target=nil
     elseif (o.x-player.x)^2+(o.y-player.y)^2<=(harvesting.range+o.radius)^2 then
-      local result=harvesting:begin(next_command("harvest"),o.id,player.x,player.y)
+      local result
+      if stage6_enabled then
+        local ok,why=stage6_bridge:run(next_command("harvest"),"harvest",{
+          object_id=o.id,x=player.x,y=player.y,duration=8,
+          player_x=player.x,player_y=player.y})
+        result={ok=ok,status=ok and "complete" or why}
+      else
+        result=harvesting:begin(next_command("harvest"),o.id,player.x,player.y)
+      end
       route_status=result.ok and "Gathering "..o.kind or result.status
       selected_target=nil
       player:stop_navigation()
     end
   end
-  harvesting:update(dt,player.x,player.y)
+  if not stage6_enabled then harvesting:update(dt,player.x,player.y) end
   for _,event in ipairs(harvesting:drain_events()) do
     -- Harvest already atomically credited the inventory before emitting.
     assert(inventory.applied[event.transaction_id],"uncredited harvest event")
     route_status="Collected "..event.amount.." "..event.item_id
   end
-  local result=crafting:update(dt,building:station_tags_near(player.x,player.y,60))
+  local result=not stage6_enabled and crafting:update(dt,building:station_tags_near(player.x,player.y,60))
   if result then route_status=result.status end
   if stage5_runtime_smoke then
     if stage5_smoke_step==0 and inventory:count("core:wood_log")>=3 then
