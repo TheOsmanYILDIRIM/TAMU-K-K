@@ -6,6 +6,8 @@ local Restore=require("save.stage5_domain_restore")
 local Clone=require("save.stage5_domain_clone")
 local Catalog=require("systems.catalog")
 local Checkpoint=require("save.stage5_checkpoint")
+local Bridge=require("save.stage5_transaction_bridge")
+local Ops=require("save.stage5_domain_operations")
 local Session={}
 Session.__index=Session
 function Session.open(live,opts)
@@ -36,6 +38,15 @@ function Session.open(live,opts)
   Clone.publish(live,candidate)
   return setmetatable({store=store,world_id=opts.world_id,
     revision=state.world_revision,position=position},Session),"ok"
+end
+function Session:bridge(live,publish)
+  assert(type(publish)=="function","atomic gameplay rebind callback required")
+  return Bridge.new(self.store,self.world_id,
+    function() return Clone.clone(live) end,Ops.run,
+    function(staged,saved)
+      publish(staged,saved)
+      self.revision=saved.world_revision
+    end)
 end
 function Session:reload(live)
   local state,meta=self.store:load(self.world_id)
