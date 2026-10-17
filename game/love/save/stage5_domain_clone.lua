@@ -19,6 +19,8 @@ function M.clone(live)
   local world=setmetatable({},getmetatable(live.world))
   for k,v in pairs(live.world) do world[k]=v end
   world.delta=copy(live.world.delta)
+  world.site_cache=copy(live.world.site_cache)
+  world.cache_size=live.world.cache_size
   -- Building obstacle queries must see the staged world, not the live world.
   -- Reject unknown query adapters instead of silently aliasing mutable state.
   assert(live.solid.world==live.world or live.solid.objects==live.world,
@@ -32,8 +34,7 @@ function M.clone(live)
   else
     error("unsupported building obstacle-query reference")
   end
-  -- placement/cache objects remain read-only during the staged operation;
-  -- only mutable delta and domain ledgers are copied.
+  -- Placement generator remains read-only; mutable world cache is detached.
   local building=Building.new(inv,live.query,solid,live.building.world_id)
   building.placed=copy(live.building.placed)
   building.commands=copy(live.building.commands)
