@@ -35,8 +35,8 @@ local function publish_stage6(staged)
   harvesting=staged.harvesting
   building=staged.building
   if player then
-    player.world=building
-    player.collision=building
+    player.query=building
+    player:stop_navigation()
   end
 end
 
