@@ -1,0 +1,43 @@
+name: Blender Mantaflow Liquid VFX (experiment)
+on:
+  push:
+    branches:
+      - experiment/blender-fluid-mantaflow-20261017
+    paths:
+      - 'experiments/blender-fluid/**'
+      - '.github/workflows/blender-liquid-vfx.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  fluid:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Blender and ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y blender ffmpeg
+          blender --version
+      - name: Bake real Mantaflow liquid and render 30 frames
+        run: |
+          mkdir -p output-fluid
+          blender -b -t 2 --python experiments/blender-fluid/build_scene.py
+          test "$(find output-fluid -maxdepth 1 -name 'frame_*.png' | wc -l)" -eq 30
+      - name: Produce animated GIF and MP4
+        run: |
+          ffmpeg -y -framerate 24 -i output-fluid/frame_%04d.png -vf 'fps=12,scale=640:-1:flags=lanczos' output-fluid/plasma_preview.gif
+          ffmpeg -y -framerate 24 -i output-fluid/frame_%04d.png -c:v libx264 -pix_fmt yuv420p output-fluid/plasma_preview.mp4
+          test -s output-fluid/plasma_preview.gif
+      - name: Save real proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blender-fluid-prototype
+          path: |
+            output-fluid/*.png
+            output-fluid/*.gif
+            output-fluid/*.mp4
+            output-fluid/*.blend
+          if-no-files-found: warn
