@@ -62,8 +62,8 @@ function M.draw(g,image,elapsed,core,target,scale)
     local life=1-(t-.53)/.17
     for i=1,12 do
       local a=i*2.39996
-      local r=(1-life)*(15+8*(i%4))
-      g.setColor(1,.54+.3*life,.20,life)
+      local r=(1-life)*(9+5*(i%4))
+      g.setColor(1,.54+.3*life,.20,life*.72)
       g.circle("fill",target.x+math.cos(a)*r,target.y+math.sin(a)*r*.65,1+2*life)
     end
   end
