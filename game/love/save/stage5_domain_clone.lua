@@ -6,7 +6,10 @@ local Building=require("systems.building")
 local Harvest=require("objects.harvesting")
 local Json=require("save.json")
 local M={}
-local function copy(v) return Json.decode(Json.encode(v)) end
+local function copy(v)
+  if v==nil then return nil end
+  return Json.decode(Json.encode(v))
+end
 function M.clone(live)
   assert(type(live)=="table" and live.inventory and live.world
     and live.building and live.query and live.solid,"live Stage5 domain required")
