@@ -24,6 +24,11 @@ function M.clone(live)
   for k,v in pairs(live.solid) do solid[k]=v end
   if solid.world==live.world then solid.world=world end
   if solid.objects==live.world then solid.objects=world end
+  if live.building.base_query==live.solid then
+    -- Retain staged world query as Building base query.
+  else
+    error("unsupported building obstacle-query reference")
+  end
   -- placement/cache objects remain read-only during the staged operation;
   -- only mutable delta and domain ledgers are copied.
   local building=Building.new(inv,live.query,solid,live.building.world_id)
