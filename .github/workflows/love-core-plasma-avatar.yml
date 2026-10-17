@@ -22,6 +22,8 @@ jobs:
           find . -name '*.lua' -print0 | xargs -0 -n1 luac5.4 -p
           lua5.4 tests/core_avatar.lua
           luajit tests/core_avatar.lua
+          lua5.4 tests/core_tool_integration.lua
+          luajit tests/core_tool_integration.lua
           lua5.4 tests/player_stage3.lua
           lua5.4 tests/liquid_traversal.lua
           lua5.4 tests/stage4_objects.lua

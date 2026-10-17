@@ -115,7 +115,9 @@ function V.draw(g,camera,width,height,player,context)
       color(g,accent,alpha*(.35+.6*secondary_share))
       g.line(x0,y0,x1,y1)
     end
-    if context.tool then tool_draw(g,context.tool,t,px,cy,z,alpha) end
+    if context.tool then
+      tool_draw(g,context.tool,context.tool_seconds or t,px,cy,z,alpha)
+    end
   end
 
   if immersion>0 then

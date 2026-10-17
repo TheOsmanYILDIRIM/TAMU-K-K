@@ -60,7 +60,10 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting)
   local visual={}
   if harvesting and harvesting.active then
     local source=world:get(harvesting.active.object_id)
-    if source and source.kind=="rock" then visual.tool="pickaxe" end
+    if source and source.kind=="rock" then
+      visual.tool="pickaxe"
+      visual.tool_seconds=harvesting.active.elapsed
+    end
   end
   for _,entry in ipairs(order) do
     if entry.player then player_sprite(g,camera,w,h,player,visual)
@@ -76,7 +79,7 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting)
       local elapsed=harvesting.active.elapsed
       -- One independent 0.88s strike cycle, synchronized to harvest elapsed.
       AxeStrike.draw(g,axe_image,elapsed,{x=px,y=foot-21*camera.zoom},
-        {x=tx,y=ty-29*camera.zoom},math.min(.18*camera.zoom,.28))
+        {x=tx,y=ty-29*camera.zoom},math.min(.048*camera.zoom,.085))
     end
   end
   g.pop()
