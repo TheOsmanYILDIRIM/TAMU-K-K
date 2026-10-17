@@ -107,8 +107,9 @@ local hok=htx:run("harvest:real","harvest",hargs)
 assert(not hok and hpub()==0 and not hd.world:is_depleted(obj.id))
 assert(hd.inventory:count("core:wood_log")==0)
 hfs.fail=false
-hok=htx:run("harvest:real","harvest",hargs)
-assert(hok and hpub()==1 and hd.world:is_depleted(obj.id))
+local hreason
+hok,hreason=htx:run("harvest:real","harvest",hargs)
+assert(hok and hpub()==1 and hd.world:is_depleted(obj.id),tostring(hreason))
 assert(hd.inventory:count("core:wood_log")>0)
 assert(not htx:run("harvest:real","harvest",hargs))
 local hs=hstore:load(F.world_id)
