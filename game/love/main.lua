@@ -80,6 +80,14 @@ local function next_command(prefix)
   return prefix..":"..command_number
 end
 local function begin_recipe(id)
+  if stage6_enabled then
+    local command=next_command("craft")
+    local ok,why=stage6_bridge:run(command,"craft",{
+      recipe_id=id,station_tags=building:station_tags_near(player.x,player.y,60),
+      player_x=player.x,player_y=player.y})
+    route_status=ok and "crafted" or why
+    return {ok=ok,status=route_status}
+  end
   local result=crafting:begin(next_command("craft"),id,
     building:station_tags_near(player.x,player.y,60))
   route_status=result.status
@@ -91,9 +99,18 @@ local function place_workbench()
   local allowed,reason=building:preview("core:workbench",target.x,target.y,
     placement_rotation,player.x,player.y)
   if not allowed then route_status=reason;return end
-  local result=building:place(next_command("place"),Uuid.new(love.math.random),
-    "core:workbench",target.x,target.y,placement_rotation,player.x,player.y,
-    "player:local")
+  local result
+  if stage6_enabled then
+    local ok,why=stage6_bridge:run(next_command("build"),"build",{
+      instance_id=Uuid.new(love.math.random),def_id="core:workbench",
+      x=target.x,y=target.y,rotation=placement_rotation,
+      player_x=player.x,player_y=player.y,owner_id="player:local"})
+    result={ok=ok,status=ok and "placed" or why}
+  else
+    result=building:place(next_command("place"),Uuid.new(love.math.random),
+      "core:workbench",target.x,target.y,placement_rotation,player.x,player.y,
+      "player:local")
+  end
   route_status=result.status
   if result.ok then stage_hud.placing=false;placement_target=nil end
   return result
@@ -169,6 +186,10 @@ function love.load()
     end)
   end
   player=spawn()
+  if stage6_session then
+    player.x,player.y=stage6_session.position.x,stage6_session.position.y
+    camera.x,camera.y=player.x,player.y
+  end
   if liquid_smoke then
     local found=false
     for y=-128,128,32 do
