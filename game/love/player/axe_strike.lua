@@ -10,6 +10,8 @@ function M.pose(t,core,target,scale)
   local p,e=M.asset.pivot,M.asset.edge
   local dx=(p[1]-e[1])*scale
   local dy=(e[2]-p[2])*scale
+  -- The sprite is mirrored by g.scale(-scale,scale): the visible edge is -dx.
+  dx=-dx
   local a0,a1,a2=-.12,-1.28,.30
   -- Scale-relative reach keeps the 1254px original artwork proportional to
   -- the small autonomous core at portrait zoom levels.
@@ -27,7 +29,9 @@ function M.pose(t,core,target,scale)
     angle=a1;x=contactx;y=contacty;phase="impact"
   else
     local u=smooth((t-.60)/.40)
-    angle=lerp(a1,a0,u);x=lerp(contactx,gx,u);y=lerp(contacty,gy,u);phase="recover"
+    -- Lift the blade away from the trunk before settling beside the Core.
+    local lift=12*math.sin(math.pi*u)
+    angle=lerp(a1,a0,u);x=lerp(contactx,gx,u);y=lerp(contacty,gy,u)-lift;phase="recover"
   end
   local ex,ey=rotate(dx,dy,angle)
   return {x=x,y=y,angle=angle,edgeX=x+ex,edgeY=y+ey,phase=phase,progress=t,scale=scale}
@@ -64,7 +68,7 @@ function M.draw(g,image,elapsed,core,target,scale)
       local a=i*2.39996
       local r=(1-life)*(9+5*(i%4))
       g.setColor(1,.54+.3*life,.20,life*.72)
-      g.circle("fill",target.x+math.cos(a)*r,target.y+math.sin(a)*r*.65,1+2*life)
+      g.circle("fill",pose.edgeX+math.cos(a)*r,pose.edgeY+math.sin(a)*r*.65,1+2*life)
     end
   end
   g.setColor(1,1,1,1)
