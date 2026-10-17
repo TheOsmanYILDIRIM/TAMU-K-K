@@ -181,6 +181,9 @@ function love.load()
     stage6_session=session
     publish_stage6(stage6_domain)
     stage6_bridge=session:bridge(stage6_domain,function(staged)
+      -- No fallible work after Store.commit: validate before publishing.
+      assert(staged.inventory and staged.world and staged.solid and
+        staged.crafting and staged.harvesting and staged.building)
       Stage6Clone.publish(stage6_domain,staged)
       publish_stage6(stage6_domain)
     end)
