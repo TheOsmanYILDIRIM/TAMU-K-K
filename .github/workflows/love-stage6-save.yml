@@ -14,6 +14,7 @@ on:
       - 'game/love/tests/stage5_domain_clone.lua'
       - 'game/love/tests/stage5_domain_operations.lua'
       - 'game/love/tests/stage5_domain_restore.lua'
+      - 'game/love/tests/production_session.lua'
       - '.github/workflows/love-stage6-save.yml'
       - 'docs/19_LOVE_STAGE6_SAVE_ENGINE.md'
   workflow_dispatch:
@@ -73,6 +74,12 @@ jobs:
           cd game/love
           lua5.4 tests/stage5_domain_restore.lua
           luajit tests/stage5_domain_restore.lua
+      - name: Production save session explicit create/reopen/quarantine (Lua 5.4 + LuaJIT)
+        run: |
+          set -o pipefail
+          cd game/love
+          lua5.4 tests/production_session.lua
+          luajit tests/production_session.lua
       - name: Real LÖVE filesystem smoke
         run: |
           set -o pipefail
