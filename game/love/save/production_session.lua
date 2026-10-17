@@ -20,7 +20,7 @@ function Session.open(live,opts)
     return nil,meta.status -- Never overwrite a corrupt/recovered save.
   end
   if meta.status=="absent" then
-    assert(opts.create==true,"explicit create required")
+    if opts.create~=true then return nil,"explicit_create_required" end
     local fresh=Checkpoint.compose({
       inventory=live.inventory,world=live.world,building=live.building,
       world_id=opts.world_id,catalog=Catalog.items(),
