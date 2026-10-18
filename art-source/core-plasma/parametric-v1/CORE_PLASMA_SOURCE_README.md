@@ -58,3 +58,18 @@ The front/back PNG blobs are already on `main` at the repository root:
 `core_plasma_front_spritesheet_32x512-1.png` and `core_plasma_back_spritesheet_32x512.png`.
 Their SHA values match the uploaded experiment copies. Do not duplicate binary content.
 Import scope is generator, approved settings, manifest and documentation only.
+
+## Verified runtime handoff — 2026-10-18
+
+The older “no in-game integration” entry in this document describes the state *before* the following commits. Current LÖVE production files are:
+- `game/love/player/core_plasma_sheet.lua` (32 frame synchronized quads, 12 FPS)
+- `game/love/player/core_visual.lua` (back → user Core/crystal shader → front → autonomous tool)
+- `game/love/assets/core_plasma_back_spritesheet_32x512.png`
+- `game/love/assets/core_plasma_front_spritesheet_32x512.png`
+- `game/love/tests/core_plasma_sheet.lua`, `tests/core_avatar.lua`, `tests/core_avatar_smoke.lua`
+
+Evidence: merge `db1598fff9d4147754737c943bd8097b890bc43a`; test corrections `99a8bd099797520e17b326a1624b83a83340e1c9`; successful Lua 5.4/LuaJIT, real LÖVE/Xvfb four-state screenshot and desktop FPS sample in Actions #39120557833 (artifact 12134062458). Screenshot visually inspected. Xvfb sample 266.32 FPS is *not Android performance evidence*.
+
+**Asset contract:** The production Core stays separate; the generator's embedded Core serves previews only. Four embedded brush textures and the approved JSON enable regeneration, but the exact 32-frame sheet sampling is not proven seamless. Existing 4096×2048 sheets are RGBA (8 columns × 4 rows, 512×512 per tile). For any replacement Core keep shared pivot, visual bounds, draw order, and immersion scissor. No re-export is needed for ordinary Core art changes until alignment is proven to differ. Never silently overwrite user's approved `core_plasma_settings.json`.
+
+**Open acceptance:** actual Android maximum texture dimensions, VRAM/FPS and sprite loop seam, plus geometric readability for other Core proportions. Do not confuse CI render with phone test, and do not re-merge retired experiment branches. The design findings and rejected chroma-key/AI-geometric-retouch methods are recorded in `docs/21_CORE_PLASMA_MTS_ART_FX_PIPELINE.md`.
