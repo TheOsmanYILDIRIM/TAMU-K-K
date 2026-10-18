@@ -20,9 +20,12 @@ local Camera=require("core.camera")
 local Iso=require("world.iso")
 local Stage6Session=require("save.production_session")
 local Stage6Clone=require("save.stage5_domain_clone")
+local CharacterProgression=require("progression.character")
+local StatHud=require("progression.hud")
 local stage6_enabled=os.getenv("OSMAN_STAGE6_EXPLICIT")=="1"
 local stage6_create=os.getenv("OSMAN_STAGE6_CREATE")=="1"
 local stage6_reopen_smoke=os.getenv("OSMAN_STAGE6_REOPEN_SMOKE")=="1"
+local stat_smoke=os.getenv("OSMAN_LOVE_STAT_SMOKE")=="1"
 local stage6_world_id=os.getenv("OSMAN_STAGE6_WORLD_ID")
 local stage6_session,stage6_bridge,stage6_domain
 -- Declare live bindings before the publisher closure: Lua locals start at
@@ -52,6 +55,8 @@ inventory=Inventory.new(12)
 crafting=Craft.new(inventory)
 harvesting=Harvest.new(objects,38,inventory)
 local stage_hud=StageHUD.new()
+local stat_hud=StatHud.new()
+local progression -- Session-only until a versioned Stage6 migration is approved.
 local placement_target=nil
 local placement_rotation=0
 local stream=Stream.new(query,{size=256,step=32,max_loaded=100,build_budget=5})
@@ -104,6 +109,7 @@ local function place_workbench()
     placement_rotation,player.x,player.y)
   if not allowed then route_status=reason;return end
   local result
+  local build_command
   if stage6_enabled then
     local ok,why=stage6_bridge:run(next_command("build"),"build",{
       instance_id=Uuid.new(love.math.random),def_id="core:workbench",
@@ -111,12 +117,18 @@ local function place_workbench()
       player_x=player.x,player_y=player.y,owner_id="player:local"})
     result={ok=ok,status=ok and "placed" or why}
   else
-    result=building:place(next_command("place"),Uuid.new(love.math.random),
+    build_command=next_command("place")
+    result=building:place(build_command,Uuid.new(love.math.random),
       "core:workbench",target.x,target.y,placement_rotation,player.x,player.y,
       "player:local")
   end
   route_status=result.status
-  if result.ok then stage_hud.placing=false;placement_target=nil end
+  if result.ok then
+    stage_hud.placing=false;placement_target=nil
+    if not stage6_enabled and build_command then
+      progression:grant("build_complete",build_command)
+    end
+  end
   return result
 end
 local function hud_action(id)
@@ -132,6 +144,15 @@ local function hud_action(id)
     stage_hud.selected=tonumber(id:sub(6))
   elseif id:sub(1,7)=="recipe:" then
     begin_recipe(id:sub(8))
+  end
+end
+local function stat_action(action)
+  if action=="stats_toggle" then
+    stat_hud.open=not stat_hud.open
+    if stat_hud.open then stage_hud.open=false end
+  elseif action:sub(1,10)=="stats_add:" then
+    local ok,why=progression:spend(action:sub(11))
+    route_status=ok and "Stat allocated (session only)" or why
   end
 end
 local function smoke_tap(id)
@@ -170,6 +191,11 @@ function love.load()
     if tonumber(vw)==320 then love.graphics.setNewFont(16) end
   end
   w,h=love.graphics.getDimensions()
+  progression=CharacterProgression.new({
+    player_id="player:local",
+    core_instance_id=Uuid.new(love.math.random),
+    core_definition_id="core:standard"
+  })
   -- Session-local v4 ID: no disk save or network host claim.
   building=Building.new(inventory,query,solid,Uuid.new(love.math.random))
   if stage6_enabled then
@@ -214,6 +240,12 @@ function love.load()
   end
   camera.x,camera.y=player.x,player.y
   if debug_view then camera.x,camera.y=-960,-960 end
+  if stat_smoke then
+    assert(progression:grant("quest_complete","smoke:stat:quest"))
+    assert(progression.state.character_level==2)
+    assert(progression:spend("etkime"))
+    stat_hud.open=true
+  end
   if stage5_runtime_smoke then
     -- Same COLLECT touch callback used by real players; no direct item injection.
     local selected=false
@@ -311,9 +343,18 @@ function love.update(dt)
     -- Harvest already atomically credited the inventory before emitting.
     assert(inventory.applied[event.transaction_id],"uncredited harvest event")
     route_status="Collected "..event.amount.." "..event.item_id
+    if not stage6_enabled then
+      progression:grant("harvest_complete",event.command_id)
+    end
   end
+  local craft_command=crafting.active and crafting.active.command_id
   local result=not stage6_enabled and crafting:update(dt,building:station_tags_near(player.x,player.y,60))
-  if result then route_status=result.status end
+  if result then
+    route_status=result.status
+    if result.ok and craft_command then
+      progression:grant("craft_complete",craft_command)
+    end
+  end
   if stage5_runtime_smoke then
     if stage5_smoke_step==0 and inventory:count("core:wood_log")>=3 then
       stage5_smoke_step=1;smoke_tap("recipe:core:planks_from_log")
@@ -391,8 +432,9 @@ function love.draw()
   g.rectangle("fill",safe_x+safe_w-136,safe_y+safe_h-175,122,66,13,13)
   g.setColor(1,.95,.83)
   g.print("COLLECT",safe_x+safe_w-120,safe_y+safe_h-149)
-  stage_hud:draw(inventory,crafting,
-    {x=safe_x,y=safe_y,w=safe_w,h=safe_h},placement_rotation,route_status)
+  local hud_safe={x=safe_x,y=safe_y,w=safe_w,h=safe_h}
+  stage_hud:draw(inventory,crafting,hud_safe,placement_rotation,route_status)
+  stat_hud:draw(g,hud_safe,progression)
   local bx,by=joystick_center()
   g.setColor(.2,.3,.34,.6)
   g.circle("fill",bx,by,72)
@@ -400,6 +442,13 @@ function love.draw()
   g.circle("fill",bx+joystick.dx*55,by+joystick.dy*55,22)
   g.setColor(1,1,1)
   frames=frames+1
+  if stat_smoke and frames>=25 and stats.loaded>0 and stats.pending==0 then
+    assert(progression:stat("etkime")==2 and progression.state.unspent_points==1)
+    love.graphics.captureScreenshot("core-stat-progression-smoke.png")
+    print("LOVE_STAT_SMOKE_OK level="..progression.state.character_level)
+    io.stdout:flush()
+    love.event.quit()
+  end
   if stage5_runtime_smoke and building.revision==1 and frames>=30
     and stats.loaded>0 and stats.pending==0 and not screenshot_done then
     screenshot_done=true
@@ -475,7 +524,13 @@ end
 local function press(id,x,y)
   fingers[id]={x=x,y=y,origin_x=x,origin_y=y,move=false}
   local sx,sy,sw,sh=safe_area()
-  local action=stage_hud:hit(x,y,{x=sx,y=sy,w=sw,h=sh})
+  local safe={x=sx,y=sy,w=sw,h=sh}
+  local stat_hit=stat_hud:hit(x,y,safe)
+  if stat_hit then
+    fingers[id].stats=stat_hit
+    return
+  end
+  local action=stage_hud:hit(x,y,safe)
   if action then
     fingers[id].ui=action
     return
@@ -501,7 +556,7 @@ end
 local function move(id,x,y)
   local p=fingers[id];if not p then return end
   if p.joystick then joystick:move(id,x,y);return end
-  if p.button or p.ui then return end
+  if p.button or p.ui or p.stats then return end
   if p.multi then
     local partner
     for other,q in pairs(fingers) do if other~=id and not q.joystick and not q.button then partner=q;break end end
@@ -517,6 +572,11 @@ end
 local function release(id,x,y)
   local p=fingers[id];if not p then return end
   if p.joystick then joystick:release(id)
+  elseif p.stats then
+    local sx,sy,sw,sh=safe_area()
+    if stat_hud:hit(x,y,{x=sx,y=sy,w=sw,h=sh})==p.stats then
+      stat_action(p.stats)
+    end
   elseif p.ui then
     local sx,sy,sw,sh=safe_area()
     if stage_hud:hit(x,y,{x=sx,y=sy,w=sw,h=sh})==p.ui then
@@ -559,6 +619,15 @@ function love.wheelmoved(_,dy)
   camera:zoom_at(1.15^dy,x,y,w,h)
 end
 function love.keypressed(key)
+  if key=="p" then stat_action("stats_toggle");return end
+  if stat_hud.open then
+    local number=tonumber(key)
+    if number and number>=1 and number<=6 then
+      local names=require("progression.rules").stats
+      stat_action("stats_add:"..names[number])
+      return
+    end
+  end
   if key=="r" then camera.x,camera.y=player.x,player.y;camera.zoom=1.7 end
   if key=="escape" then player:stop_navigation();selected_target=nil end
   if key=="e" then interact_nearest() end

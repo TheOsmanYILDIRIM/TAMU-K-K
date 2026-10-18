@@ -7,3 +7,37 @@ jobs:
       - uses: actions/checkout@v4
       - run: pip install jsonschema
       - run: python -m unittest discover -s tests -v
+      - name: Install Lua and real LÖVE test runtime
+        run: sudo apt-get update -qq && sudo apt-get install -y lua5.4 luajit love xvfb
+      - name: Stat/skill contract and existing Stage5/Stage6 regression (Lua 5.4 and LuaJIT)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd game/love
+          find progression -name '*.lua' -print0 | xargs -0 -n1 luac5.4 -p
+          luac5.4 -p main.lua
+          for interpreter in lua5.4 luajit; do
+            "$interpreter" tests/core_stat_progression.lua
+            "$interpreter" tests/core_avatar.lua
+            "$interpreter" tests/core_tool_integration.lua
+            "$interpreter" tests/stage5_end_to_end.lua
+            "$interpreter" tests/save_v2_spec.lua
+          done
+      - name: Real LÖVE stat UI production smoke
+        shell: bash
+        env:
+          OSMAN_LOVE_STAT_SMOKE: '1'
+        run: |
+          set -euo pipefail
+          timeout 100s xvfb-run -a love game/love 2>&1 | tee /tmp/core-stat-smoke.log
+          grep -q 'LOVE_STAT_SMOKE_OK' /tmp/core-stat-smoke.log
+          shot="$(find "$HOME/.local/share/love" -name core-stat-progression-smoke.png -print -quit)"
+          test -n "$shot"
+          cp "$shot" /tmp/core-stat-progression-smoke.png
+          test -s /tmp/core-stat-progression-smoke.png
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: core-stat-progression-smoke
+          path: /tmp/core-stat-progression-smoke.png
+          if-no-files-found: error
