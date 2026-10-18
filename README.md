@@ -12,8 +12,11 @@ ve `game/love/player/core_visual.lua` içindedir. Balta/kazma hasatta
 rig olmadan zaman/dönüş eğrisiyle hareket eder; hareket, Y-depth,
 kaynak toplama, su %55 hız/%50 immersion korunur.
 
-Statlar/palet, genel seviye, Tech Level, Magic Level ve özel çekirdeklerin
-nihai oyun kuralları **henüz kesinleşmedi**; mevcut aura yalnız geçici
+Karakter Level'dan dağıtılabilir stat puanı, Core seviyesinden altı ortak stat tavanı ve normal skill slotları
+için oyun içinde oturumluk V1 prototipi etkin: game/love/progression/. Mobilde STATS, klavyede P.
+Başarılı normal Stage5 toplama/üretim/inşa karakter XP'si kazandırır. Prototip dengesi kesin değildir.
+ÖNEMLİ: Stat ilerlemesi henüz save_v2'de kalıcı değildir ve Stage6 explicit modunda XP bağlantısı devre dışıdır.
+Nihai stat adları/paleti, Tech Level, Magic Level ve özel Core yeteneklerinin mevcut aura yalnız geçici
 nötr görünüm + parametrik iki baskın stat demo sözleşmesidir. Eski
 Mixamo/2D mesh rig ve Character Rig Studio çalışmaları silinmedi,
 **aktif oyuncu yöntemi değil, ertelenmiş tarihi deneylerdir.**

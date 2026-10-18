@@ -50,3 +50,20 @@ tests in subsequent work.
 Preserve backup branch, `main`, World Builder, Terrain Studio, Object Studio,
 other experiment branches, external assets, IndexedDB, and user saves.
 No texture files were added; existing 18 terrain variants are out of scope.
+
+## Core stat progression V1 (session-only)
+
+Player gains general character XP from successful RAM-only resource harvest/craft/build.
+Character level rewards free stat points; STATS touch panel or keyboard P spends them.
+Core Level is separate: all six stats share a ceiling and all Core types share normal
+skill capacity at the same Core level. Future skill definitions unlock typed actions
+and earn separate usage XP; feat/proficiency systems are not adopted.
+
+Run: cd game/love && lua5.4 tests/core_stat_progression.lua
+Also run LuaJIT, quality CI and real LÖVE/Xvfb production UI smoke.
+
+IMPORTANT: numeric curves are provisional. This demo does NOT upgrade Core,
+transfer consciousness, activate skills, or persist progression in save_v2.
+Stage6 explicit play does NOT award session XP to avoid non-atomic cross-save commits.
+The HUD displays SESSION ONLY / NOT SAVED. Do not mistake test snapshot/restore
+for production durable saving. A new versioned save contract and migration are required.
