@@ -2,7 +2,9 @@ name: Build Android-testable LOVE package
 on:
   push:
     branches: [main]
-    paths: ['.github/workflows/love-android-package.yml']
+    paths:
+      - '.github/workflows/love-android-package.yml'
+      - 'game/love/**'
   workflow_dispatch:
 permissions:
   contents: read
