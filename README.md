@@ -54,4 +54,4 @@ GitHub Actions'taki `LOVE Stage 5 inventory crafting building` workflow'u Lua 5.
 
 ## Koruma
 
-`main` üzerindeki stüdyo ve veri dosyalarını, yedekleri, kayıtları, PNG'leri ve IndexedDB kullanıcı verilerini koru. `experiment/world-2d-design-20261012` dalında ayrı World Builder ve 2D tasarım çalışması bulunur; bu dal `main`in üzerine bütünüyle birleştirilmez. Varlıklar lisans/kaynak/hash doğrulaması sonrasında entegre edilir.
+`main` üzerindeki stüdyo ve veri dosyalarını, yedekleri, kayıtları, PNG'leri ve IndexedDB kullanıcı verilerini koru. World Builder'ın yayınlanan `world-builder/` kaynakları ve 2D tasarım notu `main` üzerinde korunur; Pages artık ayrı deney dalından checkout yapmaz (doğrulama: Actions #39125381260). Tamamlanmamış mobil vadi demosu ayrı Beyin görevinde açık kalır; eski deney kodları topluca `main`e taşınmaz. Varlıklar lisans/kaynak/hash doğrulaması sonrasında entegre edilir.
