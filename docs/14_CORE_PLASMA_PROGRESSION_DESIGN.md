@@ -62,3 +62,11 @@
 - **Stat isimleri henüz taslak:** Etkime, Hâkimiyet, Kararlılık, Duyarlılık, Biliş ve Rezonans büyüsel-teknolojik adlandırma yönüdür. Rezonans için dış canlı/bağımsız sistemlerle **bağ ve senkronizasyon** anlamı seçildi; nihai stat formülü ve isim onayı henüz verilmedi.
 
 **Uygulama sınırı:** Bu kayıt yalnız tasarım; çalışma motoru, shader, aura, save_v2, Stage6, envanter ve katalog sözleşmelerini değiştirmez.
+
+## 2026-10-18 — Karakter Level stat puanı V1 (uygulama kanıtı)
+
+- **Kullanıcı kararı:** Genel karakter seviyesi atlandığında stat puanı verilir; oyuncu serbestçe altı stat arasında dağıtır. Statların ayrı kullanım XP'si **yoktur**. Skill'lerin kullanım XP'si bundan bağımsızdır.
+- **Uygulama:** progression/rules.lua, character.lua, hud.lua ve skill_contract.lua ile saf domain + mobil stat ekranı; game/love/main.lua içinde yalnız RAM Stage5 başarılı harvest/craft/build eylemlerinden karakter XP. Dahili Core yeteneği 0 normal slot, öğrenilmiş skill 1 normal slot standartları tanımlandı; gerçek yeni skill listesi ve çalışma motoru daha sonra geliştirilecek.
+- **Prototip değerleri:** Core Level 1 stat tavanı 10, iki normal skill slotu; sonraki Core seviyelerinde +5 tavan/+1 slot; karakter seviyesi başına 2 dağıtılabilir puan. **Sayılar henüz dengesi onaylanmamış geçici ayarlardır.** Aynı seviyedeki bütün Core türlerinin limitleri aynıdır.
+- **Kalıcılık engeli:** V1 stat ilerlemesi oturum sonu kaybolur; Stage6 save_v2 şeması değiştirilmedi, explicit Stage6 işlemlerinden XP verilmez. Ayrı durable stat dosyası yazıp iki transaction'ı sahte atomik göstermeyiz. Kalıcı kayıt, Core yükseltme/transfer/ödül ekonomisi ve mevcut statın fiziksel eylem etkileri ayrı sürümlü entegrasyon gerektirir.
+- Güncel teknik tasarım/gap listesi: [26_CORE_SKILL_CONTENT_FOUNDATION_RFC.md](26_CORE_SKILL_CONTENT_FOUNDATION_RFC.md), bölüm XI.

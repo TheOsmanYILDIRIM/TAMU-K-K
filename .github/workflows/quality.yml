@@ -29,15 +29,39 @@ jobs:
           OSMAN_LOVE_STAT_SMOKE: '1'
         run: |
           set -euo pipefail
-          timeout 100s xvfb-run -a love game/love 2>&1 | tee /tmp/core-stat-smoke.log
-          grep -q 'LOVE_STAT_SMOKE_OK' /tmp/core-stat-smoke.log
-          shot="$(find "$HOME/.local/share/love" -name core-stat-progression-smoke.png -print -quit)"
-          test -n "$shot"
-          cp "$shot" /tmp/core-stat-progression-smoke.png
-          test -s /tmp/core-stat-progression-smoke.png
+          for size in 720x1100 320x700 360x780; do
+            OSMAN_STAT_DISPLAY="$size" timeout 100s xvfb-run -a love game/love \
+              2>&1 | tee "/tmp/core-stat-smoke-$size.log"
+            grep -q 'LOVE_STAT_SMOKE_OK' "/tmp/core-stat-smoke-$size.log"
+            shot="$(find "$HOME/.local/share/love" -name "core-stat-progression-smoke-$size.png" -print -quit)"
+            test -n "$shot"
+            cp "$shot" "/tmp/core-stat-progression-smoke-$size.png"
+            test -s "/tmp/core-stat-progression-smoke-$size.png"
+          done
+      - name: Real production Stage5 harvest, craft and placement smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          OSMAN_LOVE_STAGE5_RUNTIME_SMOKE=1 timeout 120s xvfb-run -a love game/love 2>&1 | tee /tmp/stat-stage5-production.log
+          grep -q 'LOVE_STAGE5_RUNTIME_SMOKE_OK' /tmp/stat-stage5-production.log
+      - name: Stage6 production two-process checkpoint and reopen (no progression split writes)
+        shell: bash
+        run: |
+          set -euo pipefail
+          export XDG_DATA_HOME="$RUNNER_TEMP/stat-stage6-two-process-user"
+          mkdir -p "$XDG_DATA_HOME"
+          export OSMAN_STAGE6_EXPLICIT=1
+          export OSMAN_STAGE6_WORLD_ID=12345678-1234-4abc-8abc-123456789abe
+          OSMAN_STAGE6_CREATE=1 OSMAN_LOVE_STAGE5_RUNTIME_SMOKE=1 \
+            timeout 120s xvfb-run -a love game/love 2>&1 | tee /tmp/stat-stage6-create.log
+          grep -q 'LOVE_STAGE5_RUNTIME_SMOKE_OK' /tmp/stat-stage6-create.log
+          OSMAN_STAGE6_CREATE=0 OSMAN_STAGE6_REOPEN_SMOKE=1 OSMAN_LOVE_SMOKE=1 \
+            timeout 90s xvfb-run -a love game/love 2>&1 | tee /tmp/stat-stage6-reopen.log
+          grep -q 'LOVE_STAGE6_REOPEN_OK' /tmp/stat-stage6-reopen.log
+          grep -q 'LOVE_INTEGRATION_SMOKE_OK' /tmp/stat-stage6-reopen.log
       - uses: actions/upload-artifact@v4
         if: success()
         with:
           name: core-stat-progression-smoke
-          path: /tmp/core-stat-progression-smoke.png
+          path: /tmp/core-stat-progression-smoke-*.png
           if-no-files-found: error

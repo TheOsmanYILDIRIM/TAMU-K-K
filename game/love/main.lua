@@ -26,6 +26,7 @@ local stage6_enabled=os.getenv("OSMAN_STAGE6_EXPLICIT")=="1"
 local stage6_create=os.getenv("OSMAN_STAGE6_CREATE")=="1"
 local stage6_reopen_smoke=os.getenv("OSMAN_STAGE6_REOPEN_SMOKE")=="1"
 local stat_smoke=os.getenv("OSMAN_LOVE_STAT_SMOKE")=="1"
+local stat_viewport=os.getenv("OSMAN_STAT_DISPLAY")
 local stage6_world_id=os.getenv("OSMAN_STAGE6_WORLD_ID")
 local stage6_session,stage6_bridge,stage6_domain
 -- Declare live bindings before the publisher closure: Lua locals start at
@@ -182,6 +183,13 @@ local function spawn()
   error("No safe player spawn found within 512 world units")
 end
 function love.load()
+  if stat_smoke and stat_viewport then
+    local vw,vh=stat_viewport:match("^(%d+)x(%d+)$")
+    assert(vw and vh and tonumber(vw)>=320 and tonumber(vh)>=700,
+      "invalid stat smoke viewport")
+    assert(love.window.setMode(tonumber(vw),tonumber(vh),{resizable=false}),
+      "cannot set stat smoke viewport")
+  end
   if stage5_runtime_smoke and stage5_display then
     local vw,vh=stage5_display:match("^(%d+)x(%d+)$")
     assert(vw and vh and tonumber(vw)>=320 and tonumber(vh)>=700,
@@ -444,7 +452,8 @@ function love.draw()
   frames=frames+1
   if stat_smoke and frames>=25 and stats.loaded>0 and stats.pending==0 then
     assert(progression:stat("etkime")==2 and progression.state.unspent_points==1)
-    love.graphics.captureScreenshot("core-stat-progression-smoke.png")
+    love.graphics.captureScreenshot("core-stat-progression-smoke"
+      ..(stat_viewport and "-"..stat_viewport or "")..".png")
     print("LOVE_STAT_SMOKE_OK level="..progression.state.character_level)
     io.stdout:flush()
     love.event.quit()
@@ -459,6 +468,17 @@ function love.draw()
     stage5_world_shot=true
     love.graphics.captureScreenshot("stage5-production-world"
       ..(stage5_display and "-"..stage5_display or "")..".png")
+    if not stage6_enabled then
+      -- One completed harvest, two crafts, one placement = 130 prototype XP.
+      assert(progression.state.character_level>=2,
+        "Stage5 production events failed to award character XP")
+      assert(progression.state.unspent_points>=2,
+        "Stage5 character level failed to grant stat points")
+    else
+      assert(progression.state.character_xp==0 and
+        progression.state.character_level==1,
+        "Stage6 must not split world commit and progression XP")
+    end
     print(string.format("LOVE_STAGE5_RUNTIME_SMOKE_OK chunks=%d placed=%d logs=%d",
       stats.loaded,building.revision,inventory:count("core:wood_log")))
     io.stdout:flush()
