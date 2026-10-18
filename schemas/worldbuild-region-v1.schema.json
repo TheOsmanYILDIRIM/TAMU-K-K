@@ -1,0 +1,237 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/TheOsmanYILDIRIM/oyun/schemas/worldbuild-region-v1.schema.json",
+  "title": "World Builder -> WorldQuery authored 2D region graph (authoring only)",
+  "description": "Independent editor interchange format, NOT a Stage6 save or an automatically installed runtime world.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "schema_version",
+    "map_id",
+    "name",
+    "coordinate_space",
+    "projection",
+    "seed",
+    "generator_version",
+    "regions",
+    "connectors",
+    "features"
+  ],
+  "properties": {
+    "format": {
+      "const": "osman-worldbuild-v1"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "map_id": {
+      "type": "string",
+      "pattern": "^worldmap:[a-z][a-z0-9-]{1,63}$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "coordinate_space": {
+      "const": "world"
+    },
+    "projection": {
+      "const": "iso-45"
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    },
+    "generator_version": {
+      "const": 1
+    },
+    "regions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "biome",
+          "variant",
+          "polygon"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^region:[a-z][a-z0-9-]{1,63}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "biome": {
+            "enum": [
+              "meadow",
+              "forest",
+              "rocky"
+            ]
+          },
+          "variant": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "polygon": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number",
+                  "minimum": -1000000,
+                  "maximum": 1000000
+                },
+                {
+                  "type": "number",
+                  "minimum": -1000000,
+                  "maximum": 1000000
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "minItems": 3,
+            "maxItems": 96
+          }
+        }
+      }
+    },
+    "connectors": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "regions",
+          "kind",
+          "anchor",
+          "width"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^connector:[a-z][a-z0-9-]{1,63}$"
+          },
+          "regions": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "string",
+                "pattern": "^region:[a-z][a-z0-9-]{1,63}$"
+              },
+              {
+                "type": "string",
+                "pattern": "^region:[a-z][a-z0-9-]{1,63}$"
+              }
+            ],
+            "items": false,
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "kind": {
+            "enum": [
+              "path",
+              "water"
+            ]
+          },
+          "anchor": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "number",
+                "minimum": -1000000,
+                "maximum": 1000000
+              },
+              {
+                "type": "number",
+                "minimum": -1000000,
+                "maximum": 1000000
+              }
+            ],
+            "items": false,
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "width": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 64
+          }
+        }
+      }
+    },
+    "features": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "intent_only",
+          "width",
+          "points"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^feature:[a-z][a-z0-9-]{1,63}$"
+          },
+          "kind": {
+            "enum": [
+              "path",
+              "water"
+            ]
+          },
+          "intent_only": {
+            "const": true
+          },
+          "width": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 64
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number",
+                  "minimum": -1000000,
+                  "maximum": 1000000
+                },
+                {
+                  "type": "number",
+                  "minimum": -1000000,
+                  "maximum": 1000000
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "minItems": 2,
+            "maxItems": 96
+          }
+        }
+      }
+    }
+  }
+}

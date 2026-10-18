@@ -1,7 +1,7 @@
 name: LOVE Stage 4 world objects
 on:
   push:
-    branches: [main, experiment/world-objects-harvesting-v1]
+    branches: [main, experiment/world-objects-harvesting-v1, experiment/worldbuild-population-20261018]
     paths:
       - 'game/love/**'
       - 'data/catalog/**'
@@ -29,6 +29,10 @@ jobs:
           luajit tests/stage4_objects.lua
           lua5.4 tests/stage4_deep.lua
           luajit tests/stage4_deep.lua
+          lua5.4 tests/worldbuild_population.lua
+          luajit tests/worldbuild_population.lua
+          lua5.4 tests/stage5_end_to_end.lua
+          luajit tests/stage5_end_to_end.lua
           lua5.4 tests/stage4_hash_fixture.lua > /tmp/stage4-hash-54.txt
           luajit tests/stage4_hash_fixture.lua > /tmp/stage4-hash-jit.txt
           diff -u /tmp/stage4-hash-54.txt /tmp/stage4-hash-jit.txt

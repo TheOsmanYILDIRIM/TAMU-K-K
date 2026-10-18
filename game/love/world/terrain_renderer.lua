@@ -1,34 +1,31 @@
--- Draws procedural terrain WITHOUT modifying game/love/main.lua or shared core.
--- Cached LOVE meshes use isometric projected world vertices; pan/zoom is a transform.
-local Biomes = require("world.biomes")
+-- View-only procedural terrain. WorldQuery, collision, liquids and saves
+-- remain authoritative; authored worldbuild intent is NOT rendered as physics.
 local Iso = require("world.iso")
+local Materials = require("world.materials")
 local Terrain = {}
+local water={.20,.43,.55}
 
-local colors = {
-  forest=Biomes.resolve("forest").color,
-  rocky=Biomes.resolve("rocky").color,
-  water={0.20,0.43,0.55}
-}
-
-local function make_mesh(flat, color)
-  if #flat==0 then return nil end
-  local vertices={}
-  for _,world_point in ipairs(flat) do
-    local x,y=Iso.project(world_point[1],world_point[2])
-    vertices[#vertices+1]={x,y,0,0,color[1],color[2],color[3],1}
+local function vertices(flat,biome)
+  local out={}
+  for _,p in ipairs(flat) do
+    local x,y=Iso.project(p[1],p[2])
+    local color=biome=="water" and water or Materials.color(biome,p[1],p[2])
+    out[#out+1]={x,y,0,0,color[1],color[2],color[3],1}
   end
-  return love.graphics.newMesh(vertices,"triangles","static")
+  return out
 end
-
-local function base_quad(chunk)
+local function mesh(flat,biome)
+  if not flat or #flat==0 then return nil end
+  return love.graphics.newMesh(vertices(flat,biome),"triangles","static")
+end
+local function quad(chunk)
   local x,y,s=chunk.x,chunk.y,chunk.size
-  local a,b=Iso.project(x,y)
-  local c,d=Iso.project(x+s,y)
-  local e,f=Iso.project(x+s,y+s)
-  local g,h=Iso.project(x,y+s)
-  return {a,b,c,d,e,f,g,h}
+  local a={x,y};local b={x+s,y};local c={x+s,y+s};local d={x,y+s}
+  return {a,b,c,a,c,d}
 end
-
+function Terrain.invalidate(chunk)
+  if chunk then chunk._terrain_meshes=nil end
+end
 function Terrain.draw(stream,camera,width,height)
   local lg=love.graphics
   lg.clear(.09,.16,.18,1)
@@ -38,21 +35,21 @@ function Terrain.draw(stream,camera,width,height)
   local cam_x,cam_y=Iso.project(camera.x,camera.y)
   lg.translate(-cam_x,-cam_y)
   for _,chunk in ipairs(stream:visible()) do
-    if not chunk._meshes then
-      chunk._meshes={}
-      for _,name in ipairs({"forest","rocky","water"}) do
-        chunk._meshes[name]=make_mesh(chunk.layers[name].vertices,colors[name])
-      end
+    if not chunk._terrain_meshes then
+      local layers=chunk.layers
+      chunk._terrain_meshes={
+        meadow=mesh(quad(chunk),"meadow"),
+        forest=mesh(layers.forest.vertices,"forest"),
+        rocky=mesh(layers.rocky.vertices,"rocky"),
+        water=mesh(layers.water.vertices,"water")
+      }
     end
-    lg.setColor(Biomes.resolve("meadow").color)
-    lg.polygon("fill",base_quad(chunk))
     lg.setColor(1,1,1,1)
-    for _,name in ipairs({"forest","rocky","water"}) do
-      local mesh=chunk._meshes[name]
-      if mesh then lg.draw(mesh) end
+    for _,name in ipairs({"meadow","forest","rocky","water"}) do
+      local drawable=chunk._terrain_meshes[name]
+      if drawable then lg.draw(drawable) end
     end
   end
   lg.pop()
 end
-
 return Terrain
