@@ -6,7 +6,7 @@ assert(S.quad_position(0)==0)
 local x,y=S.quad_position(9)
 assert(x==512 and y==512)
 assert(not pcall(S.frame_index,math.huge))
-local log={},images={}
+local log,images={},{}
 local g={}
 function g.newImage(path)
   assert(path:match("^assets/core_plasma_"))

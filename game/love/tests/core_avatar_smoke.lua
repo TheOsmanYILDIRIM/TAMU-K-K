@@ -2,6 +2,8 @@
 -- CI copies this file into a TEMP game root to compare core states.
 local CoreVisual=require("player.core_visual")
 local shot=false
+local saved=false
+local fpsTotal,fpsSamples=0,0
 local frames=0
 local font
 local viewport
@@ -39,7 +41,12 @@ local function draw_sample(label,row,opts)
     g.rectangle("fill",70,y+156,580,37)
   end
 end
-function love.update() end
+function love.update(dt)
+  if dt>0 and fpsSamples<120 and frames>20 then
+    fpsTotal=fpsTotal+math.min(1000,1/dt)
+    fpsSamples=fpsSamples+1
+  end
+end
 function love.draw()
   local g=love.graphics
   g.clear(.03,.075,.10,1)
@@ -55,9 +62,14 @@ function love.draw()
   frames=frames+1
   if frames==15 and not shot then
     shot=true
-    love.graphics.captureScreenshot("core-plasma-variants.png")
+    love.graphics.captureScreenshot(function(data)
+      data:encode("png","core-plasma-variants.png")
+      saved=true
+    end)
   end
-  if shot and frames>=17 then
+  if frames>=240 and not saved then error("core screenshot callback did not finish") end
+  if saved and frames>=160 then
+    print("CORE_PLASMA_DESKTOP_SAMPLE_FPS="..string.format("%.2f",fpsTotal/math.max(fpsSamples,1)))
     print("LOVE_CORE_VISUAL_SMOKE_OK frames="..frames.." variants=4")
     io.stdout:flush()
     love.event.quit(0)
