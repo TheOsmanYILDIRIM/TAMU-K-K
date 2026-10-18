@@ -18,12 +18,12 @@ Dosyalar ChatGPT sohbetinde container çıktısıdır; **bu deney dalına Git bi
 V3 GIF, yalnız görsel referans niteliğinde Python/Pillow önizlemesi: Core original sabit, tek maske, iç merkez radial falloff, pulse loop, soft feather, animated edge noise ve screen/additive karışımı. Bu bir LÖVE shader testi veya cihaz performans kanıtı değildir. Maskenin kristal dışı hazne pikselleri de içermesi bilinçli açık kusurdur; shader maskeyi frame-to-frame sabit kullanmalı, metali etkilememeli. Üretim kabulü için gerekirse daraltılır.
 
 ## Bağımsız küçük LÖVE shader kapsamı (İş A / takip)
-1. Görselleri binary olarak güvenilir yöntemle **bağımsız deney dalına** al; dosya hash, alpha, mask boyutu kontrol et. Kullanıcı referansına erişilemiyorsa dosyayı iste; sıfırdan Core çizme.
+1. Görselleri binary olarak güvenilir yöntemle **AGENTS.md dal seçimi ilkesine göre uygun dala** al; dosya hash, alpha, mask boyutu kontrol et. Kullanıcı referansına erişilemiyorsa dosyayı iste; sıfırdan Core çizme.
 2. `game/love/player/` içinde ayrı shader modülü; sabit base texel `121222.png` + maske. Tek ek texture sample, zaman uniformu; `mask` aliası, radial merkez ve yarıçapı pixel/UV koordinatlarında ölç ve belgele. Metal bar masked-off; maske gerekirse düzelt.
 3. Efekt: ortadaki parlaklığı V3 düzeyinde tut, dışarı doğru azaltsın; Gaussian edge feather shader/mask preprocess ile; küçük animasyonlu noise; crystal-screen + düşük additive katkı. Shader renk karışımının LÖVE premultiplied/straight-alpha `setBlendMode` sözleşmesiyle uyumunu kanıtla, çift glow yok.
 4. Mevcut `core_visual.lua` ve `objects/renderer.lua` içinde yalnız render adaptation; action/tool, movement, physics, depth, Stage5/6 save kapsamına dokunma. Unavailable shader için basit Core PNG fallback; optimize spritesheet ancak gerekli ölçüm çıkarsa.
 5. Lua5.4/LuaJIT ve gerçek Xvfb/LÖVE screenshot testleri, 320/360 dp ölçek görsel okuma, mask passthrough ve metal pixel invariant kontrolü. FPS/RAM cihaz testini yapmadan başarı iddia etme.
-6. CI ve HEAD doğrulanmadan main merge yok; paylaşılmış dal üzerinde diğer bağımsız ajanların yazdığı dosyaları ezme. Beyin `oyun-core-plasma-art-assets-20261016` görevini ve revision değişimlerini resmî beyin-io üzerinden yönet.
+6. CI ve HEAD'i kapsam/risk kadar doğrula; aynı kanıtı gereksiz tekrar üretme, yeni dalı yalnız gerekçeli riskte aç. Paylaşılmış dal üzerindeki diğer ajanların yazdığı dosyaları ezme. Beyin `oyun-core-plasma-art-assets-20261016` görevini ve revision değişimlerini resmî beyin-io üzerinden yönet.
 
 ## Sıradaki ayrı işler
 Metal araçlar her biri tek rigid alpha PNG; matematiksel kavis/rotasyon. Ortak swing/strike/craft/build/plasma FX, gerektiğinde GPT Image key refs -> koşullu Veo 3.1 -> video-to-sprite, runtime video bağımlılığı olmadan. Stat paleti, seviyeler, özel güçler kesinleştirilmedi.
