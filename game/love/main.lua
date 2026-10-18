@@ -22,8 +22,12 @@ local Stage6Session=require("save.production_session")
 local Stage6Clone=require("save.stage5_domain_clone")
 local stage6_enabled=os.getenv("OSMAN_STAGE6_EXPLICIT")=="1"
 local stage6_create=os.getenv("OSMAN_STAGE6_CREATE")=="1"
+local stage6_reopen_smoke=os.getenv("OSMAN_STAGE6_REOPEN_SMOKE")=="1"
 local stage6_world_id=os.getenv("OSMAN_STAGE6_WORLD_ID")
 local stage6_session,stage6_bridge,stage6_domain
+-- Declare live bindings before the publisher closure: Lua locals start at
+-- their declaration, not at their later initialization.
+local objects,solid,inventory,crafting,harvesting,building,player
 local function publish_stage6(staged)
   -- All production references are rebound in one non-yielding callback.
   assert(staged and staged.inventory and staged.world and staged.solid
@@ -42,19 +46,17 @@ end
 
 local query=Query.new(20261015)
 local water=Adapter.new(query,8)
-local objects=ObjectWorld.new(query,water)
-local solid=ObjectQuery.new(water,objects)
-local inventory=Inventory.new(12)
-local crafting=Craft.new(inventory)
-local harvesting=Harvest.new(objects,38,inventory)
+objects=ObjectWorld.new(query,water)
+solid=ObjectQuery.new(water,objects)
+inventory=Inventory.new(12)
+crafting=Craft.new(inventory)
+harvesting=Harvest.new(objects,38,inventory)
 local stage_hud=StageHUD.new()
-local building
 local placement_target=nil
 local placement_rotation=0
 local stream=Stream.new(query,{size=256,step=32,max_loaded=100,build_budget=5})
 local camera=Camera.new()
 local joystick=Joystick.new(64)
-local player
 local w,h=720,1100
 local fingers={}
 local pinch_distance=nil
@@ -76,6 +78,8 @@ local safe_area
 local object_count=0
 local stage4_before=false
 local function next_command(prefix)
+  -- Session counters repeat after restart. Persisted command IDs must not.
+  if stage6_enabled then return prefix..":"..Uuid.new(love.math.random) end
   command_number=command_number+1
   return prefix..":"..command_number
 end
@@ -256,6 +260,18 @@ function love.load()
       if selected then break end
     end
     assert(selected,"No valid touch-harvest fixture")
+  end
+  if stage6_reopen_smoke then
+    assert(stage6_enabled and not stage6_create and stage6_session,
+      "Stage6 reopen smoke requires an existing explicit world")
+    assert(stage6_session.revision>=4 and building.revision==1
+      and next(building.placed)~=nil and next(objects.delta)~=nil,
+      "Stage6 reopened state lost harvest/craft/build mutations")
+    assert(stage6_domain.world==objects and stage6_domain.inventory==inventory
+      and stage6_domain.building==building and player.query==building,
+      "Stage6 reopened live graph bindings are stale")
+    print("LOVE_STAGE6_REOPEN_OK revision="..stage6_session.revision)
+    io.stdout:flush()
   end
 end
 function love.resize(width,height) w,h=width,height end

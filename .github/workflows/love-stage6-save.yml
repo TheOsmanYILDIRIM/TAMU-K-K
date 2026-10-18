@@ -95,6 +95,20 @@ jobs:
           xvfb-run -a timeout 45 love "$RUNNER_TEMP/stage6-love" 2>&1 | tee stage6-love-fs.log
           grep -q LOVE_FS_SAVE_V2_OK stage6-love-fs.log
           grep -q LOVE_FS_RECOVERY_OK stage6-love-fs.log
+      - name: Production main.lua two-process save, close, reopen and live graph smoke
+        run: |
+          set -euo pipefail
+          export XDG_DATA_HOME="$RUNNER_TEMP/stage6-two-process-user"
+          mkdir -p "$XDG_DATA_HOME"
+          export OSMAN_STAGE6_EXPLICIT=1
+          export OSMAN_STAGE6_WORLD_ID=12345678-1234-4abc-8abc-123456789abd
+          OSMAN_STAGE6_CREATE=1 OSMAN_LOVE_STAGE5_RUNTIME_SMOKE=1 \
+            xvfb-run -a timeout 120 love game/love 2>&1 | tee stage6-production-create.log
+          grep -q LOVE_STAGE5_RUNTIME_SMOKE_OK stage6-production-create.log
+          OSMAN_STAGE6_CREATE=0 OSMAN_STAGE6_REOPEN_SMOKE=1 OSMAN_LOVE_SMOKE=1 \
+            xvfb-run -a timeout 90 love game/love 2>&1 | tee stage6-production-reopen.log
+          grep -q LOVE_STAGE6_REOPEN_OK stage6-production-reopen.log
+          grep -q LOVE_INTEGRATION_SMOKE_OK stage6-production-reopen.log
       - name: Python save schema contract (unchanged production data)
         run: |
           set -o pipefail
@@ -109,6 +123,8 @@ jobs:
             stage6-luajit.log
             stage6-love-fs.log
             stage6-schema.log
+            stage6-production-create.log
+            stage6-production-reopen.log
             stage5-save-lua54.log
             stage5-save-luajit.log
             stage5-checkpoint-lua54.log
