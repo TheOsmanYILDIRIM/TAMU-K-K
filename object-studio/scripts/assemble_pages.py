@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Combine existing experimental World Builder root and main Object Studio.
-Source branches are read-only in CI. No local application user data is touched.
+"""Combine preserved World Builder sources and current main Object Studio.
+Both source trees are in the main checkout; local user data is untouched.
 """
 import argparse
 import hashlib

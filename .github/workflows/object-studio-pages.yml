@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'object-studio/**'
+      - 'world-builder/**'
       - '.github/workflows/object-studio-pages.yml'
   workflow_dispatch:
 permissions:
@@ -28,20 +29,17 @@ jobs:
           npm run test
           python3 -m unittest discover -s tests -p 'test_*.py' -v
           BUILD_SHA="${GITHUB_SHA}" npm run build
-      - name: Read-only checkout of existing World Builder
-        uses: actions/checkout@v4
-        with:
-          ref: experiment/world-2d-design-20261012
-          path: _world_preview
-          persist-credentials: false
+      - name: Validate preserved World Builder source
+        run: |
+          node --check world-builder/app.js
+          node --check world-builder/assembly.js
       - name: Build composite Pages artifact without replacing the old preview
         run: |
-          PREVIEW_SHA="$(git -C _world_preview rev-parse HEAD)"
           python3 object-studio/scripts/assemble_pages.py \
-            --preview _world_preview/world-builder \
+            --preview world-builder \
             --studio object-studio/dist \
             --out _site \
-            --preview-sha "$PREVIEW_SHA" \
+            --preview-sha "$GITHUB_SHA" \
             --main-sha "$GITHUB_SHA"
           test -s _site/index.html
           test -s _site/world-builder.html
