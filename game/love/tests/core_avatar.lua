@@ -40,10 +40,11 @@ end
 love={filesystem={getInfo=function(path)
   if path=="assets/file_000000007cf082119c4dde3e346c2bcb.png" then return {type="file"} end
   if path=="assets/core_crystal_mask_aligned.png" then return nil end
+  if path=="assets/core_plasma_back_spritesheet_32x512.png" or path=="assets/core_plasma_front_spritesheet_32x512.png" then return {type="file"} end
   error("unexpected file lookup: "..tostring(path))
 end},graphics={newImage=function(path)
-  return {setFilter=function() end,getDimensions=function() return 512,512 end}
-end}}
+  return {setFilter=function() end,getDimensions=function() if path:find("core_plasma_") then return 4096,2048 end return 512,512 end}
+end,newQuad=function(x,y,w,h,iw,ih) return {x=x,y=y,w=w,h=h,iw=iw,ih=ih} end}}
 g.draw=function(...) operations[#operations+1]={"draw",...} end
 local camera={zoom=1.7,project=function(self,x,y,w,h)
   return w/2+(x-y)*.7*self.zoom,h/2+(x+y)*.35*self.zoom end}

@@ -3,6 +3,7 @@
 -- Inputs are ground-foot world coordinates, current movement/immersion,
 -- optional aura (external stats) and a harvesting tool pose.
 local Aura=require("player.core_aura")
+local Plasma=require("player.core_plasma_sheet")
 local V={}
 -- User-uploaded Core is the production visual candidate, not historical 121222.
 local CORE_PATH="assets/file_000000007cf082119c4dde3e346c2bcb.png"
@@ -76,12 +77,7 @@ function V.draw(g,camera,width,height,player,context)
   local moving=player.state=="walk"
   local bob=(moving and 1.3 or .55)*math.sin(t*TAU*1.75)
   local cy=foot_y-(21+bob)*z
-  local core_radius=9*z
   local aura= Aura.resolve(context.stats,context.palette,context.previous,context.options)
-  local main,accent=aura.primary_color,aura.secondary_color
-  -- Visible secondary aura strength changes only at percent BUCKET edges.
-  -- A small stat increment within a bucket does not churn the aura look.
-  local secondary_share=aura.secondary and (aura.buckets[aura.secondary] or 0)/100 or .5
 
   g.push("all")
   -- Foot anchor remains at original projected world point (not visual bob).
@@ -89,26 +85,8 @@ function V.draw(g,camera,width,height,player,context)
   g.ellipse("fill",px,foot_y+2*z,13*z,5*z)
 
   local function draw_core(alpha)
-    -- Lightweight coherent plasma arcs, not a field of costly particles.
-    for side=-1,1,2 do
-      local phase=t*2.1+side
-      local dx=side*(13+1.6*math.sin(phase))*z
-      local wave=(5+2*math.cos(phase))*z
-      color(g,main,alpha*.19)
-      g.polygon("fill",
-        px+dx,cy-12*z-wave,
-        px+dx+side*6*z,cy-2*z,
-        px+dx-side*2*z,cy+10*z)
-      color(g,accent,alpha*(.25+.6*secondary_share))
-      g.setLineWidth(math.max(1,z*1.2))
-      g.arc("line","open",px+side*2*z,cy,18*z,
-        side==1 and -.9 or 2.1,side==1 and .9 or 4.0)
-    end
-    -- Plasma shell; multi-layer alpha, no bloom shader needed.
-    color(g,main,alpha*.18)
-    g.circle("fill",px,cy,17*z)
-    color(g,accent,alpha*(.15+.6*secondary_share))
-    g.circle("line",px,cy,15*z)
+    -- 32-frame independent back layer; Core crystal shader stays intact.
+    Plasma.draw(g,"back",t,px,cy,z,alpha)
     -- Original user-drawn Core PNG; no fabricated crystal mask or shader.
     local img=getCoreImage()
     local iw,ih=img:getDimensions()
@@ -136,6 +114,8 @@ function V.draw(g,camera,width,height,player,context)
     else
       g.draw(img,px,cy,0,fit,fit,iw/2,ih/2)
     end
+    -- Place front overlay after crystal/Core and before independent tools.
+    Plasma.draw(g,"front",t,px,cy,z,alpha)
     if context.tool then
       tool_draw(g,context.tool,context.tool_seconds or t,px,cy,z,alpha)
     end
