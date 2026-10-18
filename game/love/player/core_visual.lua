@@ -7,6 +7,8 @@ local V={}
 -- User-uploaded Core is the production visual candidate, not historical 121222.
 local CORE_PATH="assets/file_000000007cf082119c4dde3e346c2bcb.png"
 local coreImage
+local crystalEffect
+local crystalAttempted=false
 local function getCoreImage()
   if coreImage then return coreImage end
   assert(love and love.graphics and love.filesystem and love.filesystem.getInfo(CORE_PATH),
@@ -112,7 +114,28 @@ function V.draw(g,camera,width,height,player,context)
     local iw,ih=img:getDimensions()
     local fit=25*z/math.max(iw,ih)
     g.setColor(1,1,1,alpha)
-    g.draw(img,px,cy,0,fit,fit,iw/2,ih/2)
+    if not crystalAttempted then
+      crystalAttempted=true
+      local maskPath="assets/core_crystal_mask_aligned.png"
+      if love.filesystem.getInfo(maskPath) then
+        local ok, result=pcall(function()
+          local Crystal=require("player.core_crystal_shader")
+          local mask=love.graphics.newImage(maskPath)
+          assert(mask:getWidth()==iw and mask:getHeight()==ih,"crystal mask mismatch")
+          mask:setFilter("linear","linear")
+          return Crystal.new(img,mask)
+        end)
+        if ok then crystalEffect=result
+        else print("Core crystal shader unavailable: "..tostring(result)) end
+      else
+        print("Core crystal mask missing; static Core fallback")
+      end
+    end
+    if crystalEffect then
+      require("player.core_crystal_shader").draw(crystalEffect,px,cy,0,fit,fit,iw/2,ih/2,t,alpha)
+    else
+      g.draw(img,px,cy,0,fit,fit,iw/2,ih/2)
+    end
     if context.tool then
       tool_draw(g,context.tool,context.tool_seconds or t,px,cy,z,alpha)
     end

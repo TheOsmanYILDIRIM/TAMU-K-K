@@ -38,8 +38,9 @@ for _,method in ipairs({"push","pop","setColor","ellipse","polygon","setLineWidt
 end
 -- Mock the new image-only Core dependency; no actual PNG decoding in Lua unit tests.
 love={filesystem={getInfo=function(path)
-  assert(path=="assets/file_000000007cf082119c4dde3e346c2bcb.png")
-  return {type="file"}
+  if path=="assets/file_000000007cf082119c4dde3e346c2bcb.png" then return {type="file"} end
+  if path=="assets/core_crystal_mask_aligned.png" then return nil end
+  error("unexpected file lookup: "..tostring(path))
 end},graphics={newImage=function(path)
   return {setFilter=function() end,getDimensions=function() return 512,512 end}
 end}}

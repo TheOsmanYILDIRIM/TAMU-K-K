@@ -51,11 +51,11 @@ function M.new(base,mask,options)
   return {base=base,mask=mask,shader=shader}
 end
 
-function M.draw(instance,x,y,rotation,sx,sy,ox,oy,seconds)
+function M.draw(instance,x,y,rotation,sx,sy,ox,oy,seconds,alpha)
   assert(instance and instance.shader,"valid crystal effect required")
   local g=love.graphics
   g.push("all")
-  g.setColor(1,1,1,1)
+  g.setColor(1,1,1,alpha or 1)
   g.setBlendMode("alpha","alphamultiply")
   g.setShader(instance.shader)
   instance.shader:send("time_seconds",seconds or 0)
