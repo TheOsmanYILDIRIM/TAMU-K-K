@@ -25,12 +25,12 @@
 ## Parallel workstreams / sonraki sohbetler
 A. Crystal mask: magenta recolor sonucu bekleniyor; geldiğinde tam hizalı binary maske ve overlay üret, sayısal test raporu oluştur. Asıl görüntüye dokunma.
 B. Shared FX: GPT Image A ile yalnız **tek FX türü** (önce plasma ribbon/particle veya shared swing) için onaylı master, sonra Veo storyboard. Gövde ve araç görsellerini FX içine bake etme. Craft/build, sword, axe, pickaxe varyantları tek atlas ailesini yeniden kullansın.
-C. Tool mathematics: sabit görüntüden açı + kavis + anchor + depth + curve ve impact event tasarımı; mevcut player/core_visual.lua ve renderer.lua okunsun; özellikle Y-depth, collider/foot, water speed 55%, immersion 50%, Stage5/Stage6 korunmalı. Yapılacaksa ayrı deney dalı, gerçek LOVE screenshot / test / CI. İzin/onay olmadan main'e birleştirme.
+C. Tool mathematics: sabit görüntüden açı + kavis + anchor + depth + curve ve impact event tasarımı; mevcut player/core_visual.lua ve renderer.lua okunsun; özellikle Y-depth, collider/foot, water speed 55%, immersion 50%, Stage5/Stage6 korunmalı. Yapılacaksa güncel `AGENTS.md` dal seçimi kuralına göre uygun dalda ilerle; var olan LÖVE screenshot/test/CI kanıtını tekrar kullan, değişiklik için gerçekten gereken kontrolleri toplu çalıştır. İzin/onay olmadan main'e birleştirme.
 D. Veo/video-to-sprite (FX onayından sonra): tutarlı kamera ve kaynaktan start/end kare, repeatable loops; temporal continuity ve alpha matting; atlas frame metadata action/duration/pivot/anchor/foot-depth/waterline, RAM/VRAM and draw-call kontrolü. Gerçek video yoksa yalnız storyboard.
 E. Static tool source: bir axe, bir pickaxe ve opsiyonel sword ayrı 1024 square true-alpha PNG; MTS materyal, tool tek rijit sprite, hiçbir baked swing. Bu görseller henüz üretilmedi.
 
 ## Somut teslim / acceptance
-- Plan ve kaynak kanonu deney dalında doğrulanmış Git commit ile mevcut olmalı.
+- Plan ve kaynak kanonu uygun dalda doğrulanmış Git commit ile mevcut olmalı; sırf bu belge için yeni deney dalı açma.
 - Yeni Beyin görev kaydı yalnız resmî beyin-io v2 status/result + vault main task rev ile doğrulanır; aksi halde pending_unverified.
 - Her PNG için kaynak, boyut, alpha, hash, anchor, uyumluluk, görsel kontrol ve asıl dosyanın mevcudiyeti doğrulanmadan üretildi yazma.
 - Video/spritesheet, shader ve sahne testi yoksa yapılmış gibi bildirme.
