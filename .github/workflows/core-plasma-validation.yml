@@ -1,0 +1,64 @@
+name: Core plasma targeted runtime validation
+on:
+  push:
+    branches:
+      - experiment/core-plasma-validation-20261018
+  pull_request:
+    paths:
+      - 'game/love/player/core_visual.lua'
+      - 'game/love/player/core_plasma_sheet.lua'
+      - 'game/love/tests/core_avatar.lua'
+      - 'game/love/tests/core_avatar_smoke.lua'
+      - 'game/love/assets/core_plasma_*'
+      - '.github/workflows/core-plasma-validation.yml'
+jobs:
+  core-plasma-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lua and real LÖVE/Xvfb
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lua5.4 luajit love xvfb
+      - name: Targeted Lua and existing regression tests
+        working-directory: game/love
+        run: |
+          set -e
+          luac5.4 -p player/core_visual.lua player/core_plasma_sheet.lua tests/core_avatar.lua tests/core_plasma_sheet.lua tests/core_avatar_smoke.lua
+          lua5.4 tests/core_plasma_sheet.lua
+          luajit tests/core_plasma_sheet.lua
+          lua5.4 tests/core_avatar.lua
+          luajit tests/core_avatar.lua
+          lua5.4 tests/run.lua
+          lua5.4 tests/runtime.lua
+      - name: Verify embedded graphics sizes before real render
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from struct import unpack
+          for kind in ("front","back"):
+              p=Path(f"game/love/assets/core_plasma_{kind}_spritesheet_32x512.png")
+              b=p.read_bytes()
+              assert b[:8]==bytes((137,80,78,71,13,10,26,10))
+              assert unpack(">II",b[16:24])==(4096,2048)
+              print(kind,len(b))
+          PY
+      - name: Four-state Core screenshot and headless desktop FPS sampling
+        run: |
+          set -euo pipefail
+          root="$(mktemp -d)"
+          cp -a game/love/. "$root/"
+          cp "$root/tests/core_avatar_smoke.lua" "$root/main.lua"
+          SDL_AUDIODRIVER=dummy timeout 90s xvfb-run -a -s "-screen 0 1024x1280x24" love "$root" 2>&1 | tee /tmp/core-plasma.log
+          grep -q LOVE_CORE_VISUAL_SMOKE_OK /tmp/core-plasma.log
+          grep -q CORE_PLASMA_DESKTOP_SAMPLE_FPS /tmp/core-plasma.log
+          find "$HOME/.local/share/love" -name core-plasma-variants.png -type f -print -exec cp {} ./core-plasma-variants.png \;
+          test -s core-plasma-variants.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: core-plasma-validation-screenshot
+          path: |
+            core-plasma-variants.png
+          if-no-files-found: warn
