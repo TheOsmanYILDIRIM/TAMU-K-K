@@ -1,5 +1,7 @@
 # Aşama 5 — Envanter, crafting, inşa ve Aşama 6 kayıt sözleşmesi
 
+> **Güncel uygulama durumu (2026-10-18):** Stage5 12-slot envanter, süreli crafting, hasat→üretim→yerleştirme ve portrait HUD `main` üzerinde çalışır; Lua 5.4/LuaJIT ve gerçek LÖVE/Xvfb production touch-HUD smoke kanıtı mevcuttur (Actions #39122331022). Stage6 `main`de **yalnız opt-in** checkpoint/recovery ve detached command-commit köprüsü olarak bulunmaktadır (Actions #39122330953). Varsayılan autosave kapalı; Android fsync/rename/power-loss dayanıklılığı ve gerçek cihaz kabulü açık. Aşağıdaki erken deney açıklamaları **tarihsel geliştirme aşamalarını** gösterir ve bu güncel durumu geçersiz kılmaz.
+
 Durum: \`experiment/stage5-inventory-crafting-v1\` deney geliştirmesi. Main ve
 eski Godot/voxel şemaları **değiştirilmemiştir**. Aşama 5 oyunla nihai
 bütünleştirme ve gerçek cihaz henüz kabul edilmiş sayılamaz.
