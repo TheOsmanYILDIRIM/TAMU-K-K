@@ -2,6 +2,7 @@ name: LOVE Stage 6 save/recovery
 on:
   push:
     branches:
+      - main
       - experiment/stage6-save-v2
       - experiment/stage5-stage6-integration-v1
     paths:
@@ -85,6 +86,21 @@ jobs:
         run: |
           luac5.4 -p game/love/main.lua
           luajit -b game/love/main.lua /tmp/stage6-main.luac
+      - name: Merged main world, Core and Stage5 Lua regressions
+        run: |
+          set -euo pipefail
+          cd game/love
+          find . -name '*.lua' -print0 | xargs -0 -n1 luac5.4 -p
+          for interpreter in lua5.4 luajit; do
+            "$interpreter" tests/run.lua
+            "$interpreter" tests/runtime.lua
+            "$interpreter" tests/integration.lua
+            "$interpreter" tests/core_avatar.lua
+            "$interpreter" tests/core_plasma_sheet.lua
+            "$interpreter" tests/core_tool_integration.lua
+            "$interpreter" tests/stage5_end_to_end.lua
+            "$interpreter" tests/stage5_transactions.lua
+          done
       - name: Real LÖVE filesystem smoke
         run: |
           set -o pipefail

@@ -353,7 +353,7 @@ function love.update(dt)
 end
 function love.draw()
   Terrain.draw(stream,camera,w,h)
-  object_count=ObjectRenderer.draw(objects,stream,camera,w,h,player,selected_target)
+  object_count=ObjectRenderer.draw(objects,stream,camera,w,h,player,selected_target,harvesting)
   local ghost
   if stage_hud.placing and placement_target then
     local ok=building:preview("core:workbench",placement_target.x,placement_target.y,

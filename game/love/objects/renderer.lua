@@ -1,37 +1,11 @@
 -- Sorted 45-degree world-foot sprites; GPU-independent placement and mutable state.
 local Depth=require("player.depth")
 local R={}
-local function player_sprite(g,camera,w,h,player)
-  local px,py=camera:project(player.x,player.y,w,h)
-  local z=camera.zoom
-  local immersion=player.immersion or 0
-  assert(immersion>=0 and immersion<=1,"invalid liquid immersion")
-  local function figure(alpha)
-    g.setColor(.98,.76,.28,alpha)
-    g.polygon("fill",px,py-31*z,px-11*z,py-4*z,px,py+2*z,px+11*z,py-4*z)
-    g.setColor(.19,.22,.29,alpha)
-    g.circle("fill",px,py-36*z,8*z)
-  end
-  if immersion==0 then
-    g.setColor(.06,.12,.15,.55)
-    g.ellipse("fill",px,py+4*z,player.radius*z*1.4,player.radius*z*.65)
-    figure(1)
-    return
-  end
-  -- Waterline rises through the body. Upper portion remains opaque while
-  -- the immersed lower half is faintly visible under the water surface.
-  local surface_y=py-(2+35*immersion)*z
-  local cut=math.max(0,math.min(h,math.floor(surface_y+.5)))
-  g.setScissor(0,0,w,cut)
-  figure(1)
-  g.setScissor(0,cut,w,h-cut)
-  figure(.18)
-  g.setScissor()
-  g.setColor(.45,.80,.85,.78)
-  g.setLineWidth(math.max(1,1.2*z))
-  g.ellipse("line",px,surface_y,player.radius*z*2.1,player.radius*z*.72)
-  g.setColor(.16,.40,.49,.30)
-  g.ellipse("fill",px,surface_y+1.7*z,player.radius*z*1.7,player.radius*z*.52)
+local CoreVisual=require("player.core_visual")
+local AxeStrike=require("player.axe_strike")
+local axe_image=nil
+local function player_sprite(g,camera,w,h,player,visual_context)
+  return CoreVisual.draw(g,camera,w,h,player,visual_context)
 end
 local function object_sprite(g,camera,w,h,o,selected)
   local x,y=camera:project(o.x,o.y,w,h)
@@ -74,16 +48,39 @@ function R.collect(world,stream)
   end
   return list
 end
-function R.draw(world,stream,camera,w,h,player,selected_id)
+function R.draw(world,stream,camera,w,h,player,selected_id,harvesting)
   local all=R.collect(world,stream)
   local order={{id="!player",depth=Depth.key(player.x,player.y),player=true}}
   for _,o in ipairs(all) do order[#order+1]={id=o.id,depth=Depth.key(o.x,o.y),object=o} end
   table.sort(order,Depth.before)
   local g=love.graphics
   g.push("all")
+  -- Harvest tools are autonomous plasma-controlled objects, not rigged limbs.
+  -- Other game/domain systems remain untouched.
+  local visual={}
+  if harvesting and harvesting.active then
+    local source=world:get(harvesting.active.object_id)
+    if source and source.kind=="rock" then
+      visual.tool="pickaxe"
+      visual.tool_seconds=harvesting.active.elapsed
+    end
+  end
   for _,entry in ipairs(order) do
-    if entry.player then player_sprite(g,camera,w,h,player)
+    if entry.player then player_sprite(g,camera,w,h,player,visual)
     else object_sprite(g,camera,w,h,entry.object,entry.id==selected_id) end
+  end
+  -- Visual-only strike on actual tree harvest; never changes inventory or collision.
+  if harvesting and harvesting.active then
+    local source=world:get(harvesting.active.object_id)
+    if source and source.kind=="tree" then
+      if not axe_image then axe_image=love.graphics.newImage("assets/axe_121227.png") end
+      local px,foot=camera:project(player.x,player.y,w,h)
+      local tx,ty=camera:project(source.x,source.y,w,h)
+      local elapsed=harvesting.active.elapsed
+      -- One independent 0.88s strike cycle, synchronized to harvest elapsed.
+      AxeStrike.draw(g,axe_image,elapsed,{x=px,y=foot-21*camera.zoom},
+        {x=tx,y=ty-29*camera.zoom},math.min(.034*camera.zoom,.065))
+    end
   end
   g.pop()
   return #all

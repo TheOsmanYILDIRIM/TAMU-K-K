@@ -1,0 +1,53 @@
+{
+  "name": "core_plasma_3d_overlay",
+  "version": 1,
+  "frame_count": 32,
+  "frame_size": {
+    "width": 512,
+    "height": 512
+  },
+  "sheet_layout": {
+    "columns": 8,
+    "rows": 4
+  },
+  "fps_preview": 12,
+  "layers": {
+    "back": "core_plasma_back_spritesheet_32x512.png",
+    "front": "core_plasma_front_spritesheet_32x512.png",
+    "combined_preview": "core_plasma_combined_preview_spritesheet_32x512.png"
+  },
+  "preview_gif": "core_plasma_preview_32f.gif",
+  "settings": {
+    "orbits": 7,
+    "count": 480,
+    "radius": 147,
+    "flatten": 0.53,
+    "tilt": -28,
+    "interlace": 66,
+    "scatter": 0,
+    "coverage": 71,
+    "orbitIndependence": 8,
+    "deform": 16,
+    "deformFrequency": 4,
+    "deformSpeed": 13,
+    "minScale": 0.02,
+    "maxScale": 0.06,
+    "scaleJitter": 100,
+    "rotation": 0,
+    "angleJitter": 145,
+    "stretch": 1.65,
+    "opacity": 17,
+    "flow": 43,
+    "glow": 56,
+    "speed": 23,
+    "pulse": 52,
+    "turbulence": 61,
+    "seed": 6809,
+    "brush": "mix",
+    "coreOn": true,
+    "backOn": true,
+    "frontOn": true,
+    "glowOn": true
+  },
+  "usage": "Render back layer, then core sprite, then front layer."
+}

@@ -23,9 +23,11 @@ resizes and safe-area insets.
 The main entrypoint now includes seeded continuous terrain, Marching Squares,
 chunk streaming, player physics/A*, object harvesting and traversable water.
 Resource gameplay constants are generated from JSON catalog for packaged LÖVE.
-The older polygon scene remains a Stage 1 test fixture. There is **no**
-persistent disk save, crafting, finished texture integration, Android APK,
-or two-player networking yet. World units are continuous,
+The older polygon scene remains a Stage 1 test fixture. Stage5 crafting, inventory and workbench placement are playable on main.
+Stage6 save/recovery and detached Stage5 transaction bridge are opt-in only
+via OSMAN_STAGE6_EXPLICIT=1 and an explicit world UUID. Autosave and crash-
+durable Android filesystem guarantees remain unverified; no production save
+is silently created. Android APK and networking are not yet verified. World units are continuous,
 no visible tilemap.
 
 ## Test

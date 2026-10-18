@@ -1,0 +1,40 @@
+name: Core crystal integrated visual check
+on:
+  push:
+    branches: [experiment/core-crystal-realasset-verified-20261018]
+    paths:
+      - 'game/love/player/core_visual.lua'
+      - 'game/love/player/core_crystal_shader.lua'
+      - 'game/love/tests/core_avatar.lua'
+      - '.github/workflows/core-crystal-integrated.yml'
+  workflow_dispatch:
+jobs:
+  integrated:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lua and LÖVE
+        run: sudo apt-get update -qq && sudo apt-get install -y lua5.4 luajit love xvfb
+      - name: Lua syntax and avatar contracts
+        working-directory: game/love
+        run: |
+          luac5.4 -p player/core_visual.lua player/core_crystal_shader.lua
+          lua5.4 tests/core_avatar.lua
+          luajit tests/core_avatar.lua
+      - name: Four-state Core plasma screenshot
+        run: |
+          set -euo pipefail
+          root="$(mktemp -d)"
+          cp -a game/love/. "$root/"
+          cp "$root/tests/core_avatar_smoke.lua" "$root/main.lua"
+          SDL_AUDIODRIVER=dummy timeout 60s xvfb-run -a love "$root" 2>&1 | tee /tmp/core-integrated.log
+          grep -q 'LOVE_CORE_VISUAL_SMOKE_OK' /tmp/core-integrated.log
+          find "$HOME/.local/share/love" -name core-plasma-variants.png -exec cp {} ./core-plasma-variants.png \;
+          test -s core-plasma-variants.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: core-crystal-integrated-preview
+          path: core-plasma-variants.png
+          if-no-files-found: warn

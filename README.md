@@ -2,11 +2,27 @@
 
 **Güncel yön (16 Ekim 2026): LÖVE2D, 45° izometrik 2D, dikey mobil ekran ve görünür karo ızgarası bulunmayan prosedürel dünya.** Godot 4.6.3 3D yeniden başlangıç planı artık aktif oyun mimarisi değildir; ancak tarihsel iskelet ve eski kaynaklar korunmaktadır.
 
+## Oyuncu: çekirdek + plazma (2026-10-16)
+
+Aktif karakter yönü [çekirdek/plazma karar belgesidir](docs/14_CORE_PLASMA_PROGRESSION_DESIGN.md).
+Oyuncu, insansı/taş golem değil; bilinç taşıyan **büyülü-teknolojik metal
+core** ve onun kontrol ettiği **plazma** olarak çizilir. İlk LÖVE2D
+geometri prototipi [docs/20_CORE_PLASMA_AVATAR_STAGE1.md](docs/20_CORE_PLASMA_AVATAR_STAGE1.md)
+ve `game/love/player/core_visual.lua` içindedir. Balta/kazma hasatta
+rig olmadan zaman/dönüş eğrisiyle hareket eder; hareket, Y-depth,
+kaynak toplama, su %55 hız/%50 immersion korunur.
+
+Statlar/palet, genel seviye, Tech Level, Magic Level ve özel çekirdeklerin
+nihai oyun kuralları **henüz kesinleşmedi**; mevcut aura yalnız geçici
+nötr görünüm + parametrik iki baskın stat demo sözleşmesidir. Eski
+Mixamo/2D mesh rig ve Character Rig Studio çalışmaları silinmedi,
+**aktif oyuncu yöntemi değil, ertelenmiş tarihi deneylerdir.**
+
 ## Güncel çalışan temel (Aşama 1–5)
 
 `game/love/` içinde gerçek LÖVE2D uygulaması: 45° dönüşüm, kamera kaydırma ve imleç çevresinde yakınlaştırma, mouse/WASD, dokunma/pinch, safe-area uyumlu portrait HUD, üç mevcut biyomla test sahnesi ve bölge seçimi. Gerçek LÖVE render döngüsü sanal ekranda CI ile açılıp doğrulanmıştır.
 
-Üç biyomlu prosedürel seed/chunk ve Marching Squares dünyası, karakter/A*/CCD, deterministik kaynak toplama, **12 slotlu envanter ve hotbar, süreli crafting ve workbench yerleştirme** gerçek oyun döngüsüne bağlandı. JSON → Lua katalog paritesi, envanter doluluğunda kayıpsız hasat reddi, komut/transaction tekrar koruması ve RAM içi atomik kredi/tüketim test edilir. Su geçilebilir: hareket çarpanı %55, görsel batma %50. **Aşama 6 disk kayıt/geri yükleme, Android APK ve gerçek cihaz testi, ağ otoritesi/iki oyuncu henüz uygulanmadı.** Yerel UUIDv4 üretimi yalnız geçici tek oyuncu içindir. Texture üretimi sonraki aşamadır.
+Üç biyomlu prosedürel seed/chunk ve Marching Squares dünyası, karakter/A*/CCD, deterministik kaynak toplama, **12 slotlu envanter ve hotbar, süreli crafting ve workbench yerleştirme** gerçek oyun döngüsüne bağlandı. JSON → Lua katalog paritesi, envanter doluluğunda kayıpsız hasat reddi, komut/transaction tekrar koruması ve RAM içi atomik kredi/tüketim test edilir. Su geçilebilir: hareket çarpanı %55, görsel batma %50. **Aşama 6 sürümlü checkpoint/recovery ve Stage5 işlem köprüsü yalnız açıkça etkinleştirilen deneysel modda bağlıdır; otomatik kayıt varsayılan olarak kapalıdır.** Masaüstünde iki ayrı LÖVE sürecinde kaydet/kapat/yeniden aç smoke test edilir; fsync/atomik rename, gerçek Android cihaz, APK ve ağ otoritesi/iki oyuncu doğrulanmadı. Yerel UUIDv4 üretimi yalnız geçici tek oyuncu içindir. Texture üretimi sonraki aşamadır.
 
 ## Çalıştır
 

@@ -1,0 +1,46 @@
+name: Core crystal real asset visual smoke
+on:
+  push:
+    branches:
+      - experiment/core-crystal-realasset-verified-20261018
+  workflow_dispatch:
+jobs:
+  visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install LÖVE headless runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y love xvfb
+      - name: Verify original and mask sizes and SHA-256
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,struct
+          expected={'assets/file_000000007cf082119c4dde3e346c2bcb.png':'2c63bc1645ab1718e8f612f17a8821ed4f22cd557ffd66c2e506e8d46d2dcf0b',
+                    'assets/core_crystal_mask_aligned.png':'b718d0cab981f23d8334a868e268d45535fac61292af8d34733120999161f55b'}
+          for name,sha in expected.items():
+              data=Path('game/love',name).read_bytes()
+              assert hashlib.sha256(data).hexdigest()==sha,name+' hash mismatch'
+              assert data[:8]==bytes((137,80,78,71,13,10,26,10)),name+' invalid PNG'
+              assert struct.unpack('>II',data[16:24])==(1254,1254),name+' size mismatch'
+          PY
+      - name: Render actual Core with mask in LÖVE
+        run: |
+          mkdir -p /tmp/core-realasset/player /tmp/core-realasset/assets
+          cp game/love/tests/core_crystal_realasset_smoke.lua /tmp/core-realasset/main.lua
+          cp game/love/player/core_crystal_shader.lua /tmp/core-realasset/player/
+          cp game/love/assets/file_000000007cf082119c4dde3e346c2bcb.png /tmp/core-realasset/assets/
+          cp game/love/assets/core_crystal_mask_aligned.png /tmp/core-realasset/assets/
+          SDL_AUDIODRIVER=dummy xvfb-run -a -s "-screen 0 360x720x24" timeout 60s love /tmp/core-realasset 2>&1 | tee /tmp/core-realasset.log
+          grep -q CORE_REALASSET_SCREENSHOT_OK /tmp/core-realasset.log
+          find "$HOME/.local/share/love" -name core-crystal-realasset.png -print -exec cp {} ./core-crystal-realasset.png \;
+          test -s core-crystal-realasset.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: core-crystal-realasset-render
+          path: core-crystal-realasset.png
+          if-no-files-found: warn

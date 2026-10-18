@@ -1,7 +1,6 @@
 # Aşama 6 — LÖVE2D save v2 izolasyon ve recovery motoru
 
-Deney dalı: \`experiment/stage6-save-v2\`. **Üretimde otomatik kaydetme kapalıdır.**
-Üretim \`game/love/main.lua\` veya Aşama 5 domain koduna bağlanmamıştır.
+Stage6 modülü ve Aşama 5 transaction köprüsü `game/love/main.lua` üzerinde **yalnız opt-in** bağlıdır (`OSMAN_STAGE6_EXPLICIT=1`, açık world ID). **Otomatik kayıt varsayılan olarak kapalıdır.** Test edilen checkpoint/recovery semantiği Android fsync veya atomik rename dayanıklılığı sağlamaz.
 
 ## Kullanım / katman sınırı
 
@@ -44,12 +43,8 @@ hiçbir göç/yazma işlemi yoktur. Dizinler LÖVE save sandbox içindedir.
 
 ## Kabul için açık bağımlılıklar
 
-- Aşama 5 gerçek oyun komutları Aşama 6 tam-state adapter'ına henüz bağlı
-  değil. Hasat önce kaynak depletion, sonra event yayınladığından kapasite
-  doluluğu ve crash kaynak kaybı olmadan durable commit tasarımı gerekir.
-- Aşama 5 main birleşimi + CI, yeniden oynatma host otoritesi, gerçek
-  Android işlem kesintisi/power-loss ve cihaz üzerinde rollback testleri
-  yapılmadan production/autosave açılmaz.
+- Opt-in moddaki Stage5 hasat/craft/inşa işlemleri detached domain üzerinde hazırlanır ve Stage6 commit sonrası canlı oyun nesnelerine yayımlanır. Varsayılan Stage5 RAM akışında disk kaydı yoktur.
+- Masaüstünde iki ayrı gerçek LÖVE/Xvfb sürecinde oluşturma ve yeniden açma CI ile sınanır. Gerçek Android işlem kesintisi/power-loss, dosya sıralaması ve host otoritesi doğrulanmadan production/autosave açılmaz.
 - CI'da Lua 5.4/LuaJIT sözleşme ve hata enjeksiyonu; gerçek LÖVE
   filesystem smoke yalnız CI sanal ekranda ve izole sandbox'ta test
   edilir. Bu mobil dayanıklılık kanıtı değildir.

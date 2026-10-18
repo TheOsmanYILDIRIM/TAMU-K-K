@@ -1,0 +1,59 @@
+name: LOVE core plasma character prototype
+on:
+  push:
+    branches: [main, experiment/core-plasma-avatar-v1]
+    paths:
+      - 'game/love/**'
+      - '.github/workflows/love-core-plasma-avatar.yml'
+      - 'docs/20_CORE_PLASMA_AVATAR_STAGE1.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  avatar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lua LuaJIT LOVE Xvfb
+        run: sudo apt-get update -qq && sudo apt-get install -y lua5.4 luajit love xvfb
+      - name: Lua and regression validations
+        working-directory: game/love
+        run: |
+          find . -name '*.lua' -print0 | xargs -0 -n1 luac5.4 -p
+          lua5.4 tests/core_avatar.lua
+          luajit tests/core_avatar.lua
+          lua5.4 tests/core_tool_integration.lua
+          luajit tests/core_tool_integration.lua
+          lua5.4 tests/player_stage3.lua
+          lua5.4 tests/liquid_traversal.lua
+          lua5.4 tests/stage4_objects.lua
+          lua5.4 tests/stage5_transactions.lua
+          lua5.4 tests/stage5_hud_layout.lua
+      - name: Actual production Stage5 LOVE world and core smoke
+        env:
+          OSMAN_LOVE_STAGE5_RUNTIME_SMOKE: '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120s xvfb-run -a love game/love 2>&1 | tee /tmp/core-production.log
+          grep -q 'LOVE_STAGE5_RUNTIME_SMOKE_OK' /tmp/core-production.log
+          find "$HOME/.local/share/love" -name 'stage5-production-world.png' -exec cp {} /tmp/core-production-world.png \;
+          test -s /tmp/core-production-world.png
+      - name: Core/plasma/tool/water visual specimen
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$(mktemp -d)"
+          cp -a game/love/. "$root/"
+          cp "$root/tests/core_avatar_smoke.lua" "$root/main.lua"
+          timeout 40s xvfb-run -a love "$root" 2>&1 | tee /tmp/core-visual.log
+          grep -q 'LOVE_CORE_VISUAL_SMOKE_OK' /tmp/core-visual.log
+          find "$HOME/.local/share/love" -name 'core-plasma-variants.png' -exec cp {} /tmp/core-plasma-variants.png \;
+          test -s /tmp/core-plasma-variants.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: core-plasma-character-prototype
+          path: |
+            /tmp/core-production-world.png
+            /tmp/core-plasma-variants.png
+          if-no-files-found: error
