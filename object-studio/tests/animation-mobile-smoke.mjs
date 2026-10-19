@@ -58,7 +58,7 @@ try{
    await page.waitForFunction(()=>document.querySelector('#frameState')?.textContent.includes('AI varyantı var'),null,{timeout:12000});
    const variantPromise=page.waitForEvent('download');await page.locator('#exportVariant').click();const variant=await variantPromise;
    const cmp=await pngPixelCheck(page,readFileSync(await variant.path()));
-   assert.equal(cmp.outer[3],0,'Variant must be clipped outside original silhouette');
+   assert.equal(cmp.outer[3],255,'Independent AI RGBA must not be forcibly clipped to original silhouette');
    assert.equal(cmp.inside[3],255,'Variant must fill existing original shape');
    assert.equal(cmp.inside[1],240,'AI RGB transfer was not preserved');
    await page.getByRole('button',{name:'Karşılaştır',exact:true}).click();
