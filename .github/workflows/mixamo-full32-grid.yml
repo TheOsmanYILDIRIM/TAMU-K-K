@@ -43,6 +43,8 @@ jobs:
         with:
           pattern: frames-*
           path: all_frames
+      - name: Install Pillow for artifact verification
+        run: python3 -m pip install --user Pillow
       - name: Validate exactly 128 individual frames and create one zip
         run: |
           python3 - <<'PY'
