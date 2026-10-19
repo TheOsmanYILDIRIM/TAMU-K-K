@@ -175,7 +175,7 @@ async function raster(d,i,kind='original'){
  const key=d+':'+i+':'+kind+':'+state.serial;
  if(cache.has(key)){const v=cache.get(key);cache.delete(key);cache.set(key,v);return v}
  const c=await decode(blob),v={canvas:c,box:bbox(c)};
- cache.set(key,v);while(cache.size>5)cache.delete(cache.keys().next().value);
+ cache.set(key,v);while(cache.size>Math.max(48,DIRS.reduce((n,d)=>n+sets[d].length,0)*2))cache.delete(cache.keys().next().value);
  return v;
 }
 function clearStage(){
