@@ -48,7 +48,9 @@ if(!terrain.includes('TERRAIN STUDIO')||!terrain.includes('osman-terrain-v1'))th
 fs.writeFileSync(path.join(dist,'terrain.html'),sharedVersionUI(terrain,sha));
 const animation=fs.readFileSync(path.join(root,'src','animation.html'),'utf8');
 if(!animation.includes('ANIMATION STUDIO')||!animation.includes('OsmanAnimationStudioFramesV1'))throw new Error('Animation Studio contract missing');
-fs.writeFileSync(path.join(dist,'animation.html'),sharedVersionUI(animation.replaceAll('__ANIMATION_BUILD_SHA__',sha),sha));
+// The rebuilt Animation Studio has a compact in-page build indicator; do not add the
+// global four-page navigation bar on top of its one-screen mobile workspace.
+fs.writeFileSync(path.join(dist,'animation.html'),animation.replaceAll('__ANIMATION_BUILD_SHA__',sha));
 const comparison=fs.readFileSync(path.join(root,'src','animation-compare.html'),'utf8');
 if(!comparison.includes('VARYANT KARŞILAŞTIRMA'))throw new Error('Animation comparison page missing');
 fs.writeFileSync(path.join(dist,'animation-compare.html'),sharedVersionUI(comparison.replaceAll('__ANIMATION_BUILD_SHA__',sha),sha));
