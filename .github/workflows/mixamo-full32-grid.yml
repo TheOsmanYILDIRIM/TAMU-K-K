@@ -59,10 +59,10 @@ jobs:
             folder=root/('frames-'+direction)
             files=sorted(folder.glob('frame_*.png'))
             assert len(files)==32,(direction,len(files))
-            manifest=json.loads((folder/'manifest.json').read_text())
+            manifest=json.loads((folder/'render_manifest.json').read_text())
             assert manifest['frame_count_per_direction']==32
             assert manifest['per_frame_camera_recenter'] is False
-            mapping['directions'][direction]=manifest['frames']
+            mapping['directions'][direction]=manifest['source_frames']
             for n,f in enumerate(files,1):
              assert f.name==f'frame_{n:02d}.png'
              with Image.open(f) as im:
