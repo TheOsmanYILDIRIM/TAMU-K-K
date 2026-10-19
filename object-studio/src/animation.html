@@ -34,6 +34,7 @@ button.active{background:var(--pale);color:#142318}
 #strip{display:flex;gap:7px;overflow-x:auto;scroll-snap-type:x mandatory;padding:5px 1px}
 .framechip{flex:0 0 75px;scroll-snap-align:start;display:flex;flex-direction:column;gap:4px;padding:5px;background:#1b2b20;border:1px solid #3c5744;text-align:center}
 .framechip.active{outline:2px solid var(--pale);background:#274530}
+.framechip.sampled-out{opacity:.32;filter:grayscale(1)}.framechip.sampled-out.active{outline:2px dashed #9eb49f}
 .framechip canvas{width:100%;aspect-ratio:1;background:#0d150f;border-radius:7px}
 .framechip span{font-size:10px;font-weight:700}
 .framechip small{font-size:10px;color:var(--muted)}
@@ -233,7 +234,7 @@ function strip(){
    }).catch(()=>{});
  }},{root:holder,rootMargin:'80px',threshold:.05});
  for(let i=0;i<list.length;i++){
-   const f=list[i],b=document.createElement('button');b.type='button';b.dataset.index=String(i);b.className='framechip';b.classList.toggle('active',i===state.selected);
+   const f=list[i],b=document.createElement('button');b.type='button';b.dataset.index=String(i);b.className='framechip';b.classList.toggle('active',i===state.selected);b.classList.toggle('sampled-out',i%Math.max(1,Math.round(100/state.rate))!==0);
    const cv=createCanvas(92,92),title=document.createElement('span'),note=document.createElement('small');
    title.textContent=state.direction+' '+String(i+1).padStart(2,'0');note.textContent=f.variant?'AI ✓':'Orijinal';
    b.append(cv,title,note);b.onclick=()=>{state.selected=i;state.playing=false;updateAll()};holder.append(b);
@@ -346,7 +347,7 @@ $('zipOriginal').onclick=()=>action(async()=>{const d=state.direction,files=[];f
 $('zipMasks').onclick=()=>action(async()=>{const d=state.direction,files=[];for(let i=0;i<frameList().length;i++)files.push({name:d+'/frame_'+String(i+1).padStart(2,'0')+'_AI_EDIT_MASK.png',data:new Uint8Array(await (await png(await makeMask(d,i))).arrayBuffer())});download(makeZip(files),d+'_all_auto_masks.zip');status(files.length+' otomatik maske ZIP olarak indirildi.')});
 $('prev').onclick=()=>{state.playing=false;step(-1)};$('next').onclick=()=>{state.playing=false;step(1)};
 $('play').onclick=()=>{state.playing=!state.playing;state.last=performance.now();controls()};
-$('speed').oninput=e=>{state.fps=Number(e.target.value);savePrefs();controls()};document.querySelectorAll('[data-rate]').forEach(b=>b.onclick=()=>{state.rate=Number(b.dataset.rate);savePrefs();controls()});
+$('speed').oninput=e=>{state.fps=Number(e.target.value);savePrefs();controls()};document.querySelectorAll('[data-rate]').forEach(b=>b.onclick=()=>{state.rate=Number(b.dataset.rate);savePrefs();updateAll()});
 document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{state.mode=b.dataset.mode;savePrefs();controls();render()});
 $('copyPrompt').onclick=()=>action(async()=>{
  const text='Image A is the definitive design reference for the game character. Image B is the exact original Blender walking frame and determines pose, fixed SE orthographic camera, canvas, scale, limb placement and silhouette. Change ONLY the character appearance inside the original silhouette. Keep the background genuinely transparent, do not add or change the scene or move the frame. Output exactly one RGBA PNG at Image B original pixel dimensions. Do not add grid, numbers, labels, glow or another character. If an API edit mask is provided, alpha=0 is editable character and alpha=255 is protected background. Preserve the original pose and character scale.';
