@@ -121,6 +121,45 @@ jobs:
           name: r2-h-compat-world-preview
           path: /tmp/r2-h-compat-*.png
           if-no-files-found: error
+      - name: R2 G pinned source schema + Lua 5.4/LuaJIT controller, path, Stage5
+        if: github.ref_name == 'experiment/r2-playable-pilot-20261020'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/validate_worldbuild_contract.py data/worldbuild/fisilti_ormani.r2.v1.json
+          python scripts/validate_worldbuild_map_v2.py
+          cd game/love
+          luac5.4 -p main.lua world/r2_playable.lua tests/r2_pilot_contract.lua tests/r2_pilot_smoke.lua
+          for interpreter in lua5.4 luajit; do
+            "$interpreter" tests/r2_pilot_contract.lua
+            "$interpreter" tests/r2_h_compat.lua
+          done
+      - name: R2 G opted-in real production LÖVE/Xvfb movement, river, harvest and craft
+        if: github.ref_name == 'experiment/r2-playable-pilot-20261020'
+        shell: bash
+        env:
+          OSMAN_R2_PILOT: '1'
+          OSMAN_R2_G_SMOKE: '1'
+        run: |
+          set -euo pipefail
+          timeout 180s xvfb-run -a love game/love 2>&1 | tee /tmp/r2-g-production.log
+          grep -q 'R2_G_WALK_OK' /tmp/r2-g-production.log
+          grep -q 'R2_G_WET_OK' /tmp/r2-g-production.log
+          grep -q 'R2_G_PRODUCTION_OK' /tmp/r2-g-production.log
+          mkdir -p /tmp/r2-g-artifacts
+          for shot in spawn river harvest; do
+            item="$(find "$HOME/.local/share/love" -name "r2-pilot-$shot.png" -print -quit)"
+            test -n "$item"
+            cp "$item" "/tmp/r2-g-artifacts/r2-pilot-$shot.png"
+            file "/tmp/r2-g-artifacts/r2-pilot-$shot.png" | grep -q 'PNG image data'
+          done
+      - name: Publish R2 G actual production LÖVE PNGs
+        if: github.ref_name == 'experiment/r2-playable-pilot-20261020'
+        uses: actions/upload-artifact@v4
+        with:
+          name: r2-g-production-pilot-png
+          path: /tmp/r2-g-artifacts/r2-pilot-*.png
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: success()
         with:

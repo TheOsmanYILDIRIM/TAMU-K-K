@@ -28,6 +28,12 @@ local stage6_reopen_smoke=os.getenv("OSMAN_STAGE6_REOPEN_SMOKE")=="1"
 local stat_smoke=os.getenv("OSMAN_LOVE_STAT_SMOKE")=="1"
 local stat_viewport=os.getenv("OSMAN_STAT_DISPLAY")
 local stage6_world_id=os.getenv("OSMAN_STAGE6_WORLD_ID")
+local r2_pilot_enabled=os.getenv("OSMAN_R2_PILOT")=="1"
+assert(not (r2_pilot_enabled and (stage6_enabled or stage6_create or stage6_reopen_smoke)),
+  "R2 pilot is session-only; Stage6 save/create/reopen flags are forbidden")
+local r2_pilot=r2_pilot_enabled and require("world.r2_playable").new() or nil
+local r2_pilot_smoke=r2_pilot and os.getenv("OSMAN_R2_G_SMOKE")=="1"
+  and require("tests.r2_pilot_smoke") or nil
 local stage6_session,stage6_bridge,stage6_domain
 -- Declare live bindings before the publisher closure: Lua locals start at
 -- their declaration, not at their later initialization.
@@ -48,10 +54,10 @@ local function publish_stage6(staged)
   end
 end
 
-local query=Query.new(20261015)
-local water=Adapter.new(query,8)
-objects=ObjectWorld.new(query,water)
-solid=ObjectQuery.new(water,objects)
+local query=r2_pilot and r2_pilot.query or Query.new(20261015)
+local water=r2_pilot and r2_pilot.water or Adapter.new(query,8)
+objects=r2_pilot and r2_pilot.objects or ObjectWorld.new(query,water)
+solid=r2_pilot and r2_pilot.solid or ObjectQuery.new(water,objects)
 inventory=Inventory.new(12)
 crafting=Craft.new(inventory)
 harvesting=Harvest.new(objects,38,inventory)
@@ -60,8 +66,11 @@ local stat_hud=StatHud.new()
 local progression -- Session-only until a versioned Stage6 migration is approved.
 local placement_target=nil
 local placement_rotation=0
-local stream=Stream.new(query,{size=256,step=32,max_loaded=100,build_budget=5})
+local stream=Stream.new(query,r2_pilot and
+  {size=256,step=8,max_loaded=48,build_budget=8} or
+  {size=256,step=32,max_loaded=100,build_budget=5})
 local camera=Camera.new()
+if r2_pilot then r2_pilot:mount_camera(camera) end
 local joystick=Joystick.new(64)
 local w,h=720,1100
 local fingers={}
@@ -104,6 +113,9 @@ local function begin_recipe(id)
   return result
 end
 local function place_workbench()
+  if r2_pilot then
+    route_status="R2 building unavailable: no approved build zones";return
+  end
   if not placement_target then route_status="Tap dry ground to preview";return end
   local target=placement_target
   local allowed,reason=building:preview("core:workbench",target.x,target.y,
@@ -172,6 +184,7 @@ local function smoke_tap(id)
 end
 local debug_view=os.getenv("OSMAN_LOVE_BIOME_SMOKE")=="1"
 local function spawn()
+  if r2_pilot then return r2_pilot:spawn_player(building) end
   for radius=0,512,16 do
     for y=-radius,radius,16 do for x=-radius,radius,16 do
       if radius==0 or math.max(math.abs(x),math.abs(y))==radius then
@@ -301,6 +314,10 @@ function love.load()
     end
     assert(selected,"No valid touch-harvest fixture")
   end
+  if r2_pilot_smoke then
+    r2_pilot_smoke.load({pilot=r2_pilot,player=player,building=building,
+      objects=objects,inventory=inventory,camera=camera,w=w,h=h})
+  end
   if stage6_reopen_smoke then
     assert(stage6_enabled and not stage6_create and stage6_session,
       "Stage6 reopen smoke requires an existing explicit world")
@@ -401,10 +418,10 @@ function love.update(dt)
   stats=stream:update(camera,w,h)
 end
 function love.draw()
-  Terrain.draw(stream,camera,w,h)
+  Terrain.draw(stream,camera,w,h,r2_pilot and r2_pilot.render_options)
   object_count=ObjectRenderer.draw(objects,stream,camera,w,h,player,selected_target,harvesting)
   local ghost
-  if stage_hud.placing and placement_target then
+  if not r2_pilot and stage_hud.placing and placement_target then
     local ok=building:preview("core:workbench",placement_target.x,placement_target.y,
       placement_rotation,player.x,player.y)
     ghost={x=placement_target.x,y=placement_target.y,ok=ok}
@@ -416,14 +433,14 @@ function love.draw()
   g.rectangle("fill",safe_x+8,safe_y+8,math.min(safe_w-16,600),124,12,12)
   g.setColor(1,1,1)
   if safe_w<420 then
-    g.print("WORLD / "..query.seed,safe_x+18,safe_y+15)
+    g.print((r2_pilot and "R2 PILOT / " or "WORLD / ")..query.seed,safe_x+18,safe_y+15)
     g.print(string.format("Chunks %d  Objects %d",stats.loaded,object_count),
       safe_x+18,safe_y+38)
     g.print(string.format("Log %d  Plank %d  Bench %d",
       inventory:count("core:wood_log"),inventory:count("core:wood_plank"),
       building.revision),safe_x+18,safe_y+61)
   else
-    g.print("WORLD OBJECTS / seed "..query.seed,safe_x+18,safe_y+15)
+    g.print((r2_pilot and "R2 FISILTI / seed " or "WORLD OBJECTS / seed ")..query.seed,safe_x+18,safe_y+15)
     g.print(string.format("Chunks %d/%d  Objects %d  State %s",stats.loaded,stats.needed,object_count,player.state),safe_x+18,safe_y+38)
     g.print(string.format("Logs %d  Planks %d  Stone %d  Benches %d",
       inventory:count("core:wood_log"),inventory:count("core:wood_plank"),
@@ -483,6 +500,10 @@ function love.draw()
       stats.loaded,building.revision,inventory:count("core:wood_log")))
     io.stdout:flush()
     love.event.quit()
+  end
+  if r2_pilot_smoke then
+    r2_pilot_smoke.draw({pilot=r2_pilot,player=player,building=building,
+      objects=objects,inventory=inventory,camera=camera,stats=stats,w=w,h=h})
   end
   if stage4_smoke and not stage4_before and frames>=20
      and stats.loaded>0 and stats.pending==0 then
@@ -604,6 +625,10 @@ local function release(id,x,y)
     end
   elseif p.button then interact_nearest()
   elseif not p.move and not p.multi then
+    if r2_pilot and stage_hud.placing then
+      route_status="R2 building unavailable: no approved build zones"
+      fingers[id]=nil;return
+    end
     if stage_hud.placing then
       local gx,gy=camera:unproject(x,y,w,h)
       placement_target={x=math.floor(gx/16+.5)*16,y=math.floor(gy/16+.5)*16}
