@@ -5,10 +5,10 @@ import path from 'node:path';
 import vm from 'node:vm';
 import {spawnSync} from 'node:child_process';
 const root=path.resolve(import.meta.dirname,'..');
-test('mobile animation is one preview, single-frame only, preserves IndexedDB records',()=>{
+test('mobile animation preserves one preview and independent batch workspace',()=>{
  const html=fs.readFileSync(path.join(root,'src/animation.html'),'utf8');
  for(const k of ['ANIMATION STUDIO','OsmanAnimationStudioFramesV1','data-mode="compare"','id="stage"','id="sourceInput"','id="variantInput"','id="exportOriginal"','id="exportMask"','id="openBlender"','id="strip"','makeMask(','constrainVariant(','restore()','SE','SW','NE','NW'])assert.ok(html.includes(k),'missing '+k);
- for(const forbidden of ['spritesheet','Spritesheet','loadMasterMask','exportSheetMask','drawNoncontactGrid','drawDualMagentaGuide','sheetCols','JSZip'])assert.ok(!html.includes(forbidden),'retired UX remains: '+forbidden);
+ for(const forbidden of ['loadMasterMask','exportSheetMask','drawNoncontactGrid','drawDualMagentaGuide','sheetCols','JSZip'])assert.ok(!html.includes(forbidden),'retired UX remains: '+forbidden);
  const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];assert.ok(js,'missing inline script');
  const run=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});assert.equal(run.status,0,run.stderr);
  assert.ok(html.includes("r.source instanceof Blob"),'legacy source must be read without modifying DB');
@@ -289,9 +289,9 @@ test('editor, live preview and exports share the same mapped original geometry f
 });
 
 
-test('animation no longer generates magenta guides or sprite atlas',()=>{
+test('animation no longer generates legacy magenta guide marks',()=>{
  const html=fs.readFileSync(path.join(root,'src/animation.html'),'utf8');
- for(const forbidden of ['drawDualMagentaGuide','drawNoncontactGrid','exportAIGrid','exportGridDensity','magenta grid','spritesheet']){
+ for(const forbidden of ['drawDualMagentaGuide','drawNoncontactGrid','exportAIGrid','exportGridDensity','magenta grid']){
    assert.ok(!html.includes(forbidden),'legacy guide remains: '+forbidden)
  }
  assert.ok(html.includes('getImageData')&&html.includes('putImageData'));
