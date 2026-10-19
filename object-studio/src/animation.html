@@ -10,11 +10,11 @@
 <div class="directionbar" id="directions" role="group" aria-label="Animasyon yönü"><button data-direction="NE">NE · 0</button><button data-direction="NW">NW · 0</button><button data-direction="SE" class="active">SE · 0</button><button data-direction="SW">SW · 0</button></div><div class="canvaswrap" id="canvasBox"><canvas id="stage" width="640" height="640" aria-label="Animasyon oynatıcı ve dokunarak kare hizalama"></canvas></div>
 <div class="stagebar"><button id="prev" aria-label="Önceki kare">◀</button><button id="play" class="primary">▶ Oynat</button><span class="badge" id="playbackStatus">Görselleri içe aktar</span><button id="next" aria-label="Sonraki kare">▶</button></div>
 <div class="control"><div class="title"><span>Oynatma hızı</span><output id="fpsLabel">8 FPS</output></div><input id="fps" type="range" min="1" max="60" value="8"></div>
-<div class="optionrow"><span class="hint">Önizlemede taşıma kapalı</span><label><input type="checkbox" id="grid" checked> Sabit magenta grid</label><label><input type="checkbox" id="equalSize" checked> Ölçeği normalize et</label></div>
+<div class="optionrow"><span class="hint">Önizlemede taşıma kapalı</span><label><input type="checkbox" id="equalSize" checked> Ölçeği normalize et</label></div>
 <div class="formrow"><label>Hizalama<select id="align"><option value="feet">Ayak tabanı</option><option value="center">Merkez</option><option value="average">Ortalama konum</option><option value="original">Kaynak konumu</option></select></label><label>Görünüm<select id="view"><option value="animation">Animasyon / seçili kare</option><option value="reference">Orijinal referans</option><option value="average">Ortalama kare (üst üste)</option></select></label></div>
 <div class="note" id="averageInfo">“Ortalama kare” tüm seçili kareleri yarı saydam üst üste gösterir. “Ortalama konum” ise karelerin ağırlık merkezini ortak noktaya hizalar.</div>
 <div class="buttonrow"><button id="downloadFrame" class="primary">↓ Seçili kare PNG</button><button id="downloadAll">↓ Seçili set ZIP</button></div>
-<div class="formrow"><label>Kapsam<select id="exportScope"><option value="one">Seçili yön</option><option value="all">4 yön</option></select></label><label>Boyut<select id="exportSize"><option>1024</option><option>2048</option><option selected>4096</option><option>8192</option></select></label><label>Sütun<select id="exportCols"><option value="auto">Otomatik</option><option>4</option><option>8</option><option>16</option><option>32</option></select></label><label>Parçalama<select id="exportChunk"><option value="0">Tek spritesheet</option><option value="16">16 karelik parçalar</option><option value="8">8 karelik parçalar</option><option value="custom">Özel kare sayısı</option></select></label><label>Özel parça boyutu<input id="exportChunkCustom" type="number" min="1" max="128" value="16" style="width:75px"></label><label title="Karaktere temas etmeden magenta kare sınırları ve her hücreye bağlı ince koordinat çizgileri oluşturur. Kapatılırsa tamamen temiz şeffaf PNG çıkar."><input id="exportAIGrid" type="checkbox" checked> Magenta çift ızgara (AI rehberi)</label><label>Koordinat yoğunluğu <select id="exportGridDensity"><option value="8">8×8</option><option value="12">12×12</option><option value="16" selected>16×16</option><option value="24">24×24</option></select></label><button id="exportSheet" class="primary">Spritesheet PNG dışa aktar</button><p class="hint">3×3 düzen korunur; 8 karede son hücre boş kalabilir. Magenta çift ızgarada kalın çizgi kare sınırıdır; ince koordinat çizgileri karaktere yaklaşmadan kesilir. Oyun için temiz PNG istersen rehber seçeneğini kapat. Varyant içe aktarırken PNG başına dolu kare sayısını seç.</p></div><div class="status" id="status" role="status">Hazır. PNG veya ZIP yükle.</div></section>
+<div class="formrow"><label>Kapsam<select id="exportScope"><option value="one">Seçili yön</option><option value="all">4 yön</option></select></label><label>Boyut<select id="exportSize"><option>1024</option><option>2048</option><option selected>4096</option><option>8192</option></select></label><label>Sütun<select id="exportCols"><option value="auto">Otomatik</option><option>4</option><option>8</option><option>16</option><option>32</option></select></label><label>Parçalama<select id="exportChunk"><option value="0">Tek spritesheet</option><option value="16">16 karelik parçalar</option><option value="8">8 karelik parçalar</option><option value="custom">Özel kare sayısı</option></select></label><label>Özel parça boyutu<input id="exportChunkCustom" type="number" min="1" max="128" value="16" style="width:75px"></label><button id="exportSheet" class="primary">Spritesheet PNG dışa aktar</button><p class="hint">Temiz şeffaf PNG dışa aktarılır. 3×3 düzeninde 8 kare varsa son hücre boş kalır.</p></div><div class="status" id="status" role="status">Hazır. PNG veya ZIP yükle.</div></section>
 <section class="panel"><div class="eyebrow">02 / FRAME EDITOR</div><h2>Kareleri düzenle</h2>
 <div class="formrow"><label>Çoklu PNG yükle<input id="loadPNG" type="file" accept="image/png" multiple></label><label>Blender ZIP yükle<input id="loadZIP" type="file" accept=".zip,application/zip"></label></div>
 <label class="stack">Spritesheet içe aktar (serbest grid)<input id="loadSheet" type="file" accept="image/png"></label>
@@ -48,7 +48,7 @@
  const DB='OsmanAnimationStudioFramesV1', STORE='frames', META='osman:animation-studio:v1:settings';
  const LIMIT=128, MAXFILE=24*1024*1024, FRAME_SIZE=1024;
  const DIRECTIONS=['NE','NW','SE','SW'];let masters={NE:null,NW:null,SE:null,SW:null},sets={NE:[],NW:[],SE:[],SW:[]},direction='SE',frames=sets.SE,selected=0,rate=100,fps=8,playing=false,lastTick=0,lastDraw=0,busy=false,drag=null,moveEnabled=false,dirty=false;
- let mode='feet',view='animation',grid=true,equalSize=true,db=null;
+ let mode='feet',view='animation',equalSize=true,db=null;
  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
  const filename=(s)=>String(s).split('/').pop();
  const nameIndex=(n)=>Number((String(n).match(/(?:frame[_-]?|SE[_-]?|[_-])(\d+)(?=\D*$)/i)||[])[1]||0);
@@ -70,9 +70,9 @@
  async function saveFrame(i,d=direction){if(!db)return;return new Promise(resolve=>{let r=tx('readwrite').put(record(i,d));r.onsuccess=()=>resolve();r.onerror=()=>resolve()})}
  async function clearDirection(d){if(!db)return;const items=await new Promise(resolve=>{const r=tx().getAllKeys();r.onsuccess=()=>resolve(r.result||[]);r.onerror=()=>resolve([])});return new Promise(resolve=>{const transaction=db.transaction(STORE,'readwrite');for(const key of items)if((typeof key==='number'&&d==='SE')||String(key).startsWith(d+':'))transaction.objectStore(STORE).delete(key);transaction.oncomplete=()=>resolve();transaction.onerror=()=>resolve();})}
  async function clearStore(){if(!db)return;return new Promise(resolve=>{let r=tx('readwrite').clear();r.onsuccess=r.onerror=()=>resolve()})}
- function savePrefs(){try{localStorage.setItem(META,JSON.stringify({rate,fps,mode,view,grid,equalSize,direction}))}catch{}}
- async function init(){try{let p=JSON.parse(localStorage.getItem(META)||'{}');rate=[100,50,25].includes(p.rate)?p.rate:100;direction=DIRECTIONS.includes(p.direction)?p.direction:'SE';frames=sets[direction];fps=clamp(Number(p.fps)||8,1,60);mode=['feet','center','average','original'].includes(p.mode)?p.mode:'feet';view=['animation','average','reference'].includes(p.view)?p.view:'animation';grid=p.grid!==false;equalSize=p.equalSize!==false;}catch{}
- $('fps').value=fps;$('align').value=mode;$('view').value=view;$('grid').checked=grid;$('equalSize').checked=equalSize;db=await openDB();if(db){const records=await new Promise(resolve=>{let q=tx().getAll();q.onsuccess=()=>resolve(q.result);q.onerror=()=>resolve([])});records.sort((a,b)=>String(a.slot).localeCompare(String(b.slot),undefined,{numeric:true}));for(const it of records){try{let d=typeof it.slot==='number'?'SE':String(it.slot).split(':')[0];if(!DIRECTIONS.includes(d))continue;let slot=typeof it.slot==='number'?it.slot:Number(String(it.slot).split(':')[1]);if(!Number.isSafeInteger(slot)||slot<0||slot>=LIMIT)continue;let f=await decode(it.blob);let source=it.source||it.blob;Object.assign(f,{source,name:it.name||d+'_'+String(slot+1).padStart(2,'0')+'.png',editedName:it.editedName||null,x:Number(it.x)||0,y:Number(it.y)||0});f.referenceFrame=source===it.blob?f:await decode(source);sets[d][slot]=f}catch{}}for(const d of DIRECTIONS)sets[d]=sets[d].filter(Boolean);for(const d of DIRECTIONS){const m=records.find(r=>r.slot===d+':0'||(d==='SE'&&r.slot===0));if(m?.masterMask&&sets[d].length){try{masters[d]=await prepareMaster(m.masterMask,m.maskCols,m.maskRows,sets[d])}catch(e){console.warn('Ana maske yüklenemedi',e)}}}frames=sets[direction]}sync();requestAnimationFrame(loop)}
+ function savePrefs(){try{localStorage.setItem(META,JSON.stringify({rate,fps,mode,view,equalSize,direction}))}catch{}}
+ async function init(){try{let p=JSON.parse(localStorage.getItem(META)||'{}');rate=[100,50,25].includes(p.rate)?p.rate:100;direction=DIRECTIONS.includes(p.direction)?p.direction:'SE';frames=sets[direction];fps=clamp(Number(p.fps)||8,1,60);mode=['feet','center','average','original'].includes(p.mode)?p.mode:'feet';view=['animation','average','reference'].includes(p.view)?p.view:'animation';equalSize=p.equalSize!==false;}catch{}
+ $('fps').value=fps;$('align').value=mode;$('view').value=view;$('equalSize').checked=equalSize;db=await openDB();if(db){const records=await new Promise(resolve=>{let q=tx().getAll();q.onsuccess=()=>resolve(q.result);q.onerror=()=>resolve([])});records.sort((a,b)=>String(a.slot).localeCompare(String(b.slot),undefined,{numeric:true}));for(const it of records){try{let d=typeof it.slot==='number'?'SE':String(it.slot).split(':')[0];if(!DIRECTIONS.includes(d))continue;let slot=typeof it.slot==='number'?it.slot:Number(String(it.slot).split(':')[1]);if(!Number.isSafeInteger(slot)||slot<0||slot>=LIMIT)continue;let f=await decode(it.blob);let source=it.source||it.blob;Object.assign(f,{source,name:it.name||d+'_'+String(slot+1).padStart(2,'0')+'.png',editedName:it.editedName||null,x:Number(it.x)||0,y:Number(it.y)||0});f.referenceFrame=source===it.blob?f:await decode(source);sets[d][slot]=f}catch{}}for(const d of DIRECTIONS)sets[d]=sets[d].filter(Boolean);for(const d of DIRECTIONS){const m=records.find(r=>r.slot===d+':0'||(d==='SE'&&r.slot===0));if(m?.masterMask&&sets[d].length){try{masters[d]=await prepareMaster(m.masterMask,m.maskCols,m.maskRows,sets[d])}catch(e){console.warn('Ana maske yüklenemedi',e)}}}frames=sets[direction]}sync();requestAnimationFrame(loop)}
  async function importList(files){if(!files.length)return; if(frames.length&&!confirm(direction+' yönündeki kareler değiştirilecek. Diğer yönler korunacak. Devam edilsin mi?'))return;
  if(files.length>LIMIT)throw new Error('Bir sette en fazla 128 kare destekleniyor');busy=true;info('PNG kareleri okunuyor…');let incoming=[];
  try{for(const file of files){try{const decoded=await decode(file);incoming.push({...decoded,source:file,referenceFrame:decoded,name:filename(file.name)||frameName(incoming.length)})}catch(e){console.warn('Atlanan kare',file.name,e)}}if(!incoming.length)throw new Error('Geçerli PNG bulunamadı');if(db)await clearDirection(direction);masters[direction]=null;sets[direction]=incoming;frames=sets[direction];selected=0;rate=100;playing=false;for(let i=0;i<frames.length;i++)await saveFrame(i);savePrefs();sync();info(direction+' yönüne '+frames.length+' kare yüklendi; hiçbir eski Terrain / Obje verisi değiştirilmedi.')}finally{busy=false}}
@@ -99,9 +99,8 @@
  else if(mode==='average'){x=w*.5-(f.center.x-f.original.x)*factor;y=h*.52-(f.center.y-f.original.y)*factor}
  else if(mode==='original'){x=(w-f.original.w*factor)/2+f.original.x*factor;y=(h-f.original.h*factor)/2+f.original.y*factor}
  if(sourceView){x=(w-f.original.w*factor)/2+f.original.x*factor;y=(h-f.original.h*factor)/2+f.original.y*factor}
- x+=f.x*w/640;y+=f.y*h/640;if(overlay)drawGrid(target,w,h);target.drawImage(f.canvas,x,y,f.w*factor,f.h*factor);}
- function drawGrid(g,w,h){const step=w*48/FRAME_SIZE;g.save();g.strokeStyle='rgba(255,0,255,.52)';g.lineWidth=Math.max(1,w/700);for(let i=0;i*step<=w;i++){let d=Math.round(i*step)+.5;g.beginPath();g.moveTo(d,0);g.lineTo(d,h);g.moveTo(0,d);g.lineTo(w,d);g.stroke()}g.restore()}
- function display(){const w=c.width,h=c.height;ctx.clearRect(0,0,w,h);let ids=chosen();if(!ids.length){ctx.fillStyle='#b2c7ae';ctx.font='19px system-ui';ctx.textAlign='center';ctx.fillText('PNG veya ZIP yükle',w/2,h/2);return}if(view==='average'){let off=alphaCanvas();off.width=w;off.height=h;let g=off.getContext('2d');g.globalAlpha=1/ids.length;for(let i of ids)paint(g,i,w,{overlay:false});if(grid)drawGrid(ctx,w,h);ctx.drawImage(off,0,0);return}let i=ids.includes(selected)?selected:ids[0];paint(ctx,i,w,{sourceView:view==='reference'})}
+ x+=f.x*w/640;y+=f.y*h/640;target.drawImage(f.canvas,x,y,f.w*factor,f.h*factor);}
+ function display(){const w=c.width,h=c.height;ctx.clearRect(0,0,w,h);let ids=chosen();if(!ids.length){ctx.fillStyle='#b2c7ae';ctx.font='19px system-ui';ctx.textAlign='center';ctx.fillText('PNG veya ZIP yükle',w/2,h/2);return}if(view==='average'){let off=alphaCanvas();off.width=w;off.height=h;let g=off.getContext('2d');g.globalAlpha=1/ids.length;for(let i of ids)paint(g,i,w,{overlay:false});ctx.drawImage(off,0,0);return}let i=ids.includes(selected)?selected:ids[0];paint(ctx,i,w,{sourceView:view==='reference'})}
  function sync(){let ids=chosen();if(frames.length&&!ids.includes(selected))selected=ids[0];for(const el of document.querySelectorAll('[data-direction]')){const d=el.dataset.direction;el.classList.toggle('active',d===direction);el.textContent=d+' · '+sets[d].length;}moveEnabled=false;$('current').textContent=frames.length?(ids.indexOf(selected)+1)+' / '+ids.length:'0 / 0';$('densityCount').textContent=ids.length+' / '+frames.length+' kare';$('playbackStatus').textContent=playing?'Oynuyor':'Duraklatıldı';$('play').textContent=playing?'⏸ Duraklat':'▶ Oynat';$('fpsLabel').textContent=fps+' FPS';$('xLabel').textContent=(frames[selected]?.x||0)+' px';$('yLabel').textContent=(frames[selected]?.y||0)+' px';$('x').value=frames[selected]?.x||0;$('y').value=frames[selected]?.y||0;for(const e of document.querySelectorAll('[data-rate]'))e.classList.toggle('active',+e.dataset.rate===rate);
  $('frameTitle').textContent=frames[selected]?direction+' • kare '+String(selected+1).padStart(2,'0'):'Kare seçilmedi';$('frameDesc').textContent=frames[selected]?(frames[selected].name+' • '+(frames[selected].blob!==frames[selected].source?'AI çıktısı':'Kaynak referans')):'İçe aktarılan kareyi seçip AI çıktısını yükle.';
  for(const id of ['replace','original','restorePos','x','y','downloadFrame','downloadAll','prev','next','play'])$(id).disabled=!frames.length;for(const id of ['applySourceMask','exportFrameMask','exportApiMask','exportSheetMask'])$(id).disabled=!frames.length||!masters[direction];$('masterMaskStatus').textContent=masters[direction]?'Maske bağlı: '+masters[direction].cols+'×'+masters[direction].rows+' / '+frames.length+' kare':'Maske yüklü değil.';
@@ -109,15 +108,7 @@
  function step(n){let ids=chosen();if(!ids.length)return;selected=ids[(ids.indexOf(selected)+n+ids.length)%ids.length];sync()}
  function loop(ts){if(playing&&frames.length&&ts-lastTick>=1000/fps){let ids=chosen();if(ids.length){selected=ids[(ids.indexOf(selected)+1)%ids.length];$('current').textContent=(ids.indexOf(selected)+1)+' / '+ids.length;display();for(const el of $('thumbs').children)el.classList.toggle('active',Number(el.querySelector('strong').textContent)===selected+1);}lastTick=ts;}requestAnimationFrame(loop)}
  async function download(blob,name){const url=URL.createObjectURL(blob);let a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}
- function rendered(i,ref=true){let cv=alphaCanvas();cv.width=FRAME_SIZE;cv.height=FRAME_SIZE;paint(cv.getContext('2d'),i,FRAME_SIZE,{overlay:false});if(ref)drawNoncontactGrid(cv);return cv}
- // MTS magenta grid is a separate overlay, masked at 8px from any occupied sprite pixel.
- function drawNoncontactGrid(canvas){const w=canvas.width,h=canvas.height,g=canvas.getContext('2d',{willReadFrequently:true});const data=g.getImageData(0,0,w,h).data,stride=w+1;
- const summed=new Uint32Array((w+1)*(h+1));for(let y=1;y<=h;y++){let line=0;for(let x=1;x<=w;x++){line+=data[((y-1)*w+x-1)*4+3]>0?1:0;summed[y*stride+x]=summed[(y-1)*stride+x]+line}}
- const free=(x,y)=>{const x0=Math.max(0,x-8),y0=Math.max(0,y-8),x1=Math.min(w,x+9),y1=Math.min(h,y+9);return summed[y1*stride+x1]-summed[y0*stride+x1]-summed[y1*stride+x0]+summed[y0*stride+x0]===0};
- const layer=alphaCanvas();layer.width=w;layer.height=h;const layerCtx=layer.getContext('2d'),pixels=layerCtx.createImageData(w,h),out=pixels.data;
- for(let y=0;y<h;y++)for(let x=0;x<w;x++){if((x%48===0||y%48===0)&&free(x,y)){let p=(y*w+x)*4;out[p]=255;out[p+2]=255;out[p+3]=255}}
- layerCtx.putImageData(pixels,0,0);g.drawImage(layer,0,0);
- }
+ function rendered(i){let cv=alphaCanvas();cv.width=FRAME_SIZE;cv.height=FRAME_SIZE;paint(cv.getContext('2d'),i,FRAME_SIZE,{overlay:false});return cv}
  async function pngBytes(i){return new Uint8Array(await new Promise(r=>rendered(i,true).toBlob(b=>b.arrayBuffer().then(r),'image/png')))}
  // Browser-native uncompressed ZIP; no cloud library, no external network.
  const crc32=(data)=>{let crc=-1;for(const x of data){crc^=x;for(let k=0;k<8;k++)crc=(crc>>>1)^((crc&1)?0xedb88320:0)}return (crc^(-1))>>>0};
@@ -135,7 +126,7 @@
  $('fps').oninput=e=>{fps=+e.target.value;savePrefs();$('fpsLabel').textContent=fps+' FPS'};
  $('densities').onclick=e=>{let b=e.target.closest('[data-rate]');if(!b)return;rate=+b.dataset.rate;savePrefs();sync()};
  $('align').onchange=e=>{mode=e.target.value;savePrefs();sync()};$('view').onchange=e=>{view=e.target.value;savePrefs();sync()};
- $('grid').onchange=e=>{grid=e.target.checked;savePrefs();sync()};$('equalSize').onchange=e=>{equalSize=e.target.checked;savePrefs();sync()};
+ $('equalSize').onchange=e=>{equalSize=e.target.checked;savePrefs();sync()};
  for(const axis of ['x','y'])$(axis).oninput=e=>{if(!frames[selected])return;frames[selected][axis]=+e.target.value;$(axis+'Label').textContent=e.target.value+' px';display();saveFrame(selected)};
  $('canvasBox').addEventListener('pointerdown',e=>{if(!moveEnabled||!frames[selected]||playing||view==='average')return;drag={x:e.clientX,y:e.clientY};e.currentTarget.setPointerCapture(e.pointerId)});
  $('canvasBox').addEventListener('pointermove',e=>{if(!drag)return;let box=$('canvasBox').getBoundingClientRect(),scale=640/box.width,f=frames[selected];f.x=clamp(Math.round(f.x+(e.clientX-drag.x)*scale),-200,200);f.y=clamp(Math.round(f.y+(e.clientY-drag.y)*scale),-200,200);drag={x:e.clientX,y:e.clientY};$('x').value=f.x;$('y').value=f.y;$('xLabel').textContent=f.x+' px';$('yLabel').textContent=f.y+' px';display()});
@@ -148,63 +139,6 @@
  if(chunk){if($('exportScope').value==='all'){for(const d of DIRECTIONS){let subset=all.filter(e=>e.d===d);for(let k=0;k<subset.length;k+=chunk)groups.push({items:subset.slice(k,k+chunk),direction:d,start:k})}}else{for(let k=0;k<all.length;k+=chunk)groups.push({items:all.slice(k,k+chunk),direction,start:k})}}
  else groups.push({items:all,direction:$('exportScope').value==='all'?'4yon':direction,start:0});
 
- // Dual magenta coordinate system for AI guidance: transparent canvas,
- // bold cell borders + finer local coordinates. No text in spritesheet pixels.
- // Lines are clipped against every sprite's padded visible bounding box.
- function drawDualMagentaGuide(g,size,cols,rows,artRects){
-  if(!$('exportAIGrid').checked)return;
-  const density=Math.max(4,Math.min(32,Math.floor(+$('exportGridDensity').value||16)));
-  const bold=Math.max(2,Math.round(size/1300));
-  const thin=Math.max(1,Math.round(size/4096));
-  const padding=Math.max(bold*3,Math.round(size/500));
-  const guards=artRects.filter(Boolean).map(b=>({
-   x0:b.x0-padding,y0:b.y0-padding,x1:b.x1+padding,y1:b.y1+padding
-  }));
-  function segment(vertical,fixed,from,to,blocks,color,width){
-   if(from>=to)return;
-   const intervals=[];
-   for(const b of blocks){
-    const cross=vertical?(fixed>=b.x0&&fixed<=b.x1):(fixed>=b.y0&&fixed<=b.y1);
-    if(!cross)continue;
-    const s=Math.max(from,vertical?b.y0:b.x0),e=Math.min(to,vertical?b.y1:b.x1);
-    if(s<e)intervals.push([s,e]);
-   }
-   intervals.sort((a,b)=>a[0]-b[0]);
-   g.strokeStyle=color;g.lineWidth=width;g.beginPath();
-   let cursor=from;
-   const draw=(a,b)=>{
-    if(b-a<.5)return;
-    if(vertical){g.moveTo(fixed+.5,a);g.lineTo(fixed+.5,b)}
-    else {g.moveTo(a,fixed+.5);g.lineTo(b,fixed+.5)}
-   };
-   for(const [a,b] of intervals){if(a>cursor)draw(cursor,a);cursor=Math.max(cursor,b)}
-   if(cursor<to)draw(cursor,to);
-   g.stroke();
-  }
-  g.save();g.lineCap='butt';
-  for(let row=0;row<rows;row++)for(let col=0;col<cols;col++){
-   const i=row*cols+col;
-   const x0=Math.round(col*size/cols),x1=Math.round((col+1)*size/cols);
-   const y0=Math.round(row*size/rows),y1=Math.round((row+1)*size/rows);
-   const guard=guards; // Exclude any artwork that crosses a neighboring cell boundary.
-   for(let n=1;n<density;n++){
-    const x=Math.round(x0+(x1-x0)*n/density),y=Math.round(y0+(y1-y0)*n/density);
-    const emph=n%4===0;
-    const color=emph?'rgba(255,0,255,.65)':'rgba(255,0,255,.40)';
-    segment(true,x,y0+bold,y1-bold,guard,color,emph?Math.max(1,thin*1.4):thin);
-    segment(false,y,x0+bold,x1-bold,guard,color,emph?Math.max(1,thin*1.4):thin);
-   }
-  }
-  for(let c=0;c<=cols;c++){
-   const x=Math.round(c*size/cols);
-   segment(true,x,0,size,guards,'rgba(255,0,255,.96)',bold);
-  }
-  for(let r=0;r<=rows;r++){
-   const y=Math.round(r*size/rows);
-   segment(false,y,0,size,guards,'rgba(255,0,255,.96)',bold);
-  }
-  g.restore();
- }
  const renderGroup=async group=>{
  let list=group.items,n=list.length,cols=$('exportCols').value==='auto'?Math.ceil(Math.sqrt(n)):Math.min(n,+$('exportCols').value),rows=Math.ceil(n/cols),out=alphaCanvas();out.width=out.height=size;let g=out.getContext('2d');if(!g)throw Error('Canvas oluşturulamadı');
  // Each tile starts at the literal grid edge. Never center the entire grid on the square.
@@ -215,12 +149,12 @@
  const sx=baseX+(fx+f.x)*scale,sy=baseY+(fy+f.y)*scale;
  g.drawImage(f.canvas,sx,sy,f.w*scale,f.h*scale);
  artRects[i]={x0:sx,y0:sy,x1:sx+f.w*scale,y1:sy+f.h*scale};}
- drawDualMagentaGuide(g,size,cols,rows,artRects);
+
  let blob=await new Promise(ok=>out.toBlob(ok,'image/png'));if(!blob)throw Error('PNG oluşturulamadı');return blob};
  if(groups.length===1){let group=groups[0],blob=await renderGroup(group);await download(blob,'mineclonie_'+group.direction+'_frames_'+(group.start+1)+'-'+(group.start+group.items.length)+'_'+size+'.png')}
  else{let items=[];for(let page=0;page<groups.length;page++){let group=groups[page],blob=await renderGroup(group),bytes=new Uint8Array(await blob.arrayBuffer());items.push({name:group.direction+'/sayfa_'+String(page+1).padStart(2,'0')+'_of_'+String(groups.length).padStart(2,'0')+'_frames_'+String(group.start+1).padStart(2,'0')+'-'+String(group.start+group.items.length).padStart(2,'0')+'.png',data:bytes})}
  const manifest={schema:'osman.animation.spritesheet-pages.v2',
-  sheetSize:size,magentaDoubleGrid:$('exportAIGrid').checked,
+  sheetSize:size,
   pages:groups.map((group,i)=>{
    const cols=$('exportCols').value==='auto'?Math.ceil(Math.sqrt(group.items.length)):Math.min(group.items.length,+$('exportCols').value);
    const rows=Math.ceil(group.items.length/cols),slotCount=cols*rows;
@@ -341,51 +275,15 @@
     await download(await maskPng(out),direction+'_'+n+'frame_'+cols+'x'+rows+'_alpha-mask.png');info('Atlas maskesi: AI geri alırken '+cols+' sütun, '+rows+' satır seç.')});
   $('importMaskedSheet').onchange=e=>handle(async()=>{const f=e.target.files?.[0];if(f)await importMaskedAtlas(f);e.target.value=''});
 
-  const gridAwareSheetPrompt="MINECLONIE — GRID-AWARE SPRITESHEET CHARACTER TRANSFER V2\n\nTASK — Replace ONLY the character appearance in Image B with the character identity/design in Image A. This is NOT animation generation or a new spritesheet layout.\n\nIMAGE ROLES\nImage A is the definitive authority for character identity, face, hair, clothing, armor construction, materials, color palette, and visual rendering style.\nImage B is the definitive authority for canvas size, large-cell grid, all occupied and empty slots, pose order, facing direction, camera, and placement inside each frame.\n\nTWO DIFFERENT MAGENTA GRIDS — STRICTLY DISTINGUISH THEM\n1) THICK MAGENTA GRID: marks the boundaries between animation frame cells and the outer sheet boundary. Preserve every thick line at exactly its original position and thickness; do not change the number or size of cells.\n2) THIN MAGENTA GRID: many smaller coordinate subdivisions INSIDE each large frame cell. These are rulers to help match character scale and XY placement. THEY ARE NOT animation frames, character contours, bones, clothing seams, decorative stripes, or objects.\n3) Thin magenta lines may be intentionally interrupted around the character. Preserve the gaps: do not extend, bridge or draw missing line segments across the character or protected space. Do not repaint grid lines over the body.\n4) Never merge thin lines into thick ones. Never add, erase, move, resize, bend, rotate, recolor, blur, thicken or duplicate ANY magenta guide. Keep the grid in precisely the same canvas coordinates as Image B. If Image B has no magenta guide, add none.\n5) Magenta is not a character material. Do not create magenta artifacts on skin, clothing, hair or armor.\n\nFRAME SLOTS ARE NOT THE SAME AS ACTUAL ANIMATION FRAMES\nRead occupied frame cells LEFT-TO-RIGHT, TOP-TO-BOTTOM, treating all fine coordinate subdivisions as part of their parent large cell.\nA 3×3 sheet may have EXACTLY EIGHT actual animation frames and ONE intentionally EMPTY ninth cell (bottom right). Keep the ninth cell EMPTY, while retaining any existing guide lines inside it. DO NOT invent a ninth character, duplicate the previous pose, fill the empty cell, or crop away the empty cell.\nOther sheets may have all nine cells filled, or a different occupied/empty layout. Follow Image B, not a guessed frame count. Retain all empty cells and all real occupied cells exactly as supplied.\nA page may belong to a longer animation. Do not assume its final visible frame must connect to its first as a loop; do not create intermediate frames.\n\nSTRICT FRAME AND CANVAS STRUCTURE\nPreserve Image B EXACT overall width/height/aspect ratio and source rows, columns, occupied slots, blank slots, frame sequence and frame positions.\nChange character design only INSIDE the already occupied slots. Do not move the subject relative to either guide level, zoom individual frames, mirror, rotate, resize the canvas, rearrange cells, duplicate poses, remove cells, or invent extra art.\nWithin each occupied cell use the fine coordinates as an unchanging size/position reference. Keep stable head/body scale across the series while allowing genuine walk-pose silhouette changes. The source frame pose is the structural guide, but do not distort the anatomy to force pixel silhouette overlap.\nAll generated characters must have complete visible feet, hands and accessories within their existing cell; no cross-cell spill.\n\nCONSISTENT CHARACTER APPEARANCE\nEvery occupied slot shows ONE SAME character. Lock the hairstyle, face, armor plate count and shape, fabric style, stitching, accessories, boots, silhouette language, color temperature, contrast, outline sharpness and material roughness.\nDo not let adjacent frames have independently changed costume features, color patches, seams, skin tone, lighting directions, detailing or textures. No invented joints or extra limbs, no extreme local warp, blur, glow, ghosting, blended neighboring frames, painted motion trails, or random visual noise.\n\nTRANSPARENT RGBA OUTPUT\nOutput one COMPLETE transparent RGBA PNG spritesheet with exactly the original dimensions and grid/slot layout. Preserve existing thick and fine magenta guide lines as separate registration information only, with transparent pixels everywhere else outside the artwork.\nDo not add ANY page numbers, cell labels, legends, text, frames, background scenes, checkerboard fills, black/white mats, watermarks, or decorative elements.\nDo not erase the magenta grid or paint extra magenta lines. Do not add blur or feathered halos.\n\nSUCCESS ORDER\n(1) Preserve large-cell boundaries, fine-grid coordinates, occupied/empty slots exactly;\n(2) preserve each subject's position, stable scale, camera and frame sequence;\n(3) maintain identical character identity/materials/details across every occupied frame;\n(4) keep natural pose continuity and clean alpha edges.\n\nFINAL RULE: MAGENTA THICK GRID DEFINES FRAME SLOTS. MAGENTA THIN GRID ONLY DEFINES COORDINATES. EMPTY SLOTS STAY EMPTY. TRANSFER CHARACTER APPEARANCE ONLY.";
-
- const simpleSheetPrompt=`MINECLONIE — SPRITESHEET CHARACTER APPEARANCE TRANSFER
-
-TASK
-Replace the character appearance in Image B with the design from Image A.
-
-IMAGE A — CHARACTER DESIGN
-Use Image A for the character's face, hair, clothes, armor, colors, materials, and visual style. Keep this same character consistent across every animation frame.
-
-IMAGE B — ANIMATION REFERENCE
-Keep Image B's exact canvas size, layout, number of occupied and empty frame cells, reading order, camera angle, poses, scale, and character placement.
-
-OUTPUT RULES
-- Redraw only the character in each occupied frame.
-- Keep all empty cells empty. For example, if a 3×3 sheet has eight characters and one blank cell, keep that last cell blank.
-- Keep each frame's pose and placement as close as possible to Image B.
-- Maintain consistent character proportions, clothing details, colors, lighting, and sharpness throughout the sequence.
-- Do not resize, reorder, duplicate, crop, or invent frames.
-- Do not add text, scenery, shadows, decorations, white panels, or checkerboard backgrounds.
-- Preserve natural movement; do not bend or stretch anatomy unnaturally.
-
-FINAL OUTPUT
-Return one complete transparent RGBA spritesheet in Image B's original size and frame arrangement. Change the character appearance only.`;
- const singleFrameWithGuide=$('prompt').value;
- const simpleSingleFramePrompt=`Replace only the character appearance in Image B with the character design from Image A.
-
-Use Image A for face, hair, clothing, armor, materials, and colors.
-Use Image B for the exact character pose, camera angle, size, and position.
-Keep the original square canvas and transparent background.
-Do not add scenery, text, backgrounds, blur, or extra objects.
-Return one transparent PNG with the character in the same place and pose.`;
- function refreshTransferPrompts(){
-  const enabled=$('exportAIGrid').checked;
-  $('sheetPrompt').value=enabled?gridAwareSheetPrompt:simpleSheetPrompt;
-  $('prompt').value=enabled?singleFrameWithGuide:simpleSingleFramePrompt;
- }
- $('exportAIGrid').addEventListener('change',refreshTransferPrompts);
+ const simpleSheetPrompt=`Replace character appearance in Image B using Image A as identity reference. Preserve exact canvas size, transparent background, every frame position, pose, camera, frame count, order and empty slots. Do not introduce guides, grids, decorations or new animation frames.`;
+ const simpleSingleFramePrompt=`Use Image A for character design and Image B for exact pose, direction, size, canvas and placement. Replace appearance only. Output RGBA with transparent background; no scene, text, grid or additional objects.`;
+ function refreshTransferPrompts(){$('sheetPrompt').value=simpleSheetPrompt;$('prompt').value=simpleSingleFramePrompt}
  refreshTransferPrompts();
-
  // Additional UI preferences. Keep v1 IndexedDB and META untouched for backward compatibility.
  const EXTRA_PREFS='osman:animation-studio:v2:ui';
  const EXTRA_IDS=[
   'exportScope','exportSize','exportCols','exportChunk','exportChunkCustom',
-  'exportAIGrid','exportGridDensity','sheetCols','sheetRows'
+  'sheetCols','sheetRows'
  ];
  function captureExtraPrefs(){
   const out={};
