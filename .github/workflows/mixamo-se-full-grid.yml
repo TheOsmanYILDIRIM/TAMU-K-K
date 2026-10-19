@@ -1,8 +1,10 @@
-name: Mixamo SE full 32 frames grid ZIP
+name: Mixamo SE · 16 transparent walking PNGs
 on:
   push:
     branches: [experiment/blender-camera-reference-20261011]
-    paths: ['tools/mixamo_se_full_render.py','tools/mixamo_se_full_grid.py','.github/workflows/mixamo-se-full-grid.yml']
+    paths:
+      - tools/mixamo_se_full_render.py
+      - .github/workflows/mixamo-se-full-grid.yml
   workflow_dispatch:
 jobs:
   render:
@@ -11,21 +13,57 @@ jobs:
     permissions: {contents: read}
     steps:
       - uses: actions/checkout@v4
-      - name: Load pinned FBX
+      - name: Verify pinned original 65-bone Walking FBX
         run: |
           mkdir -p input
           git fetch origin 18fdb06e194a757b356de0668c7cd2246db80ece
           git show 18fdb06e194a757b356de0668c7cd2246db80ece:Walking.fbx > input/Walking.fbx
-          python3 -m py_compile tools/mixamo_se_full_render.py tools/mixamo_se_full_grid.py
-      - name: Install Blender and Pillow
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          f=Path('input/Walking.fbx')
+          assert f.stat().st_size==1839568, 'Unexpected FBX size'
+          assert hashlib.sha256(f.read_bytes()).hexdigest()=='c33a3c2606afe7e7ec208ebb5dee26f28eaf1ad2f62cd7a187560cd1a252413f'
+          print('PINNED_MIXAMO_SOURCE_VERIFIED')
+          PY
+          python3 -m py_compile tools/mixamo_se_full_render.py
+      - name: Install actual Blender and Pillow
         run: sudo apt-get update && sudo apt-get install -y blender python3-pil python3-numpy libegl1 libgl1
-      - name: Render all SE walking frames
+      - name: Render genuine 16-frame walking cycle, SE 45-degree fixed camera
         run: blender -b -t 2 --python-exit-code 2 --python tools/mixamo_se_full_render.py
-      - name: Apply noncontact grid and package individual PNG files
-        run: python3 tools/mixamo_se_full_grid.py
+      - name: Validate transparent individual frames and package lossless ZIP
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          import hashlib,json,zipfile
+          root=Path('rendered/mixamo_se_clean_16')
+          paths=sorted((root/'SE').glob('frame_*.png'))
+          assert len(paths)==16,(len(paths),paths)
+          manifest=json.loads((root/'render_manifest.json').read_text())
+          assert manifest['source_frames']==list(range(1,33,2))
+          assert manifest['frame_count_per_direction']==16 and manifest['walking_action_used']
+          hashes=[]
+          for i,p in enumerate(paths,1):
+            assert p.name==f'frame_{i:02d}.png'
+            with Image.open(p) as im:
+              assert im.size==(1024,1024) and im.mode=='RGBA',(p,im.mode,im.size)
+              alpha=im.getchannel('A')
+              assert alpha.getextrema()[0]==0 and alpha.getbbox(),f'Not transparent or empty: {p}'
+              assert len(set(alpha.getdata()))>2,'Missing antialiased alpha'
+            hashes.append(hashlib.sha256(p.read_bytes()).hexdigest())
+          assert len(set(hashes))==16,'Walk frames repeated instead of real sampled poses'
+          out=Path('Walking_SE_16_Original_PNG.zip')
+          with zipfile.ZipFile(out,'w',zipfile.ZIP_STORED) as z:
+            for p in paths: z.write(p,'SE/'+p.name)
+            z.writestr('manifest.json',json.dumps({'format':'osman-walk-png-frames-v1','direction':'SE','frameCount':16,'fps':8,'source':'Walking.fbx','render':'Blender 45-degree orthographic, transparent RGBA, no grid','frames':manifest['source_frames'],'sourceSha256':manifest['source_sha256']},indent=2))
+          with zipfile.ZipFile(out) as z:
+            assert len(z.namelist())==17 and z.testzip() is None
+          print('TRUE_BLEND_ORIGINAL_ZIP_VERIFIED',out.stat().st_size)
+          PY
       - uses: actions/upload-artifact@v4
-        if: always()
         with:
-          name: mixamo-SE-32-individual-grid-frames
-          path: rendered/mixamo_se_full_grid/SE_32_frames_grid.zip
+          name: walking-SE-16-original-transparent-PNG
+          path: Walking_SE_16_Original_PNG.zip
           if-no-files-found: error
+          retention-days: 30

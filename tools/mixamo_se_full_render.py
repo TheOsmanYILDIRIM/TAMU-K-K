@@ -1,6 +1,6 @@
 import bpy, math, pathlib, json, hashlib
 from mathutils import Vector, Matrix
-P=pathlib.Path('rendered/mixamo_se_full_grid');P.mkdir(parents=True,exist_ok=True)
+P=pathlib.Path('rendered/mixamo_se_clean_16/SE');P.mkdir(parents=True,exist_ok=True)
 src=pathlib.Path('input/Walking.fbx');assert src.stat().st_size>1000000
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.fbx(filepath=str(src.resolve()))
@@ -13,7 +13,7 @@ act=rig.animation_data.action
 assert act and len(rig.data.bones)>=60
 first,last=map(lambda x:int(round(x)),act.frame_range)
 assert last-first+1==32,(first,last)
-indices=list(range(first,last+1))
+indices=list(range(first,last+1,2));assert len(indices)==16,indices
 scene.frame_set(first)
 bb=[o.matrix_world@Vector(c) for o in meshes for c in o.bound_box]
 lo=Vector([min(v[i] for v in bb) for i in range(3)])
@@ -98,13 +98,13 @@ for label,(x,y) in directions.items():
  cam.rotation_euler=(center-cam.location).to_track_quat('-Z','Y').to_euler()
  for i,frame in enumerate(indices):
   scene.frame_set(frame)
-  scene.render.filepath=str((folder/('SE_%02d.png'%(i+1))).resolve())
+  scene.render.filepath=str((folder/('frame_%02d.png'%(i+1))).resolve())
   bpy.ops.render.render(write_still=True)
 manifest={'source_sha256':hashlib.sha256(src.read_bytes()).hexdigest(),
- 'pose':'MIXAMO_WALKING_8_SAMPLED_FRAMES','walking_action_used':True,
- 'source_frames':indices,'frame_count_per_direction':32,
+ 'pose':'MIXAMO_WALKING_16_SAMPLED_FRAMES','walking_action_used':True,
+ 'source_frames':indices,'frame_count_per_direction':16,
  'camera':'orthographic','elevation_deg':45,'direction_vectors':directions,
  'lighting':'principled_bsdf_three_area_studio_two_thirds',
  'anatomy_palette':palette,'frame_size':[1024,1024]}
-(P/'render_manifest.json').write_text(json.dumps(manifest,indent=2))
-print('SE_FULL_RENDER_SUCCESS',list(directions),indices)
+(P.parent/'render_manifest.json').write_text(json.dumps(manifest,indent=2))
+print('SE_CLEAN_16_REAL_BLENDER_RENDER_SUCCESS',list(directions),indices)
