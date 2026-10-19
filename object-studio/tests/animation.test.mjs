@@ -330,3 +330,20 @@ test('AI variant keeps its own alpha and source stays separate; thumbnails prefe
  assert.ok(html.includes("const changed={...fr,variant:blob"),'AI stored as separate variant');
  assert.ok(html.includes("raster(d,i,sets[d][i]?.variant?'variant':'original')"),'thumbnail should show AI when available');
 });
+
+test('new two-stage spritesheet flow records source sheet, split frames and final repairs separately',()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation.html'),'utf8');
+ for(const key of ['id="batchCount"','id="batchOriginal"','id="batchAIInput"','id="batchSplit"','id="batchCells"','id="repairPackage"','id="repairInput"','id="batchFinalZip"','id="batchBackup"','OsmanAnimationBatchStudioV1','batchFrameId','batchSourceFrames','batchSplit','batchRepairEntries','batchSaveRepaired','batchSave','batchGet']){
+   assert.ok(html.includes(key),'missing '+key);
+ }
+ for(const key of ['_SOURCE_SHEET.png','/ORIGINAL.png','/GENERATED.png','/EDIT_MASK.png','_BACKUP.zip','generated_spritesheet.png']){
+   assert.ok(html.includes(key),'missing output '+key);
+ }
+ assert.match(html,/Math\.floor\(i\*32\/n\)/,'sampling must use deterministic source slots');
+ assert.match(html,/255-alpha\[p\+3\]/,'per-frame mask must reverse the original alpha');
+ assert.match(html,/if\(obj\.split\?\.length!==obj\.count\)/,'repair cannot proceed without splitting all cells');
+ const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+ assert.ok(script);
+ const syntax=spawnSync(process.execPath,['--check'],{input:script,encoding:'utf8'});
+ assert.equal(syntax.status,0,syntax.stderr);
+});
