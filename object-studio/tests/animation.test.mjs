@@ -321,12 +321,12 @@ test('3×3 PNGs preserve 8 real frames and omit trailing ninth blank slot when m
  assert.throws(()=>assembleParts([{name:'invalid.png',image:{tag:'x'},cols:3,rows:3,usedFrames:10}]));
 });
 
-test('AI variant is clipped to source silhouette and original is never silently replaced',()=>{
+test('AI variant keeps its own alpha and source stays separate; thumbnails prefer AI',()=>{
  const html=fs.readFileSync(path.join(root,'src/animation.html'),'utf8');
- assert.ok(html.includes("result.data[k+3]=alpha"),'variant alpha must equal canonical source alpha');
- assert.ok(html.includes("source:frame.source"),'original source Blob must be retained');
- assert.ok(html.includes("variant:blob"),'AI variant is stored separately');
- assert.ok(html.includes("const changed={...fr,variant:blob"),'variant write must retain source');
- assert.ok(html.includes("source:r.source"),'pre-existing records must restore');
- assert.ok(html.includes("new Blob([...parts,...central,end]"),'ZIP should be self-contained');
+ assert.ok(html.includes("return png(c);"),'AI image must remain independent RGBA');
+ assert.ok(!html.includes("result.data[k+3]=alpha"),'old source silhouette must not overwrite AI alpha');
+ assert.ok(!html.includes("result.data[k]=old.data[k]"),'old mannequin pixels must never be restored');
+ assert.ok(html.includes("source:frame.source"),'source Blob must remain untouched');
+ assert.ok(html.includes("const changed={...fr,variant:blob"),'AI stored as separate variant');
+ assert.ok(html.includes("raster(d,i,sets[d][i]?.variant?'variant':'original')"),'thumbnail should show AI when available');
 });
