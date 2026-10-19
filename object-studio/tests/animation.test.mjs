@@ -53,7 +53,7 @@ test('final variant editor exports individual PNG and splits 32 into chunks',()=
 
 test('single PNG export preserves source, variant and auto mask without external atlas import',()=>{
  const html=fs.readFileSync(path.join(root,'src/animation.html'),'utf8');
- for(const key of ["makeMask(d,i)","255-data.data[k+3]","constrainVariant(file,src)","result.data[k+3]=alpha","frame_'+String(i+1).padStart(2,'0')","zipOriginal","zipMasks"]){
+ for(const key of ["makeMask(d,i)","255-data.data[k+3]","constrainVariant(file,src)","g.drawImage(ai,0,0,ai.width,ai.height,0,0,src.width,src.height)","frame_'+String(i+1).padStart(2,'0')","zipOriginal","zipMasks"]){
    assert.ok(html.includes(key),'missing mask safety '+key);
  }
  assert.ok(!html.includes("loadMasterMask"));
