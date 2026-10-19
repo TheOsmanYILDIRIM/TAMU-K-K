@@ -368,3 +368,16 @@ test('3×3 PNGs preserve 8 real frames and omit trailing ninth blank slot when m
  assert.equal(nine.frames.length,9,'true 9-frame sheet must remain supported');
  assert.throws(()=>assembleParts([{name:'invalid.png',image:{tag:'x'},cols:3,rows:3,usedFrames:10}]));
 });
+
+test('alpha master mask roundtrip is opt-in and preserves original frame source',()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation.html'),'utf8');
+ for(const id of ['loadMasterMask','maskCols','maskRows','applySourceMask','exportFrameMask','exportApiMask','exportSheetMask','importMaskedSheet'])
+   assert.ok(html.includes('id="'+id+'"'),'missing mask control '+id);
+ for(const fn of ['prepareMaster','nativeMask','clipWithMask','oneMask','sheetPlacement','importMaskedFrame','importMaskedAtlas','commitMasked'])
+   assert.ok(html.includes('function '+fn+'(')||html.includes('async function '+fn+'('),'missing mask implementation '+fn);
+ assert.match(html,/masterMask:m\.blob/,'mask should persist in existing frame record');
+ assert.match(html,/const f=frames\[selected\],p=framePlacement\(selected\)/,'single-frame import should reuse exported placement');
+ assert.match(html,/canvas:clipWithMask\(cv,nativeMask\(i\)\)/,'sheet import must be clipped to source silhouette');
+ assert.match(html,/frames\[item\.i\]=\{\.\.\.frames\[item\.i\],canvas:item\.canvas,blob:item\.blob,editedName:item\.name\}/,'variant replacement must preserve original source reference');
+ assert.match(html,/const editable=data\.data\[j\+3\]>128/,'API editing alpha inversion must be explicit');
+});
