@@ -145,6 +145,7 @@ jobs:
           timeout 180s xvfb-run -a love game/love 2>&1 | tee /tmp/r2-g-production.log
           grep -q 'R2_G_WALK_OK' /tmp/r2-g-production.log
           grep -q 'R2_G_WET_OK' /tmp/r2-g-production.log
+          grep -q 'R2_G_CROSS_OK' /tmp/r2-g-production.log
           grep -q 'R2_G_PRODUCTION_OK' /tmp/r2-g-production.log
           mkdir -p /tmp/r2-g-artifacts
           for shot in spawn river harvest; do

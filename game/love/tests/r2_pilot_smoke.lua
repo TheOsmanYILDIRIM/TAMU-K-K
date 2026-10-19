@@ -3,7 +3,7 @@
 local Collision=require("physics.collision")
 local M={}
 local stage,stage_frame,frames="spawn",0,0
-local initial,river_x,river_y,fixture,approach,walk_touch
+local initial,river_x,river_y,fixture,approach,walk_touch,wet_seen,wet_shot
 local function near(o,x,y) return (o.x-x)^2+(o.y-y)^2 end
 local function choose_tree(ctx)
   local list=ctx.objects:objects_in({
@@ -63,30 +63,57 @@ function M.draw(ctx)
       "R2 camera not following real player")
     assert(Collision.can_stand(ctx.building,ctx.player.x,ctx.player.y,ctx.player.radius))
     print("R2_G_WALK_OK distance="..string.format("%.2f",moved))
-    -- Test a real wet centerline, without building a speculative bridge.
+    -- This transition tests REAL swept collision + real input from a dry
+    -- bank through the authored water. A teleport-to-wet test is insufficient.
     river_x,river_y=704,128
     assert(ctx.pilot.query:surface_at(river_x,river_y).wet)
-    assert(Collision.can_stand(ctx.building,river_x,river_y,ctx.player.radius),
-      "R2 real river centerline collision blocked")
+    local from,to=680,734
+    assert(Collision.can_stand(ctx.building,from,river_y,ctx.player.radius)
+      and Collision.can_stand(ctx.building,to,river_y,ctx.player.radius),
+      "R2 dry banks obstructed by actual topography/object collision")
+    assert(not ctx.building:surface_at(from,river_y).wet
+      and not ctx.building:surface_at(to,river_y).wet,
+      "R2 pilot crossing must start/end on real dry banks")
+    local x,y,hit=Collision.move(ctx.building,from,river_y,
+      to-from,0,ctx.player.radius)
+    assert(not hit and math.abs(x-to)<.01 and math.abs(y-river_y)<.01,
+      "R2 authored crossing has a real collider blockage; no fake bridge")
     ctx.player:stop_navigation()
-    ctx.player.x,ctx.player.y=river_x,river_y
+    ctx.player.x,ctx.player.y=from,river_y -- test driver positions at real dry bank
+    wet_seen,wet_shot=false,false
+    love.touchpressed("r2-g-river",bx,by)
+    love.touchmoved("r2-g-river",bx+48,by+24)
     goto_stage("river")
-  elseif stage=="river" and stage_frame>30 then
+  elseif stage=="river" then
     local s=ctx.building:surface_at(ctx.player.x,ctx.player.y)
-    assert(s.wet and s.immersion==.5 and s.speed_multiplier<=.55)
-    assert(ctx.player.immersion==.5 and ctx.player.surface_multiplier<=.55,
-      "R2 wet traversal not propagated to production controller")
     assert(#ctx.pilot.routes.crossings==0,"fake bridge activated")
-    love.graphics.captureScreenshot("r2-pilot-river.png")
-    print("R2_G_WET_OK x="..ctx.player.x.." y="..ctx.player.y)
-    -- Choose an ACTUAL deterministic R2 tree, not a synthetic Stage5 fixture.
-    assert(fixture and approach[1] and approach[2])
-    local x,y=approach[1],approach[2]
-    ctx.player.x,ctx.player.y=x,y
-    ctx.player:stop_navigation()
-    ctx.camera.x,ctx.camera.y=x,y
-    love.keypressed("e")
-    goto_stage("harvest")
+    if s.wet then
+      assert(s.immersion==.5 and s.speed_multiplier<=.55)
+      assert(ctx.player.immersion==.5 and ctx.player.surface_multiplier<=.55,
+        "R2 wet traversal not propagated to production controller")
+      wet_seen=true
+      if not wet_shot then
+        wet_shot=true
+        love.graphics.captureScreenshot("r2-pilot-river.png")
+        print("R2_G_WET_OK x="..ctx.player.x.." y="..ctx.player.y)
+      end
+    end
+    if ctx.player.x>=734 then
+      love.touchreleased("r2-g-river",walk_touch[1]+48,walk_touch[2]+24)
+      assert(wet_seen and wet_shot,"R2 water not entered while crossing")
+      assert(not s.wet and ctx.player.immersion==0,
+        "R2 real bank-to-bank crossing did not exit water")
+      print("R2_G_CROSS_OK x="..string.format("%.2f",ctx.player.x))
+      assert(fixture and approach[1] and approach[2])
+      local x,y=approach[1],approach[2]
+      ctx.player.x,ctx.player.y=x,y
+      ctx.player:stop_navigation()
+      ctx.camera.x,ctx.camera.y=x,y
+      love.keypressed("e")
+      goto_stage("harvest")
+    elseif stage_frame>180 then
+      error("R2 real controller could not cross wet banks x="..ctx.player.x)
+    end
   elseif stage=="harvest" then
     if ctx.inventory:count("core:wood_log")>=3 then
       assert(ctx.objects:is_depleted(fixture.id),"real R2 tree not depleted")

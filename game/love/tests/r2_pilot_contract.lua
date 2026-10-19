@@ -26,6 +26,14 @@ assert(p.query:route_cost({x=690,y=128},{x=718,y=128}).cost>28)
 assert(not p:can_build(64,128,5))
 local b=Building.new(Inventory.new(12),p.query,p.solid,
   "12345678-1234-4abc-8abc-123456789abc")
+local bank_a,bank_b=680,734
+assert(Collision.can_stand(b,bank_a,128,5)
+  and Collision.can_stand(b,bank_b,128,5),"actual R2 crossing banks blocked")
+assert(not b:surface_at(bank_a,128).wet
+  and not b:surface_at(bank_b,128).wet,"actual R2 banks must be dry")
+local mx,my,hit=Collision.move(b,bank_a,128,bank_b-bank_a,0,5)
+assert(not hit and math.abs(mx-bank_b)<.01 and math.abs(my-128)<.01,
+  "R2 crossing contains a solid cliff or object; no fake bridge")
 local player=p:spawn_player(b)
 assert(p.query:is_walkable(player.x,player.y))
 assert(Collision.can_stand(b,player.x,player.y,5))
