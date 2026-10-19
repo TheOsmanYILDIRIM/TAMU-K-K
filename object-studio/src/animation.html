@@ -336,38 +336,32 @@
 
 
  function organizeStudio(){
-   const by=id=>document.getElementById(id);
-   const section=by('loadPNG').closest('section');
-   section.querySelector('h2').textContent='Kaynak, kare ve atlas işlemleri';
-   const group=(title,note)=>{const e=document.createElement('div');e.className='selected';const h=document.createElement('strong');h.textContent=title;e.append(h);if(note){const p=document.createElement('p');p.className='hint';p.textContent=note;e.append(p)}section.append(e);return e};
-   const origin=group('01 · Kaynak ve maske','Blender PNG/ZIP veya kaynak spritesheet yükle. Şeffaf ana maske, kaynak karelerden ayrı korunur.');
-   const single=group('02 · Tek kare','Kareyi seç; görüntü ve alfa maskesini indir. AI çıktısını varyant olarak içe al.');
-   const sheet=group('03 · Spritesheet','Tüm kareleri tek alandan dışa aktar veya AI atlasını ana maskeye göre içe al.');
-   const settings=group('04 · Görüntü ve hizalama','İsteğe bağlı oynatma yoğunluğu ve hizalama ayarları.');
-   const move=(el,to)=>{if(el)to.append(el)};
-   move(by('loadPNG').closest('.formrow'),origin);
-   move(by('loadMasterMask').closest('.formrow'),origin);move(by('masterMaskStatus'),origin);
-   move(by('loadSheet').closest('label'),origin);
-   const controls=by('sheetCols').closest('.formrow');move(controls,sheet);
-   const frame=by('frameTitle').closest('.selected');move(frame,single);
-   move(by('downloadFrame'),single);move(by('exportFrameMask'),single);move(by('exportApiMask'),single);
-   move(by('downloadAll'),single);
-   move(by('exportScope').closest('.formrow'),sheet);
-   move(by('exportSheetMask'),sheet);
-   move(by('importMaskedSheet').closest('label'),sheet);
-   const advanced=document.createElement('details');advanced.innerHTML='<summary>Kaynak maskesiyle kesme · gelişmiş</summary>';origin.append(advanced);move(by('applySourceMask'),advanced);
-   const maskPanel=by('maskPanel');maskPanel.remove();
-   const preview=by('stage').closest('section');preview.querySelectorAll('.eyebrow')[0].textContent='ÖNİZLEME';
-   move(by('densities').parentElement.querySelector('#densities'),settings);
-   move(by('densityCount').closest('.optionrow'),settings);
-   const picker=document.createElement('div');picker.className='selected';picker.innerHTML='<strong>Export kareleri</strong><p class="hint">Kareyi işaretle: yalnız seçilenler dışa aktarılır.</p><div class="buttonrow"><button id="selectEveryFrame" type="button">Tümünü seç</button><button id="selectNoFrames" type="button">Seçimi temizle</button></div>';sheet.append(picker);move(by('thumbs'),picker);
-   by('selectEveryFrame').onclick=()=>{exportExcluded.clear();sync()};
-   by('selectNoFrames').onclick=()=>{for(let i=0;i<frames.length;i++)exportExcluded.add(i);sync()};
-   const prompts=document.createElement('details');prompts.className='selected';prompts.innerHTML='<summary>AI promptları · tek kare / spritesheet</summary>';sheet.append(prompts);
-   move(by('prompt'),prompts);move(by('copy'),prompts);move(by('sheetPrompt'),prompts);move(by('copySheetPrompt'),prompts);
-   move(by('resetAll'),origin);
-   section.querySelectorAll('.eyebrow').forEach(e=>{if(e.textContent.includes('PROMPT'))e.remove()});
- }
+ const by=id=>document.getElementById(id),section=by('loadPNG').closest('section');
+ const drawer=(parent,label,open=false)=>{const d=document.createElement('details');d.className='selected';d.open=open;const h=document.createElement('summary');h.textContent=label;d.append(h);parent.append(d);return d};
+ const move=(id,d,ancestor)=>{const el=by(id);if(el)d.append(ancestor?el.closest(ancestor):el)};
+ section.querySelector('h2').textContent='Animasyon dosyaları';
+ const imports=drawer(section,'İÇE AKTAR',true),importOne=drawer(imports,'Tek Kare · PNG veya ZIP',true),importSheet=drawer(imports,'Spritesheet · PNG');
+ const exports=drawer(section,'DIŞA AKTAR',true),exportOne=drawer(exports,'Tek Kare · PNG ve Maske',true),exportSheet=drawer(exports,'Spritesheet · PNG ve Maske');
+ const tools=drawer(section,'Kare Seçimi ve Ayarlar');
+ move('loadPNG',importOne,'.formrow');move('loadMasterMask',importOne,'.formrow');move('masterMaskStatus',importOne);
+ move('replace',importOne,'label');move('original',importOne);move('resetAll',importOne);
+ move('loadSheet',importSheet,'label');move('sheetCols',importSheet,'.formrow');move('importMaskedSheet',importSheet,'label');
+ move('downloadFrame',exportOne);move('exportFrameMask',exportOne);move('exportApiMask',exportOne);move('downloadAll',exportOne);
+ move('exportScope',exportSheet,'.formrow');move('exportSheetMask',exportSheet);
+ const advanced=drawer(importOne,'Ana maskeyle kaynak kesme');move('applySourceMask',advanced);
+ const frame=by('frameTitle').closest('.selected');tools.append(frame);move('densities',tools);move('densityCount',tools,'.optionrow');
+ const picker=document.createElement('div');picker.className='selected';picker.innerHTML='<strong>Dışa aktarılacak kareler</strong><div class="buttonrow"><button id="selectEveryFrame" type="button">Tümünü seç</button><button id="selectNoFrames" type="button">Seçimi kaldır</button></div>';tools.append(picker);move('thumbs',picker);
+ by('selectEveryFrame').onclick=()=>{exportExcluded.clear();sync()};
+ by('selectNoFrames').onclick=()=>{for(let i=0;i<frames.length;i++)exportExcluded.add(i);sync()};
+ const prompts=drawer(tools,'AI promptları');move('prompt',prompts);move('copy',prompts);move('sheetPrompt',prompts);move('copySheetPrompt',prompts);
+ by('maskPanel')?.remove();
+ // Dispose of obsolete explanatory text and empty shells after relocating controls.
+ section.querySelectorAll('.hint,.note,.eyebrow').forEach(el=>{if(!el.closest('details'))el.remove()});
+ section.querySelectorAll('.formrow,.selected,.buttonrow').forEach(el=>{if(!el.closest('details')&&!el.querySelector('input,button,select,textarea,canvas'))el.remove()});
+ document.querySelectorAll('p.lead,main > p.note').forEach(el=>el.remove());
+ for(const label of section.querySelectorAll('label'))if(label.closest('details')){const text=label.firstChild;if(text?.nodeType===Node.TEXT_NODE)text.textContent=text.textContent.replace(/AI çıktısı yükle/,'AI varyant PNG yükle').replace(/Çoklu PNG yükle/,'Kaynak PNG kareleri yükle')}
+}
+
  organizeStudio();
  initExtraPrefs();
  refreshTransferPrompts();
