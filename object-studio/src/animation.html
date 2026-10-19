@@ -198,7 +198,9 @@ async function render(){
    const src=await raster(d,i),variant=state.mode==='original'?null:await raster(d,i,'variant');
    if(ticket!==state.drawTicket)return;
    clearStage();
-   if(state.mode==='compare'){drawPose(src,0,0,PREVIEW/2,PREVIEW);ctx.fillStyle='#526754';ctx.fillRect(PREVIEW/2-1,0,2,PREVIEW);drawPose(variant,PREVIEW/2,0,PREVIEW/2,PREVIEW)}
+   if(state.mode==='compare'){drawPose(src,0,0,PREVIEW/2,PREVIEW);ctx.fillStyle='#526754';ctx.fillRect(PREVIEW/2-1,0,2,PREVIEW);
+     if(frame.variant)drawPose(variant,PREVIEW/2,0,PREVIEW/2,PREVIEW);
+     else{ctx.fillStyle='#c5d7c2';ctx.font='17px system-ui';ctx.textAlign='center';ctx.fillText('AI varyantı yükle',PREVIEW*.75,PREVIEW*.5);ctx.textAlign='left'}}
    else drawPose(state.mode==='original'?src:(variant||src),0,0,PREVIEW,PREVIEW);
    if(!src.box)messageStage('Bu karede görünür alfa bulunamadı');
  }catch(e){if(ticket!==state.drawTicket)return;clearStage();messageStage('Görüntü çözülemedi');status(e.message,true)}
@@ -217,21 +219,26 @@ function controls(){
    const b=document.createElement('button');b.type='button';b.textContent=d+' · '+sets[d].length;b.classList.toggle('active',d===state.direction);
    b.onclick=()=>{state.direction=d;state.selected=0;state.playing=false;savePrefs();updateAll()};bar.append(b)}
 }
+let thumbObserver=null;
 function strip(){
- const list=frameList(),holder=$('strip');holder.replaceChildren();
- for(let i=0;i<list.length;i++){
-   const f=list[i],b=document.createElement('button');b.type='button';b.className='framechip';b.classList.toggle('active',i===state.selected);
-   const cv=createCanvas(92,92),title=document.createElement('span'),note=document.createElement('small');
-   title.textContent=state.direction+' '+String(i+1).padStart(2,'0');note.textContent=f.variant?'AI ✓':'Orijinal';
-   b.append(cv,title,note);b.onclick=()=>{state.selected=i;state.playing=false;updateAll()};holder.append(b);
-   const d=state.direction;const serial=state.serial;
+ const list=frameList(),holder=$('strip');thumbObserver?.disconnect();holder.replaceChildren();
+ thumbObserver=new IntersectionObserver(entries=>{for(const entry of entries){if(!entry.isIntersecting)continue;
+   const chip=entry.target,cv=chip.querySelector('canvas'),i=Number(chip.dataset.index),d=state.direction,serial=state.serial;
+   thumbObserver.unobserve(chip);
    raster(d,i,'original').then(r=>{if(serial!==state.serial||!cv.isConnected||!r.box)return;
      const g=cv.getContext('2d'),bb=r.box,k=Math.min(84/bb.w,84/bb.h);
      g.drawImage(r.canvas,bb.x,bb.y,bb.w,bb.h,(92-bb.w*k)/2,(92-bb.h*k)/2,bb.w*k,bb.h*k);
    }).catch(()=>{});
+ }},{root:holder,rootMargin:'80px',threshold:.05});
+ for(let i=0;i<list.length;i++){
+   const f=list[i],b=document.createElement('button');b.type='button';b.dataset.index=String(i);b.className='framechip';b.classList.toggle('active',i===state.selected);
+   const cv=createCanvas(92,92),title=document.createElement('span'),note=document.createElement('small');
+   title.textContent=state.direction+' '+String(i+1).padStart(2,'0');note.textContent=f.variant?'AI ✓':'Orijinal';
+   b.append(cv,title,note);b.onclick=()=>{state.selected=i;state.playing=false;updateAll()};holder.append(b);
+   thumbObserver.observe(b);
  }
 }
-function updateAll(){controls();strip();render()}
+function updateAll(){controls();render();strip()}
 function step(n){const len=frameList().length;if(!len)return;
  state.selected=(state.selected+n+len)%len;
  controls();
