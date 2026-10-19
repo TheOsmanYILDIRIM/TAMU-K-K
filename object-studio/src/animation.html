@@ -356,7 +356,7 @@
  const prompts=drawer(tools,'AI promptları');move('prompt',prompts);move('copy',prompts);move('sheetPrompt',prompts);move('copySheetPrompt',prompts);
  by('maskPanel')?.remove();
  // Dispose of obsolete explanatory text and empty shells after relocating controls.
- section.querySelectorAll('.hint,.note,.eyebrow').forEach(el=>{if(!el.closest('details'))el.remove()});
+ section.querySelectorAll('.hint,.note,.eyebrow').forEach(el=>el.remove());
  section.querySelectorAll('.formrow,.selected,.buttonrow').forEach(el=>{if(!el.closest('details')&&!el.querySelector('input,button,select,textarea,canvas'))el.remove()});
  document.querySelectorAll('p.lead,main > p.note').forEach(el=>el.remove());
  for(const label of section.querySelectorAll('label'))if(label.closest('details')){const text=label.firstChild;if(text?.nodeType===Node.TEXT_NODE)text.textContent=text.textContent.replace(/AI çıktısı yükle/,'AI varyant PNG yükle').replace(/Çoklu PNG yükle/,'Kaynak PNG kareleri yükle')}
