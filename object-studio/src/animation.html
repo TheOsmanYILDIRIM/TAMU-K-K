@@ -228,7 +228,7 @@ function strip(){
  thumbObserver=new IntersectionObserver(entries=>{for(const entry of entries){if(!entry.isIntersecting)continue;
    const chip=entry.target,cv=chip.querySelector('canvas'),i=Number(chip.dataset.index),d=state.direction,serial=state.serial;
    thumbObserver.unobserve(chip);
-   raster(d,i,'original').then(r=>{if(serial!==state.serial||!cv.isConnected||!r.box)return;
+   raster(d,i,sets[d][i]?.variant?'variant':'original').then(r=>{if(serial!==state.serial||!cv.isConnected||!r.box)return;
      const g=cv.getContext('2d'),bb=r.box,k=Math.min(84/bb.w,84/bb.h);
      g.drawImage(r.canvas,bb.x,bb.y,bb.w,bb.h,(92-bb.w*k)/2,(92-bb.h*k)/2,bb.w*k,bb.h*k);
    }).catch(()=>{});
@@ -272,19 +272,12 @@ async function makeMask(d,i){
 }
 async function constrainVariant(file,src){
  const ai=await decode(file);
- const c=createCanvas(src.width,src.height),g=c.getContext('2d',{willReadFrequently:true});
- // Resize the entire returned canvas, not its alpha bounding box: preserves
- // original fixed-camera frame coordinates and avoids per-pose recentering.
+ const c=createCanvas(src.width,src.height),g=c.getContext('2d');
+ // AI art is an independent RGBA variant. Never copy original pixels or
+ // force the old mannequin silhouette onto the new character.
  g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';
  g.drawImage(ai,0,0,ai.width,ai.height,0,0,src.width,src.height);
- const result=g.getImageData(0,0,c.width,c.height),old=src.getContext('2d',{willReadFrequently:true}).getImageData(0,0,src.width,src.height);
- for(let k=0;k<old.data.length;k+=4){
-   const alpha=old.data[k+3];
-   if(alpha<1){result.data[k]=result.data[k+1]=result.data[k+2]=result.data[k+3]=0;continue}
-   if(result.data[k+3]<12){result.data[k]=old.data[k];result.data[k+1]=old.data[k+1];result.data[k+2]=old.data[k+2]}
-   result.data[k+3]=alpha;
- }
- g.putImageData(result,0,0);return png(c);
+ return png(c);
 }
 const crcTable=(()=>{const t=new Uint32Array(256);for(let i=0;i<256;i++){let k=i;for(let z=0;z<8;z++)k=(k>>>1)^((k&1)?0xedb88320:0);t[i]=k>>>0}return t})();
 function crc32(data){let k=0xffffffff;for(const b of data)k=(k>>>8)^crcTable[(k^b)&255];return (k^0xffffffff)>>>0}
