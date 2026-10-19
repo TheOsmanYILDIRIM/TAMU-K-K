@@ -205,6 +205,17 @@ async function render(){
      if(frame.variant)drawPose(variant,PREVIEW/2,0,PREVIEW/2,PREVIEW);
      else{ctx.fillStyle='#c5d7c2';ctx.font='17px system-ui';ctx.textAlign='center';ctx.fillText('AI varyantı yükle',PREVIEW*.75,PREVIEW*.5);ctx.textAlign='left'}}
    else drawPose(state.mode==='original'?src:(variant||src),0,0,PREVIEW,PREVIEW);
+   // Large frame identity in the empty right-side margin, never over the pose.
+   if(state.mode!=='compare'&&src.box){
+     const b=src.box,scale=Math.min(PREVIEW/src.canvas.width,PREVIEW/src.canvas.height);
+     const poseRight=(PREVIEW-src.canvas.width*scale)/2+(b.x+b.w)*scale;
+     const labelX=Math.max(poseRight+18,PREVIEW*.76);
+     if(labelX+55<PREVIEW){
+       ctx.font='700 35px system-ui';ctx.textAlign='left';ctx.fillStyle='#d7eabf';
+       ctx.fillText(String(i+1).padStart(2,'0'),labelX,PREVIEW*.20);
+       ctx.font='700 17px system-ui';ctx.fillStyle='#91ae94';ctx.fillText(d,labelX,PREVIEW*.20+25);
+     }
+   }
    if(!src.box)messageStage('Bu karede görünür alfa bulunamadı');
  }catch(e){if(ticket!==state.drawTicket)return;clearStage();messageStage('Görüntü çözülemedi');status(e.message,true)}
 }
@@ -350,7 +361,7 @@ $('play').onclick=()=>{state.playing=!state.playing;state.last=performance.now()
 $('speed').oninput=e=>{state.fps=Number(e.target.value);savePrefs();controls()};document.querySelectorAll('[data-rate]').forEach(b=>b.onclick=()=>{state.rate=Number(b.dataset.rate);savePrefs();updateAll()});
 document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{state.mode=b.dataset.mode;savePrefs();controls();render()});
 $('copyPrompt').onclick=()=>action(async()=>{
- const text='Image A is the definitive design reference for the game character. Image B is the exact original Blender walking frame and determines pose, fixed SE orthographic camera, canvas, scale, limb placement and silhouette. Change ONLY the character appearance inside the original silhouette. Keep the background genuinely transparent, do not add or change the scene or move the frame. Output exactly one RGBA PNG at Image B original pixel dimensions. Do not add grid, numbers, labels, glow or another character. If an API edit mask is provided, alpha=0 is editable character and alpha=255 is protected background. Preserve the original pose and character scale.';
+ const text='Three inputs: IMAGE A = the target character reference (identity, outfit, proportions, colors). IMAGE B = the ORIGINAL Blender walking frame (exact pose, arms, legs, limb overlap, anatomy, fixed orthographic isometric camera, position, canvas dimensions). IMAGE C = the API EDIT MASK generated from Image B (transparent alpha=editable character; opaque alpha=protected background). Transfer the character design from A onto the exact pose in B, respecting C as the edit boundary. Preserve every limb, original silhouette, foreshortening, contact position, and fixed camera. Output exactly ONE transparent RGBA PNG with precisely the same pixel dimensions and alignment as Image B. Do not add numbers, grid, labels, background, extra limbs or extra frames. Frame number and direction shown in the editor are UI labels only and must NOT be painted into the exported PNG.';
  try{await navigator.clipboard.writeText(text);status('Tek kare AI promptu kopyalandı.')}catch{const t=document.createElement('textarea');t.value=text;document.body.append(t);t.select();document.execCommand('copy');t.remove();status('Prompt kopyalandı.')}});
 $('openBlender').onclick=()=>window.open('https://github.com/TheOsmanYILDIRIM/oyun/actions/runs/39279553854','_blank','noopener,noreferrer');
 $('clearDirection').onclick=()=>action(async()=>{const d=state.direction;if(!sets[d].length||!confirm(d+' yönündeki tüm kareler ve AI varyantları kalıcı olarak silinsin mi?'))return;
