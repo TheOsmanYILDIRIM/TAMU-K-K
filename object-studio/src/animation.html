@@ -58,7 +58,7 @@
  function active(){const n=frames.length;if(!n)return [];const target=Math.max(1,Math.round(n*rate/100));let ids=[];for(let i=0;i<target;i++)ids.push(Math.floor(i*n/target));return [...new Set(ids)]}
  async function decode(blob){if(blob.size>MAXFILE)throw new Error('PNG 24 MB sınırını aşıyor');if(blob.type&&!/png|octet-stream/i.test(blob.type))throw new Error('PNG bekleniyor');const bitmap=await createImageBitmap(blob);if(bitmap.width<16||bitmap.height<16||bitmap.width>8192||bitmap.height>8192){bitmap.close();throw new Error('PNG boyutu desteklenmiyor')}
  const raw=alphaCanvas();raw.width=bitmap.width;raw.height=bitmap.height;const r=raw.getContext('2d',{willReadFrequently:true});r.drawImage(bitmap,0,0);bitmap.close();const data=r.getImageData(0,0,raw.width,raw.height);let x0=raw.width,y0=raw.height,x1=-1,y1=-1,weightedX=0,weightedY=0,total=0;
- for(let y=0;y<raw.height;y++)for(let x=0;x<raw.width;x++){let p=(y*raw.width+x)*4,a=data.data[p+3],red=data.data[p],green=data.data[p+1],blue=data.data[p+2];const magenta=red>226&&green<53&&blue>218&&a>60;if(magenta){data.data[p+3]=0;continue;}if(a>24){x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);weightedX+=x*a;weightedY+=y*a;total+=a;}}
+ for(let y=0;y<raw.height;y++)for(let x=0;x<raw.width;x++){let p=(y*raw.width+x)*4,a=data.data[p+3],red=data.data[p],green=data.data[p+1],blue=data.data[p+2];if(a>24){x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);weightedX+=x*a;weightedY+=y*a;total+=a;}}
  if(x1<0)throw new Error('PNG içinde şeffaf olmayan karakter bulunamadı');r.putImageData(data,0,0);
  const img=alphaCanvas();img.width=x1-x0+1;img.height=y1-y0+1;img.getContext('2d').drawImage(raw,x0,y0,img.width,img.height,0,0,img.width,img.height);
  return {blob,canvas:img,w:img.width,h:img.height,original:{w:raw.width,h:raw.height,x:x0,y:y0},center:{x:weightedX/total,y:weightedY/total},x:0,y:0};}
@@ -166,7 +166,7 @@
  await download(zip(items),'mineclonie_spritesheet_'+groups.length+'parca.zip')}
  info('Spritesheet dışa aktarıldı: '+groups.length+' parça, '+all.length+' kare. Orijinal kareler korunuyor.');
  });
- $('downloadFrame').onclick=()=>handle(async()=>{let f=frames[selected];if(!f)return;let b=await new Promise(r=>rendered(selected,true).toBlob(r,'image/png'));await download(b,frameName(selected));info('Gridli kare indirildi: '+frameName(selected))});
+ $('downloadFrame').onclick=()=>handle(async()=>{let f=frames[selected];if(!f)return;let b=await new Promise(r=>rendered(selected,true).toBlob(r,'image/png'));await download(b,frameName(selected));info('Şeffaf kare indirildi: '+frameName(selected))});
  $('downloadAll').onclick=()=>handle(async()=>{let ids=chosen();if(!ids.length)return;info('ZIP hazırlanıyor…');let items=[];for(let i of ids){items.push({name:frameName(i),data:await pngBytes(i)});if(masters[direction])items.push({name:'mask/'+frameName(i),data:new Uint8Array(await (await maskPng(oneMask(i))).arrayBuffer())})}let m={schema:1,format:'OSMAN Animation Studio transparent RGBA',density_percent:rate,output_size:[FRAME_SIZE,FRAME_SIZE],source_frame_count:frames.length,selected_source_indexes:ids,align:mode,equalSize,frame_files:items.map(x=>x.name)};items.push({name:'manifest.json',data:new TextEncoder().encode(JSON.stringify(m,null,2))});await download(zip(items),direction+'_'+rate+'pct_'+ids.length+'frame_grid.zip');info(ids.length+' kareli ZIP hazırlandı.')});
  
   // A master silhouette's opaque pixels mean "character"; API editing masks
