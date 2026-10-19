@@ -154,11 +154,14 @@ async function decode(blob){
    // Cleanup acts on an in-memory copy; its original Blob is never changed.
    for(let k=0;k<p.length;k+=4)if(p[k]>217&&p[k+2]>201&&p[k+1]<85){p[k]=p[k+1]=p[k+2]=0;p[k+3]=0}
    const known=new Uint8Array(w*h),stack=[],dark=k=>{let n=k*4;return p[n+3]>248&&p[n]<18&&p[n+1]<18&&p[n+2]<18};
-   const add=k=>{if(!known[k]&&dark(k)){known[k]=1;stack.push(k)}};
+   // Pass across transparent former guide pixels so each old black grid cell
+   // cannot remain an opaque rectangle. Only remove near-black pixels.
+   const passable=k=>p[k*4+3]===0||dark(k);
+   const add=k=>{if(!known[k]&&passable(k)){known[k]=1;stack.push(k)}};
    for(let x=0;x<w;x++){add(x);add((h-1)*w+x)}
    for(let y=0;y<h;y++){add(y*w);add(y*w+w-1)}
    for(let n=0;n<stack.length;n++){const k=stack[n],x=k%w,y=(k/w)|0;if(x)add(k-1);if(x<w-1)add(k+1);if(y)add(k-w);if(y<h-1)add(k+w)}
-   for(const k of stack){const n=k*4;p[n]=p[n+1]=p[n+2]=p[n+3]=0}
+   for(const k of stack)if(dark(k)){const n=k*4;p[n]=p[n+1]=p[n+2]=p[n+3]=0}
    g.putImageData(out,0,0);return c;
  }finally{image.close()}
 }
@@ -229,7 +232,12 @@ function strip(){
  }
 }
 function updateAll(){controls();strip();render()}
-function step(n){const len=frameList().length;if(!len)return;state.selected=(state.selected+n+len)%len;updateAll()}
+function step(n){const len=frameList().length;if(!len)return;
+ state.selected=(state.selected+n+len)%len;
+ controls();
+ for(const [index,element] of [...$('strip').children].entries())element.classList.toggle('active',index===state.selected);
+ render();
+}
 function tick(t){if(state.playing&&frameList().length&&t-state.last>=1000/state.fps){state.last=t;step(1)}requestAnimationFrame(tick)}
 function png(canvas){return new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(Error('PNG oluşturulamadı')),'image/png'))}
 function download(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}
@@ -286,6 +294,11 @@ async function unzip(file){
  }
  if(!out.length)throw Error('ZIP içinde numaralı PNG kare bulunamadı');return out;
 }
+async function oldDirectionKeys(){
+ if(!state.db)return [];
+ return new Promise(resolve=>{const r=state.db.transaction(STORE).objectStore(STORE).getAllKeys();
+ r.onsuccess=()=>resolve(r.result||[]);r.onerror=()=>resolve([])});
+}
 async function sourceFiles(files){
  const list=[];for(const f of files){if(/\.zip$/i.test(f.name))list.push(...await unzip(f));else if(/\.png$/i.test(f.name))list.push(f)}
  if(!list.length)throw Error('PNG veya ZIP seç');
@@ -299,9 +312,11 @@ async function sourceFiles(files){
  }
  const directions=Object.keys(incoming);
  if(directions.some(d=>sets[d].length)&&!confirm('Mevcut kaynak kareler bu yönlerde değiştirilecek: '+directions.join(', ')+'. AI varyantları da bu yönlerde sıfırlanacak. Devam?'))return;
+ const storedKeys=await oldDirectionKeys();
  await transaction(store=>{for(const d of directions){
-   // Deleting an entire direction is explicit and isolated, other directions and studios remain intact.
-   for(let i=0;i<sets[d].length;i++)store.delete(d+':'+i);
+   // Replacing one direction explicitly clears its old numeric SE and named
+   // keys, including sparse legacy records; unrelated directions are untouched.
+   for(const key of storedKeys)if((d==='SE'&&typeof key==='number')||(typeof key==='string'&&key.startsWith(d+':')))store.delete(key);
    for(let i=0;i<incoming[d].length;i++)store.put(record(d,i,incoming[d][i]));
  }});
  for(const d of directions)sets[d]=incoming[d];
@@ -329,7 +344,8 @@ $('copyPrompt').onclick=()=>action(async()=>{
  try{await navigator.clipboard.writeText(text);status('Tek kare AI promptu kopyalandı.')}catch{const t=document.createElement('textarea');t.value=text;document.body.append(t);t.select();document.execCommand('copy');t.remove();status('Prompt kopyalandı.')}});
 $('openBlender').onclick=()=>window.open('https://github.com/TheOsmanYILDIRIM/oyun/actions/runs/39279553854','_blank','noopener,noreferrer');
 $('clearDirection').onclick=()=>action(async()=>{const d=state.direction;if(!sets[d].length||!confirm(d+' yönündeki tüm kareler ve AI varyantları kalıcı olarak silinsin mi?'))return;
- await transaction(store=>{for(let i=0;i<sets[d].length;i++)store.delete(d+':'+i)});
+ const storedKeys=await oldDirectionKeys();
+ await transaction(store=>{for(const key of storedKeys)if((d==='SE'&&typeof key==='number')||(typeof key==='string'&&key.startsWith(d+':')))store.delete(key)});
  sets[d]=[];state.selected=0;state.playing=false;resetCache();updateAll();status('Yalnız '+d+' yönünün kayıtları silindi.')});
 $('refresh').onclick=()=>{const u=new URL(location.href);u.searchParams.set('refresh',Date.now().toString());location.assign(u.href)};
 async function bootstrap(){
