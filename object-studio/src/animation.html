@@ -48,7 +48,7 @@
  const DB='OsmanAnimationStudioFramesV1', STORE='frames', META='osman:animation-studio:v1:settings';
  const LIMIT=128, MAXFILE=24*1024*1024, FRAME_SIZE=1024;
  const DIRECTIONS=['NE','NW','SE','SW'];let masters={NE:null,NW:null,SE:null,SW:null},sets={NE:[],NW:[],SE:[],SW:[]},direction='SE',frames=sets.SE,selected=0,rate=100,fps=8,playing=false,lastTick=0,lastDraw=0,busy=false,drag=null,moveEnabled=false,dirty=false;
- let mode='feet',view='animation',equalSize=true,db=null;
+ let mode='feet',view='animation',equalSize=true,db=null;let exportExcluded=new Set();
  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
  const filename=(s)=>String(s).split('/').pop();
  const nameIndex=(n)=>Number((String(n).match(/(?:frame[_-]?|SE[_-]?|[_-])(\d+)(?=\D*$)/i)||[])[1]||0);
@@ -63,7 +63,7 @@
  const img=alphaCanvas();img.width=x1-x0+1;img.height=y1-y0+1;img.getContext('2d').drawImage(raw,x0,y0,img.width,img.height,0,0,img.width,img.height);
  return {blob,canvas:img,w:img.width,h:img.height,original:{w:raw.width,h:raw.height,x:x0,y:y0},center:{x:weightedX/total,y:weightedY/total},x:0,y:0};}
  function frameName(i){return direction+'_'+String(i+1).padStart(2,'0')+'.png'}
- function switchDirection(d){if(!DIRECTIONS.includes(d))return;playing=false;drag=null;direction=d;frames=sets[d];selected=0;savePrefs();sync();}
+ function switchDirection(d){if(!DIRECTIONS.includes(d))return;playing=false;drag=null;exportExcluded.clear();direction=d;frames=sets[d];selected=0;savePrefs();sync();}
  async function openDB(){try{if(!('indexedDB' in window))return null;return await new Promise(resolve=>{let r=indexedDB.open(DB,1);r.onupgradeneeded=()=>r.result.createObjectStore(STORE,{keyPath:'slot'});r.onsuccess=()=>resolve(r.result);r.onerror=()=>resolve(null);})}catch{return null}}
  function record(i,d=direction){let f=sets[d][i],m=masters[d];return {slot:d+':'+i,name:f.name,editedName:f.editedName||null,blob:f.blob,source:f.source,x:f.x,y:f.y,...(i===0&&m?{masterMask:m.blob,maskCols:m.cols,maskRows:m.rows}:{})};}
  function tx(type='readonly'){return db.transaction(STORE,type).objectStore(STORE)}
@@ -75,7 +75,7 @@
  $('fps').value=fps;$('align').value=mode;$('view').value=view;$('equalSize').checked=equalSize;db=await openDB();if(db){const records=await new Promise(resolve=>{let q=tx().getAll();q.onsuccess=()=>resolve(q.result);q.onerror=()=>resolve([])});records.sort((a,b)=>String(a.slot).localeCompare(String(b.slot),undefined,{numeric:true}));for(const it of records){try{let d=typeof it.slot==='number'?'SE':String(it.slot).split(':')[0];if(!DIRECTIONS.includes(d))continue;let slot=typeof it.slot==='number'?it.slot:Number(String(it.slot).split(':')[1]);if(!Number.isSafeInteger(slot)||slot<0||slot>=LIMIT)continue;let f=await decode(it.blob);let source=it.source||it.blob;Object.assign(f,{source,name:it.name||d+'_'+String(slot+1).padStart(2,'0')+'.png',editedName:it.editedName||null,x:Number(it.x)||0,y:Number(it.y)||0});f.referenceFrame=source===it.blob?f:await decode(source);sets[d][slot]=f}catch{}}for(const d of DIRECTIONS)sets[d]=sets[d].filter(Boolean);for(const d of DIRECTIONS){const m=records.find(r=>r.slot===d+':0'||(d==='SE'&&r.slot===0));if(m?.masterMask&&sets[d].length){try{masters[d]=await prepareMaster(m.masterMask,m.maskCols,m.maskRows,sets[d])}catch(e){console.warn('Ana maske yüklenemedi',e)}}}frames=sets[direction]}sync();requestAnimationFrame(loop)}
  async function importList(files){if(!files.length)return; if(frames.length&&!confirm(direction+' yönündeki kareler değiştirilecek. Diğer yönler korunacak. Devam edilsin mi?'))return;
  if(files.length>LIMIT)throw new Error('Bir sette en fazla 128 kare destekleniyor');busy=true;info('PNG kareleri okunuyor…');let incoming=[];
- try{for(const file of files){try{const decoded=await decode(file);incoming.push({...decoded,source:file,referenceFrame:decoded,name:filename(file.name)||frameName(incoming.length)})}catch(e){console.warn('Atlanan kare',file.name,e)}}if(!incoming.length)throw new Error('Geçerli PNG bulunamadı');if(db)await clearDirection(direction);masters[direction]=null;sets[direction]=incoming;frames=sets[direction];selected=0;rate=100;playing=false;for(let i=0;i<frames.length;i++)await saveFrame(i);savePrefs();sync();info(direction+' yönüne '+frames.length+' kare yüklendi; hiçbir eski Terrain / Obje verisi değiştirilmedi.')}finally{busy=false}}
+ try{for(const file of files){try{const decoded=await decode(file);incoming.push({...decoded,source:file,referenceFrame:decoded,name:filename(file.name)||frameName(incoming.length)})}catch(e){console.warn('Atlanan kare',file.name,e)}}if(!incoming.length)throw new Error('Geçerli PNG bulunamadı');if(db)await clearDirection(direction);masters[direction]=null;exportExcluded.clear();sets[direction]=incoming;frames=sets[direction];selected=0;rate=100;playing=false;for(let i=0;i<frames.length;i++)await saveFrame(i);savePrefs();sync();info(direction+' yönüne '+frames.length+' kare yüklendi; hiçbir eski Terrain / Obje verisi değiştirilmedi.')}finally{busy=false}}
  function sortFiles(files){return files.sort((a,b)=>nameIndex(a.name)-nameIndex(b.name)||a.name.localeCompare(b.name,'tr',{numeric:true}))}
  // ZIP central directory parser. Supports conventional STORED and DEFLATE entries.
  function u16(v,i){return v.getUint16(i,true)}function u32(v,i){return v.getUint32(i,true)}
@@ -90,9 +90,9 @@
  async function importSheet(file){let bitmap=await createImageBitmap(file),cols=Math.max(1,Math.floor(+$('sheetCols').value||4)),rows=Math.max(1,Math.floor(+$('sheetRows').value||2));if(cols*rows>LIMIT)throw Error('En fazla 128 kare');let files=[];for(let i=0;i<cols*rows;i++){let x=i%cols,y=Math.floor(i/cols),x0=Math.round(x*bitmap.width/cols),x1=Math.round((x+1)*bitmap.width/cols),y0=Math.round(y*bitmap.height/rows),y1=Math.round((y+1)*bitmap.height/rows),w=Math.max(1,x1-x0),h=Math.max(1,y1-y0),el=alphaCanvas();el.width=w;el.height=h;el.getContext('2d').drawImage(bitmap,x0,y0,w,h,0,0,w,h);let blob=await new Promise(ok=>el.toBlob(ok,'image/png'));files.push(new File([blob],frameName(i),{type:'image/png'}))}bitmap.close();return files}
 
  async function importGroups(groups){const directions=DIRECTIONS.filter(d=>groups[d]?.length);if(!directions.length)throw Error('ZIP içinde desteklenen kare yok');if(directions.some(d=>sets[d].length)&&!confirm('ZIP içindeki '+directions.join(', ')+' yönleri değiştirilecek. Diğer kayıtlar korunacak. Devam edilsin mi?'))return;const decoded={};for(const d of directions){if(groups[d].length>LIMIT)throw Error(d+' yönünde kare sayısı sınırı aşıldı');decoded[d]=[];for(const file of groups[d]){const f=await decode(file);decoded[d].push({...f,source:file,referenceFrame:f,name:file.name})}}for(const d of directions){await clearDirection(d);masters[d]=null;sets[d]=decoded[d];for(let i=0;i<sets[d].length;i++)await saveFrame(i,d)}direction=directions.includes(direction)?direction:directions[0];frames=sets[direction];selected=0;rate=100;playing=false;savePrefs();sync();info(directions.map(d=>d+': '+sets[d].length).join(' · ')+' kare yüklendi. Diğer yönler korundu.')}
- const chosen=()=>active().filter(i=>frames[i]);
+ const chosen=()=>active().filter(i=>frames[i]&&!exportExcluded.has(i));
  function geometry(){let ids=chosen();if(!ids.length)return {maxW:1,maxH:1,meanX:0,meanY:0,meanCX:0,meanCY:0};let vals=ids.map(i=>frames[i]);return {maxW:Math.max(...vals.map(f=>f.w)),maxH:Math.max(...vals.map(f=>f.h)),meanX:vals.reduce((s,f)=>s+f.original.x+f.w/2,0)/vals.length,meanY:vals.reduce((s,f)=>s+f.original.y+f.h/2,0)/vals.length,meanCX:vals.reduce((s,f)=>s+f.center.x,0)/vals.length,meanCY:vals.reduce((s,f)=>s+f.center.y,0)/vals.length};}
- function paint(target,frameIndex,side=FRAME_SIZE,settings={}){let {overlay=false,sourceView=false}=settings;let current=frames[frameIndex];let f=sourceView?(current?.referenceFrame||current):current;if(!f)return;let w=side,h=side,gg=geometry();const overall=equalSize?Math.min(w*.70/gg.maxW,h*.75/gg.maxH):Math.min(w*.70/gg.maxW,h*.75/gg.maxH);
+ function paint(target,frameIndex,side=FRAME_SIZE,settings={}){let {overlay=false,sourceView=false}=settings;let current=frames[frameIndex];let f=sourceView?(current?.referenceFrame||current):current;if(!f)return;let w=side,h=side,gg=geometry();const overall=Math.min(w*.88/gg.maxW,h*.88/gg.maxH);
  let factor=equalSize?Math.min(overall*gg.maxH/f.h,overall*gg.maxW/f.w):overall;
  let x=(w-f.w*factor)/2,y=h*.88-f.h*factor;
  if(mode==='center'){y=(h-f.h*factor)/2}
@@ -103,8 +103,8 @@
  function display(){const w=c.width,h=c.height;ctx.clearRect(0,0,w,h);let ids=chosen();if(!ids.length){ctx.fillStyle='#b2c7ae';ctx.font='19px system-ui';ctx.textAlign='center';ctx.fillText('PNG veya ZIP yükle',w/2,h/2);return}if(view==='average'){let off=alphaCanvas();off.width=w;off.height=h;let g=off.getContext('2d');g.globalAlpha=1/ids.length;for(let i of ids)paint(g,i,w,{overlay:false});ctx.drawImage(off,0,0);return}let i=ids.includes(selected)?selected:ids[0];paint(ctx,i,w,{sourceView:view==='reference'})}
  function sync(){let ids=chosen();if(frames.length&&!ids.includes(selected))selected=ids[0];for(const el of document.querySelectorAll('[data-direction]')){const d=el.dataset.direction;el.classList.toggle('active',d===direction);el.textContent=d+' · '+sets[d].length;}moveEnabled=false;$('current').textContent=frames.length?(ids.indexOf(selected)+1)+' / '+ids.length:'0 / 0';$('densityCount').textContent=ids.length+' / '+frames.length+' kare';$('playbackStatus').textContent=playing?'Oynuyor':'Duraklatıldı';$('play').textContent=playing?'⏸ Duraklat':'▶ Oynat';$('fpsLabel').textContent=fps+' FPS';$('xLabel').textContent=(frames[selected]?.x||0)+' px';$('yLabel').textContent=(frames[selected]?.y||0)+' px';$('x').value=frames[selected]?.x||0;$('y').value=frames[selected]?.y||0;for(const e of document.querySelectorAll('[data-rate]'))e.classList.toggle('active',+e.dataset.rate===rate);
  $('frameTitle').textContent=frames[selected]?direction+' • kare '+String(selected+1).padStart(2,'0'):'Kare seçilmedi';$('frameDesc').textContent=frames[selected]?(frames[selected].name+' • '+(frames[selected].blob!==frames[selected].source?'AI çıktısı':'Kaynak referans')):'İçe aktarılan kareyi seçip AI çıktısını yükle.';
- for(const id of ['replace','original','restorePos','x','y','downloadFrame','downloadAll','prev','next','play'])$(id).disabled=!frames.length;for(const id of ['applySourceMask','exportFrameMask','exportApiMask','exportSheetMask'])$(id).disabled=!frames.length||!masters[direction];$('masterMaskStatus').textContent=masters[direction]?'Maske bağlı: '+masters[direction].cols+'×'+masters[direction].rows+' / '+frames.length+' kare':'Maske yüklü değil.';
- $('thumbs').replaceChildren();for(let i=0;i<frames.length;i++){let f=frames[i],b=document.createElement('button');b.className='thumb'+(i===selected?' active':'')+(ids.includes(i)?'':' omitted');b.title=ids.includes(i)?'Oynatılan kare':'Yoğunluk nedeniyle atlandı';const cv=alphaCanvas();cv.width=112;cv.height=112;let g=cv.getContext('2d');const scale=Math.min(96/f.w,96/f.h);g.drawImage(f.canvas,(112-f.w*scale)/2,(112-f.h*scale)/2,f.w*scale,f.h*scale);const title=document.createElement('strong');title.textContent=String(i+1).padStart(2,'0');const note=document.createElement('small');note.textContent=f.blob!==f.source?'AI':'REF';b.append(cv,title,note);b.onclick=()=>{if(!ids.includes(i)){rate=100;savePrefs()}selected=i;playing=false;sync();};$('thumbs').append(b)}display();}
+ for(const id of ['replace','original','restorePos','x','y','downloadFrame','downloadAll','prev','next','play'])$(id).disabled=!frames.length;for(const id of ['exportFrameMask','exportApiMask','exportSheetMask'])$(id).disabled=!frames.length;$('applySourceMask').disabled=!frames.length||!masters[direction];$('masterMaskStatus').textContent=masters[direction]?'Maske bağlı: '+masters[direction].cols+'×'+masters[direction].rows+' / '+frames.length+' kare':'Maske yüklü değil.';
+ $('thumbs').replaceChildren();for(let i=0;i<frames.length;i++){let f=frames[i],b=document.createElement('button');b.className='thumb'+(i===selected?' active':'')+(ids.includes(i)?'':' omitted');b.title=ids.includes(i)?'Oynatılan kare':'Yoğunluk nedeniyle atlandı';const cv=alphaCanvas();cv.width=112;cv.height=112;let g=cv.getContext('2d');const scale=Math.min(96/f.w,96/f.h);g.drawImage(f.canvas,(112-f.w*scale)/2,(112-f.h*scale)/2,f.w*scale,f.h*scale);const title=document.createElement('strong');title.textContent=String(i+1).padStart(2,'0');const note=document.createElement('small');note.textContent=f.blob!==f.source?'AI':'REF';b.append(cv,title,note);b.onclick=()=>{selected=i;playing=false;sync()};const pick=document.createElement('input');pick.type='checkbox';pick.checked=!exportExcluded.has(i);pick.title='Dışa aktarmaya dahil et';pick.style.cssText='width:20px;height:20px';pick.onclick=e=>e.stopPropagation();pick.onchange=()=>{if(pick.checked)exportExcluded.delete(i);else exportExcluded.add(i);sync()};b.append(pick);$('thumbs').append(b)}display();}
  function step(n){let ids=chosen();if(!ids.length)return;selected=ids[(ids.indexOf(selected)+n+ids.length)%ids.length];sync()}
  function loop(ts){if(playing&&frames.length&&ts-lastTick>=1000/fps){let ids=chosen();if(ids.length){selected=ids[(ids.indexOf(selected)+1)%ids.length];$('current').textContent=(ids.indexOf(selected)+1)+' / '+ids.length;display();for(const el of $('thumbs').children)el.classList.toggle('active',Number(el.querySelector('strong').textContent)===selected+1);}lastTick=ts;}requestAnimationFrame(loop)}
  async function download(blob,name){const url=URL.createObjectURL(blob);let a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}
@@ -144,7 +144,7 @@
  // Each tile starts at the literal grid edge. Never center the entire grid on the square.
  // Keep the SAME source coordinate system for every frame and every exported chunk.
  let allFrames=all.map(e=>e.f),sourceW=Math.max(...allFrames.map(f=>f.original?.w||f.w)),sourceH=Math.max(...allFrames.map(f=>f.original?.h||f.h)),artRects=[];
- for(let i=0;i<n;i++){let f=list[i].f,cx=i%cols,cy=Math.floor(i/cols),x0=Math.round(cx*size/cols),x1=Math.round((cx+1)*size/cols),y0=Math.round(cy*size/rows),y1=Math.round((cy+1)*size/rows),cw=x1-x0,ch=y1-y0,scale=Math.min(cw/sourceW,ch/sourceH),baseX=x0+(cw-sourceW*scale)/2,baseY=y0+(ch-sourceH*scale)/2;
+ for(let i=0;i<n;i++){let f=list[i].f,cx=i%cols,cy=Math.floor(i/cols),x0=Math.round(cx*size/cols),x1=Math.round((cx+1)*size/cols),y0=Math.round(cy*size/rows),y1=Math.round((cy+1)*size/rows),cw=x1-x0,ch=y1-y0,scale=Math.min(cw*.88/sourceW,ch*.88/sourceH),baseX=x0+(cw-sourceW*scale)/2,baseY=y0+(ch-sourceH*scale)/2;
  let fx=f.original?.x||0,fy=f.original?.y||0;
  const sx=baseX+(fx+f.x)*scale,sy=baseY+(fy+f.y)*scale;
  g.drawImage(f.canvas,sx,sy,f.w*scale,f.h*scale);
@@ -204,7 +204,7 @@
     const g=out.getContext('2d');g.drawImage(image,0,0,out.width,out.height);g.globalCompositeOperation='destination-in';g.drawImage(mask,0,0);return out;
   }
   function framePlacement(i,side=FRAME_SIZE){
-    const f=frames[i],gg=geometry(),overall=Math.min(side*.70/gg.maxW,side*.75/gg.maxH);
+    const f=frames[i],gg=geometry(),overall=Math.min(side*.88/gg.maxW,side*.88/gg.maxH);
     const factor=equalSize?Math.min(overall*gg.maxH/f.h,overall*gg.maxW/f.w):overall;
     let x=(side-f.w*factor)/2,y=side*.88-f.h*factor;
     if(mode==='center')y=(side-f.h*factor)/2;
@@ -212,8 +212,9 @@
     else if(mode==='original'){x=(side-f.original.w*factor)/2+f.original.x*factor;y=(side-f.original.h*factor)/2+f.original.y*factor}
     x+=f.x*side/640;y+=f.y*side/640;return {x,y,w:f.w*factor,h:f.h*factor};
   }
+  function frameSilhouette(i){if(masters[direction])return nativeMask(i);const f=frames[i];if(!f)throw Error('Kare bulunamadı');const source=f.referenceFrame?.canvas||f.canvas;const output=alphaCanvas();output.width=f.w;output.height=f.h;const g=output.getContext('2d');g.drawImage(source,0,0,f.w,f.h);g.globalCompositeOperation='source-in';g.fillStyle='#fff';g.fillRect(0,0,f.w,f.h);return output}
   function oneMask(i,api=false){
-    const mask=nativeMask(i),p=framePlacement(i),out=alphaCanvas();out.width=out.height=FRAME_SIZE;
+    const mask=frameSilhouette(i),p=framePlacement(i),out=alphaCanvas();out.width=out.height=FRAME_SIZE;
     const g=out.getContext('2d',{willReadFrequently:true});g.drawImage(mask,p.x,p.y,p.w,p.h);
     if(api){
       const data=g.getImageData(0,0,FRAME_SIZE,FRAME_SIZE);
@@ -224,7 +225,7 @@
   function sheetPlacement(j,cols,rows,size,f,ref){
     const cx=j%cols,cy=Math.floor(j/cols),x0=Math.round(cx*size/cols),x1=Math.round((cx+1)*size/cols),y0=Math.round(cy*size/rows),y1=Math.round((cy+1)*size/rows),
       w=Math.max(...ref.map(v=>v.original?.w||v.w)),h=Math.max(...ref.map(v=>v.original?.h||v.h)),
-      scale=Math.min((x1-x0)/w,(y1-y0)/h),bx=x0+((x1-x0)-w*scale)/2,by=y0+((y1-y0)-h*scale)/2;
+      scale=Math.min((x1-x0)*.88/w,(y1-y0)*.88/h),bx=x0+((x1-x0)-w*scale)/2,by=y0+((y1-y0)-h*scale)/2;
     return {x:bx+((f.original?.x||0)+f.x)*scale,y:by+((f.original?.y||0)+f.y)*scale,w:f.w*scale,h:f.h*scale};
   }
   async function commitMasked(items){
@@ -269,9 +270,9 @@
     for(let i=0;i<copies.length;i++){frames[i]=copies[i];await saveFrame(i)}sync();info('Orijinal kareler maske üzerinden kesildi; ham kaynaklar saklandı.')});
   $('exportFrameMask').onclick=()=>handle(async()=>{await download(await maskPng(oneMask(selected)),frameName(selected).replace('.png','_alpha-mask.png'));info('Şeffaf kare maskesi hazır.')});
   $('exportApiMask').onclick=()=>handle(async()=>{await download(await maskPng(oneMask(selected,true)),frameName(selected).replace('.png','_api-edit-mask.png'));info('API ters-alfa maskesi hazır: karakter şeffaf.')});
-  $('exportSheetMask').onclick=()=>handle(async()=>{const ids=chosen();if(!ids.length||!masters[direction])return;const n=ids.length,cols=$('exportCols').value==='auto'?Math.ceil(Math.sqrt(n)):Math.min(n,+$('exportCols').value),rows=Math.ceil(n/cols),size=Number($('exportSize').value),
+  $('exportSheetMask').onclick=()=>handle(async()=>{const ids=chosen();if(!ids.length)return;const n=ids.length,cols=$('exportCols').value==='auto'?Math.ceil(Math.sqrt(n)):Math.min(n,+$('exportCols').value),rows=Math.ceil(n/cols),size=Number($('exportSize').value),
     out=alphaCanvas();out.width=out.height=size;const g=out.getContext('2d'),ref=ids.map(i=>frames[i]);
-    for(let j=0;j<n;j++){const i=ids[j],p=sheetPlacement(j,cols,rows,size,frames[i],ref);g.drawImage(nativeMask(i),p.x,p.y,p.w,p.h)}
+    for(let j=0;j<n;j++){const i=ids[j],p=sheetPlacement(j,cols,rows,size,frames[i],ref);g.drawImage(frameSilhouette(i),p.x,p.y,p.w,p.h)}
     await download(await maskPng(out),direction+'_'+n+'frame_'+cols+'x'+rows+'_alpha-mask.png');info('Atlas maskesi: AI geri alırken '+cols+' sütun, '+rows+' satır seç.')});
   $('importMaskedSheet').onchange=e=>handle(async()=>{const f=e.target.files?.[0];if(f)await importMaskedAtlas(f);e.target.value=''});
 
@@ -349,7 +350,9 @@
    const preview=by('stage').closest('section');preview.querySelectorAll('.eyebrow')[0].textContent='ÖNİZLEME';
    move(by('densities').parentElement.querySelector('#densities'),settings);
    move(by('densityCount').closest('.optionrow'),settings);
-   move(by('thumbs'),settings);
+   const picker=document.createElement('div');picker.className='selected';picker.innerHTML='<strong>Export kareleri</strong><p class="hint">Kareyi işaretle: yalnız seçilenler dışa aktarılır.</p><div class="buttonrow"><button id="selectEveryFrame" type="button">Tümünü seç</button><button id="selectNoFrames" type="button">Seçimi temizle</button></div>';sheet.append(picker);move(by('thumbs'),picker);
+   by('selectEveryFrame').onclick=()=>{exportExcluded.clear();sync()};
+   by('selectNoFrames').onclick=()=>{for(let i=0;i<frames.length;i++)exportExcluded.add(i);sync()};
    const prompts=document.createElement('details');prompts.className='selected';prompts.innerHTML='<summary>AI promptları · tek kare / spritesheet</summary>';sheet.append(prompts);
    move(by('prompt'),prompts);move(by('copy'),prompts);move(by('sheetPrompt'),prompts);move(by('copySheetPrompt'),prompts);
    move(by('resetAll'),origin);
