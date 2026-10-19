@@ -5,18 +5,14 @@ import path from 'node:path';
 import vm from 'node:vm';
 import {spawnSync} from 'node:child_process';
 const root=path.resolve(import.meta.dirname,'..');
-test('standalone mobile animation page preserves independent project storage',()=>{
+test('mobile animation is one preview, single-frame only, preserves IndexedDB records',()=>{
  const html=fs.readFileSync(path.join(root,'src/animation.html'),'utf8');
- for(const key of ['ANIMATION STUDIO','OsmanAnimationStudioFramesV1','[data-rate]','100','50','25','loadPNG','loadZIP','loadSheet','replace','average','downloadAll','pngBytes','nativeMask'])assert.ok(html.includes(key),'missing '+key);
- for(const dir of ['NE','NW','SE','SW'])assert.match(html,new RegExp('data-direction="'+dir+'"'),'missing direction '+dir);
- for(const key of ['importGroups(groups)','let groups={NE:[],NW:[],SE:[],SW:[]}','clearDirection(d)','slot:d+\':\'+i','moveEnabled=false','if(!moveEnabled||!frames[selected]'])assert.ok(html.includes(key),'missing '+key);
- for(const key of ['exportSheet','exportScope','exportSize','exportCols','sheetCols','sheetRows','max="60"'])assert.ok(html.includes(key),'missing '+key);
- assert.ok(!html.includes("$('moveToggle').onclick"),'preview dragging must stay disabled');
- assert.ok(!html.includes('let chosen=matches.filter'),'ZIP importer must not silently restrict to SE');
- assert.ok(html.includes('width=device-width'));
- assert.ok(!html.includes('OsmanTerrainStudioAssets')&&!html.includes('OsmanObjectStudioAssets'));
- const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];assert.ok(js);
- const syntax=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});assert.equal(syntax.status,0,syntax.stderr);
+ for(const k of ['ANIMATION STUDIO','OsmanAnimationStudioFramesV1','data-mode="compare"','id="stage"','id="sourceInput"','id="variantInput"','id="exportOriginal"','id="exportMask"','id="openBlender"','id="strip"','makeMask(','constrainVariant(','restore()','SE','SW','NE','NW'])assert.ok(html.includes(k),'missing '+k);
+ for(const forbidden of ['spritesheet','Spritesheet','loadMasterMask','exportSheetMask','drawNoncontactGrid','drawDualMagentaGuide','sheetCols','JSZip'])assert.ok(!html.includes(forbidden),'retired UX remains: '+forbidden);
+ const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];assert.ok(js,'missing inline script');
+ const run=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});assert.equal(run.status,0,run.stderr);
+ assert.ok(html.includes("r.source instanceof Blob"),'legacy source must be read without modifying DB');
+ assert.ok(html.includes("slot:d+':'+i"),'existing per-direction keys must stay compatible');
 });
 test('production build includes new animation page and both navigation links',()=>{
  const run=spawnSync(process.execPath,['scripts/build.mjs'],{cwd:root,env:{...process.env,BUILD_SHA:'0123456789abcdef0123456789abcdef01234567'},encoding:'utf8'});
@@ -55,16 +51,13 @@ test('final variant editor exports individual PNG and splits 32 into chunks',()=
  const syntax=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});assert.equal(syntax.status,0,syntax.stderr);
 });
 
-test('spritesheet chunk export belongs to main animation export',()=>{
- const main=fs.readFileSync(path.join(root,'src/animation.html'),'utf8');
- const compare=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
- for(const key of ['exportChunk','exportChunkCustom','16 karelik parçalar','mineclonie_spritesheet_'])assert.ok(main.includes(key),'missing '+key);
- assert.ok(!compare.includes('id="chunkExport"'),'comparison must not have chunk export');
- const js=main.match(/<script>([\s\S]*?)<\/script>/)?.[1];
- const syntax=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
- assert.equal(syntax.status,0,syntax.stderr);
+test('single PNG export preserves source, variant and auto mask without external atlas import',()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation.html'),'utf8');
+ for(const key of ["makeMask(d,i)","255-data.data[k+3]","constrainVariant(file,src)","result.data[k+3]=alpha","frame_'+String(i+1).padStart(2,'0')","zipOriginal","zipMasks"]){
+   assert.ok(html.includes(key),'missing mask safety '+key);
+ }
+ assert.ok(!html.includes("loadMasterMask"));
 });
-
 test('comparison merges ordered spritesheet PNG parts',()=>{
  const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
  for(const key of ['input.multiple=true','combineParts(v)','partOrder(parts)','partStart(name)','Birleşik varyant'])assert.ok(html.includes(key),'missing '+key);
@@ -73,37 +66,33 @@ test('comparison merges ordered spritesheet PNG parts',()=>{
  assert.equal(syntax.status,0,syntax.stderr);
 });
 
-test('spritesheet export preserves a fixed coordinate system across chunks',()=>{
+test('single-frame ZIP input is bounded, verified and independent of page layout',()=>{
  const html=fs.readFileSync(path.join(root,'src/animation.html'),'utf8');
- for(const key of ['sourceW=Math.max','sourceH=Math.max','fx=f.original?.x','fy=f.original?.y','Math.round(cx*size/cols)','Math.round(cy*size/rows)'])assert.ok(html.includes(key),'missing '+key);
- const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
- const syntax=spawnSync(process.execPath,['--check'],{input:js,encoding:'utf8'});
- assert.equal(syntax.status,0,syntax.stderr);
+ for(const key of ['function unzip(file)','function crc32(data)','ZIP doğrulaması başarısız','File([data],name','function makeZip(files)','ZIP boyutu çok büyük'])
+   assert.ok(html.includes(key),'missing '+key);
+ assert.ok(html.includes("frameNumber(a.name)-frameNumber(b.name)"));
 });
-
-test('animation pages expose stamped build and live freshness status',()=>{
- for(const page of ['animation.html','animation-compare.html']){
-  const source=fs.readFileSync(path.join(root,'src',page),'utf8');
-  for(const key of ['versionBar','pageBuild','versionState','versionRefresh','version_check=','cache:\'no-store\''])assert.ok(source.includes(key),'missing '+key+' in '+page);
- }
+test('new animation is a standalone stamped build; archived variant keeps version guard',()=>{
+ const source=fs.readFileSync(path.join(root,'src/animation.html'),'utf8');
+ for(const key of ['__ANIMATION_BUILD_SHA__','buildBadge','version_check=','cache:\'no-store\'','id="refresh"'])assert.ok(source.includes(key),'missing '+key);
+ const compare=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
+ for(const key of ['versionBar','pageBuild','versionState','versionRefresh'])assert.ok(compare.includes(key),'archived screen lost '+key);
  const run=spawnSync(process.execPath,['scripts/build.mjs'],{cwd:root,env:{...process.env,BUILD_SHA:'0123456789abcdef0123456789abcdef01234567'},encoding:'utf8'});
  assert.equal(run.status,0,run.stderr);
- for(const page of ['animation.html','animation-compare.html']){
-  const built=fs.readFileSync(path.join(root,'dist',page),'utf8');
-  assert.ok(built.includes('0123456789abcdef0123456789abcdef01234567'));
-  assert.ok(!built.includes('__ANIMATION_BUILD_SHA__'));
- }
+ const built=fs.readFileSync(path.join(root,'dist/animation.html'),'utf8');
+ assert.ok(built.includes('0123456789abcdef0123456789abcdef01234567'));
+ assert.ok(!built.includes('__ANIMATION_BUILD_SHA__'));
 });
-
-test('all four Studio pages show shared build and refresh-all control',()=>{
+test('shared build version remains on other pages without cluttering new animation stage',()=>{
  const run=spawnSync(process.execPath,['scripts/build.mjs'],{cwd:root,env:{...process.env,BUILD_SHA:'0123456789abcdef0123456789abcdef01234567'},encoding:'utf8'});
  assert.equal(run.status,0,run.stderr);
- for(const name of ['latest.html','terrain.html','animation.html','animation-compare.html']){
-  const page=fs.readFileSync(path.join(root,'dist',name),'utf8');
-  for(const key of ['studioBuildBar','studioRefreshAll','Tüm sayfaları güncelle','0123456789abcdef0123456789abcdef01234567'])assert.ok(page.includes(key),name+' missing '+key);
+ for(const name of ['latest.html','terrain.html','animation-compare.html']){
+   const page=fs.readFileSync(path.join(root,'dist',name),'utf8');
+   assert.ok(page.includes('studioBuildBar')&&page.includes('0123456789abcdef0123456789abcdef01234567'));
  }
+ const page=fs.readFileSync(path.join(root,'dist/animation.html'),'utf8');
+ assert.ok(page.includes('id="stage"')&&page.includes('0123456789abcdef0123456789abcdef01234567'));
 });
-
 test('final alignment has independent reference and variant scales',()=>{
  const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
  for(const key of ['editorScale','autoScale','g.refScale','referenceScaleFactor','v.scale'])assert.ok(html.includes(key),'missing '+key);
@@ -300,8 +289,13 @@ test('editor, live preview and exports share the same mapped original geometry f
 });
 
 
-test('magenta grid code has been retired and export is clean transparent RGBA',()=>{const html=fs.readFileSync(path.join(root,'src/animation.html'),'utf8');for(const key of ['drawDualMagentaGuide','drawNoncontactGrid','exportAIGrid','exportGridDensity','drawGrid(g'])assert.ok(!html.includes(key),'legacy grid remains: '+key);for(const key of ['organizeStudio','loadMasterMask','importMaskedAtlas','exportSheetMask','exportFrameMask'])assert.ok(html.includes(key),'missing consolidated workflow '+key)});
-
+test('animation no longer generates magenta guides or sprite atlas',()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation.html'),'utf8');
+ for(const forbidden of ['drawDualMagentaGuide','drawNoncontactGrid','exportAIGrid','exportGridDensity','magenta grid','spritesheet']){
+   assert.ok(!html.includes(forbidden),'legacy guide remains: '+forbidden)
+ }
+ assert.ok(html.includes('getImageData')&&html.includes('putImageData'));
+});
 test('3×3 PNGs preserve 8 real frames and omit trailing ninth blank slot when merging pages',()=>{
  const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
  for(const key of ['defaultFilledFrames','countInput.onchange','manualFrameCount','slots.slice(0,filled)']){
@@ -327,15 +321,12 @@ test('3×3 PNGs preserve 8 real frames and omit trailing ninth blank slot when m
  assert.throws(()=>assembleParts([{name:'invalid.png',image:{tag:'x'},cols:3,rows:3,usedFrames:10}]));
 });
 
-test('alpha master mask roundtrip is opt-in and preserves original frame source',()=>{
+test('AI variant is clipped to source silhouette and original is never silently replaced',()=>{
  const html=fs.readFileSync(path.join(root,'src/animation.html'),'utf8');
- for(const id of ['loadMasterMask','maskCols','maskRows','applySourceMask','exportFrameMask','exportApiMask','exportSheetMask','importMaskedSheet'])
-   assert.ok(html.includes('id="'+id+'"'),'missing mask control '+id);
- for(const fn of ['prepareMaster','nativeMask','clipWithMask','oneMask','sheetPlacement','importMaskedFrame','importMaskedAtlas','commitMasked'])
-   assert.ok(html.includes('function '+fn+'(')||html.includes('async function '+fn+'('),'missing mask implementation '+fn);
- assert.match(html,/masterMask:m\.blob/,'mask should persist in existing frame record');
- assert.match(html,/const f=frames\[selected\],p=framePlacement\(selected\)/,'single-frame import should reuse exported placement');
- assert.match(html,/canvas:clipWithMask\(cv,nativeMask\(i\)\)/,'sheet import must be clipped to source silhouette');
- assert.match(html,/frames\[item\.i\]=\{\.\.\.frames\[item\.i\],canvas:item\.canvas,blob:item\.blob,editedName:item\.name\}/,'variant replacement must preserve original source reference');
- assert.match(html,/const editable=data\.data\[j\+3\]>128/,'API editing alpha inversion must be explicit');
+ assert.ok(html.includes("result.data[k+3]=alpha"),'variant alpha must equal canonical source alpha');
+ assert.ok(html.includes("source:frame.source"),'original source Blob must be retained');
+ assert.ok(html.includes("variant:blob"),'AI variant is stored separately');
+ assert.ok(html.includes("const changed={...fr,variant:blob"),'variant write must retain source');
+ assert.ok(html.includes("source:r.source"),'pre-existing records must restore');
+ assert.ok(html.includes("new Blob([...parts,...central,end]"),'ZIP should be self-contained');
 });
