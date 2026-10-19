@@ -33,6 +33,24 @@ jobs:
         run: |
           node --check world-builder/app.js
           node --check world-builder/assembly.js
+      - name: Round 2 World Builder R2 semantic JS-Python contract tests
+        run: |
+          python3 -m pip install jsonschema
+          node --check world-builder/r2-core.mjs
+          node --check world-builder/r2-app.mjs
+          node --test world-builder/tests/r2-model.test.mjs
+      - name: R2 actual mobile Chromium smoke (no deployment)
+        run: |
+          npm --prefix world-builder install --no-audit --no-fund
+          ./world-builder/node_modules/.bin/playwright install --with-deps chromium
+          python3 -m http.server 8876 --bind 127.0.0.1 >/tmp/osman-r2-http.log 2>&1 &
+          node world-builder/tests/r2-mobile-smoke.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: osman-r2-editor-mobile-smoke
+          path: world-builder/screenshots/r2-*.png
+          if-no-files-found: warn
       - name: Build composite Pages artifact without replacing the old preview
         run: |
           python3 object-studio/scripts/assemble_pages.py \
@@ -41,6 +59,11 @@ jobs:
             --out _site \
             --preview-sha "$GITHUB_SHA" \
             --main-sha "$GITHUB_SHA"
+          mkdir -p _site/data/worldbuild
+          cp data/worldbuild/osman_overworld.v2.json data/worldbuild/fisilti_ormani.r2.v1.json _site/data/worldbuild/
+          test -s _site/r2.html
+          test -s _site/r2-core.mjs
+          test -s _site/r2-app.mjs
           test -s _site/index.html
           test -s _site/world-builder.html
           test -s _site/object-studio/character-rig.html
@@ -56,10 +79,13 @@ jobs:
           assert 'OBJECT STUDIO' in pathlib.Path('_site/object-studio/latest.html').read_text()
           PY
       - uses: actions/configure-pages@v5
+        if: github.ref == 'refs/heads/main'
       - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main'
         with:
           path: _site
   deploy:
+    if: github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     environment:

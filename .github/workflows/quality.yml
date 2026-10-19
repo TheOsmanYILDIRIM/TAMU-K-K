@@ -82,6 +82,45 @@ jobs:
             timeout 90s xvfb-run -a love game/love 2>&1 | tee /tmp/stat-stage6-reopen.log
           grep -q 'LOVE_STAGE6_REOPEN_OK' /tmp/stat-stage6-reopen.log
           grep -q 'LOVE_INTEGRATION_SMOKE_OK' /tmp/stat-stage6-reopen.log
+      - name: R2 H real A-F combined schema, Node, Lua5.4 and LuaJIT
+        if: github.ref_name == 'main' || github.ref_name == 'experiment/worldbuild-r2-compat-20261019'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/validate_worldbuild_contract.py data/worldbuild/fisilti_ormani.r2.v1.json
+          python scripts/validate_worldbuild_map_v2.py
+          (cd world-builder && node --test tests/r2-model.test.mjs)
+          cd game/love
+          export OSMAN_R2_B_TOPOGRAPHY_PATH="$PWD/world/topography_surface.lua"
+          for interpreter in lua5.4 luajit; do
+            "$interpreter" tests/r2_topography_surface.lua
+            "$interpreter" tests/r2_features_hydrology.lua
+            "$interpreter" tests/r2_visual_terrain.lua
+            "$interpreter" tests/r2_population_ecology.lua
+            "$interpreter" tests/r2_h_compat.lua
+          done
+      - name: R2 H real LÖVE/Xvfb authored river + ecology PNG smoke
+        if: github.ref_name == 'main' || github.ref_name == 'experiment/worldbuild-r2-compat-20261019'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/osman-r2-h-preview
+          cp game/love/tests/r2_h_visual_smoke.lua /tmp/osman-r2-h-preview/main.lua
+          for scene in river spawn; do
+            (cd game/love && OSMAN_R2_H_SCENE="$scene" timeout 120s xvfb-run -a love /tmp/osman-r2-h-preview) 2>&1 | tee "/tmp/r2-h-$scene.log"
+            grep -q "R2_H_LOVE_SMOKE_OK mode=$scene" "/tmp/r2-h-$scene.log"
+            shot="$(find "$HOME/.local/share/love" -name "r2-h-compat-$scene.png" -print -quit)"
+            test -n "$shot"
+            cp "$shot" "/tmp/r2-h-compat-$scene.png"
+            file "/tmp/r2-h-compat-$scene.png" | grep -q 'PNG image data'
+          done
+      - name: Upload R2 H integrated world preview
+        if: github.ref_name == 'main' || github.ref_name == 'experiment/worldbuild-r2-compat-20261019'
+        uses: actions/upload-artifact@v4
+        with:
+          name: r2-h-compat-world-preview
+          path: /tmp/r2-h-compat-*.png
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: success()
         with:

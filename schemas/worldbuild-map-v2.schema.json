@@ -1,0 +1,375 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/TheOsmanYILDIRIM/oyun/schemas/worldbuild-map-v2.schema.json",
+  "title": "Osman overworld authored/procedural planning manifest v2 (authoring only)",
+  "description": "Metadata manifest; v1 authored source files are independently schema-validated; no runtime activation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "schema_version",
+    "map_id",
+    "name",
+    "coordinate_space",
+    "projection",
+    "seed",
+    "generator_version",
+    "bounds",
+    "frontiers",
+    "generation",
+    "expansion",
+    "areas",
+    "authored_maps",
+    "sites",
+    "routes"
+  ],
+  "properties": {
+    "format": {
+      "const": "osman-worldmap-v2"
+    },
+    "schema_version": {
+      "const": 2
+    },
+    "map_id": {
+      "type": "string",
+      "pattern": "^worldmap:[a-z][a-z0-9-]{1,63}$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "coordinate_space": {
+      "const": "world"
+    },
+    "projection": {
+      "const": "iso-45"
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    },
+    "generator_version": {
+      "const": 1
+    },
+    "bounds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "min_x",
+        "min_y",
+        "max_x",
+        "max_y",
+        "units",
+        "enforcement"
+      ],
+      "properties": {
+        "min_x": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "min_y": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "max_x": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "max_y": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "units": {
+          "const": "world"
+        },
+        "enforcement": {
+          "const": "design_only"
+        }
+      }
+    },
+    "frontiers": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "edge",
+          "form",
+          "blocking_intent"
+        ],
+        "properties": {
+          "edge": {
+            "enum": [
+              "north",
+              "south",
+              "east",
+              "west"
+            ]
+          },
+          "form": {
+            "enum": [
+              "highlands",
+              "mountain_ridge",
+              "sea_cliffs",
+              "coastline",
+              "marshes"
+            ]
+          },
+          "blocking_intent": {
+            "const": true
+          }
+        }
+      }
+    },
+    "generation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authored_target_min",
+        "authored_target_max",
+        "target_horizon",
+        "fallback",
+        "map_activation"
+      ],
+      "properties": {
+        "authored_target_min": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "authored_target_max": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "target_horizon": {
+          "const": "world_maturity"
+        },
+        "fallback": {
+          "const": "generator-v1"
+        },
+        "map_activation": {
+          "const": "opt_in_future_adapter"
+        }
+      }
+    },
+    "expansion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy",
+        "preserve_global_coordinates",
+        "preserve_existing_ids"
+      ],
+      "properties": {
+        "policy": {
+          "const": "adjacent_versioned_worldmaps"
+        },
+        "preserve_global_coordinates": {
+          "const": true
+        },
+        "preserve_existing_ids": {
+          "const": true
+        }
+      }
+    },
+    "areas": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "polygon",
+          "development"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^area:[a-z][a-z0-9-]{1,63}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "polygon": {
+            "type": "array",
+            "minItems": 4,
+            "maxItems": 4,
+            "items": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number",
+                  "minimum": -1000000,
+                  "maximum": 1000000
+                },
+                {
+                  "type": "number",
+                  "minimum": -1000000,
+                  "maximum": 1000000
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "development": {
+            "enum": [
+              "authored_anchor",
+              "procedural_first"
+            ]
+          }
+        }
+      }
+    },
+    "authored_maps": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "area_id",
+          "path"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^worldmap:[a-z][a-z0-9-]{1,63}$"
+          },
+          "area_id": {
+            "type": "string",
+            "pattern": "^area:[a-z][a-z0-9-]{1,63}$"
+          },
+          "path": {
+            "type": "string",
+            "pattern": "^data/worldbuild/[a-z0-9][a-z0-9_.-]*\\.v1\\.json$"
+          }
+        }
+      }
+    },
+    "sites": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "region_id",
+          "anchor",
+          "role",
+          "discover_step"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^site:[a-z][a-z0-9-]{1,63}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "region_id": {
+            "type": "string",
+            "pattern": "^region:[a-z][a-z0-9-]{1,63}$"
+          },
+          "anchor": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "number",
+                "minimum": -1000000,
+                "maximum": 1000000
+              },
+              {
+                "type": "number",
+                "minimum": -1000000,
+                "maximum": 1000000
+              }
+            ],
+            "items": false,
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "role": {
+            "enum": [
+              "spawn",
+              "crossroads",
+              "ruin",
+              "crossing",
+              "vista",
+              "pass",
+              "waterfront",
+              "resource"
+            ]
+          },
+          "discover_step": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          }
+        }
+      }
+    },
+    "routes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "feature_id",
+          "sites"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^route:[a-z][a-z0-9-]{1,63}$"
+          },
+          "kind": {
+            "enum": [
+              "main",
+              "optional"
+            ]
+          },
+          "feature_id": {
+            "type": "string",
+            "pattern": "^feature:[a-z][a-z0-9-]{1,63}$"
+          },
+          "sites": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 32,
+            "items": {
+              "type": "string",
+              "pattern": "^site:[a-z][a-z0-9-]{1,63}$"
+            }
+          }
+        }
+      }
+    }
+  }
+}
