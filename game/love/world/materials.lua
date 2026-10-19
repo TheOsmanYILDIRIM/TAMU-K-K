@@ -62,4 +62,49 @@ function M.fleck(x,y,salt)
  local n=math.sin(x*12.9898+y*78.233+salt*37.719)*43758.5453
  return n-math.floor(n)
 end
+
+-- Renderer-only authored polygon bounds. Gameplay keeps the exact polygon.
+-- Preprocessing once per immutable authored map avoids repeated edge allocation.
+function M.authored_edges(regions)
+ assert(type(regions)=="table","authored regions required")
+ local result={}
+ for _,region in ipairs(regions) do
+  local polygon=assert(region.polygon,"authored polygon required")
+  assert(#polygon>=3,"authored polygon too short")
+  for i=1,#polygon do
+   local a,b=polygon[i],polygon[i%#polygon+1]
+   local ax,ay,bx,by=a[1],a[2],b[1],b[2]
+   assert(finite(ax) and finite(ay) and finite(bx) and finite(by),
+     "nonfinite authored polygon")
+   local dx,dy=bx-ax,by-ay
+   local length2=dx*dx+dy*dy
+   if length2>0 then
+    result[#result+1]={ax=ax,ay=ay,dx=dx,dy=dy,length2=length2,
+     minx=math.min(ax,bx),maxx=math.max(ax,bx),
+     miny=math.min(ay,by),maxy=math.max(ay,by)}
+   end
+  end
+ end
+ return result
+end
+-- Softens only the DRAWN biome overlay. No region membership or collision
+-- changes; all noise is continuous in absolute world space (camera/chunk safe).
+function M.authored_feather(edges,x,y,band)
+ assert(type(edges)=="table" and finite(x) and finite(y)
+   and finite(band) and band>0,"invalid authored feather arguments")
+ local reach=band*1.25
+ local closest=reach*reach
+ for _,e in ipairs(edges) do
+  if x>=e.minx-reach and x<=e.maxx+reach
+   and y>=e.miny-reach and y<=e.maxy+reach then
+   local t=clamp(((x-e.ax)*e.dx+(y-e.ay)*e.dy)/e.length2)
+   local ddx=x-e.ax-t*e.dx
+   local ddy=y-e.ay-t*e.dy
+   closest=math.min(closest,ddx*ddx+ddy*ddy)
+  end
+ end
+ if closest==reach*reach then return 1 end
+ local irregularity=.12*math.sin(x/17+y/23)+.075*math.cos(x/11-y/19)
+ return M.edge_alpha(math.sqrt(closest)*(1+irregularity),band)
+end
 return M

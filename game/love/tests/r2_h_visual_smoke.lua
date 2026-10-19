@@ -16,6 +16,7 @@ local mode=os.getenv("OSMAN_R2_H_SCENE") or "river"
 assert(mode=="river" or mode=="spawn")
 local camera=Camera.new()
 local w,h,frames=720,1100,0
+local origin_x,origin_y,camera_moves
 -- River width 22 world units: 32-unit Marching samples alias the stream.
 -- Use 8-unit world-space water contour sampling in the isolated diagnostic;
 -- the production game and Generator v1 remain unchanged.
@@ -26,15 +27,35 @@ function love.load()
  assert(love.window.setMode(w,h,{resizable=false,msaa=0}))
  if mode=="river" then camera.x,camera.y=704,128
  else camera.x,camera.y=64,128 end
+ origin_x,origin_y=camera.x,camera.y
+ camera_moves=0
  camera.zoom=1.4
+ if mode=="river" then
+  local wet,signed=scene.query:water_mask(704,128)
+  assert(wet and signed>0 and scene.valley:offset(704,128)<-1.99,
+   "renderer must use the existing water mask and valley")
+ end
  stream:update(camera,w,h,48)
  points=scene.population:objects_in({min_x=camera.x-256,min_y=camera.y-256,
  max_x=camera.x+256,max_y=camera.y+256})
 end
 function love.update()
  frames=frames+1
+ -- Exercise GPU residency and stable world-space water under a moving camera.
+ -- Return home before frame 12 so the PNG is comparable to the H baseline.
+ if frames==7 then
+  camera.x,camera.y=origin_x+64,origin_y-32
+  stream:update(camera,w,h,48)
+  camera_moves=camera_moves+1
+ elseif frames==10 then
+  camera.x,camera.y=origin_x,origin_y
+  stream:update(camera,w,h,48)
+  camera_moves=camera_moves+1
+ end
  if frames>22 then
-  print("R2_H_LOVE_SMOKE_OK mode="..mode.." objects="..#points)
+  assert(camera_moves==2 and camera.x==origin_x and camera.y==origin_y)
+  print("R2_H_LOVE_SMOKE_OK mode="..mode.." objects="..#points
+    .." camera_moves="..camera_moves)
   io.stdout:flush();love.event.quit(0)
  end
 end

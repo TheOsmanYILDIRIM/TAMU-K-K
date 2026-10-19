@@ -1,6 +1,7 @@
 -- R2 D: optional shaderless organic terrain; logic and saves remain authoritative.
 local Iso=require("world.iso")
 local Materials=require("world.materials")
+local Marching=require("world.marching")
 local Terrain={}
 local water={.19,.37,.46}
 local profiles={low={grid=64,fleck=64},standard={grid=32,fleck=32},high={grid=16,fleck=16}}
@@ -32,7 +33,21 @@ local function mesh(flat,biome,query,opts)
   local alpha=1
   if biome~="meadow" then
    local signed=query.field:channel(p[1],p[2],biome)
-   alpha=Materials.edge_alpha(signed,biome=="water" and .035 or .055)
+   if biome=="water" then
+    -- C's authored water uses signed WORLD UNITS; Generator v1 water
+    -- continues using its original dimensionless scalar and threshold.
+    local band=.035
+    if opts.routes and opts.routes.features then
+     local authored=opts.routes.features:signed(p[1],p[2],"water")
+     if authored>=0 then band=3.2 end
+    end
+    alpha=Materials.edge_alpha(signed,band)
+   else
+    alpha=Materials.edge_alpha(signed,.055)
+    if opts.boundaries then
+     alpha=alpha*Materials.authored_feather(opts.boundaries,p[1],p[2],24)
+    end
+   end
   end
   vertex(out,p[1],p[2],biome,opts,alpha)
  end
@@ -100,6 +115,9 @@ local function detail_mesh(chunk,query,opts)
 end
 function Terrain.invalidate(chunk)
  if not chunk then return end
+ -- Stream evicts _meshes; keep the alias in sync so camera panning
+ -- releases the very same LÖVE GPU resources as explicit invalidation.
+ if chunk._meshes==chunk._terrain_meshes then chunk._meshes=nil end
  if chunk._terrain_meshes then
   for _,v in pairs(chunk._terrain_meshes) do
    if v and v.release then v:release() end
@@ -111,15 +129,66 @@ function Terrain.profile(quality)
  local p=assert(profiles[quality or "standard"],"unknown R2 quality profile")
  return {grid=p.grid,fleck=p.fleck}
 end
+
+-- Only chunks intersecting a validated authored river need finer contour
+-- sampling. Always sample the SAME world-space field used by collisions:
+-- this changes raster fidelity, never the water mask or valley physics.
+local function river_near_chunk(chunk,routes)
+ local features=routes and routes.features and routes.features.features
+ if not features then return false end
+ for _,feature in ipairs(features) do
+  if feature.kind=="water" then
+   local margin=feature.width/2+4
+   for i=1,#feature.points-1 do
+    local a,b=feature.points[i],feature.points[i+1]
+    local minx,maxx=math.min(a[1],b[1])-margin,math.max(a[1],b[1])+margin
+    local miny,maxy=math.min(a[2],b[2])-margin,math.max(a[2],b[2])+margin
+    if maxx>=chunk.x and minx<=chunk.x+chunk.size
+      and maxy>=chunk.y and miny<=chunk.y+chunk.size then
+     return true
+    end
+   end
+  end
+ end
+ return false
+end
+local function water_vertices(chunk,query,opts)
+ if not river_near_chunk(chunk,opts.routes) then
+  return chunk.layers.water and chunk.layers.water.vertices
+ end
+ -- R2 H uses 8-unit gameplay/stream samples. Refine only the rendered
+ -- water contour to 4-unit cells, with absolute-origin Marching Squares.
+ assert(chunk.size%4==0,"fine river step must divide chunk size")
+ return Marching.build(function(x,y)
+  return query.field:channel(x,y,"water")
+ end,chunk.x,chunk.y,chunk.size,4,0).vertices
+end
+local boundaries_cache=setmetatable({},{__mode="k"})
+local function authored_boundaries(query,routes)
+ local authored=routes and routes.base and routes.base.authored
+ if not authored then
+  authored=query.authored
+  if authored and authored.authored then authored=authored.authored end
+ end
+ if not authored or not authored.regions then return nil end
+ local edges=boundaries_cache[authored]
+ if not edges then
+  edges=Materials.authored_edges(authored.regions)
+  boundaries_cache[authored]=edges
+ end
+ return edges
+end
 local function rebuild(chunk,query,opts,key)
  local l=assert(chunk.layers,"chunk layers required")
  local meshes={
   meadow=meadow(chunk,opts),
   forest=mesh(l.forest and l.forest.vertices,"forest",query,opts),
   rocky=mesh(l.rocky and l.rocky.vertices,"rocky",query,opts),
-  water=mesh(l.water and l.water.vertices,"water",query,opts),
+  water=mesh(water_vertices(chunk,query,opts),"water",query,opts),
   detail=detail_mesh(chunk,query,opts)}
+ assert(not chunk._meshes,"another renderer owns chunk GPU meshes")
  chunk._terrain_meshes=meshes
+ chunk._meshes=meshes -- existing Stream eviction releases this table
  chunk._terrain_key=key
  return meshes
 end
@@ -138,7 +207,8 @@ function Terrain.draw(stream,camera,width,height,options)
      type(options.topography.sample)=="function","B API required")
  end
  local opts={grid=profile.grid,fleck=profile.fleck,
-  topography=options.topography,height_scale=scale,routes=options.routes}
+  topography=options.topography,height_scale=scale,routes=options.routes,
+  boundaries=authored_boundaries(stream.query,options.routes)}
  local key=quality..":"..tostring(scale)..":"..tostring(options.topography)
           ..":"..tostring(options.routes)..":"..tostring(stream.query)
  lg.clear(.065,.105,.118,1)
