@@ -107,6 +107,30 @@ kbd{font-family:inherit;color:var(--pale)}
       <div class="mini">Diğer stüdyo kayıtlarına dokunulmaz.</div>
     </div></details>
   </section>
+<section class="panel" id="batchStudio" aria-label="Toplu üretim ve maskeli düzeltme">
+  <h2>TOPLU ÜRETİM → MASKELİ DÜZELTME</h2>
+  <div class="actiongrid" style="margin-bottom:8px">
+   <label style="display:flex;flex-direction:column;gap:5px">Kare sayısı
+    <select id="batchCount" style="width:100%;background:#26392d;color:#e9f0e8;border:1px solid #45624e;border-radius:9px;padding:9px"><option>8</option><option selected>16</option><option>32</option></select>
+   </label>
+   <button type="button" id="batchOriginal">1 · Referans sheet indir</button>
+  </div>
+  <div class="actiongrid" style="margin-bottom:8px">
+   <label class="filebutton" for="batchAIInput">2 · AI spritesheet yükle<input type="file" id="batchAIInput" accept="image/png"></label>
+   <button type="button" id="batchSplit">Sheet'i karelere böl</button>
+  </div>
+  <div class="mini" id="batchInfo" role="status">Yön ve kare sayısını seçerek başla.</div>
+  <div style="display:flex;gap:6px;overflow-x:auto;margin:9px 0" id="batchCells" aria-label="Sheet karelerinin durumu"></div>
+  <div class="actiongrid">
+   <button type="button" id="repairPackage">3 · Seçili kare onarım ZIP</button>
+   <label class="filebutton" for="repairInput">4 · Düzeltilmiş PNG yükle<input type="file" id="repairInput" accept="image/png"></label>
+  </div>
+  <details><summary>Toplu dışa aktar / kayıt</summary><div class="detailbody">
+   <button type="button" id="batchAllRepair">Tüm kareler onarım ZIP</button>
+   <button type="button" id="batchFinalZip">Onaylı ve üretilmiş kareler ZIP</button>
+   <button type="button" id="batchBackup">Çalışmayı yedekle (ZIP)</button>
+  </div></details>
+</section>
   <div id="status" role="status" aria-live="polite">Hazır.</div>
 </main>
 <script>
@@ -279,6 +303,105 @@ async function constrainVariant(file,src){
  g.drawImage(ai,0,0,ai.width,ai.height,0,0,src.width,src.height);
  return png(c);
 }
+
+/* Batch stage: source sheet -> AI sheet -> exact row/column split -> per-frame mask repair.
+   This is an isolated IndexedDB store. Source frames/legacy user records never overwritten. */
+const BATCH_DB='OsmanAnimationBatchStudioV1',BATCH_STORE='work';
+let batchDb=null,batchCache={},batchSelected=0,batchSheetPending=null,batchKey='';
+const batchSelect=()=>$('batchCount').value;
+const batchIdentity=(d=state.direction,n=Number(batchSelect()))=>d+'-'+n;
+const batchIds=n=>Array.from({length:n},(_,i)=>Math.floor(i*32/n));
+const batchFrameId=(d,n,i)=>d+'-'+String(n).padStart(2,'0')+'-'+String(i+1).padStart(2,'0');
+function batchOpen(){return new Promise((resolve,reject)=>{const r=indexedDB.open(BATCH_DB,1);r.onupgradeneeded=()=>r.result.createObjectStore(BATCH_STORE,{keyPath:'key'});r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(Error('Batch kayıt alanı açılamadı'))})}
+async function batchGet(key){if(!batchDb)return null;return new Promise((resolve,reject)=>{let r=batchDb.transaction(BATCH_STORE).objectStore(BATCH_STORE).get(key);r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(Error('Batch okuma hatası'))})}
+async function batchSave(obj){if(!batchDb)throw Error('Batch veritabanı kapalı');return new Promise((resolve,reject)=>{const t=batchDb.transaction(BATCH_STORE,'readwrite');t.oncomplete=resolve;t.onerror=()=>reject(Error('Batch kaydı başarısız'));t.objectStore(BATCH_STORE).put(obj)})}
+function batchNew(d,n){return {key:batchIdentity(d,n),schema:'osman-animation-batch-v1',direction:d,count:n,cols:Math.ceil(Math.sqrt(n)),rows:Math.ceil(n/Math.ceil(Math.sqrt(n))),frameIndices:[],sources:[],generated:null,split:[],repaired:[],revision:1,updatedAt:new Date().toISOString()}}
+async function batchCurrent(){const key=batchIdentity();if(batchCache[key])return batchCache[key];return batchCache[key]=await batchGet(key)||batchNew(state.direction,Number(batchSelect()))}
+function batchGrid(n){const cols=Math.ceil(Math.sqrt(n));return {cols,rows:Math.ceil(n/cols)}}
+function batchSetInfo(s){$('batchInfo').textContent=s}
+function batchDrawLabel(canvas,title){const g=canvas.getContext('2d');const pad=Math.max(7,Math.round(canvas.width*.009));g.fillStyle='rgba(0,0,0,.8)';g.fillRect(pad,pad,Math.max(115,canvas.width*.145),Math.max(25,canvas.height*.035));g.fillStyle='#fff';g.font='700 '+Math.max(14,Math.round(canvas.width*.018))+'px system-ui';g.fillText(title,pad+6,pad+Math.max(19,canvas.height*.027))}
+function batchCanvasSheet(canvases,n,labels=false){const {cols,rows}=batchGrid(n),cell=512,out=createCanvas(cols*cell,rows*cell),g=out.getContext('2d');
+ for(let i=0;i<n;i++){const canvas=canvases[i];if(!canvas)continue;const x=(i%cols)*cell,y=Math.floor(i/cols)*cell;const k=Math.min(cell/canvas.width,cell/canvas.height);
+ g.drawImage(canvas,x+(cell-canvas.width*k)/2,y+(cell-canvas.height*k)/2,canvas.width*k,canvas.height*k);
+ if(labels){g.save();g.translate(x,y);const label=createCanvas(cell,cell);batchDrawLabel(label,batchFrameId(state.direction,n,i));g.drawImage(label,0,0);g.restore()}}
+ return out}
+async function batchSourceFrames(){const n=Number(batchSelect()),ids=batchIds(n),list=frameList();if(!list.length)throw Error('Önce Blender 32 kare ZIP kaynağını yükle');
+ // Input may have n frames or all 32, but never silently mix source positions.
+ const selected=list.length===n?Array.from({length:n},(_,i)=>i):list.length>=32?ids:null;
+ if(!selected)throw Error('Bu yön için '+n+' veya 32 kaynak kare olmalı; mevcut '+list.length);
+ const sources=[];for(const i of selected){const f=list[i];sources.push(await png((await raster(state.direction,i,'original')).canvas))}
+ return {indices:selected,sources}
+}
+async function batchExportSource(){const n=Number(batchSelect()),obj=await batchCurrent(),src=await batchSourceFrames();
+ if(obj.generated&&!confirm('Bu çalışma için sheet ve bölünmüş AI kareleri kayıtlı. Yeni referans export bunları korur; devam?'))return;
+ const cv=[];for(const b of src.sources)cv.push(await decode(b));const sheet=batchCanvasSheet(cv,n,false);
+ obj.frameIndices=src.indices;obj.sources=src.sources;obj.updatedAt=new Date().toISOString();obj.revision++;
+ await batchSave(obj);batchCache[obj.key]=obj;await download(await png(sheet),obj.key+'_SOURCE_SHEET.png');
+ batchSetInfo(obj.key+' · Referans sheet indirildi. AI çıktı sheet’ini yükle.');batchRefresh()
+}
+async function batchLoadGenerated(file){const obj=await batchCurrent();if(!obj.sources.length)throw Error('Önce referans spritesheet export et');
+ const bitmap=await createImageBitmap(file);
+ const {cols,rows}=batchGrid(obj.count);if(bitmap.width<cols*48||bitmap.height<rows*48)throw Error('AI sheet çözünürlüğü çok küçük');
+ bitmap.close();
+ if(obj.generated&&!confirm('Mevcut generated sheet değiştirilsin mi? Split ve final kareler korunur; yeniden split için ayrı onay gerekecek.'))return;
+ obj.generated=file;obj.generatedName=file.name;obj.updatedAt=new Date().toISOString();obj.revision++;await batchSave(obj);batchCache[obj.key]=obj;
+ batchSetInfo('Generated sheet kayıtlı. Şimdi karelere böl.');batchRefresh()
+}
+async function batchSplit(){const obj=await batchCurrent();if(!obj.generated||!obj.sources.length)throw Error('Önce referans ve üretilmiş spritesheet yükle');
+ if(obj.split?.length&&!confirm('Bölünmüş AI kareleri yeniden oluşturulsun mu? Mevcut final düzeltmeler korunacak.'))return;
+ const bmp=await createImageBitmap(obj.generated);const {cols,rows}=batchGrid(obj.count),cellW=bmp.width/cols,cellH=bmp.height/rows;
+ const split=[];try{for(let i=0;i<obj.count;i++){
+ const sx=Math.round((i%cols)*cellW),sy=Math.round(Math.floor(i/cols)*cellH),ex=Math.round((i%cols+1)*cellW),ey=Math.round((Math.floor(i/cols)+1)*cellH);
+ const source=await decode(obj.sources[i]);const cv=createCanvas(source.width,source.height),g=cv.getContext('2d');
+ // Resize the sheet cell as a whole; never crop its content bbox or infer frame order.
+ g.drawImage(bmp,sx,sy,ex-sx,ey-sy,0,0,cv.width,cv.height);split.push(await png(cv))
+ }}finally{bmp.close()}
+ obj.split=split;obj.updatedAt=new Date().toISOString();obj.revision++;await batchSave(obj);batchCache[obj.key]=obj;
+ batchSetInfo(obj.count+' kare bölündü. Her kareyi kendi maskesiyle ayrı onar.');batchRefresh()
+}
+async function batchRepairEntries(obj,i){const id=batchFrameId(obj.direction,obj.count,i),source=await decode(obj.sources[i]),generated=await decode(obj.split[i]);
+ const ref=await png(source),gen=await png(generated),mask=createCanvas(source.width,source.height),m=mask.getContext('2d',{willReadFrequently:true});
+ const alpha=source.getContext('2d',{willReadFrequently:true}).getImageData(0,0,source.width,source.height).data,dt=m.createImageData(source.width,source.height);
+ for(let p=0;p<dt.data.length;p+=4){dt.data[p]=dt.data[p+1]=dt.data[p+2]=255;dt.data[p+3]=255-alpha[p+3]}
+ m.putImageData(dt,0,0);
+ return [{name:id+'/ORIGINAL.png',data:new Uint8Array(await ref.arrayBuffer())},{name:id+'/GENERATED.png',data:new Uint8Array(await gen.arrayBuffer())},{name:id+'/EDIT_MASK.png',data:new Uint8Array(await (await png(mask)).arrayBuffer())},
+ {name:id+'/prompt.txt',data:new TextEncoder().encode('Image A: fixed character identity. Image B: this generated frame to repair. Image C: matching original Blender pose. Edit mask: transparent=editable, opaque=protected. Align generated character to the exact original frame pose and canvas, preserve all limb details. Output ONE transparent RGBA PNG exactly '+source.width+'x'+source.height+'. Do not alter frame ID '+id+'.')}]}
+async function batchRepairZip(all=false){const obj=await batchCurrent();if(obj.split?.length!==obj.count)throw Error('Önce spritesheet böl');
+ const indices=all?Array.from({length:obj.count},(_,i)=>i):[batchSelected],entries=[];
+ for(const i of indices)entries.push(...await batchRepairEntries(obj,i));
+ await download(makeZip(entries),obj.key+(all?'_ALL_REPAIR':'_'+String(batchSelected+1).padStart(2,'0')+'_REPAIR')+'.zip')}
+async function batchSaveRepaired(file){const obj=await batchCurrent();if(!obj.split?.[batchSelected])throw Error('Önce sheet böl');
+ const base=await decode(obj.sources[batchSelected]);const image=await decode(file),out=createCanvas(base.width,base.height);
+ out.getContext('2d').drawImage(image,0,0,image.width,image.height,0,0,out.width,out.height);
+ obj.repaired[batchSelected]=await png(out);obj.updatedAt=new Date().toISOString();obj.revision++;
+ await batchSave(obj);batchCache[obj.key]=obj;batchSetInfo(batchFrameId(obj.direction,obj.count,batchSelected)+' · Final kaydedildi.');batchRefresh()
+}
+async function batchFinal(){const obj=await batchCurrent(),entries=[];
+ for(let i=0;i<obj.count;i++){const b=obj.repaired[i]||obj.split[i];if(!b)continue;entries.push({name:batchFrameId(obj.direction,obj.count,i)+(obj.repaired[i]?'_FINAL.png':'_FIRST_PASS.png'),data:new Uint8Array(await b.arrayBuffer())})}
+ if(!entries.length)throw Error('Dışa aktarılacak varyant bulunamadı');await download(makeZip(entries),obj.key+'_RESULTS.zip')}
+async function batchBackup(){const obj=await batchCurrent(),entries=[{name:'manifest.json',data:new TextEncoder().encode(JSON.stringify({schema:obj.schema,key:obj.key,direction:obj.direction,count:obj.count,cols:obj.cols,rows:obj.rows,frameIndices:obj.frameIndices,revision:obj.revision,updatedAt:obj.updatedAt},null,2))}];
+ for(let i=0;i<obj.count;i++){const id=batchFrameId(obj.direction,obj.count,i);for(const [key,tag] of [['sources','source'],['split','generated'],['repaired','final']])if(obj[key]?.[i])entries.push({name:id+'/'+tag+'.png',data:new Uint8Array(await obj[key][i].arrayBuffer())})}
+ if(obj.generated)entries.push({name:'generated_spritesheet.png',data:new Uint8Array(await obj.generated.arrayBuffer())});
+ await download(makeZip(entries),obj.key+'_BACKUP.zip')}
+async function batchRefresh(){if(!batchDb)return;const obj=await batchCurrent();const div=$('batchCells');div.replaceChildren();
+ if(obj.sources.length)batchSetInfo(obj.key+' · Ref '+obj.sources.length+' / Sheet '+(obj.generated?'✓':'—')+' / Split '+(obj.split?.length||0)+' / Final '+obj.repaired.filter(Boolean).length);
+ for(let i=0;i<obj.count;i++){
+ const b=document.createElement('button');b.type='button';b.style.cssText='flex:0 0 auto;min-width:83px;padding:8px;font-size:12px';
+ b.textContent=String(i+1).padStart(2,'0')+' · '+(obj.repaired[i]?'✓ Final':obj.split[i]?'◐ Split':obj.generated?'○ Sheet':'—');
+ b.title=batchFrameId(obj.direction,obj.count,i);b.classList.toggle('active',i===batchSelected);
+ b.onclick=()=>{batchSelected=i;batchRefresh()};div.append(b)
+ }}
+$('batchOriginal').onclick=()=>action(batchExportSource);
+$('batchAIInput').onchange=e=>{const f=e.target.files?.[0];e.target.value='';if(f)action(()=>batchLoadGenerated(f))};
+$('batchSplit').onclick=()=>action(batchSplit);
+$('repairPackage').onclick=()=>action(()=>batchRepairZip(false));
+$('batchAllRepair').onclick=()=>action(()=>batchRepairZip(true));
+$('repairInput').onchange=e=>{const f=e.target.files?.[0];e.target.value='';if(f)action(()=>batchSaveRepaired(f))};
+$('batchFinalZip').onclick=()=>action(batchFinal);
+$('batchBackup').onclick=()=>action(batchBackup);
+$('batchCount').onchange=()=>{batchSelected=0;action(batchRefresh)};
+async function batchBoot(){batchDb=await batchOpen();await batchRefresh()}
+
 const crcTable=(()=>{const t=new Uint32Array(256);for(let i=0;i<256;i++){let k=i;for(let z=0;z<8;z++)k=(k>>>1)^((k&1)?0xedb88320:0);t[i]=k>>>0}return t})();
 function crc32(data){let k=0xffffffff;for(const b of data)k=(k>>>8)^crcTable[(k^b)&255];return (k^0xffffffff)>>>0}
 function makeZip(files){
@@ -372,6 +495,7 @@ async function bootstrap(){
  const sha='__ANIMATION_BUILD_SHA__';$('buildBadge').textContent=sha.slice(0,8);
  if(sha!=='local-dev')try{const r=await fetch('./build.json?version_check='+Date.now(),{cache:'no-store'});const j=await r.json();if(j.sha!==sha)status('Yeni sürüm yayında. Sağ üstte ↻ ile açabilirsin.')}catch{}
 }
+batchBoot().catch(e=>status('Batch alanı açılamadı: '+e.message,true));
 bootstrap().catch(e=>{console.error(e);status('Başlatma hatası: '+e.message,true);clearStage();messageStage('Yürüyüş karelerini yükle')});
 })();
 </script>
