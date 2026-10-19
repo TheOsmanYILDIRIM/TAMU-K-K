@@ -18,7 +18,14 @@
 <section class="panel"><div class="eyebrow">02 / FRAME EDITOR</div><h2>Kareleri düzenle</h2>
 <div class="formrow"><label>Çoklu PNG yükle<input id="loadPNG" type="file" accept="image/png" multiple></label><label>Blender ZIP yükle<input id="loadZIP" type="file" accept=".zip,application/zip"></label></div>
 <label class="stack">Spritesheet içe aktar (serbest grid)<input id="loadSheet" type="file" accept="image/png"></label>
-<div class="formrow"><label>Sütun<input id="sheetCols" type="number" min="1" value="4"></label><label>Satır<input id="sheetRows" type="number" min="1" value="2"></label></div><p class="hint">ZIP içindeki SE/frame_00… PNG'leri veya numaralı PNG'leri sıralar. Var olan seti değiştirmek için onay ister; Obje ve Terrain Studio verilerine erişmez.</p>
+<div class="formrow"><label>Sütun<input id="sheetCols" type="number" min="1" value="4"></label><label>Satır<input id="sheetRows" type="number" min="1" value="2"></label></div>
+<div class="selected" id="maskPanel"><strong>Alfa Maske / AI Geri Al</strong>
+<p class="hint">Önce referans karelerini içe aktar; ardından ana maskeyi yükle. Maskede karakter pikselleri alfa dolu, dış alan şeffaf olmalı. Her yönün maskesi ayrıdır; kaynak kareler korunur.</p>
+<div class="formrow"><label>Şeffaf ana maske PNG<input id="loadMasterMask" type="file" accept="image/png"></label><label>Maske sütun<input id="maskCols" type="number" min="1" max="128" value="3"></label><label>Maske satır<input id="maskRows" type="number" min="1" max="128" value="3"></label></div>
+<p class="hint" id="masterMaskStatus">Maske yüklü değil.</p>
+<div class="buttonrow"><button id="applySourceMask" type="button">Kaynağı maskeyle kes</button><button id="exportFrameMask" type="button">↓ Tek kare şeffaf maske</button><button id="exportApiMask" type="button">↓ API ters-alfa maske</button><button id="exportSheetMask" type="button">↓ Spritesheet maskesi</button></div>
+<label class="stack">AI spritesheet geri al (maskeyle kes, karelere yerleştir)<input id="importMaskedSheet" type="file" accept="image/png"></label>
+<p class="hint">Geri alırken üstteki Sütun/Satır, dışa aktardığın sayfayla eşleşsin. AI tek kare PNG'sini “Seçili kareye AI çıktısı yükle” alanından geri al.</p></div><p class="hint">ZIP içindeki SE/frame_00… PNG'leri veya numaralı PNG'leri sıralar. Var olan seti değiştirmek için onay ister; Obje ve Terrain Studio verilerine erişmez.</p>
 <div class="optionrow"><strong>Animasyon yoğunluğu</strong><span class="pill" id="densityCount">0 kare</span></div>
 <div class="tabs" id="densities" role="group" aria-label="Kare yoğunluğu"><button data-rate="100" class="active">%100</button><button data-rate="50">%50</button><button data-rate="25">%25</button></div>
 <p class="hint">Örneğin 32 kaynak kare → 32 / 16 / 8 kare; 8 kaynak kare → 8 / 4 / 2 kare. Azaltma geçicidir, kaynaklar korunur.</p>
@@ -40,7 +47,7 @@
  const $=id=>document.getElementById(id), c=$('stage'), ctx=c.getContext('2d');
  const DB='OsmanAnimationStudioFramesV1', STORE='frames', META='osman:animation-studio:v1:settings';
  const LIMIT=128, MAXFILE=24*1024*1024, FRAME_SIZE=1024;
- const DIRECTIONS=['NE','NW','SE','SW'];let sets={NE:[],NW:[],SE:[],SW:[]},direction='SE',frames=sets.SE,selected=0,rate=100,fps=8,playing=false,lastTick=0,lastDraw=0,busy=false,drag=null,moveEnabled=false,dirty=false;
+ const DIRECTIONS=['NE','NW','SE','SW'];let masters={NE:null,NW:null,SE:null,SW:null},sets={NE:[],NW:[],SE:[],SW:[]},direction='SE',frames=sets.SE,selected=0,rate=100,fps=8,playing=false,lastTick=0,lastDraw=0,busy=false,drag=null,moveEnabled=false,dirty=false;
  let mode='feet',view='animation',grid=true,equalSize=true,db=null;
  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
  const filename=(s)=>String(s).split('/').pop();
