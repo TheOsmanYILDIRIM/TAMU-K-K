@@ -7,7 +7,7 @@ import {spawnSync} from 'node:child_process';
 const root=path.resolve(import.meta.dirname,'..');
 test('standalone mobile animation page preserves independent project storage',()=>{
  const html=fs.readFileSync(path.join(root,'src/animation.html'),'utf8');
- for(const key of ['ANIMATION STUDIO','OsmanAnimationStudioFramesV1','[data-rate]','100','50','25','loadPNG','loadZIP','loadSheet','replace','average','downloadAll','pngBytes','drawNoncontactGrid'])assert.ok(html.includes(key),'missing '+key);
+ for(const key of ['ANIMATION STUDIO','OsmanAnimationStudioFramesV1','[data-rate]','100','50','25','loadPNG','loadZIP','loadSheet','replace','average','downloadAll','pngBytes','nativeMask'])assert.ok(html.includes(key),'missing '+key);
  for(const dir of ['NE','NW','SE','SW'])assert.match(html,new RegExp('data-direction="'+dir+'"'),'missing direction '+dir);
  for(const key of ['importGroups(groups)','let groups={NE:[],NW:[],SE:[],SW:[]}','clearDirection(d)','slot:d+\':\'+i','moveEnabled=false','if(!moveEnabled||!frames[selected]'])assert.ok(html.includes(key),'missing '+key);
  for(const key of ['exportSheet','exportScope','exportSize','exportCols','sheetCols','sheetRows','max="60"'])assert.ok(html.includes(key),'missing '+key);
@@ -300,49 +300,7 @@ test('editor, live preview and exports share the same mapped original geometry f
 });
 
 
-test('magenta dual grid is optional, leaves the ninth slot visible and never touches sprite rectangles',()=>{
- const html=fs.readFileSync(path.join(root,'src/animation.html'),'utf8');
- assert.ok(html.includes('id="exportAIGrid"'));
- assert.ok(html.includes('id="exportGridDensity"'));
- assert.ok(!html.includes('id="exportPageNumbers"'));
- assert.ok(!html.includes('annotateSheetPage('));
- const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
- const begin=js.indexOf('function drawDualMagentaGuide('),end=js.indexOf('const renderGroup=async group=>',begin);
- assert.ok(begin>=0&&end>begin);
- const renderGrid=vm.runInNewContext(js.slice(begin,end)+'\ndrawDualMagentaGuide',{$:()=>({checked:true,value:'16'})});
- const paths=[];let current=null;
- const g={
-  save(){},restore(){},beginPath(){current=null},stroke(){},
-  moveTo(x,y){current={x,y}},
-  lineTo(x,y){assert.ok(current);paths.push({x1:current.x,y1:current.y,x2:x,y2:y});current={x,y}}
- };
- const sprites=[
-  {x0:75,y0:60,x1:215,y1:240},
-  {x0:375,y0:45,x1:485,y1:220},
-  {x0:640,y0:80,x1:790,y1:235},
-  {x0:100,y0:350,x1:225,y1:575},
-  {x0:365,y0:380,x1:500,y1:555},
-  {x0:680,y0:360,x1:760,y1:590},
-  {x0:110,y0:660,x1:220,y1:855},
-  {x0:390,y0:690,x1:490,y1:830}
- ];
- renderGrid(g,900,3,3,sprites);
- assert.ok(paths.length>200,'fine coordinate grid was not drawn');
- assert.ok(paths.some(p=>(p.x1+p.x2)/2>620&&(p.y1+p.y2)/2>620),'unused ninth slot must retain visible grid');
- const gap=6;
- for(const art of sprites){
-  const box={x0:art.x0-gap,y0:art.y0-gap,x1:art.x1+gap,y1:art.y1+gap};
-  for(const p of paths){
-   if(p.x1===p.x2){
-    assert.ok(!(p.x1>=box.x0&&p.x1<=box.x1&&Math.min(p.y1,p.y2)<box.y1&&Math.max(p.y1,p.y2)>box.y0),
-     'grid line touched sprite safe rectangle');
-   }else if(p.y1===p.y2){
-    assert.ok(!(p.y1>=box.y0&&p.y1<=box.y1&&Math.min(p.x1,p.x2)<box.x1&&Math.max(p.x1,p.x2)>box.x0),
-     'grid line touched sprite safe rectangle');
-   }
-  }
- }
-});
+test('magenta grid code has been retired and export is clean transparent RGBA',()=>{const html=fs.readFileSync(path.join(root,'src/animation.html'),'utf8');for(const key of ['drawDualMagentaGuide','drawNoncontactGrid','exportAIGrid','exportGridDensity','drawGrid(g'])assert.ok(!html.includes(key),'legacy grid remains: '+key);for(const key of ['organizeStudio','loadMasterMask','importMaskedAtlas','exportSheetMask','exportFrameMask'])assert.ok(html.includes(key),'missing consolidated workflow '+key)});
 
 test('3×3 PNGs preserve 8 real frames and omit trailing ninth blank slot when merging pages',()=>{
  const html=fs.readFileSync(path.join(root,'src/animation-compare.html'),'utf8');
