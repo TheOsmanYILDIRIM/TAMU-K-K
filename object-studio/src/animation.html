@@ -323,6 +323,39 @@
   }
  }
 
+
+ function organizeStudio(){
+   const by=id=>document.getElementById(id);
+   const section=by('loadPNG').closest('section');
+   section.querySelector('h2').textContent='Kaynak, kare ve atlas işlemleri';
+   const group=(title,note)=>{const e=document.createElement('div');e.className='selected';const h=document.createElement('strong');h.textContent=title;e.append(h);if(note){const p=document.createElement('p');p.className='hint';p.textContent=note;e.append(p)}section.append(e);return e};
+   const origin=group('01 · Kaynak ve maske','Blender PNG/ZIP veya kaynak spritesheet yükle. Şeffaf ana maske, kaynak karelerden ayrı korunur.');
+   const single=group('02 · Tek kare','Kareyi seç; görüntü ve alfa maskesini indir. AI çıktısını varyant olarak içe al.');
+   const sheet=group('03 · Spritesheet','Tüm kareleri tek alandan dışa aktar veya AI atlasını ana maskeye göre içe al.');
+   const settings=group('04 · Görüntü ve hizalama','İsteğe bağlı oynatma yoğunluğu ve hizalama ayarları.');
+   const move=(el,to)=>{if(el)to.append(el)};
+   move(by('loadPNG').closest('.formrow'),origin);
+   move(by('loadMasterMask').closest('.formrow'),origin);move(by('masterMaskStatus'),origin);
+   move(by('loadSheet').closest('label'),origin);
+   const controls=by('sheetCols').closest('.formrow');move(controls,sheet);
+   const frame=by('frameTitle').closest('.selected');move(frame,single);
+   move(by('downloadFrame'),single);move(by('exportFrameMask'),single);move(by('exportApiMask'),single);
+   move(by('downloadAll'),single);
+   move(by('exportScope').closest('.formrow'),sheet);
+   move(by('exportSheetMask'),sheet);
+   move(by('importMaskedSheet').closest('label'),sheet);
+   const advanced=document.createElement('details');advanced.innerHTML='<summary>Kaynak maskesiyle kesme · gelişmiş</summary>';origin.append(advanced);move(by('applySourceMask'),advanced);
+   const maskPanel=by('maskPanel');maskPanel.remove();
+   const preview=by('stage').closest('section');preview.querySelectorAll('.eyebrow')[0].textContent='ÖNİZLEME';
+   move(by('densities').parentElement.querySelector('#densities'),settings);
+   move(by('densityCount').closest('.optionrow'),settings);
+   move(by('thumbs'),settings);
+   const prompts=document.createElement('details');prompts.className='selected';prompts.innerHTML='<summary>AI promptları · tek kare / spritesheet</summary>';sheet.append(prompts);
+   move(by('prompt'),prompts);move(by('copy'),prompts);move(by('sheetPrompt'),prompts);move(by('copySheetPrompt'),prompts);
+   move(by('resetAll'),origin);
+   section.querySelectorAll('.eyebrow').forEach(e=>{if(e.textContent.includes('PROMPT'))e.remove()});
+ }
+ organizeStudio();
  initExtraPrefs();
  refreshTransferPrompts();
  $('copySheetPrompt').onclick=async()=>{try{await navigator.clipboard.writeText($('sheetPrompt').value);info('Spritesheet promptu kopyalandı.')}catch{ $('sheetPrompt').select();document.execCommand('copy');info('Spritesheet promptu seçildi / kopyalandı.')}};
