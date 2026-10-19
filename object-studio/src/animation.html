@@ -1,379 +1,344 @@
 <!doctype html>
-<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#15251d"><title>OSMAN · Animation Studio</title>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#142219">
+<title>OSMAN · Animation Studio</title>
 <style>
-:root{font:14px system-ui,-apple-system,sans-serif;color:#ecf1e5;background:#111b16;--panel:#213329;--stroke:#49604e;--focus:#cce2aa;--muted:#b1c5b2}*{box-sizing:border-box}body{margin:0;min-height:100dvh;background:radial-gradient(circle at 15% -5%,#32513a,transparent 38%),#111b16}button,input,select,textarea{font:inherit}button,select,input[type=file],textarea{color:inherit;background:#294233;border:1px solid #5b7861;border-radius:10px;padding:10px}button{cursor:pointer;touch-action:manipulation}button:disabled{opacity:.4;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--focus);outline-offset:2px}a{color:#d8e7b6}h1,h2,h3,p{margin-top:0}h1{font-size:21px;margin-bottom:2px}h2{font-size:17px;margin-bottom:10px}h3{font-size:14px;margin-bottom:8px}header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px max(14px,env(safe-area-inset-right));background:#192c20;border-bottom:1px solid var(--stroke)}header small{letter-spacing:.13em;color:#b3caac;font-size:10px;font-weight:700}header nav{display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-end;font-size:12px}main{max-width:1200px;padding:12px;margin:auto}.lead{color:var(--muted);font-size:13px;line-height:1.5}.workspace{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:12px}.panel{border:1px solid var(--stroke);background:var(--panel);border-radius:16px;padding:14px;min-width:0}.muted,small{color:var(--muted)}.eyebrow{color:#c8dca9;font-size:10px;letter-spacing:.13em;font-weight:800}.topline{display:flex;gap:10px;justify-content:space-between;align-items:start}.pill{color:#d7ebb7;border:1px solid #64846a;background:#314d37;border-radius:20px;padding:6px 9px;font-size:11px;white-space:nowrap}.canvaswrap{aspect-ratio:1;max-height:65vh;display:grid;place-items:center;margin:10px auto;background:repeating-conic-gradient(#314033 0 25%,#1d2c23 0 50%) 50%/32px 32px;border:1px solid #59715f;border-radius:13px;overflow:hidden;touch-action:none;position:relative}.canvaswrap canvas{width:100%;height:100%;object-fit:contain;display:block;touch-action:none}.stagebar{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;gap:8px;align-items:center}.stagebar button{padding:11px 12px}.wide{width:100%}.primary{background:#c8dca7;color:#16251a;border-color:#c8dca7;font-weight:750}.optionrow{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:12px 0}.optionrow label{display:flex;align-items:center;gap:7px}.subtle{font-size:12px;color:#b6c6b4}.control{margin:12px 0}.control .title{display:flex;justify-content:space-between;gap:8px;font-size:12px;margin-bottom:6px}.control input[type=range]{width:100%;accent-color:#c7de9f;display:block}.buttonrow{display:flex;gap:8px;flex-wrap:wrap}.buttonrow>*{flex:1}.buttonrow button{min-width:115px}.tabs{display:flex;gap:7px;flex-wrap:wrap}.tabs button{min-width:66px;font-size:12px}.tabs button.active,.thumb.active{background:#c8dfa5;color:#122519;border-color:#c8dfa5;font-weight:750}.directionbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:10px 0}.directionbar button.active{background:#c8dfa5;color:#122519;border-color:#c8dfa5;font-weight:750}.dragactive{outline:2px solid #d5edb1;outline-offset:-3px}.thumbs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;max-height:275px;overflow:auto;margin:12px 0}.thumb{position:relative;min-width:0;padding:6px 4px;border:1px solid #54715a;background:#294034;border-radius:10px;text-align:center}.thumb canvas{width:100%;aspect-ratio:1;display:block;object-fit:contain;background:repeating-conic-gradient(#3f5444 0 25%,#2b4233 0 50%) 50%/16px 16px;border-radius:6px}.thumb strong{display:block;font-size:12px;margin:4px 0 2px}.thumb small{font-size:10px}.thumb.omitted{opacity:.48}.status{margin:9px 0 0;color:#d7e9b8;font-size:12px;min-height:18px}.hint{font-size:11px;color:#bbccb8;line-height:1.55;margin:6px 0}.formrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}.formrow label,.stack{display:flex;flex-direction:column;gap:5px;margin:9px 0;font-size:12px}.formrow input[type=file]{width:100%;font-size:11px}.selected{margin:10px 0;border:1px solid #58765b;border-radius:12px;padding:11px;background:#2a4334}.selected strong{font-size:14px}.filebutton input{max-width:100%}textarea{width:100%;min-height:120px;font-size:12px;line-height:1.5;resize:vertical}.avg-wrap{display:none}.avg-wrap.show{display:block}.badge{color:#c5d9ad;font-size:11px}.note{background:#2d4535;border-left:3px solid #c9deac;padding:9px 12px;border-radius:8px;margin:10px 0;font-size:12px;line-height:1.5}@media(max-width:760px){main{padding:8px}.workspace{display:flex;flex-direction:column}.panel{padding:12px}.canvaswrap{width:min(100%,500px);max-height:none}.stagebar{grid-template-columns:auto auto 1fr auto}header h1{font-size:17px}header nav{gap:7px}.thumbs{grid-template-columns:repeat(4,minmax(0,1fr));max-height:310px}}
-</style></head><body>
-<header><div><small>OSMAN / WORLD PRODUCTION LAB</small><h1>ANIMATION STUDIO</h1></div><nav><a href="./animation-compare.html">Varyant Karşılaştırma</a><a href="./terrain.html">Terrain Studio</a><a href="./latest.html">Obje Stüdyosu</a></nav></header><div id="versionBar" style="padding:8px 14px;background:#172c23;border-bottom:1px solid #668366;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font:12px system-ui"><strong>ANIMATION BUILD <code id="pageBuild">__ANIMATION_BUILD_SHA__</code></strong><span id="versionState">Sürüm kontrol ediliyor…</span><button id="versionRefresh" type="button" style="padding:5px 9px">Yeni sürümü aç ↻</button></div>
-<main><p class="note"><a href="./animation-compare.html">↗ İkinci ekran: Orijinal / Üretilen / Varyantları yan yana karşılaştır</a>. Bu sayfadaki kaynak kareler korunur.</p><p class="lead">Blender yürüyüş karelerini içe aktar, AI ile ürettiğin kareleri tek tek değiştir, oynat ve kıyasla. %100 / %50 / %25 seçimi kaynak kareleri silmez. Kayıtlar yalnız bu sayfanın ayrı yerel alanında tutulur.</p>
-<div class="workspace">
-<section class="panel"><div class="topline"><div><div class="eyebrow">01 / LIVE PREVIEW</div><h2>Animasyon önizleme</h2></div><span class="pill" id="current">0 / 0</span></div>
-<div class="directionbar" id="directions" role="group" aria-label="Animasyon yönü"><button data-direction="NE">NE · 0</button><button data-direction="NW">NW · 0</button><button data-direction="SE" class="active">SE · 0</button><button data-direction="SW">SW · 0</button></div><div class="canvaswrap" id="canvasBox"><canvas id="stage" width="640" height="640" aria-label="Animasyon oynatıcı ve dokunarak kare hizalama"></canvas></div>
-<div class="stagebar"><button id="prev" aria-label="Önceki kare">◀</button><button id="play" class="primary">▶ Oynat</button><span class="badge" id="playbackStatus">Görselleri içe aktar</span><button id="next" aria-label="Sonraki kare">▶</button></div>
-<div class="control"><div class="title"><span>Oynatma hızı</span><output id="fpsLabel">8 FPS</output></div><input id="fps" type="range" min="1" max="60" value="8"></div>
-<div class="optionrow"><span class="hint">Önizlemede taşıma kapalı</span><label><input type="checkbox" id="equalSize" checked> Ölçeği normalize et</label></div>
-<div class="formrow"><label>Hizalama<select id="align"><option value="feet">Ayak tabanı</option><option value="center">Merkez</option><option value="average">Ortalama konum</option><option value="original">Kaynak konumu</option></select></label><label>Görünüm<select id="view"><option value="animation">Animasyon / seçili kare</option><option value="reference">Orijinal referans</option><option value="average">Ortalama kare (üst üste)</option></select></label></div>
-<div class="note" id="averageInfo">“Ortalama kare” tüm seçili kareleri yarı saydam üst üste gösterir. “Ortalama konum” ise karelerin ağırlık merkezini ortak noktaya hizalar.</div>
-<div class="buttonrow"><button id="downloadFrame" class="primary">↓ Seçili kare PNG</button><button id="downloadAll">↓ Seçili set ZIP</button></div>
-<div class="formrow"><label>Kapsam<select id="exportScope"><option value="one">Seçili yön</option><option value="all">4 yön</option></select></label><label>Boyut<select id="exportSize"><option>1024</option><option>2048</option><option selected>4096</option><option>8192</option></select></label><label>Sütun<select id="exportCols"><option value="auto">Otomatik</option><option>4</option><option>8</option><option>16</option><option>32</option></select></label><label>Parçalama<select id="exportChunk"><option value="0">Tek spritesheet</option><option value="16">16 karelik parçalar</option><option value="8">8 karelik parçalar</option><option value="custom">Özel kare sayısı</option></select></label><label>Özel parça boyutu<input id="exportChunkCustom" type="number" min="1" max="128" value="16" style="width:75px"></label><button id="exportSheet" class="primary">Spritesheet PNG dışa aktar</button><p class="hint">Temiz şeffaf PNG dışa aktarılır. 3×3 düzeninde 8 kare varsa son hücre boş kalır.</p></div><div class="status" id="status" role="status">Hazır. PNG veya ZIP yükle.</div></section>
-<section class="panel"><div class="eyebrow">02 / FRAME EDITOR</div><h2>Kareleri düzenle</h2>
-<div class="formrow"><label>Çoklu PNG yükle<input id="loadPNG" type="file" accept="image/png" multiple></label><label>Blender ZIP yükle<input id="loadZIP" type="file" accept=".zip,application/zip"></label></div>
-<label class="stack">Kaynak spritesheet içe aktar<input id="loadSheet" type="file" accept="image/png"></label>
-<div class="formrow"><label>Sütun<input id="sheetCols" type="number" min="1" value="4"></label><label>Satır<input id="sheetRows" type="number" min="1" value="2"></label></div>
-<div class="selected" id="maskPanel"><strong>Alfa Maske / AI Geri Al</strong>
-<p class="hint">Önce referans karelerini içe aktar; ardından ana maskeyi yükle. Maskede karakter pikselleri alfa dolu, dış alan şeffaf olmalı. Her yönün maskesi ayrıdır; kaynak kareler korunur.</p>
-<div class="formrow"><label>Şeffaf ana maske PNG<input id="loadMasterMask" type="file" accept="image/png"></label><label>Maske sütun<input id="maskCols" type="number" min="1" max="128" value="3"></label><label>Maske satır<input id="maskRows" type="number" min="1" max="128" value="3"></label></div>
-<p class="hint" id="masterMaskStatus">Maske yüklü değil.</p>
-<div class="buttonrow"><button id="applySourceMask" type="button">Kaynağı maskeyle kes</button><button id="exportFrameMask" type="button">↓ Tek kare şeffaf maske</button><button id="exportApiMask" type="button">↓ API ters-alfa maske</button><button id="exportSheetMask" type="button">↓ Spritesheet maskesi</button></div>
-<label class="stack">AI spritesheet geri al (maskeyle kes, karelere yerleştir)<input id="importMaskedSheet" type="file" accept="image/png"></label>
-<p class="hint">Geri alırken üstteki Sütun/Satır, dışa aktardığın sayfayla eşleşsin. AI tek kare PNG'sini “Seçili kareye AI çıktısı yükle” alanından geri al.</p></div><p class="hint">ZIP içindeki SE/frame_00… PNG'leri veya numaralı PNG'leri sıralar. Var olan seti değiştirmek için onay ister; Obje ve Terrain Studio verilerine erişmez.</p>
-<div class="optionrow"><strong>Animasyon yoğunluğu</strong><span class="pill" id="densityCount">0 kare</span></div>
-<div class="tabs" id="densities" role="group" aria-label="Kare yoğunluğu"><button data-rate="100" class="active">%100</button><button data-rate="50">%50</button><button data-rate="25">%25</button></div>
-<p class="hint">Örneğin 32 kaynak kare → 32 / 16 / 8 kare; 8 kaynak kare → 8 / 4 / 2 kare. Azaltma geçicidir, kaynaklar korunur.</p>
-<div id="thumbs" class="thumbs" role="group" aria-label="Kaynak kareler"></div>
-<div class="selected"><strong id="frameTitle">Kare seçilmedi</strong><div class="subtle" id="frameDesc">İçe aktarılan kareyi seçip AI çıktısını yükle.</div>
-<label class="stack">Seçili kareye AI çıktısı yükle<input type="file" id="replace" accept="image/png" disabled></label>
-<div class="buttonrow"><button id="original" disabled>Kaynağa dön</button><button id="restorePos" disabled>Hizalamayı sıfırla</button></div>
-<div class="control"><div class="title"><span>Yatay düzeltme X</span><output id="xLabel">0 px</output></div><input type="range" id="x" min="-200" max="200" step="1" value="0" disabled></div>
-<div class="control"><div class="title"><span>Dikey düzeltme Y</span><output id="yLabel">0 px</output></div><input type="range" id="y" min="-200" max="200" step="1" value="0" disabled></div>
-<p class="hint">Önizlemede sürükleyerek taşımak için önce “Taşıma modu” düğmesini aç. Varsayılan kapalıdır. Oynatmayı durdur. X/Y düzeltmeleri sadece bu kareye uygulanır.</p>
-</div>
-<div class="eyebrow">03 / AI TRANSFER PROMPT</div><textarea id="prompt" readonly>Image A: karakter tasarımı. Image B: mevcut Blender yürüyüş karesinin poz, kamera, boyut ve konum referansı. Yalnızca karakterin görünümünü değiştir. Şeffaf arka planı ve tam kare boyutunu koru. Yeni nesne, arka plan veya kılavuz ekleme.</textarea>
-<div class="buttonrow"><button id="copy">Promptu kopyala</button><button id="resetAll">Yeni set / sıfırla</button></div>
-<div class="eyebrow">04 / SPRITESHEET TRANSFER PROMPT</div><h2>Spritesheet Promptu</h2><p class="hint">Tek kare promptundan ayrıdır. Image A = karakter tasarımı, Image B = yapısı korunacak spritesheet.</p><textarea id="sheetPrompt" readonly style="min-height:210px"></textarea><div class="buttonrow"><button id="copySheetPrompt" class="primary" type="button">Spritesheet promptunu kopyala</button></div><p class="hint">8, 16 veya 32 kare için aynı prompt kullanılabilir. Kaynak görüntünün kare sayısını ve düzenini korumayı ister.</p><div class="status">Yerel kayıt: <span id="saveStatus">Hazır</span></div></section>
-</div></main>
+:root{font:14px system-ui,-apple-system,sans-serif;color:#e9f0e8;background:#0d1510;--panel:#1b2a20;--line:#36503e;--pale:#cde8aa;--muted:#a5b9a8}
+*{box-sizing:border-box}
+body{margin:0;min-height:100dvh;background:#0d1510;color:#e9f0e8}
+button,label,summary{touch-action:manipulation}
+button,input{font:inherit}button{border:1px solid var(--line);background:#26392d;color:inherit;border-radius:11px;padding:11px 12px;cursor:pointer;font-weight:650}
+button:disabled{opacity:.4;cursor:not-allowed}button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--pale);outline-offset:2px}
+button.primary{background:var(--pale);color:#17271b;border-color:var(--pale)}
+header{display:flex;justify-content:space-between;gap:10px;align-items:center;background:#18271c;border-bottom:1px solid var(--line);padding:10px max(12px,env(safe-area-inset-right));position:relative}
+header h1{margin:0;font-size:17px}header .sub{font-size:11px;color:var(--muted)}
+.header-actions{display:flex;align-items:center;gap:6px}#buildBadge{font-size:10px;color:var(--muted)}#refresh{padding:7px 11px}
+main{max-width:760px;margin:auto;padding:10px 10px calc(20px + env(safe-area-inset-bottom))}
+.panel{border:1px solid var(--line);background:var(--panel);border-radius:17px;padding:12px;margin-bottom:10px}
+.topline{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:9px}
+#frameMeta{font-weight:750;font-size:15px}#frameState{font-size:11px;color:var(--pale)}
+.directionbar,.modes,.playbar,.actiongrid,.footbar{display:flex;gap:7px;align-items:center}
+.directionbar{overflow-x:auto;padding-bottom:7px}.directionbar button{flex:1;white-space:nowrap;padding:8px 11px}
+.modes{margin:8px 0}.modes button{flex:1;min-width:0;font-size:12px;padding:10px 4px}
+button.active{background:var(--pale);color:#142318}
+.stagewrap{width:100%;aspect-ratio:1;max-width:560px;margin:0 auto;border:1px solid #405345;background:#0a100c;border-radius:13px;overflow:hidden;position:relative}
+#stage{width:100%;height:100%;display:block}
+#compareLabels{pointer-events:none;display:none;position:absolute;top:0;left:0;right:0;padding:8px;justify-content:space-around;font-size:12px;font-weight:750;text-shadow:0 1px 3px #000}
+#compareLabels.visible{display:flex}
+.playbar{justify-content:center;margin:9px 0}.playbar button{min-width:54px}
+.playbar #play{flex:1;max-width:190px}#speed{max-width:105px;flex:1;accent-color:#cde8aa}
+#speedText{min-width:41px;color:var(--muted);font-variant-numeric:tabular-nums;font-size:12px}
+#strip{display:flex;gap:7px;overflow-x:auto;scroll-snap-type:x mandatory;padding:5px 1px}
+.framechip{flex:0 0 75px;scroll-snap-align:start;display:flex;flex-direction:column;gap:4px;padding:5px;background:#1b2b20;border:1px solid #3c5744;text-align:center}
+.framechip.active{outline:2px solid var(--pale);background:#274530}
+.framechip canvas{width:100%;aspect-ratio:1;background:#0d150f;border-radius:7px}
+.framechip span{font-size:10px;font-weight:700}
+.framechip small{font-size:10px;color:var(--muted)}
+h2{font-size:13px;letter-spacing:.03em;margin:0 0 9px}
+.actiongrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.actiongrid button,.actiongrid label{width:100%;text-align:center}
+.filebutton{position:relative;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);background:#26392d;border-radius:11px;min-height:45px;font-weight:650;font-size:13px;cursor:pointer;padding:7px}
+.filebutton input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+details{border:1px solid var(--line);background:#18261d;border-radius:12px;margin-top:9px}
+summary{padding:12px;font-weight:750;cursor:pointer;list-style:none}summary:before{content:'▸  ';color:var(--pale)}details[open]>summary:before{content:'▾  '}
+.detailbody{padding:2px 10px 12px;display:grid;gap:8px}
+.full{width:100%}
+#status{font-size:12px;color:var(--muted);min-height:20px;line-height:1.5;margin:6px 0}
+#status.error{color:#ffbba1}
+.mini{font-size:11px;color:var(--muted)}
+kbd{font-family:inherit;color:var(--pale)}
+@media(min-width:700px){main{padding-top:16px}.panel{padding:16px}.framechip{flex-basis:91px}.modes button{font-size:14px}}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>OSMAN · ANIMATION STUDIO</h1><div class="sub">Blender yürüyüşü · tek kare AI</div></div>
+  <div class="header-actions"><span id="buildBadge">__ANIMATION_BUILD_SHA__</span><button id="refresh" type="button" aria-label="Yayını yenile">↻</button></div>
+</header>
+<main>
+  <section class="panel" aria-label="Animasyon önizleme">
+    <div class="topline"><div id="frameMeta">SE · Kare yok</div><div id="frameState">Kaynak bekleniyor</div></div>
+    <div id="directions" class="directionbar" aria-label="Kamera yönü"></div>
+    <div class="modes" role="group" aria-label="Önizleme">
+      <button type="button" data-mode="original" class="active">Orijinal</button>
+      <button type="button" data-mode="variant">AI Varyantı</button>
+      <button type="button" data-mode="compare">Karşılaştır</button>
+    </div>
+    <div class="stagewrap"><canvas id="stage" width="720" height="720" aria-label="Tek animasyon önizleme"></canvas><div id="compareLabels"><span>ORİJİNAL</span><span>AI VARYANTI</span></div></div>
+    <div class="playbar">
+      <button type="button" id="prev" aria-label="Önceki kare">◀</button>
+      <button type="button" id="play" class="primary">▶ Oynat</button>
+      <button type="button" id="next" aria-label="Sonraki kare">▶</button>
+      <input id="speed" type="range" min="1" max="24" value="12" aria-label="Oynatma hızı"><span id="speedText">12 FPS</span>
+    </div>
+    <div id="strip" role="group" aria-label="Yürüyüş kareleri"></div>
+  </section>
+  <section class="panel" aria-label="Seçili kare işlemleri">
+    <h2>SEÇİLİ KARE</h2>
+    <div class="actiongrid">
+      <button type="button" id="exportOriginal">↓ Orijinal PNG</button>
+      <button type="button" id="exportMask">↓ AI maskesi PNG</button>
+      <label class="filebutton" for="variantInput">↑ AI varyantını yükle<input id="variantInput" type="file" accept="image/png"></label>
+      <button type="button" id="exportVariant">↓ Varyant PNG</button>
+    </div>
+    <div class="footbar" style="margin-top:8px">
+      <button type="button" id="copyPrompt" class="full">📋 Tek kare AI promptunu kopyala</button>
+      <button type="button" id="removeVariant">Varyantı sil</button>
+    </div>
+  </section>
+  <section class="panel" aria-label="Blender karelerini yükleme">
+    <h2>YÜRÜYÜŞ KARELERİ</h2>
+    <div class="actiongrid">
+      <label class="filebutton primary" for="sourceInput">↑ ZIP veya PNG yükle<input id="sourceInput" type="file" accept=".zip,image/png" multiple></label>
+      <button type="button" id="openBlender">↓ Blender 16 kare</button>
+    </div>
+    <details><summary>Toplu PNG indir</summary>
+      <div class="detailbody">
+        <button type="button" id="zipOriginal" class="full">↓ Tüm orijinal kareler ZIP</button>
+        <button type="button" id="zipMasks" class="full">↓ Tüm otomatik AI maskeleri ZIP</button>
+      </div>
+    </details>
+    <details><summary>Kayıtlar</summary><div class="detailbody">
+      <button type="button" id="clearDirection" class="full">Seçili yönün kayıtlarını sil</button>
+      <div class="mini">Diğer stüdyo kayıtlarına dokunulmaz.</div>
+    </div></details>
+  </section>
+  <div id="status" role="status" aria-live="polite">Hazır.</div>
+</main>
 <script>
 'use strict';
-(() => {
- const $=id=>document.getElementById(id), c=$('stage'), ctx=c.getContext('2d');
- const DB='OsmanAnimationStudioFramesV1', STORE='frames', META='osman:animation-studio:v1:settings';
- const LIMIT=128, MAXFILE=24*1024*1024, FRAME_SIZE=1024;
- const DIRECTIONS=['NE','NW','SE','SW'];let masters={NE:null,NW:null,SE:null,SW:null},sets={NE:[],NW:[],SE:[],SW:[]},direction='SE',frames=sets.SE,selected=0,rate=100,fps=8,playing=false,lastTick=0,lastDraw=0,busy=false,drag=null,moveEnabled=false,dirty=false;
- let mode='feet',view='animation',equalSize=true,db=null;let exportExcluded=new Set();
- const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
- const filename=(s)=>String(s).split('/').pop();
- const nameIndex=(n)=>Number((String(n).match(/(?:frame[_-]?|SE[_-]?|[_-])(\d+)(?=\D*$)/i)||[])[1]||0);
- const alphaCanvas=()=>document.createElement('canvas');
- function info(s,err=false){$('status').textContent=s;$('status').style.color=err?'#ffc9a4':'#d7e9b8'}
- function sourceSlots(){return frames.map((f,i)=>f?i:-1).filter(i=>i>=0)}
- function active(){const n=frames.length;if(!n)return [];const target=Math.max(1,Math.round(n*rate/100));let ids=[];for(let i=0;i<target;i++)ids.push(Math.floor(i*n/target));return [...new Set(ids)]}
- async function decode(blob){if(blob.size>MAXFILE)throw new Error('PNG 24 MB sınırını aşıyor');if(blob.type&&!/png|octet-stream/i.test(blob.type))throw new Error('PNG bekleniyor');const bitmap=await createImageBitmap(blob);if(bitmap.width<16||bitmap.height<16||bitmap.width>8192||bitmap.height>8192){bitmap.close();throw new Error('PNG boyutu desteklenmiyor')}
- const raw=alphaCanvas();raw.width=bitmap.width;raw.height=bitmap.height;const r=raw.getContext('2d',{willReadFrequently:true});r.drawImage(bitmap,0,0);bitmap.close();const data=r.getImageData(0,0,raw.width,raw.height);
- // Non-destructive import cleanup for historical opaque-black Blender renders.
- // Only border-connected near-black is removed; the original file stays in source.
- const px=data.data,W=raw.width,H=raw.height,was=new Uint8Array(W*H),stack=[];
- // Also exclude legacy magenta guide pixels from the working copy, never from the source Blob.
- const guide=(p)=>px[p]>190&&px[p+2]>180&&px[p+1]<105&&px[p]>px[p+1]*2&&px[p+2]>px[p+1]*2;
- for(let p=0;p<px.length;p+=4)if(guide(p))px[p+3]=0;
- const nearBlack=k=>{const p=k*4;return px[p+3]>240&&px[p]<17&&px[p+1]<17&&px[p+2]<17};
- const add=k=>{if(!was[k]&&nearBlack(k)){was[k]=1;stack.push(k)}};
- for(let x=0;x<W;x++){add(x);add((H-1)*W+x)}
- for(let y=0;y<H;y++){add(y*W);add(y*W+W-1)}
- // Do not flood-fill when canvas corners aren't an opaque black matte.
- if(stack.length){for(let a=0;a<stack.length;a++){const k=stack[a],x=k%W,y=(k/W)|0;if(x)add(k-1);if(x<W-1)add(k+1);if(y)add(k-W);if(y<H-1)add(k+W)}for(const k of stack)px[k*4+3]=0}
- let x0=raw.width,y0=raw.height,x1=-1,y1=-1,weightedX=0,weightedY=0,total=0;
- for(let y=0;y<raw.height;y++)for(let x=0;x<raw.width;x++){let p=(y*raw.width+x)*4,a=data.data[p+3],red=data.data[p],green=data.data[p+1],blue=data.data[p+2];if(a>24){x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);weightedX+=x*a;weightedY+=y*a;total+=a;}}
- if(x1<0)throw new Error('PNG içinde şeffaf olmayan karakter bulunamadı');r.putImageData(data,0,0);
- const img=alphaCanvas();img.width=x1-x0+1;img.height=y1-y0+1;img.getContext('2d').drawImage(raw,x0,y0,img.width,img.height,0,0,img.width,img.height);
- return {blob,canvas:img,w:img.width,h:img.height,original:{w:raw.width,h:raw.height,x:x0,y:y0},center:{x:weightedX/total,y:weightedY/total},x:0,y:0};}
- function frameName(i){return direction+'_'+String(i+1).padStart(2,'0')+'.png'}
- function switchDirection(d){if(!DIRECTIONS.includes(d))return;playing=false;drag=null;exportExcluded.clear();direction=d;frames=sets[d];selected=0;savePrefs();sync();}
- async function openDB(){try{if(!('indexedDB' in window))return null;return await new Promise(resolve=>{let r=indexedDB.open(DB,1);r.onupgradeneeded=()=>r.result.createObjectStore(STORE,{keyPath:'slot'});r.onsuccess=()=>resolve(r.result);r.onerror=()=>resolve(null);})}catch{return null}}
- function record(i,d=direction){let f=sets[d][i],m=masters[d];return {slot:d+':'+i,name:f.name,editedName:f.editedName||null,blob:f.blob,source:f.source,x:f.x,y:f.y,...(i===0&&m?{masterMask:m.blob,maskCols:m.cols,maskRows:m.rows}:{})};}
- function tx(type='readonly'){return db.transaction(STORE,type).objectStore(STORE)}
- async function saveFrame(i,d=direction){if(!db)return;return new Promise(resolve=>{let r=tx('readwrite').put(record(i,d));r.onsuccess=()=>resolve();r.onerror=()=>resolve()})}
- async function clearDirection(d){if(!db)return;const items=await new Promise(resolve=>{const r=tx().getAllKeys();r.onsuccess=()=>resolve(r.result||[]);r.onerror=()=>resolve([])});return new Promise(resolve=>{const transaction=db.transaction(STORE,'readwrite');for(const key of items)if((typeof key==='number'&&d==='SE')||String(key).startsWith(d+':'))transaction.objectStore(STORE).delete(key);transaction.oncomplete=()=>resolve();transaction.onerror=()=>resolve();})}
- async function clearStore(){if(!db)return;return new Promise(resolve=>{let r=tx('readwrite').clear();r.onsuccess=r.onerror=()=>resolve()})}
- function savePrefs(){try{localStorage.setItem(META,JSON.stringify({rate,fps,mode,view,equalSize,direction}))}catch{}}
- async function init(){try{let p=JSON.parse(localStorage.getItem(META)||'{}');rate=[100,50,25].includes(p.rate)?p.rate:100;direction=DIRECTIONS.includes(p.direction)?p.direction:'SE';frames=sets[direction];fps=clamp(Number(p.fps)||8,1,60);mode=['feet','center','average','original'].includes(p.mode)?p.mode:'feet';view=['animation','average','reference'].includes(p.view)?p.view:'animation';equalSize=p.equalSize!==false;}catch{}
- $('fps').value=fps;$('align').value=mode;$('view').value=view;$('equalSize').checked=equalSize;db=await openDB();if(db){const records=await new Promise(resolve=>{let q=tx().getAll();q.onsuccess=()=>resolve(q.result);q.onerror=()=>resolve([])});records.sort((a,b)=>String(a.slot).localeCompare(String(b.slot),undefined,{numeric:true}));for(const it of records){try{let d=typeof it.slot==='number'?'SE':String(it.slot).split(':')[0];if(!DIRECTIONS.includes(d))continue;let slot=typeof it.slot==='number'?it.slot:Number(String(it.slot).split(':')[1]);if(!Number.isSafeInteger(slot)||slot<0||slot>=LIMIT)continue;let f=await decode(it.blob);let source=it.source||it.blob;Object.assign(f,{source,name:it.name||d+'_'+String(slot+1).padStart(2,'0')+'.png',editedName:it.editedName||null,x:Number(it.x)||0,y:Number(it.y)||0});f.referenceFrame=source===it.blob?f:await decode(source);sets[d][slot]=f}catch{}}for(const d of DIRECTIONS)sets[d]=sets[d].filter(Boolean);for(const d of DIRECTIONS){const m=records.find(r=>r.slot===d+':0'||(d==='SE'&&r.slot===0));if(m?.masterMask&&sets[d].length){try{masters[d]=await prepareMaster(m.masterMask,m.maskCols,m.maskRows,sets[d])}catch(e){console.warn('Ana maske yüklenemedi',e)}}}frames=sets[direction]}sync();requestAnimationFrame(loop)}
- async function importList(files){if(!files.length)return; if(frames.length&&!confirm(direction+' yönündeki kareler değiştirilecek. Diğer yönler korunacak. Devam edilsin mi?'))return;
- if(files.length>LIMIT)throw new Error('Bir sette en fazla 128 kare destekleniyor');busy=true;info('PNG kareleri okunuyor…');let incoming=[];
- try{for(const file of files){try{const decoded=await decode(file);incoming.push({...decoded,source:file,referenceFrame:decoded,name:filename(file.name)||frameName(incoming.length)})}catch(e){console.warn('Atlanan kare',file.name,e)}}if(!incoming.length)throw new Error('Geçerli PNG bulunamadı');if(db)await clearDirection(direction);masters[direction]=null;exportExcluded.clear();sets[direction]=incoming;frames=sets[direction];selected=0;rate=100;playing=false;for(let i=0;i<frames.length;i++)await saveFrame(i);savePrefs();sync();info(direction+' yönüne '+frames.length+' kare yüklendi; hiçbir eski Terrain / Obje verisi değiştirilmedi.')}finally{busy=false}}
- function sortFiles(files){return files.sort((a,b)=>nameIndex(a.name)-nameIndex(b.name)||a.name.localeCompare(b.name,'tr',{numeric:true}))}
- // ZIP central directory parser. Supports conventional STORED and DEFLATE entries.
- function u16(v,i){return v.getUint16(i,true)}function u32(v,i){return v.getUint32(i,true)}
- async function zipPngs(file){const buf=await file.arrayBuffer(),data=new DataView(buf),bytes=new Uint8Array(buf);let eocd=-1;for(let p=buf.byteLength-22;p>=Math.max(0,buf.byteLength-65557);p--)if(u32(data,p)===0x06054b50){eocd=p;break}if(eocd<0)throw new Error('ZIP son dizini bulunamadı');let count=u16(data,eocd+10),cursor=u32(data,eocd+16);if(count>1200)throw new Error('ZIP çok fazla öğe içeriyor');const matches=[];const decoder=new TextDecoder();for(let i=0;i<count;i++){if(u32(data,cursor)!==0x02014b50)throw new Error('ZIP dizini bozuk');let method=u16(data,cursor+10),size=u32(data,cursor+20),expanded=u32(data,cursor+24),nl=u16(data,cursor+28),extra=u16(data,cursor+30),comment=u16(data,cursor+32),offset=u32(data,cursor+42);const name=decoder.decode(bytes.subarray(cursor+46,cursor+46+nl));cursor+=46+nl+extra+comment;
- if(!/\.png$/i.test(name)||/(?:_clean|_grid|overlay|atlas|sheet|preview|onizleme)\.png$/i.test(name)||!/(?:frame[_-]?\d+|(?:SE[_-])?\d+\.png)/i.test(name))continue;
- if(expanded>MAXFILE||size>MAXFILE||offset+30>=buf.byteLength||![0,8].includes(method))continue;
- let lh=u16(data,offset+26),le=u16(data,offset+28),start=offset+30+lh+le;if(start+size>buf.byteLength)continue;
- matches.push({name,method,expanded,bytes:bytes.slice(start,start+size)});
- }if(!matches.length)throw new Error('ZIP içinde numaralı PNG kareleri bulunamadı');
- if(matches.length>LIMIT)throw new Error('ZIP içindeki PNG kare sayısı 128 sınırını aşıyor');matches.sort((a,b)=>nameIndex(a.name)-nameIndex(b.name)||a.name.localeCompare(b.name,'tr',{numeric:true}));let groups={NE:[],NW:[],SE:[],SW:[]};
- for(const entry of matches){let buffer;if(entry.method===0)buffer=entry.bytes;else{if(typeof DecompressionStream==='undefined')throw new Error('Bu tarayıcı ZIP açmayı desteklemiyor. PNG’leri ayrı seçebilirsin.');let stream=new Blob([entry.bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));buffer=new Uint8Array(await new Response(stream).arrayBuffer())}if(buffer.length!==entry.expanded||buffer.length>MAXFILE)throw new Error('ZIP PNG boyutu tutarsız: '+entry.name);const segment=entry.name.replace(/\\/g,'/');const folder=segment.match(/(?:^|\/)(NE|NW|SE|SW)\//i)?.[1]?.toUpperCase();const prefix=filename(segment).match(/^(NE|NW|SE|SW)[_-]/i)?.[1]?.toUpperCase();const d=folder||prefix||direction;groups[d].push(new File([buffer],filename(entry.name),{type:'image/png'}))}for(const d of DIRECTIONS)groups[d]=sortFiles(groups[d]);return groups}
- async function importSheet(file){let bitmap=await createImageBitmap(file),cols=Math.max(1,Math.floor(+$('sheetCols').value||4)),rows=Math.max(1,Math.floor(+$('sheetRows').value||2));if(cols*rows>LIMIT)throw Error('En fazla 128 kare');let files=[];for(let i=0;i<cols*rows;i++){let x=i%cols,y=Math.floor(i/cols),x0=Math.round(x*bitmap.width/cols),x1=Math.round((x+1)*bitmap.width/cols),y0=Math.round(y*bitmap.height/rows),y1=Math.round((y+1)*bitmap.height/rows),w=Math.max(1,x1-x0),h=Math.max(1,y1-y0),el=alphaCanvas();el.width=w;el.height=h;el.getContext('2d').drawImage(bitmap,x0,y0,w,h,0,0,w,h);let blob=await new Promise(ok=>el.toBlob(ok,'image/png'));files.push(new File([blob],frameName(i),{type:'image/png'}))}bitmap.close();return files}
-
- async function importGroups(groups){const directions=DIRECTIONS.filter(d=>groups[d]?.length);if(!directions.length)throw Error('ZIP içinde desteklenen kare yok');if(directions.some(d=>sets[d].length)&&!confirm('ZIP içindeki '+directions.join(', ')+' yönleri değiştirilecek. Diğer kayıtlar korunacak. Devam edilsin mi?'))return;const decoded={};for(const d of directions){if(groups[d].length>LIMIT)throw Error(d+' yönünde kare sayısı sınırı aşıldı');decoded[d]=[];for(const file of groups[d]){const f=await decode(file);decoded[d].push({...f,source:file,referenceFrame:f,name:file.name})}}for(const d of directions){await clearDirection(d);masters[d]=null;sets[d]=decoded[d];for(let i=0;i<sets[d].length;i++)await saveFrame(i,d)}direction=directions.includes(direction)?direction:directions[0];frames=sets[direction];selected=0;rate=100;playing=false;savePrefs();sync();info(directions.map(d=>d+': '+sets[d].length).join(' · ')+' kare yüklendi. Diğer yönler korundu.')}
- const chosen=()=>active().filter(i=>frames[i]);
- const exportChosen=()=>chosen().filter(i=>!exportExcluded.has(i));
- function geometry(){let ids=chosen();if(!ids.length)return {maxW:1,maxH:1,meanX:0,meanY:0,meanCX:0,meanCY:0};let vals=ids.map(i=>frames[i]);return {maxW:Math.max(...vals.map(f=>f.w)),maxH:Math.max(...vals.map(f=>f.h)),meanX:vals.reduce((s,f)=>s+f.original.x+f.w/2,0)/vals.length,meanY:vals.reduce((s,f)=>s+f.original.y+f.h/2,0)/vals.length,meanCX:vals.reduce((s,f)=>s+f.center.x,0)/vals.length,meanCY:vals.reduce((s,f)=>s+f.center.y,0)/vals.length};}
- function paint(target,frameIndex,side=FRAME_SIZE,settings={}){let {overlay=false,sourceView=false}=settings;let current=frames[frameIndex];let f=sourceView?(current?.referenceFrame||current):current;if(!f)return;let w=side,h=side,gg=geometry();const overall=Math.min(w*.88/gg.maxW,h*.88/gg.maxH);
- let factor=equalSize?Math.min(overall*gg.maxH/f.h,overall*gg.maxW/f.w):overall;
- let x=(w-f.w*factor)/2,y=h*.88-f.h*factor;
- if(mode==='center'){y=(h-f.h*factor)/2}
- else if(mode==='average'){x=w*.5-(f.center.x-f.original.x)*factor;y=h*.52-(f.center.y-f.original.y)*factor}
- else if(mode==='original'){x=(w-f.original.w*factor)/2+f.original.x*factor;y=(h-f.original.h*factor)/2+f.original.y*factor}
- if(sourceView){x=(w-f.original.w*factor)/2+f.original.x*factor;y=(h-f.original.h*factor)/2+f.original.y*factor}
- x+=f.x*w/640;y+=f.y*h/640;target.drawImage(f.canvas,x,y,f.w*factor,f.h*factor);}
- function display(){const w=c.width,h=c.height;ctx.clearRect(0,0,w,h);let ids=chosen();if(!ids.length){ctx.fillStyle='#b2c7ae';ctx.font='19px system-ui';ctx.textAlign='center';ctx.fillText('PNG veya ZIP yükle',w/2,h/2);return}if(view==='average'){let off=alphaCanvas();off.width=w;off.height=h;let g=off.getContext('2d');g.globalAlpha=1/ids.length;for(let i of ids)paint(g,i,w,{overlay:false});ctx.drawImage(off,0,0);return}let i=frames[selected]?selected:ids[0];if(view==='reference'){paint(ctx,i,w,{sourceView:true});return}const output=rendered(i);ctx.drawImage(output,0,0,w,h);}
- function sync(){let ids=chosen();if(frames.length&&!frames[selected])selected=ids[0]??0;for(const el of document.querySelectorAll('[data-direction]')){const d=el.dataset.direction;el.classList.toggle('active',d===direction);el.textContent=d+' · '+sets[d].length;}moveEnabled=false;$('current').textContent=frames.length?(ids.indexOf(selected)+1)+' / '+ids.length:'0 / 0';$('densityCount').textContent=ids.length+' / '+frames.length+' kare';$('playbackStatus').textContent=playing?'Oynuyor':'Duraklatıldı';$('play').textContent=playing?'⏸ Duraklat':'▶ Oynat';$('fpsLabel').textContent=fps+' FPS';$('xLabel').textContent=(frames[selected]?.x||0)+' px';$('yLabel').textContent=(frames[selected]?.y||0)+' px';$('x').value=frames[selected]?.x||0;$('y').value=frames[selected]?.y||0;for(const e of document.querySelectorAll('[data-rate]'))e.classList.toggle('active',+e.dataset.rate===rate);
- $('frameTitle').textContent=frames[selected]?direction+' • kare '+String(selected+1).padStart(2,'0'):'Kare seçilmedi';$('frameDesc').textContent=frames[selected]?(frames[selected].name+' • '+(frames[selected].blob!==frames[selected].source?'AI çıktısı':'Kaynak referans')):'İçe aktarılan kareyi seçip AI çıktısını yükle.';
- for(const id of ['replace','original','restorePos','x','y','downloadFrame','downloadAll','prev','next','play'])$(id).disabled=!frames.length;for(const id of ['exportFrameMask','exportApiMask','exportSheetMask'])$(id).disabled=!frames.length;$('applySourceMask').disabled=!frames.length||!masters[direction];$('masterMaskStatus').textContent=masters[direction]?'Maske bağlı: '+masters[direction].cols+'×'+masters[direction].rows+' / '+frames.length+' kare':'Maske yüklü değil.';
- $('thumbs').replaceChildren();for(let i=0;i<frames.length;i++){let f=frames[i],b=document.createElement('button');b.className='thumb'+(i===selected?' active':'')+(exportExcluded.has(i)?' omitted':'');b.title=exportExcluded.has(i)?'Export dışı':'Export seçili';const cv=alphaCanvas();cv.width=112;cv.height=112;let g=cv.getContext('2d');const scale=Math.min(96/f.w,96/f.h);g.drawImage(f.canvas,(112-f.w*scale)/2,(112-f.h*scale)/2,f.w*scale,f.h*scale);const title=document.createElement('strong');title.textContent=String(i+1).padStart(2,'0');const note=document.createElement('small');note.textContent=f.blob!==f.source?'AI':'REF';b.append(cv,title,note);b.onclick=()=>{selected=i;playing=false;sync()};const pick=document.createElement('input');pick.type='checkbox';pick.checked=!exportExcluded.has(i);pick.title='Dışa aktarmaya dahil et';pick.style.cssText='width:20px;height:20px';pick.onclick=e=>e.stopPropagation();pick.onchange=()=>{if(pick.checked)exportExcluded.delete(i);else exportExcluded.add(i);sync()};b.append(pick);$('thumbs').append(b)}display();}
- function step(n){let ids=chosen();if(!ids.length)return;selected=ids[(ids.indexOf(selected)+n+ids.length)%ids.length];sync()}
- function loop(ts){if(playing&&frames.length&&ts-lastTick>=1000/fps){let ids=chosen();if(ids.length){selected=ids[(ids.indexOf(selected)+1)%ids.length];$('current').textContent=(ids.indexOf(selected)+1)+' / '+ids.length;display();for(const el of $('thumbs').children)el.classList.toggle('active',Number(el.querySelector('strong').textContent)===selected+1);}lastTick=ts;}requestAnimationFrame(loop)}
- async function download(blob,name){const url=URL.createObjectURL(blob);let a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}
- function rendered(i){let cv=alphaCanvas();cv.width=FRAME_SIZE;cv.height=FRAME_SIZE;paint(cv.getContext('2d'),i,FRAME_SIZE,{overlay:false});return cv}
- async function pngBytes(i){return new Uint8Array(await new Promise(r=>rendered(i,true).toBlob(b=>b.arrayBuffer().then(r),'image/png')))}
- // Browser-native uncompressed ZIP; no cloud library, no external network.
- const crc32=(data)=>{let crc=-1;for(const x of data){crc^=x;for(let k=0;k<8;k++)crc=(crc>>>1)^((crc&1)?0xedb88320:0)}return (crc^(-1))>>>0};
- function zip(files){let enc=new TextEncoder(),parts=[],central=[],offset=0;const word=(n)=>n&65535;const writer=(len)=>new DataView(new ArrayBuffer(len));for(let f of files){let b=enc.encode(f.name),raw=f.data,crc=crc32(raw),h=writer(30+b.length);h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(8,0,true);h.setUint32(14,crc,true);h.setUint32(18,raw.length,true);h.setUint32(22,raw.length,true);h.setUint16(26,b.length,true);new Uint8Array(h.buffer,30).set(b);parts.push(h.buffer,raw);let c=writer(46+b.length);c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint32(16,crc,true);c.setUint32(20,raw.length,true);c.setUint32(24,raw.length,true);c.setUint16(28,b.length,true);c.setUint32(42,offset,true);new Uint8Array(c.buffer,46).set(b);central.push(c.buffer);offset+=h.byteLength+raw.length}let centralLen=central.reduce((sum,x)=>sum+x.byteLength,0),footer=writer(22);footer.setUint32(0,0x06054b50,true);footer.setUint16(8,files.length,true);footer.setUint16(10,files.length,true);footer.setUint32(12,centralLen,true);footer.setUint32(16,offset,true);return new Blob([...parts,...central,footer.buffer],{type:'application/zip'})}
- async function handle(f){if(busy)return;try{await f()}catch(e){info(e?.message||String(e),true);console.error(e)}}
- $('loadPNG').onchange=e=>handle(async()=>{let files=sortFiles(Array.from(e.target.files||[]));await importList(files);e.target.value=''});
- $('loadZIP').onchange=e=>handle(async()=>{let file=e.target.files?.[0];if(!file)return;info('ZIP çözümleniyor…');await importGroups(await zipPngs(file));e.target.value=''});
- $('directions').onclick=e=>{let b=e.target.closest('[data-direction]');if(b)switchDirection(b.dataset.direction)};
- $('loadSheet').onchange=e=>handle(async()=>{let file=e.target.files?.[0];if(!file)return;await importList(await importSheet(file));e.target.value=''});
- $('replace').onchange=e=>handle(async()=>{let file=e.target.files?.[0];if(!file||!frames[selected])return;if(masters[direction]){await importMaskedFrame(file);e.target.value='';return}let replacement=await decode(file),old=frames[selected];frames[selected]={...replacement,source:old.source,referenceFrame:old.referenceFrame||old,name:old.name,editedName:file.name,x:old.x,y:old.y};await saveFrame(selected);sync();info('Kare '+(selected+1)+' değiştirildi, diğer kareler korundu.');e.target.value=''});
- $('original').onclick=()=>handle(async()=>{const f=frames[selected];if(!f)return;const restored=await decode(f.source);frames[selected]={...restored,source:f.source,referenceFrame:restored,name:f.name,editedName:null,x:f.x,y:f.y};await saveFrame(selected);sync();info('Seçili kare orijinal referansa döndü.')});
- $('restorePos').onclick=()=>{if(!frames[selected])return;frames[selected].x=0;frames[selected].y=0;saveFrame(selected);sync()};
- $('prev').onclick=()=>{playing=false;step(-1)};$('next').onclick=()=>{playing=false;step(1)};
- $('play').onclick=()=>{playing=!playing;lastTick=performance.now();sync()};
- $('fps').oninput=e=>{fps=+e.target.value;savePrefs();$('fpsLabel').textContent=fps+' FPS'};
- $('densities').onclick=e=>{let b=e.target.closest('[data-rate]');if(!b)return;rate=+b.dataset.rate;savePrefs();sync()};
- $('align').onchange=e=>{mode=e.target.value;savePrefs();sync()};$('view').onchange=e=>{view=e.target.value;savePrefs();sync()};
- $('equalSize').onchange=e=>{equalSize=e.target.checked;savePrefs();sync()};
- for(const axis of ['x','y'])$(axis).oninput=e=>{if(!frames[selected])return;frames[selected][axis]=+e.target.value;$(axis+'Label').textContent=e.target.value+' px';display();saveFrame(selected)};
- $('canvasBox').addEventListener('pointerdown',e=>{if(!moveEnabled||!frames[selected]||playing||view==='average')return;drag={x:e.clientX,y:e.clientY};e.currentTarget.setPointerCapture(e.pointerId)});
- $('canvasBox').addEventListener('pointermove',e=>{if(!drag)return;let box=$('canvasBox').getBoundingClientRect(),scale=640/box.width,f=frames[selected];f.x=clamp(Math.round(f.x+(e.clientX-drag.x)*scale),-200,200);f.y=clamp(Math.round(f.y+(e.clientY-drag.y)*scale),-200,200);drag={x:e.clientX,y:e.clientY};$('x').value=f.x;$('y').value=f.y;$('xLabel').textContent=f.x+' px';$('yLabel').textContent=f.y+' px';display()});
- for(const type of ['pointerup','pointercancel'])$('canvasBox').addEventListener(type,()=>{if(drag){drag=null;saveFrame(selected)}});
- $('exportSheet').onclick=()=>handle(async()=>{
- const all=$('exportScope').value==='one'?exportChosen().map(i=>({f:frames[i],d:direction})):DIRECTIONS.flatMap(d=>sets[d].map(f=>({f,d})));
- if(!all.length)throw Error('Önce kare yükle');
- const size=+$('exportSize').value,choice=$('exportChunk').value,chunk=choice==='0'?0:choice==='custom'?Math.max(1,Math.floor(+$('exportChunkCustom').value||16)):+choice;
- const groups=[];
- if(chunk){if($('exportScope').value==='all'){for(const d of DIRECTIONS){let subset=all.filter(e=>e.d===d);for(let k=0;k<subset.length;k+=chunk)groups.push({items:subset.slice(k,k+chunk),direction:d,start:k})}}else{for(let k=0;k<all.length;k+=chunk)groups.push({items:all.slice(k,k+chunk),direction,start:k})}}
- else groups.push({items:all,direction:$('exportScope').value==='all'?'4yon':direction,start:0});
-
- const renderGroup=async group=>{
- let list=group.items,n=list.length,cols=$('exportCols').value==='auto'?Math.ceil(Math.sqrt(n)):Math.min(n,+$('exportCols').value),rows=Math.ceil(n/cols),out=alphaCanvas();out.width=out.height=size;let g=out.getContext('2d');if(!g)throw Error('Canvas oluşturulamadı');
- // Each tile starts at the literal grid edge. Never center the entire grid on the square.
- // Keep the SAME source coordinate system for every frame and every exported chunk.
- let allFrames=all.map(e=>e.f),sourceW=Math.max(...allFrames.map(f=>f.original?.w||f.w)),sourceH=Math.max(...allFrames.map(f=>f.original?.h||f.h)),artRects=[];
- for(let i=0;i<n;i++){let f=list[i].f,cx=i%cols,cy=Math.floor(i/cols),x0=Math.round(cx*size/cols),x1=Math.round((cx+1)*size/cols),y0=Math.round(cy*size/rows),y1=Math.round((cy+1)*size/rows),cw=x1-x0,ch=y1-y0,scale=Math.min(cw*.88/sourceW,ch*.88/sourceH),baseX=x0+(cw-sourceW*scale)/2,baseY=y0+(ch-sourceH*scale)/2;
- let fx=f.original?.x||0,fy=f.original?.y||0;
- const sx=baseX+(fx+f.x)*scale,sy=baseY+(fy+f.y)*scale;
- g.drawImage(f.canvas,sx,sy,f.w*scale,f.h*scale);
- artRects[i]={x0:sx,y0:sy,x1:sx+f.w*scale,y1:sy+f.h*scale};}
-
- let blob=await new Promise(ok=>out.toBlob(ok,'image/png'));if(!blob)throw Error('PNG oluşturulamadı');return blob};
- if(groups.length===1){let group=groups[0],blob=await renderGroup(group);await download(blob,'mineclonie_'+group.direction+'_frames_'+(group.start+1)+'-'+(group.start+group.items.length)+'_'+size+'.png')}
- else{let items=[];for(let page=0;page<groups.length;page++){let group=groups[page],blob=await renderGroup(group),bytes=new Uint8Array(await blob.arrayBuffer());items.push({name:group.direction+'/sayfa_'+String(page+1).padStart(2,'0')+'_of_'+String(groups.length).padStart(2,'0')+'_frames_'+String(group.start+1).padStart(2,'0')+'-'+String(group.start+group.items.length).padStart(2,'0')+'.png',data:bytes})}
- const manifest={schema:'osman.animation.spritesheet-pages.v2',
-  sheetSize:size,
-  pages:groups.map((group,i)=>{
-   const cols=$('exportCols').value==='auto'?Math.ceil(Math.sqrt(group.items.length)):Math.min(group.items.length,+$('exportCols').value);
-   const rows=Math.ceil(group.items.length/cols),slotCount=cols*rows;
-   return {page:i+1,pageCount:groups.length,direction:group.direction,cols,rows,
-    frameCount:group.items.length,firstFrame:group.start+1,lastFrame:group.start+group.items.length,
-    emptySlots:Array.from({length:slotCount-group.items.length},(_,j)=>group.items.length+j+1)};
-  })};
- items.push({name:'spritesheet-manifest.json',data:new TextEncoder().encode(JSON.stringify(manifest,null,2))});
- await download(zip(items),'mineclonie_spritesheet_'+groups.length+'parca.zip')}
- info('Spritesheet dışa aktarıldı: '+groups.length+' parça, '+all.length+' kare. Orijinal kareler korunuyor.');
- });
- $('downloadFrame').onclick=()=>handle(async()=>{let f=frames[selected];if(!f)return;let b=await new Promise(r=>rendered(selected,true).toBlob(r,'image/png'));await download(b,frameName(selected));info('Şeffaf kare indirildi: '+frameName(selected))});
- $('downloadAll').onclick=()=>handle(async()=>{let ids=exportChosen();if(!ids.length)throw Error('Dışa aktarılacak kare seçilmedi');info('ZIP hazırlanıyor…');let items=[];for(let i of ids){items.push({name:frameName(i),data:await pngBytes(i)});if(masters[direction])items.push({name:'mask/'+frameName(i),data:new Uint8Array(await (await maskPng(oneMask(i))).arrayBuffer())})}let m={schema:1,format:'OSMAN Animation Studio transparent RGBA',density_percent:rate,output_size:[FRAME_SIZE,FRAME_SIZE],source_frame_count:frames.length,selected_source_indexes:ids,align:mode,equalSize,frame_files:items.map(x=>x.name)};items.push({name:'manifest.json',data:new TextEncoder().encode(JSON.stringify(m,null,2))});await download(zip(items),direction+'_'+rate+'pct_'+ids.length+'frame_grid.zip');info(ids.length+' kareli ZIP hazırlandı.')});
- 
-  // A master silhouette's opaque pixels mean "character"; API editing masks
-  // use inverse alpha. No color/brightness threshold is used.
-  const maskPng=cv=>new Promise((resolve,reject)=>cv.toBlob(b=>b?resolve(b):reject(Error('PNG üretilemedi')),'image/png'));
-  async function prepareMaster(blob,cols,rows,reference=frames){
-    cols=Number(cols);rows=Number(rows);
-    if(!Number.isInteger(cols)||!Number.isInteger(rows)||cols<1||rows<1||cols*rows>LIMIT||cols*rows<reference.length)throw Error('Maske ızgarası / kare sayısı uyuşmuyor');
-    if(blob.size>MAXFILE)throw Error('Maske 24 MB sınırını aşıyor');
-    const bmp=await createImageBitmap(blob);
-    try{
-      if(bmp.width>8192||bmp.height>8192||bmp.width<cols||bmp.height<rows)throw Error('Maske ölçüleri geçersiz');
-      const raw=alphaCanvas();raw.width=bmp.width;raw.height=bmp.height;
-      const g=raw.getContext('2d',{willReadFrequently:true});g.drawImage(bmp,0,0);const pixels=g.getImageData(0,0,raw.width,raw.height).data;
-      const cells=[];
-      for(let i=0;i<reference.length;i++){
-        const col=i%cols,row=Math.floor(i/cols),x0=Math.round(col*raw.width/cols),x1=Math.round((col+1)*raw.width/cols),y0=Math.round(row*raw.height/rows),y1=Math.round((row+1)*raw.height/rows);
-        let occupied=0;for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++)if(pixels[(y*raw.width+x)*4+3]>128)occupied++;
-        if(occupied<16)throw Error('Ana maskede '+(i+1)+'. kare boş; sütun, satır veya kare sırasını düzelt');
-        const cv=alphaCanvas();cv.width=x1-x0;cv.height=y1-y0;cv.getContext('2d').drawImage(raw,x0,y0,cv.width,cv.height,0,0,cv.width,cv.height);cells.push(cv);
-      }
-      return {blob,cols,rows,cells};
-    }finally{bmp.close()}
-  }
-  function nativeMask(i,frame=frames[i]){
-    const master=masters[direction];if(!master||!master.cells[i]||!frame)throw Error('Önce bu yöne ana maske yükle');
-    const full=alphaCanvas();full.width=frame.original.w;full.height=frame.original.h;
-    const g=full.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(master.cells[i],0,0,full.width,full.height);
-    const mask=alphaCanvas();mask.width=frame.w;mask.height=frame.h;
-    const m=mask.getContext('2d');m.drawImage(full,frame.original.x,frame.original.y,frame.w,frame.h,0,0,frame.w,frame.h);
-    m.globalCompositeOperation='source-in';m.fillStyle='#fff';m.fillRect(0,0,mask.width,mask.height);return mask;
-  }
-  function clipWithMask(image,mask){
-    const out=alphaCanvas();out.width=mask.width;out.height=mask.height;
-    const g=out.getContext('2d');g.drawImage(image,0,0,out.width,out.height);g.globalCompositeOperation='destination-in';g.drawImage(mask,0,0);return out;
-  }
-  function framePlacement(i,side=FRAME_SIZE){
-    const f=frames[i],gg=geometry(),overall=Math.min(side*.88/gg.maxW,side*.88/gg.maxH);
-    const factor=equalSize?Math.min(overall*gg.maxH/f.h,overall*gg.maxW/f.w):overall;
-    let x=(side-f.w*factor)/2,y=side*.88-f.h*factor;
-    if(mode==='center')y=(side-f.h*factor)/2;
-    else if(mode==='average'){x=side*.5-(f.center.x-f.original.x)*factor;y=side*.52-(f.center.y-f.original.y)*factor}
-    else if(mode==='original'){x=(side-f.original.w*factor)/2+f.original.x*factor;y=(side-f.original.h*factor)/2+f.original.y*factor}
-    x+=f.x*side/640;y+=f.y*side/640;return {x,y,w:f.w*factor,h:f.h*factor};
-  }
-  function frameSilhouette(i){if(masters[direction])return nativeMask(i);const f=frames[i];if(!f)throw Error('Kare bulunamadı');const source=f.referenceFrame?.canvas||f.canvas;const output=alphaCanvas();output.width=f.w;output.height=f.h;const g=output.getContext('2d');g.drawImage(source,0,0,f.w,f.h);g.globalCompositeOperation='source-in';g.fillStyle='#fff';g.fillRect(0,0,f.w,f.h);return output}
-  function oneMask(i,api=false){
-    const mask=frameSilhouette(i),p=framePlacement(i),out=alphaCanvas();out.width=out.height=FRAME_SIZE;
-    const g=out.getContext('2d',{willReadFrequently:true});g.drawImage(mask,p.x,p.y,p.w,p.h);
-    if(api){
-      const data=g.getImageData(0,0,FRAME_SIZE,FRAME_SIZE);
-      for(let j=0;j<data.data.length;j+=4){const editable=data.data[j+3]>128;data.data[j]=data.data[j+1]=data.data[j+2]=255;data.data[j+3]=editable?0:255}
-      g.putImageData(data,0,0);
-    }return out;
-  }
-  function sheetPlacement(j,cols,rows,size,f,ref){
-    const cx=j%cols,cy=Math.floor(j/cols),x0=Math.round(cx*size/cols),x1=Math.round((cx+1)*size/cols),y0=Math.round(cy*size/rows),y1=Math.round((cy+1)*size/rows),
-      w=Math.max(...ref.map(v=>v.original?.w||v.w)),h=Math.max(...ref.map(v=>v.original?.h||v.h)),
-      scale=Math.min((x1-x0)*.88/w,(y1-y0)*.88/h),bx=x0+((x1-x0)-w*scale)/2,by=y0+((y1-y0)-h*scale)/2;
-    return {x:bx+((f.original?.x||0)+f.x)*scale,y:by+((f.original?.y||0)+f.y)*scale,w:f.w*scale,h:f.h*scale};
-  }
-  async function commitMasked(items){
-    const staged=[];for(const e of items){const old=frames[e.i];if(!old||old.w!==e.canvas.width||old.h!==e.canvas.height)throw Error('Kare boyutu uyuşmuyor');
-      staged.push({...e,blob:await maskPng(e.canvas)})}
-    for(const item of staged){frames[item.i]={...frames[item.i],canvas:item.canvas,blob:item.blob,editedName:item.name};await saveFrame(item.i)}
-    sync();
-  }
-  async function importMaskedFrame(file){
-    if(!masters[direction])throw Error('Önce ana maske yükle');
-    const bmp=await createImageBitmap(file);
-    try{
-      if(bmp.width!==FRAME_SIZE||bmp.height!==FRAME_SIZE)throw Error('AI tek kare 1024×1024 PNG olmalı');
-      const f=frames[selected],p=framePlacement(selected),cv=alphaCanvas();cv.width=f.w;cv.height=f.h;
-      cv.getContext('2d').drawImage(bmp,p.x,p.y,p.w,p.h,0,0,f.w,f.h);
-      await commitMasked([{i:selected,canvas:clipWithMask(cv,nativeMask(selected)),name:file.name}]);
-      info('AI karesi özgün maskeye kırpıldı; referans korundu.');
-    }finally{bmp.close()}
-  }
-  async function importMaskedAtlas(file){
-    if(!masters[direction])throw Error('Önce ana maske yükle');
-    const bmp=await createImageBitmap(file);
-    try{
-      const cols=Number($('sheetCols').value),rows=Number($('sheetRows').value),ids=chosen();
-      if(!Number.isInteger(cols)||!Number.isInteger(rows)||cols<1||rows<1||cols*rows>LIMIT||ids.length>cols*rows)throw Error('AI atlasının sütun/satır değerleri uyuşmuyor');
-      if(bmp.width!==bmp.height||bmp.width<512||bmp.width>8192)throw Error('AI atlası kare PNG olmalı');
-      const ref=ids.map(i=>frames[i]),staged=[];
-      for(let j=0;j<ids.length;j++){
-        const i=ids[j],f=frames[i],p=sheetPlacement(j,cols,rows,bmp.width,f,ref),cv=alphaCanvas();cv.width=f.w;cv.height=f.h;
-        cv.getContext('2d').drawImage(bmp,p.x,p.y,p.w,p.h,0,0,f.w,f.h);
-        staged.push({i,canvas:clipWithMask(cv,nativeMask(i)),name:file.name+'#'+(i+1)});
-      }
-      if(!confirm(ids.length+' AI karesi maskeyle kesilip geri alınsın mı? Kaynaklar korunur.'))return;
-      await commitMasked(staged);info(ids.length+' AI karesi ana maske ile kesildi ve geri alındı.');
-    }finally{bmp.close()}
-  }
-  $('loadMasterMask').onchange=e=>handle(async()=>{if(!frames.length)throw Error('Önce kaynak kareleri içe aktar');const f=e.target.files?.[0];if(!f)return;
-    masters[direction]=await prepareMaster(f,$('maskCols').value,$('maskRows').value);await saveFrame(0);sync();info('Ana maske '+direction+' yönüne kaydedildi.');e.target.value=''});
-  $('applySourceMask').onclick=()=>handle(async()=>{if(!masters[direction]||!confirm('AI karelerinin yerine maskelenmiş orijinal kareler konulacak; ham kaynak dosyalar saklanacak. Onaylıyor musun?'))return;
-    const copies=[];for(let i=0;i<frames.length;i++){const old=frames[i],original=await decode(old.source),canvas=clipWithMask(original.canvas,nativeMask(i,original));
-      copies.push({...original,canvas,blob:await maskPng(canvas),source:old.source,referenceFrame:{...original,canvas},name:old.name,editedName:null,x:old.x,y:old.y})}
-    for(let i=0;i<copies.length;i++){frames[i]=copies[i];await saveFrame(i)}sync();info('Orijinal kareler maske üzerinden kesildi; ham kaynaklar saklandı.')});
-  $('exportFrameMask').onclick=()=>handle(async()=>{await download(await maskPng(oneMask(selected)),frameName(selected).replace('.png','_alpha-mask.png'));info('Şeffaf kare maskesi hazır.')});
-  $('exportApiMask').onclick=()=>handle(async()=>{await download(await maskPng(oneMask(selected,true)),frameName(selected).replace('.png','_api-edit-mask.png'));info('API ters-alfa maskesi hazır: karakter şeffaf.')});
-  $('exportSheetMask').onclick=()=>handle(async()=>{const ids=exportChosen();if(!ids.length)throw Error('Dışa aktarılacak kare seçilmedi');const n=ids.length,cols=$('exportCols').value==='auto'?Math.ceil(Math.sqrt(n)):Math.min(n,+$('exportCols').value),rows=Math.ceil(n/cols),size=Number($('exportSize').value),
-    out=alphaCanvas();out.width=out.height=size;const g=out.getContext('2d'),ref=ids.map(i=>frames[i]);
-    for(let j=0;j<n;j++){const i=ids[j],p=sheetPlacement(j,cols,rows,size,frames[i],ref);g.drawImage(frameSilhouette(i),p.x,p.y,p.w,p.h)}
-    await download(await maskPng(out),direction+'_'+n+'frame_'+cols+'x'+rows+'_alpha-mask.png');info('Atlas maskesi: AI geri alırken '+cols+' sütun, '+rows+' satır seç.')});
-  $('importMaskedSheet').onchange=e=>handle(async()=>{const f=e.target.files?.[0];if(f)await importMaskedAtlas(f);e.target.value=''});
-
- const simpleSheetPrompt=`Replace character appearance in Image B using Image A as identity reference. Preserve exact canvas size, transparent background, every frame position, pose, camera, frame count, order and empty slots. Do not introduce guides, grids, decorations or new animation frames.`;
- const simpleSingleFramePrompt=`Use Image A for character design and Image B for exact pose, direction, size, canvas and placement. Replace appearance only. Output RGBA with transparent background; no scene, text, grid or additional objects.`;
- function refreshTransferPrompts(){$('sheetPrompt').value=simpleSheetPrompt;$('prompt').value=simpleSingleFramePrompt}
- refreshTransferPrompts();
- // Additional UI preferences. Keep v1 IndexedDB and META untouched for backward compatibility.
- const EXTRA_PREFS='osman:animation-studio:v2:ui';
- const EXTRA_IDS=[
-  'exportScope','exportSize','exportCols','exportChunk','exportChunkCustom',
-  'sheetCols','sheetRows'
- ];
- function captureExtraPrefs(){
-  const out={};
-  for(const id of EXTRA_IDS){
-   const el=$(id);if(!el)continue;
-   out[id]=el.type==='checkbox'?el.checked:el.value;
-  }
-  return out;
+(()=>{
+const $=id=>document.getElementById(id);
+const DB='OsmanAnimationStudioFramesV1',STORE='frames',PREF='osman:animation-scene:clean:v1';
+const DIRS=['SE','SW','NE','NW'],MAX_FILE=24*1024*1024,MAX_FRAMES=128,PREVIEW=720;
+const sets={SE:[],SW:[],NE:[],NW:[]},cache=new Map();
+const state={direction:'SE',selected:0,mode:'original',playing:false,fps:12,last:0,drawTicket:0,db:null,serial:0};
+const ctx=$('stage').getContext('2d',{alpha:false});
+const createCanvas=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c};
+function status(msg,bad=false){$('status').textContent=msg;$('status').classList.toggle('error',bad)}
+function frameList(){return sets[state.direction]}
+function activeFrame(){return frameList()[state.selected]||null}
+function filename(path){return String(path).replace(/\\/g,'/').split('/').pop()}
+function frameNumber(name){const m=filename(name).match(/(\d+)(?=\.png$)/i);return m?Number(m[1]):0}
+function sortFiles(a,b){return frameNumber(a.name)-frameNumber(b.name)||a.name.localeCompare(b.name,'tr',{numeric:true})}
+function directionOf(path){const name=String(path).replace(/\\/g,'/'),m=name.match(/(?:^|\/)(SE|SW|NE|NW)\//i)||filename(name).match(/^(SE|SW|NE|NW)[_-]/i);return m?m[1].toUpperCase():state.direction}
+function savePrefs(){try{localStorage.setItem(PREF,JSON.stringify({direction:state.direction,mode:state.mode,fps:state.fps}))}catch{}}
+function readPrefs(){try{const p=JSON.parse(localStorage.getItem(PREF)||'{}');if(DIRS.includes(p.direction))state.direction=p.direction;if(['original','variant','compare'].includes(p.mode))state.mode=p.mode;if(p.fps>=1&&p.fps<=24)state.fps=Number(p.fps)}catch{}}
+function openDB(){return new Promise(resolve=>{if(!('indexedDB' in window)){resolve(null);return}try{const r=indexedDB.open(DB,1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(STORE))r.result.createObjectStore(STORE,{keyPath:'slot'})};r.onsuccess=()=>resolve(r.result);r.onerror=()=>resolve(null)}catch{resolve(null)}})}
+function readRecords(){return new Promise(resolve=>{if(!state.db){resolve([]);return}try{const r=state.db.transaction(STORE).objectStore(STORE).getAll();r.onsuccess=()=>resolve(r.result||[]);r.onerror=()=>resolve([])}catch{resolve([])}})}
+function transaction(work){return new Promise((resolve,reject)=>{if(!state.db){resolve();return}try{const tx=state.db.transaction(STORE,'readwrite');tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error||Error('Kayıt hatası'));tx.onabort=()=>reject(tx.error||Error('Kayıt iptal'));work(tx.objectStore(STORE))}catch(e){reject(e)}})}
+function record(d,i,frame){return {slot:d+':'+i,name:frame.name,source:frame.source,blob:frame.variant||frame.source,editedName:frame.variant?frame.editedName||'AI varyantı':null,x:0,y:0}}
+function resetCache(){cache.clear();state.serial++}
+async function restore(){
+ const records=await readRecords();for(const r of records){
+   const d=typeof r.slot==='number'?'SE':String(r.slot).split(':')[0];
+   const i=typeof r.slot==='number'?r.slot:Number(String(r.slot).split(':')[1]);
+   if(!DIRS.includes(d)||!Number.isSafeInteger(i)||i<0||i>=MAX_FRAMES||!(r.source instanceof Blob))continue;
+   sets[d][i]={name:r.name||('frame_'+String(i+1).padStart(2,'0')+'.png'),source:r.source,variant:r.editedName&&r.blob instanceof Blob?r.blob:null,editedName:r.editedName||null};
  }
- function saveExtraPrefs(){
-  try{localStorage.setItem(EXTRA_PREFS,JSON.stringify(captureExtraPrefs()))}catch{}
- }
- function restoreExtraPrefs(){
-  let stored;
-  try{stored=JSON.parse(localStorage.getItem(EXTRA_PREFS)||'{}')}catch{return}
-  if(!stored||typeof stored!=='object'||Array.isArray(stored))return;
-  for(const id of EXTRA_IDS){
-   const el=$(id),value=stored[id];
-   if(!el||value===undefined||value===null)continue;
-   if(el.type==='checkbox'){if(typeof value==='boolean')el.checked=value;continue}
-   if(el.tagName==='SELECT'){
-    if([...el.options].some(option=>option.value===String(value)))el.value=String(value);
-    continue;
-   }
-   if(el.type==='number'){
-    const number=Number(value),min=el.min===''?-Infinity:Number(el.min),max=el.max===''?Infinity:Number(el.max);
-    if(Number.isFinite(number)&&number>=min&&number<=max)el.value=String(number);
-   }
-  }
- }
- function initExtraPrefs(){
-  restoreExtraPrefs();
-  for(const id of EXTRA_IDS){
-   const el=$(id);if(!el)continue;
-   el.addEventListener('input',saveExtraPrefs);
-   el.addEventListener('change',saveExtraPrefs);
-  }
- }
-
-
- function organizeStudio(){
- const by=id=>document.getElementById(id),section=by('loadPNG').closest('section');
- const drawer=(parent,label,open=false)=>{const d=document.createElement('details');d.className='selected';d.open=open;const h=document.createElement('summary');h.textContent=label;d.append(h);parent.append(d);return d};
- const move=(id,d,ancestor)=>{const el=by(id);if(el)d.append(ancestor?el.closest(ancestor):el)};
- section.querySelector('h2').textContent='Animasyon dosyaları';
- const imports=drawer(section,'İÇE AKTAR',true),importOne=drawer(imports,'Tek Kare · PNG veya ZIP',true),importSheet=drawer(imports,'Spritesheet · PNG');
- const exports=drawer(section,'DIŞA AKTAR',true),exportOne=drawer(exports,'Tek Kare · PNG ve Maske',true),exportSheet=drawer(exports,'Spritesheet · PNG ve Maske');
- const tools=drawer(section,'Kare Seçimi ve Ayarlar');
- move('loadPNG',importOne,'.formrow');move('loadMasterMask',importOne,'.formrow');move('masterMaskStatus',importOne);
- move('replace',importOne,'label');move('original',importOne);move('resetAll',importOne);
- move('loadSheet',importSheet,'label');move('sheetCols',importSheet,'.formrow');move('importMaskedSheet',importSheet,'label');
- move('downloadFrame',exportOne);move('exportFrameMask',exportOne);move('exportApiMask',exportOne);move('downloadAll',exportOne);
- move('exportScope',exportSheet,'.formrow');move('exportSheetMask',exportSheet);
- const advanced=drawer(importOne,'Ana maskeyle kaynak kesme');move('applySourceMask',advanced);
- const frame=by('frameTitle').closest('.selected');tools.append(frame);move('densities',tools);move('densityCount',tools,'.optionrow');
- const picker=document.createElement('div');picker.className='selected';picker.innerHTML='<strong>Dışa aktarılacak kareler</strong><div class="buttonrow"><button id="selectEveryFrame" type="button">Tümünü seç</button><button id="selectNoFrames" type="button">Seçimi kaldır</button></div>';tools.append(picker);move('thumbs',picker);
- by('selectEveryFrame').onclick=()=>{exportExcluded.clear();sync()};
- by('selectNoFrames').onclick=()=>{for(let i=0;i<frames.length;i++)exportExcluded.add(i);sync()};
- const prompts=drawer(tools,'AI promptları');move('prompt',prompts);move('copy',prompts);move('sheetPrompt',prompts);move('copySheetPrompt',prompts);
- by('maskPanel')?.remove();
- // Dispose of obsolete explanatory text and empty shells after relocating controls.
- section.querySelectorAll('.hint,.note,.eyebrow').forEach(el=>el.remove());
- section.querySelectorAll('.formrow,.selected,.buttonrow').forEach(el=>{if(!el.closest('details')&&!el.querySelector('input,button,select,textarea,canvas'))el.remove()});
- document.querySelectorAll('p.lead,main > p.note').forEach(el=>el.remove());
- for(const label of section.querySelectorAll('label'))if(label.closest('details')){const text=label.firstChild;if(text?.nodeType===Node.TEXT_NODE)text.textContent=text.textContent.replace(/AI çıktısı yükle/,'AI varyant PNG yükle').replace(/Çoklu PNG yükle/,'Kaynak PNG kareleri yükle')}
+ for(const d of DIRS)sets[d]=sets[d].filter(Boolean);
+ if(!frameList().length){const found=DIRS.find(d=>sets[d].length);if(found)state.direction=found}
+ if(frameList().length)status('Yerel kareler geri yüklendi.');
+ updateAll();
 }
-
- organizeStudio();
- initExtraPrefs();
- refreshTransferPrompts();
- $('copySheetPrompt').onclick=async()=>{try{await navigator.clipboard.writeText($('sheetPrompt').value);info('Spritesheet promptu kopyalandı.')}catch{ $('sheetPrompt').select();document.execCommand('copy');info('Spritesheet promptu seçildi / kopyalandı.')}};
- $('copy').onclick=()=>handle(async()=>{try{await navigator.clipboard.writeText($('prompt').value);info('Prompt kopyalandı.')}catch{ $('prompt').select();document.execCommand('copy');info('Prompt seçildi / kopyalandı.')}});
- $('resetAll').onclick=()=>handle(async()=>{if(!frames.length)return;if(!confirm('Yalnız '+direction+' yönündeki kareler ve değişiklikler silinsin mi?'))return;await clearDirection(direction);sets[direction]=[];masters[direction]=null;frames=sets[direction];selected=0;playing=false;sync();info(direction+' yönü sıfırlandı. Diğer yönler ve Terrain / Obje kayıtları korundu.')});
- init();
+async function decode(blob){
+ if(!(blob instanceof Blob)||blob.size>MAX_FILE)throw Error('PNG en fazla 24 MB olabilir');
+ const image=await createImageBitmap(blob);try{
+   if(image.width<16||image.height<16||image.width>8192||image.height>8192)throw Error('PNG ölçüsü desteklenmiyor');
+   const c=createCanvas(image.width,image.height),g=c.getContext('2d',{willReadFrequently:true});g.drawImage(image,0,0);
+   const out=g.getImageData(0,0,c.width,c.height),p=out.data,w=c.width,h=c.height;
+   // A previously saved PNG may contain magenta guidance or an opaque black studio matte.
+   // Cleanup acts on an in-memory copy; its original Blob is never changed.
+   for(let k=0;k<p.length;k+=4)if(p[k]>217&&p[k+2]>201&&p[k+1]<85){p[k]=p[k+1]=p[k+2]=0;p[k+3]=0}
+   const known=new Uint8Array(w*h),stack=[],dark=k=>{let n=k*4;return p[n+3]>248&&p[n]<18&&p[n+1]<18&&p[n+2]<18};
+   const add=k=>{if(!known[k]&&dark(k)){known[k]=1;stack.push(k)}};
+   for(let x=0;x<w;x++){add(x);add((h-1)*w+x)}
+   for(let y=0;y<h;y++){add(y*w);add(y*w+w-1)}
+   for(let n=0;n<stack.length;n++){const k=stack[n],x=k%w,y=(k/w)|0;if(x)add(k-1);if(x<w-1)add(k+1);if(y)add(k-w);if(y<h-1)add(k+w)}
+   for(const k of stack){const n=k*4;p[n]=p[n+1]=p[n+2]=p[n+3]=0}
+   g.putImageData(out,0,0);return c;
+ }finally{image.close()}
+}
+function bbox(c){
+ const {data}=c.getContext('2d',{willReadFrequently:true}).getImageData(0,0,c.width,c.height);let a=c.width,b=c.height,x=-1,y=-1;
+ for(let j=0;j<c.height;j++)for(let i=0;i<c.width;i++)if(data[(j*c.width+i)*4+3]>18){a=Math.min(a,i);b=Math.min(b,j);x=Math.max(x,i);y=Math.max(y,j)}
+ return x<0?null:{x:a,y:b,w:x-a+1,h:y-b+1};
+}
+async function raster(d,i,kind='original'){
+ const f=sets[d][i];if(!f)throw Error('Kare bulunamadı');const blob=kind==='variant'?(f.variant||f.source):f.source;
+ const key=d+':'+i+':'+kind+':'+state.serial;
+ if(cache.has(key)){const v=cache.get(key);cache.delete(key);cache.set(key,v);return v}
+ const c=await decode(blob),v={canvas:c,box:bbox(c)};
+ cache.set(key,v);while(cache.size>5)cache.delete(cache.keys().next().value);
+ return v;
+}
+function clearStage(){
+ ctx.fillStyle='#0b110d';ctx.fillRect(0,0,PREVIEW,PREVIEW);ctx.textAlign='left';
+}
+function messageStage(message){
+ ctx.fillStyle='#bed4bb';ctx.textAlign='center';ctx.font='19px system-ui';ctx.fillText(message,PREVIEW/2,PREVIEW/2);ctx.textAlign='left';
+}
+function drawPose(r,x,y,w,h){
+ if(!r||!r.box)return;
+ const b=r.box,scale=Math.min(w*.90/b.w,h*.88/b.h);
+ const dw=b.w*scale,dh=b.h*scale,dx=x+(w-dw)/2,dy=y+h*.94-dh;
+ ctx.drawImage(r.canvas,b.x,b.y,b.w,b.h,dx,dy,dw,dh);
+}
+async function render(){
+ const ticket=++state.drawTicket,d=state.direction,i=state.selected,frame=activeFrame();
+ clearStage();$('compareLabels').classList.toggle('visible',state.mode==='compare'&&!!frame);
+ if(!frame){messageStage('Yürüyüş ZIP veya PNG yükle');return}
+ try{
+   const src=await raster(d,i),variant=state.mode==='original'?null:await raster(d,i,'variant');
+   if(ticket!==state.drawTicket)return;
+   clearStage();
+   if(state.mode==='compare'){drawPose(src,0,0,PREVIEW/2,PREVIEW);ctx.fillStyle='#526754';ctx.fillRect(PREVIEW/2-1,0,2,PREVIEW);drawPose(variant,PREVIEW/2,0,PREVIEW/2,PREVIEW)}
+   else drawPose(state.mode==='original'?src:(variant||src),0,0,PREVIEW,PREVIEW);
+   if(!src.box)messageStage('Bu karede görünür alfa bulunamadı');
+ }catch(e){if(ticket!==state.drawTicket)return;clearStage();messageStage('Görüntü çözülemedi');status(e.message,true)}
+}
+function controls(){
+ const len=frameList().length,frame=activeFrame();
+ $('frameMeta').textContent=len?state.direction+' · Kare '+String(state.selected+1).padStart(2,'0')+' / '+len:state.direction+' · Kare yok';
+ $('frameState').textContent=frame?(frame.variant?'AI varyantı var':'Orijinal'):'Kaynak bekleniyor';
+ $('play').textContent=state.playing?'⏸ Durdur':'▶ Oynat';
+ $('speedText').textContent=state.fps+' FPS';$('speed').value=state.fps;
+ document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===state.mode));
+ for(const id of ['prev','next','play','exportOriginal','exportMask','copyPrompt','zipOriginal','zipMasks'])$(id).disabled=!len;
+ for(const id of ['exportVariant','removeVariant'])$(id).disabled=!frame?.variant;
+ $('variantInput').disabled=!len;
+ const bar=$('directions');bar.replaceChildren();for(const d of DIRS){if(!sets[d].length)continue;
+   const b=document.createElement('button');b.type='button';b.textContent=d+' · '+sets[d].length;b.classList.toggle('active',d===state.direction);
+   b.onclick=()=>{state.direction=d;state.selected=0;state.playing=false;savePrefs();updateAll()};bar.append(b)}
+}
+function strip(){
+ const list=frameList(),holder=$('strip');holder.replaceChildren();
+ for(let i=0;i<list.length;i++){
+   const f=list[i],b=document.createElement('button');b.type='button';b.className='framechip';b.classList.toggle('active',i===state.selected);
+   const cv=createCanvas(92,92),title=document.createElement('span'),note=document.createElement('small');
+   title.textContent=state.direction+' '+String(i+1).padStart(2,'0');note.textContent=f.variant?'AI ✓':'Orijinal';
+   b.append(cv,title,note);b.onclick=()=>{state.selected=i;state.playing=false;updateAll()};holder.append(b);
+   const d=state.direction;const serial=state.serial;
+   raster(d,i,'original').then(r=>{if(serial!==state.serial||!cv.isConnected||!r.box)return;
+     const g=cv.getContext('2d'),bb=r.box,k=Math.min(84/bb.w,84/bb.h);
+     g.drawImage(r.canvas,bb.x,bb.y,bb.w,bb.h,(92-bb.w*k)/2,(92-bb.h*k)/2,bb.w*k,bb.h*k);
+   }).catch(()=>{});
+ }
+}
+function updateAll(){controls();strip();render()}
+function step(n){const len=frameList().length;if(!len)return;state.selected=(state.selected+n+len)%len;updateAll()}
+function tick(t){if(state.playing&&frameList().length&&t-state.last>=1000/state.fps){state.last=t;step(1)}requestAnimationFrame(tick)}
+function png(canvas){return new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(Error('PNG oluşturulamadı')),'image/png'))}
+function download(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}
+async function makeMask(d,i){
+ const c=(await raster(d,i)).canvas,mask=createCanvas(c.width,c.height),mg=mask.getContext('2d',{willReadFrequently:true});
+ const data=c.getContext('2d',{willReadFrequently:true}).getImageData(0,0,c.width,c.height),out=mg.createImageData(c.width,c.height);
+ for(let k=0;k<data.data.length;k+=4){out.data[k]=255;out.data[k+1]=255;out.data[k+2]=255;out.data[k+3]=255-data.data[k+3]}
+ mg.putImageData(out,0,0);return mask;
+}
+async function constrainVariant(file,src){
+ const ai=await decode(file);
+ if(ai.width!==src.width||ai.height!==src.height)throw Error('AI kare boyutu farklı: '+src.width+'×'+src.height+' PNG yükle.');
+ const c=createCanvas(src.width,src.height),g=c.getContext('2d',{willReadFrequently:true});g.drawImage(ai,0,0);
+ const result=g.getImageData(0,0,c.width,c.height),old=src.getContext('2d',{willReadFrequently:true}).getImageData(0,0,src.width,src.height);
+ for(let k=0;k<old.data.length;k+=4){
+   const alpha=old.data[k+3];
+   if(alpha<1){result.data[k]=result.data[k+1]=result.data[k+2]=result.data[k+3]=0;continue}
+   if(result.data[k+3]<12){result.data[k]=old.data[k];result.data[k+1]=old.data[k+1];result.data[k+2]=old.data[k+2]}
+   result.data[k+3]=alpha;
+ }
+ g.putImageData(result,0,0);return png(c);
+}
+const crcTable=(()=>{const t=new Uint32Array(256);for(let i=0;i<256;i++){let k=i;for(let z=0;z<8;z++)k=(k>>>1)^((k&1)?0xedb88320:0);t[i]=k>>>0}return t})();
+function crc32(data){let k=0xffffffff;for(const b of data)k=(k>>>8)^crcTable[(k^b)&255];return (k^0xffffffff)>>>0}
+function makeZip(files){
+ const enc=new TextEncoder(),parts=[],central=[];let offset=0,centerLength=0;
+ for(const f of files){
+   const name=enc.encode(f.name),data=f.data,crc=crc32(data),h=new ArrayBuffer(30+name.length),v=new DataView(h);
+   v.setUint32(0,0x04034b50,true);v.setUint16(4,20,true);v.setUint32(14,crc,true);v.setUint32(18,data.length,true);v.setUint32(22,data.length,true);v.setUint16(26,name.length,true);new Uint8Array(h,30).set(name);
+   parts.push(h,data);const c=new ArrayBuffer(46+name.length),z=new DataView(c);
+   z.setUint32(0,0x02014b50,true);z.setUint16(4,20,true);z.setUint16(6,20,true);z.setUint32(16,crc,true);z.setUint32(20,data.length,true);z.setUint32(24,data.length,true);z.setUint16(28,name.length,true);z.setUint32(42,offset,true);new Uint8Array(c,46).set(name);central.push(c);offset+=h.byteLength+data.length;centerLength+=c.byteLength;
+ }
+ const end=new ArrayBuffer(22),v=new DataView(end);v.setUint32(0,0x06054b50,true);v.setUint16(8,files.length,true);v.setUint16(10,files.length,true);v.setUint32(12,centerLength,true);v.setUint32(16,offset,true);
+ return new Blob([...parts,...central,end],{type:'application/zip'});
+}
+async function unzip(file){
+ if(file.size>180*1024*1024)throw Error('ZIP boyutu çok büyük');const buf=await file.arrayBuffer(),v=new DataView(buf),bytes=new Uint8Array(buf);
+ const u16=i=>v.getUint16(i,true),u32=i=>v.getUint32(i,true),text=new TextDecoder();let end=-1;
+ for(let p=buf.byteLength-22;p>=Math.max(0,buf.byteLength-65557);p--)if(u32(p)===0x06054b50){end=p;break}
+ if(end<0)throw Error('ZIP dizini okunamadı');const n=u16(end+10);if(n>260)throw Error('ZIP çok fazla öğe içeriyor');
+ let at=u32(end+16),out=[];
+ for(let i=0;i<n;i++){
+   if(at+46>buf.byteLength||u32(at)!==0x02014b50)throw Error('ZIP dizini bozuk');
+   const method=u16(at+10),crc=u32(at+16),size=u32(at+20),expanded=u32(at+24),nameLen=u16(at+28),extra=u16(at+30),comment=u16(at+32),offset=u32(at+42);
+   const name=text.decode(bytes.subarray(at+46,at+46+nameLen));at+=46+nameLen+extra+comment;
+   if(!/\.png$/i.test(name)||/(\.\.|\\)/.test(name)||/mask|sheet|atlas|preview|grid/i.test(name))continue;
+   if(size>MAX_FILE||expanded>MAX_FILE||![0,8].includes(method)||offset+30>buf.byteLength||u32(offset)!==0x04034b50)throw Error('ZIP PNG geçersiz: '+name);
+   const first=offset+30+u16(offset+26)+u16(offset+28);if(first+size>buf.byteLength)throw Error('ZIP PNG sınırı bozuk');
+   let data=bytes.slice(first,first+size);
+   if(method===8){if(typeof DecompressionStream==='undefined')throw Error('ZIP sıkıştırması desteklenmiyor; Blender ZIP kullan');
+     const stream=new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));data=new Uint8Array(await new Response(stream).arrayBuffer())}
+   if(data.length!==expanded||crc32(data)!==crc)throw Error('ZIP doğrulaması başarısız: '+name);
+   out.push(new File([data],name,{type:'image/png'}));
+ }
+ if(!out.length)throw Error('ZIP içinde numaralı PNG kare bulunamadı');return out;
+}
+async function sourceFiles(files){
+ const list=[];for(const f of files){if(/\.zip$/i.test(f.name))list.push(...await unzip(f));else if(/\.png$/i.test(f.name))list.push(f)}
+ if(!list.length)throw Error('PNG veya ZIP seç');
+ const groups={SE:[],SW:[],NE:[],NW:[]};for(const file of list)groups[directionOf(file.name)].push(file);
+ const incoming={};for(const d of DIRS)if(groups[d].length){
+   groups[d].sort(sortFiles);
+   if(groups[d].length>MAX_FRAMES)throw Error('128 kare sınırı aşıldı');
+   incoming[d]=[];
+   for(const file of groups[d]){const bitmap=await createImageBitmap(file);const ok=bitmap.width>=16&&bitmap.height>=16&&bitmap.width<=8192&&bitmap.height<=8192;bitmap.close();if(!ok)throw Error('PNG ölçüsü geçersiz');
+     incoming[d].push({name:filename(file.name),source:file,variant:null,editedName:null})}
+ }
+ const directions=Object.keys(incoming);
+ if(directions.some(d=>sets[d].length)&&!confirm('Mevcut kaynak kareler bu yönlerde değiştirilecek: '+directions.join(', ')+'. AI varyantları da bu yönlerde sıfırlanacak. Devam?'))return;
+ await transaction(store=>{for(const d of directions){
+   // Deleting an entire direction is explicit and isolated, other directions and studios remain intact.
+   for(let i=0;i<sets[d].length;i++)store.delete(d+':'+i);
+   for(let i=0;i<incoming[d].length;i++)store.put(record(d,i,incoming[d][i]));
+ }});
+ for(const d of directions)sets[d]=incoming[d];
+ state.direction=directions[0]||state.direction;state.selected=0;state.playing=false;resetCache();savePrefs();updateAll();
+ status(directions.map(d=>d+': '+sets[d].length+' gerçek kare').join(' · ')+' yüklendi.');
+}
+async function action(fn){try{await fn()}catch(e){console.error(e);status(e.message||String(e),true)}}
+$('sourceInput').onchange=e=>{const files=[...e.target.files||[]];e.target.value='';if(files.length)action(()=>sourceFiles(files))};
+$('variantInput').onchange=e=>{const file=e.target.files?.[0];e.target.value='';if(!file||!activeFrame())return;
+ action(async()=>{const d=state.direction,i=state.selected,fr=activeFrame(),src=(await raster(d,i)).canvas,blob=await constrainVariant(file,src);
+   const changed={...fr,variant:blob,editedName:file.name};await transaction(store=>store.put(record(d,i,changed)));
+   sets[d][i]=changed;resetCache();updateAll();status(d+' · '+String(i+1).padStart(2,'0')+' AI varyantı kaydedildi. Orijinal korunuyor.')})};
+$('exportOriginal').onclick=()=>action(async()=>{const f=activeFrame();if(!f)return;download(await png((await raster(state.direction,state.selected)).canvas),state.direction+'_'+String(state.selected+1).padStart(2,'0')+'_ORIGINAL.png')});
+$('exportMask').onclick=()=>action(async()=>{if(!activeFrame())return;download(await png(await makeMask(state.direction,state.selected)),state.direction+'_'+String(state.selected+1).padStart(2,'0')+'_AI_EDIT_MASK.png');status('AI maskesi indirildi: şeffaf karakter alanı düzenlenebilir.')});
+$('exportVariant').onclick=()=>action(async()=>{const f=activeFrame();if(!f?.variant)return;download(await png((await raster(state.direction,state.selected,'variant')).canvas),state.direction+'_'+String(state.selected+1).padStart(2,'0')+'_VARIANT.png')});
+$('removeVariant').onclick=()=>action(async()=>{const f=activeFrame();if(!f?.variant||!confirm('Yalnız seçili karenin AI varyantı silinsin mi? Orijinal korunur.'))return;const fresh={...f,variant:null,editedName:null};await transaction(store=>store.put(record(state.direction,state.selected,fresh)));sets[state.direction][state.selected]=fresh;resetCache();updateAll();status('AI varyantı kaldırıldı, orijinal korundu.')});
+$('zipOriginal').onclick=()=>action(async()=>{const d=state.direction,files=[];for(let i=0;i<frameList().length;i++)files.push({name:d+'/frame_'+String(i+1).padStart(2,'0')+'.png',data:new Uint8Array(await (await png((await raster(d,i)).canvas)).arrayBuffer())});download(makeZip(files),d+'_all_original_frames.zip');status(files.length+' orijinal kare ZIP olarak indirildi.')});
+$('zipMasks').onclick=()=>action(async()=>{const d=state.direction,files=[];for(let i=0;i<frameList().length;i++)files.push({name:d+'/frame_'+String(i+1).padStart(2,'0')+'_AI_EDIT_MASK.png',data:new Uint8Array(await (await png(await makeMask(d,i))).arrayBuffer())});download(makeZip(files),d+'_all_auto_masks.zip');status(files.length+' otomatik maske ZIP olarak indirildi.')});
+$('prev').onclick=()=>{state.playing=false;step(-1)};$('next').onclick=()=>{state.playing=false;step(1)};
+$('play').onclick=()=>{state.playing=!state.playing;state.last=performance.now();controls()};
+$('speed').oninput=e=>{state.fps=Number(e.target.value);savePrefs();controls()};
+document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{state.mode=b.dataset.mode;savePrefs();controls();render()});
+$('copyPrompt').onclick=()=>action(async()=>{
+ const text='Image A is the definitive design reference for the game character. Image B is the exact original Blender walking frame and determines pose, fixed SE orthographic camera, canvas, scale, limb placement and silhouette. Change ONLY the character appearance inside the original silhouette. Keep the background genuinely transparent, do not add or change the scene or move the frame. Output exactly one RGBA PNG at Image B original pixel dimensions. Do not add grid, numbers, labels, glow or another character. If an API edit mask is provided, alpha=0 is editable character and alpha=255 is protected background. Preserve the original pose and character scale.';
+ try{await navigator.clipboard.writeText(text);status('Tek kare AI promptu kopyalandı.')}catch{const t=document.createElement('textarea');t.value=text;document.body.append(t);t.select();document.execCommand('copy');t.remove();status('Prompt kopyalandı.')}});
+$('openBlender').onclick=()=>window.open('https://github.com/TheOsmanYILDIRIM/oyun/actions/runs/39279553854','_blank','noopener,noreferrer');
+$('clearDirection').onclick=()=>action(async()=>{const d=state.direction;if(!sets[d].length||!confirm(d+' yönündeki tüm kareler ve AI varyantları kalıcı olarak silinsin mi?'))return;
+ await transaction(store=>{for(let i=0;i<sets[d].length;i++)store.delete(d+':'+i)});
+ sets[d]=[];state.selected=0;state.playing=false;resetCache();updateAll();status('Yalnız '+d+' yönünün kayıtları silindi.')});
+$('refresh').onclick=()=>{const u=new URL(location.href);u.searchParams.set('refresh',Date.now().toString());location.assign(u.href)};
+async function bootstrap(){
+ readPrefs();state.db=await openDB();await restore();requestAnimationFrame(tick);
+ const sha='__ANIMATION_BUILD_SHA__';$('buildBadge').textContent=sha.slice(0,8);
+ if(sha!=='local-dev')try{const r=await fetch('./build.json?version_check='+Date.now(),{cache:'no-store'});const j=await r.json();if(j.sha!==sha)status('Yeni sürüm yayında. Sağ üstte ↻ ile açabilirsin.')}catch{}
+}
+bootstrap().catch(e=>{console.error(e);status('Başlatma hatası: '+e.message,true);clearStage();messageStage('Yürüyüş karelerini yükle')});
 })();
-</script><script>
-(()=>{const stamp='__ANIMATION_BUILD_SHA__',label=document.getElementById('versionState'),button=document.getElementById('versionRefresh');document.getElementById('pageBuild').textContent=stamp.slice(0,10);async function check(){if(stamp==='local-dev'){label.textContent='Yerel geliştirme';return}try{const response=await fetch('./build.json?version_check='+Date.now(),{cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);const latest=(await response.json()).sha;if(!latest)throw Error('SHA bulunamadı');if(latest===stamp){label.textContent='✓ Güncel yayın · cache sorunu yok';label.style.color='#b6e7a3'}else{label.textContent='⚠ Eski HTML / cache: yayın '+latest.slice(0,10);label.style.color='#ffd48b'}}catch(e){label.textContent='Sürüm doğrulanamadı: '+e.message}}button.onclick=()=>{const url=new URL(location.href);url.searchParams.set('build',Date.now().toString());location.replace(url.toString())};check()})();
-</script></body></html>
+</script>
+</body>
+</html>
