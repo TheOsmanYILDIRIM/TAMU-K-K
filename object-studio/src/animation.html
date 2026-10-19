@@ -120,6 +120,13 @@ kbd{font-family:inherit;color:var(--pale)}
    <button type="button" id="batchSplit">Sheet'i karelere böl</button>
   </div>
   <div class="mini" id="batchInfo" role="status">Yön ve kare sayısını seçerek başla.</div>
+  <div style="margin:8px 0">
+   <div class="modes" role="group" aria-label="Sheet görünümü">
+    <button type="button" id="sheetViewSource" class="active">Orijinal sheet</button>
+    <button type="button" id="sheetViewAI">AI sheet</button>
+   </div>
+   <canvas id="batchCanvas" width="512" height="512" style="display:block;width:100%;max-height:450px;object-fit:contain;background:#0b130e;border:1px solid #42614a;border-radius:9px" aria-label="Tıklanabilir spritesheet önizlemesi"></canvas>
+  </div>
   <div style="display:flex;gap:6px;overflow-x:auto;margin:9px 0" id="batchCells" aria-label="Sheet karelerinin durumu"></div>
   <div class="actiongrid">
    <button type="button" id="repairPackage">3 · Seçili kare onarım ZIP</button>
@@ -265,7 +272,7 @@ function strip(){
    thumbObserver.observe(b);
  }
 }
-function updateAll(){controls();render();strip()}
+function updateAll(){controls();render();strip();if(batchDb)batchRefresh().catch(e=>status(e.message,true))}
 function step(n){const len=frameList().length;if(!len)return;
  state.selected=(state.selected+n*Math.max(1,Math.round(100/state.rate))+len*8)%len;
  controls();
@@ -307,7 +314,7 @@ async function constrainVariant(file,src){
 /* Batch stage: source sheet -> AI sheet -> exact row/column split -> per-frame mask repair.
    This is an isolated IndexedDB store. Source frames/legacy user records never overwritten. */
 const BATCH_DB='OsmanAnimationBatchStudioV1',BATCH_STORE='work';
-let batchDb=null,batchCache={},batchSelected=0,batchSheetPending=null,batchKey='';
+let batchDb=null,batchCache={},batchSelected=0,batchSheetPending=null,batchKey='',batchView='source',batchDrawSequence=0;
 const batchSelect=()=>$('batchCount').value;
 const batchIdentity=(d=state.direction,n=Number(batchSelect()))=>d+'-'+n;
 const batchIds=n=>Array.from({length:n},(_,i)=>Math.floor(i*32/n));
@@ -383,8 +390,45 @@ async function batchBackup(){const obj=await batchCurrent(),entries=[{name:'mani
  for(let i=0;i<obj.count;i++){const id=batchFrameId(obj.direction,obj.count,i);for(const [key,tag] of [['sources','source'],['split','generated'],['repaired','final']])if(obj[key]?.[i])entries.push({name:id+'/'+tag+'.png',data:new Uint8Array(await obj[key][i].arrayBuffer())})}
  if(obj.generated)entries.push({name:'generated_spritesheet.png',data:new Uint8Array(await obj.generated.arrayBuffer())});
  await download(makeZip(entries),obj.key+'_BACKUP.zip')}
+
+async function batchPreview(obj){
+ const token=++batchDrawSequence,canvas=$('batchCanvas'),g=canvas.getContext('2d');
+ const {cols,rows}=batchGrid(obj.count);canvas.width=cols*200;canvas.height=rows*200;
+ g.fillStyle='#0b130e';g.fillRect(0,0,canvas.width,canvas.height);
+ let image=null;
+ if(batchView==='ai'&&obj.generated){
+   image=await createImageBitmap(obj.generated);
+ }else if(obj.sources?.length){
+   const source=[];
+   for(const blob of obj.sources)source.push(await decode(blob));
+   if(token!==batchDrawSequence)return;
+   image=batchCanvasSheet(source,obj.count,false);
+ }
+ if(token!==batchDrawSequence){image?.close?.();return}
+ if(image)g.drawImage(image,0,0,canvas.width,canvas.height);
+ image?.close?.();
+ for(let i=0;i<obj.count;i++){
+   const x=(i%cols)*200,y=Math.floor(i/cols)*200,selected=i===batchSelected;
+   g.strokeStyle=selected?'#d1efa0':'rgba(255,255,255,.24)';g.lineWidth=selected?4:1;
+   g.strokeRect(x+2,y+2,196,196);
+   g.fillStyle='rgba(0,0,0,.85)';g.fillRect(x+6,y+6,116,28);
+   g.font='bold 15px system-ui';g.fillStyle='#fff';g.textAlign='left';
+   g.fillText(batchFrameId(obj.direction,obj.count,i),x+11,y+26);
+   if(obj.repaired[i]){g.fillStyle='#b9ef95';g.fillText('✓',x+174,y+26)}
+ }
+}
+$('sheetViewSource').onclick=()=>{batchView='source';$('sheetViewSource').classList.add('active');$('sheetViewAI').classList.remove('active');action(batchRefresh)};
+$('sheetViewAI').onclick=()=>{batchView='ai';$('sheetViewAI').classList.add('active');$('sheetViewSource').classList.remove('active');action(batchRefresh)};
+$('batchCanvas').onclick=e=>{
+ const canvas=e.currentTarget,rect=canvas.getBoundingClientRect(),n=Number(batchSelect()),cols=batchGrid(n).cols;
+ const x=(e.clientX-rect.left)*canvas.width/rect.width,y=(e.clientY-rect.top)*canvas.height/rect.height;
+ const i=Math.floor(x/200)+Math.floor(y/200)*cols;
+ if(i>=0&&i<n){batchSelected=i;action(batchRefresh)}
+};
+
 async function batchRefresh(){if(!batchDb)return;const obj=await batchCurrent();const div=$('batchCells');div.replaceChildren();
  if(obj.sources.length)batchSetInfo(obj.key+' · Ref '+obj.sources.length+' / Sheet '+(obj.generated?'✓':'—')+' / Split '+(obj.split?.length||0)+' / Final '+obj.repaired.filter(Boolean).length);
+ await batchPreview(obj);
  for(let i=0;i<obj.count;i++){
  const b=document.createElement('button');b.type='button';b.style.cssText='flex:0 0 auto;min-width:83px;padding:8px;font-size:12px';
  b.textContent=String(i+1).padStart(2,'0')+' · '+(obj.repaired[i]?'✓ Final':obj.split[i]?'◐ Split':obj.generated?'○ Sheet':'—');
