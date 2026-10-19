@@ -72,7 +72,7 @@ kbd{font-family:inherit;color:var(--pale)}
       <button type="button" id="prev" aria-label="Önceki kare">◀</button>
       <button type="button" id="play" class="primary">▶ Oynat</button>
       <button type="button" id="next" aria-label="Sonraki kare">▶</button>
-      <input id="speed" type="range" min="1" max="24" value="12" aria-label="Oynatma hızı"><span id="speedText">12 FPS</span>
+      <button type="button" id="rate100" data-rate="100" class="active">100%</button><button type="button" id="rate50" data-rate="50">50%</button><button type="button" id="rate25" data-rate="25">25%</button><input id="speed" type="range" min="1" max="24" value="12" aria-label="Oynatma hızı"><span id="speedText">12 FPS</span>
     </div>
     <div id="strip" role="group" aria-label="Yürüyüş kareleri"></div>
   </section>
@@ -115,7 +115,7 @@ const $=id=>document.getElementById(id);
 const DB='OsmanAnimationStudioFramesV1',STORE='frames',PREF='osman:animation-scene:clean:v1';
 const DIRS=['SE','SW','NE','NW'],MAX_FILE=24*1024*1024,MAX_FRAMES=128,PREVIEW=720;
 const sets={SE:[],SW:[],NE:[],NW:[]},cache=new Map();
-const state={direction:'SE',selected:0,mode:'original',playing:false,fps:12,last:0,drawTicket:0,db:null,serial:0};
+const state={direction:'SE',selected:0,mode:'original',playing:false,fps:12,rate:100,last:0,drawTicket:0,db:null,serial:0};
 const ctx=$('stage').getContext('2d',{alpha:false});
 const createCanvas=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c};
 function status(msg,bad=false){$('status').textContent=msg;$('status').classList.toggle('error',bad)}
@@ -125,8 +125,8 @@ function filename(path){return String(path).replace(/\\/g,'/').split('/').pop()}
 function frameNumber(name){const m=filename(name).match(/(\d+)(?=\.png$)/i);return m?Number(m[1]):0}
 function sortFiles(a,b){return frameNumber(a.name)-frameNumber(b.name)||a.name.localeCompare(b.name,'tr',{numeric:true})}
 function directionOf(path){const name=String(path).replace(/\\/g,'/'),m=name.match(/(?:^|\/)(SE|SW|NE|NW)\//i)||filename(name).match(/^(SE|SW|NE|NW)[_-]/i);return m?m[1].toUpperCase():state.direction}
-function savePrefs(){try{localStorage.setItem(PREF,JSON.stringify({direction:state.direction,mode:state.mode,fps:state.fps}))}catch{}}
-function readPrefs(){try{const p=JSON.parse(localStorage.getItem(PREF)||'{}');if(DIRS.includes(p.direction))state.direction=p.direction;if(['original','variant','compare'].includes(p.mode))state.mode=p.mode;if(p.fps>=1&&p.fps<=24)state.fps=Number(p.fps)}catch{}}
+function savePrefs(){try{localStorage.setItem(PREF,JSON.stringify({direction:state.direction,mode:state.mode,fps:state.fps,rate:state.rate}))}catch{}}
+function readPrefs(){try{const p=JSON.parse(localStorage.getItem(PREF)||'{}');if(DIRS.includes(p.direction))state.direction=p.direction;if(['original','variant','compare'].includes(p.mode))state.mode=p.mode;if(p.fps>=1&&p.fps<=24)state.fps=Number(p.fps);if([25,50,100].includes(p.rate))state.rate=p.rate}catch{}}
 function openDB(){return new Promise(resolve=>{if(!('indexedDB' in window)){resolve(null);return}try{const r=indexedDB.open(DB,1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(STORE))r.result.createObjectStore(STORE,{keyPath:'slot'})};r.onsuccess=()=>resolve(r.result);r.onerror=()=>resolve(null)}catch{resolve(null)}})}
 function readRecords(){return new Promise(resolve=>{if(!state.db){resolve([]);return}try{const r=state.db.transaction(STORE).objectStore(STORE).getAll();r.onsuccess=()=>resolve(r.result||[]);r.onerror=()=>resolve([])}catch{resolve([])}})}
 function transaction(work){return new Promise((resolve,reject)=>{if(!state.db){resolve();return}try{const tx=state.db.transaction(STORE,'readwrite');tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error||Error('Kayıt hatası'));tx.onabort=()=>reject(tx.error||Error('Kayıt iptal'));work(tx.objectStore(STORE))}catch(e){reject(e)}})}
@@ -174,7 +174,7 @@ async function raster(d,i,kind='original'){
  const f=sets[d][i];if(!f)throw Error('Kare bulunamadı');const blob=kind==='variant'?(f.variant||f.source):f.source;
  const key=d+':'+i+':'+kind+':'+state.serial;
  if(cache.has(key)){const v=cache.get(key);cache.delete(key);cache.set(key,v);return v}
- const c=await decode(blob),v={canvas:c,box:bbox(c)};
+ const decoded=await decode(blob);const c=(decoded.width>1024||decoded.height>1024)?(()=>{const ratio=Math.min(1024/decoded.width,1024/decoded.height),cv=createCanvas(Math.round(decoded.width*ratio),Math.round(decoded.height*ratio));cv.getContext('2d').drawImage(decoded,0,0,cv.width,cv.height);return cv})():decoded;const v={canvas:c,box:bbox(c)};
  cache.set(key,v);while(cache.size>Math.max(48,DIRS.reduce((n,d)=>n+sets[d].length,0)*2))cache.delete(cache.keys().next().value);
  return v;
 }
@@ -211,7 +211,7 @@ function controls(){
  $('frameState').textContent=frame?(frame.variant?'AI varyantı var':'Orijinal'):'Kaynak bekleniyor';
  $('play').textContent=state.playing?'⏸ Durdur':'▶ Oynat';
  $('speedText').textContent=state.fps+' FPS';$('speed').value=state.fps;
- document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===state.mode));
+ document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===state.mode));document.querySelectorAll('[data-rate]').forEach(b=>b.classList.toggle('active',Number(b.dataset.rate)===state.rate));
  for(const id of ['prev','next','play','exportOriginal','exportMask','copyPrompt','zipOriginal','zipMasks'])$(id).disabled=!len;
  for(const id of ['exportVariant','removeVariant'])$(id).disabled=!frame?.variant;
  $('variantInput').disabled=!len;
@@ -240,7 +240,7 @@ function strip(){
 }
 function updateAll(){controls();render();strip()}
 function step(n){const len=frameList().length;if(!len)return;
- state.selected=(state.selected+n+len)%len;
+ state.selected=(state.selected+n*Math.max(1,Math.round(100/state.rate))+len*8)%len;
  controls();
  for(const [index,element] of [...$('strip').children].entries())element.classList.toggle('active',index===state.selected);
  render();
@@ -344,7 +344,7 @@ $('zipOriginal').onclick=()=>action(async()=>{const d=state.direction,files=[];f
 $('zipMasks').onclick=()=>action(async()=>{const d=state.direction,files=[];for(let i=0;i<frameList().length;i++)files.push({name:d+'/frame_'+String(i+1).padStart(2,'0')+'_AI_EDIT_MASK.png',data:new Uint8Array(await (await png(await makeMask(d,i))).arrayBuffer())});download(makeZip(files),d+'_all_auto_masks.zip');status(files.length+' otomatik maske ZIP olarak indirildi.')});
 $('prev').onclick=()=>{state.playing=false;step(-1)};$('next').onclick=()=>{state.playing=false;step(1)};
 $('play').onclick=()=>{state.playing=!state.playing;state.last=performance.now();controls()};
-$('speed').oninput=e=>{state.fps=Number(e.target.value);savePrefs();controls()};
+$('speed').oninput=e=>{state.fps=Number(e.target.value);savePrefs();controls()};document.querySelectorAll('[data-rate]').forEach(b=>b.onclick=()=>{state.rate=Number(b.dataset.rate);savePrefs();controls()});
 document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{state.mode=b.dataset.mode;savePrefs();controls();render()});
 $('copyPrompt').onclick=()=>action(async()=>{
  const text='Image A is the definitive design reference for the game character. Image B is the exact original Blender walking frame and determines pose, fixed SE orthographic camera, canvas, scale, limb placement and silhouette. Change ONLY the character appearance inside the original silhouette. Keep the background genuinely transparent, do not add or change the scene or move the frame. Output exactly one RGBA PNG at Image B original pixel dimensions. Do not add grid, numbers, labels, glow or another character. If an API edit mask is provided, alpha=0 is editable character and alpha=255 is protected background. Preserve the original pose and character scale.';
