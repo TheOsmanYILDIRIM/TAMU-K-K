@@ -234,7 +234,114 @@
  });
  $('downloadFrame').onclick=()=>handle(async()=>{let f=frames[selected];if(!f)return;let b=await new Promise(r=>rendered(selected,true).toBlob(r,'image/png'));await download(b,frameName(selected));info('Gridli kare indirildi: '+frameName(selected))});
  $('downloadAll').onclick=()=>handle(async()=>{let ids=chosen();if(!ids.length)return;info('ZIP hazırlanıyor…');let items=[];for(let i of ids)items.push({name:frameName(i),data:await pngBytes(i)});let m={schema:1,format:'OSMAN Animation Studio grid PNG',density_percent:rate,output_size:[FRAME_SIZE,FRAME_SIZE],source_frame_count:frames.length,selected_source_indexes:ids,align:mode,equalSize,frame_files:items.map(x=>x.name)};items.push({name:'manifest.json',data:new TextEncoder().encode(JSON.stringify(m,null,2))});await download(zip(items),direction+'_'+rate+'pct_'+ids.length+'frame_grid.zip');info(ids.length+' kareli ZIP hazırlandı.')});
- const gridAwareSheetPrompt="MINECLONIE — GRID-AWARE SPRITESHEET CHARACTER TRANSFER V2\n\nTASK — Replace ONLY the character appearance in Image B with the character identity/design in Image A. This is NOT animation generation or a new spritesheet layout.\n\nIMAGE ROLES\nImage A is the definitive authority for character identity, face, hair, clothing, armor construction, materials, color palette, and visual rendering style.\nImage B is the definitive authority for canvas size, large-cell grid, all occupied and empty slots, pose order, facing direction, camera, and placement inside each frame.\n\nTWO DIFFERENT MAGENTA GRIDS — STRICTLY DISTINGUISH THEM\n1) THICK MAGENTA GRID: marks the boundaries between animation frame cells and the outer sheet boundary. Preserve every thick line at exactly its original position and thickness; do not change the number or size of cells.\n2) THIN MAGENTA GRID: many smaller coordinate subdivisions INSIDE each large frame cell. These are rulers to help match character scale and XY placement. THEY ARE NOT animation frames, character contours, bones, clothing seams, decorative stripes, or objects.\n3) Thin magenta lines may be intentionally interrupted around the character. Preserve the gaps: do not extend, bridge or draw missing line segments across the character or protected space. Do not repaint grid lines over the body.\n4) Never merge thin lines into thick ones. Never add, erase, move, resize, bend, rotate, recolor, blur, thicken or duplicate ANY magenta guide. Keep the grid in precisely the same canvas coordinates as Image B. If Image B has no magenta guide, add none.\n5) Magenta is not a character material. Do not create magenta artifacts on skin, clothing, hair or armor.\n\nFRAME SLOTS ARE NOT THE SAME AS ACTUAL ANIMATION FRAMES\nRead occupied frame cells LEFT-TO-RIGHT, TOP-TO-BOTTOM, treating all fine coordinate subdivisions as part of their parent large cell.\nA 3×3 sheet may have EXACTLY EIGHT actual animation frames and ONE intentionally EMPTY ninth cell (bottom right). Keep the ninth cell EMPTY, while retaining any existing guide lines inside it. DO NOT invent a ninth character, duplicate the previous pose, fill the empty cell, or crop away the empty cell.\nOther sheets may have all nine cells filled, or a different occupied/empty layout. Follow Image B, not a guessed frame count. Retain all empty cells and all real occupied cells exactly as supplied.\nA page may belong to a longer animation. Do not assume its final visible frame must connect to its first as a loop; do not create intermediate frames.\n\nSTRICT FRAME AND CANVAS STRUCTURE\nPreserve Image B EXACT overall width/height/aspect ratio and source rows, columns, occupied slots, blank slots, frame sequence and frame positions.\nChange character design only INSIDE the already occupied slots. Do not move the subject relative to either guide level, zoom individual frames, mirror, rotate, resize the canvas, rearrange cells, duplicate poses, remove cells, or invent extra art.\nWithin each occupied cell use the fine coordinates as an unchanging size/position reference. Keep stable head/body scale across the series while allowing genuine walk-pose silhouette changes. The source frame pose is the structural guide, but do not distort the anatomy to force pixel silhouette overlap.\nAll generated characters must have complete visible feet, hands and accessories within their existing cell; no cross-cell spill.\n\nCONSISTENT CHARACTER APPEARANCE\nEvery occupied slot shows ONE SAME character. Lock the hairstyle, face, armor plate count and shape, fabric style, stitching, accessories, boots, silhouette language, color temperature, contrast, outline sharpness and material roughness.\nDo not let adjacent frames have independently changed costume features, color patches, seams, skin tone, lighting directions, detailing or textures. No invented joints or extra limbs, no extreme local warp, blur, glow, ghosting, blended neighboring frames, painted motion trails, or random visual noise.\n\nTRANSPARENT RGBA OUTPUT\nOutput one COMPLETE transparent RGBA PNG spritesheet with exactly the original dimensions and grid/slot layout. Preserve existing thick and fine magenta guide lines as separate registration information only, with transparent pixels everywhere else outside the artwork.\nDo not add ANY page numbers, cell labels, legends, text, frames, background scenes, checkerboard fills, black/white mats, watermarks, or decorative elements.\nDo not erase the magenta grid or paint extra magenta lines. Do not add blur or feathered halos.\n\nSUCCESS ORDER\n(1) Preserve large-cell boundaries, fine-grid coordinates, occupied/empty slots exactly;\n(2) preserve each subject's position, stable scale, camera and frame sequence;\n(3) maintain identical character identity/materials/details across every occupied frame;\n(4) keep natural pose continuity and clean alpha edges.\n\nFINAL RULE: MAGENTA THICK GRID DEFINES FRAME SLOTS. MAGENTA THIN GRID ONLY DEFINES COORDINATES. EMPTY SLOTS STAY EMPTY. TRANSFER CHARACTER APPEARANCE ONLY.";
+ 
+  // A master silhouette's opaque pixels mean "character"; API editing masks
+  // use inverse alpha. No color/brightness threshold is used.
+  const maskPng=cv=>new Promise((resolve,reject)=>cv.toBlob(b=>b?resolve(b):reject(Error('PNG üretilemedi')),'image/png'));
+  async function prepareMaster(blob,cols,rows,reference=frames){
+    cols=Number(cols);rows=Number(rows);
+    if(!Number.isInteger(cols)||!Number.isInteger(rows)||cols<1||rows<1||cols*rows>LIMIT||cols*rows<reference.length)throw Error('Maske ızgarası / kare sayısı uyuşmuyor');
+    if(blob.size>MAXFILE)throw Error('Maske 24 MB sınırını aşıyor');
+    const bmp=await createImageBitmap(blob);
+    try{
+      if(bmp.width>8192||bmp.height>8192||bmp.width<cols||bmp.height<rows)throw Error('Maske ölçüleri geçersiz');
+      const raw=alphaCanvas();raw.width=bmp.width;raw.height=bmp.height;
+      const g=raw.getContext('2d',{willReadFrequently:true});g.drawImage(bmp,0,0);const pixels=g.getImageData(0,0,raw.width,raw.height).data;
+      const cells=[];
+      for(let i=0;i<reference.length;i++){
+        const col=i%cols,row=Math.floor(i/cols),x0=Math.round(col*raw.width/cols),x1=Math.round((col+1)*raw.width/cols),y0=Math.round(row*raw.height/rows),y1=Math.round((row+1)*raw.height/rows);
+        let occupied=0;for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++)if(pixels[(y*raw.width+x)*4+3]>128)occupied++;
+        if(occupied<16)throw Error('Ana maskede '+(i+1)+'. kare boş; sütun, satır veya kare sırasını düzelt');
+        const cv=alphaCanvas();cv.width=x1-x0;cv.height=y1-y0;cv.getContext('2d').drawImage(raw,x0,y0,cv.width,cv.height,0,0,cv.width,cv.height);cells.push(cv);
+      }
+      return {blob,cols,rows,cells};
+    }finally{bmp.close()}
+  }
+  function nativeMask(i,frame=frames[i]){
+    const master=masters[direction];if(!master||!master.cells[i]||!frame)throw Error('Önce bu yöne ana maske yükle');
+    const full=alphaCanvas();full.width=frame.original.w;full.height=frame.original.h;
+    const g=full.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(master.cells[i],0,0,full.width,full.height);
+    const mask=alphaCanvas();mask.width=frame.w;mask.height=frame.h;
+    const m=mask.getContext('2d');m.drawImage(full,frame.original.x,frame.original.y,frame.w,frame.h,0,0,frame.w,frame.h);
+    m.globalCompositeOperation='source-in';m.fillStyle='#fff';m.fillRect(0,0,mask.width,mask.height);return mask;
+  }
+  function clipWithMask(image,mask){
+    const out=alphaCanvas();out.width=mask.width;out.height=mask.height;
+    const g=out.getContext('2d');g.drawImage(image,0,0,out.width,out.height);g.globalCompositeOperation='destination-in';g.drawImage(mask,0,0);return out;
+  }
+  function framePlacement(i,side=FRAME_SIZE){
+    const f=frames[i],gg=geometry(),overall=Math.min(side*.70/gg.maxW,side*.75/gg.maxH);
+    const factor=equalSize?Math.min(overall*gg.maxH/f.h,overall*gg.maxW/f.w):overall;
+    let x=(side-f.w*factor)/2,y=side*.88-f.h*factor;
+    if(mode==='center')y=(side-f.h*factor)/2;
+    else if(mode==='average'){x=side*.5-(f.center.x-f.original.x)*factor;y=side*.52-(f.center.y-f.original.y)*factor}
+    else if(mode==='original'){x=(side-f.original.w*factor)/2+f.original.x*factor;y=(side-f.original.h*factor)/2+f.original.y*factor}
+    x+=f.x*side/640;y+=f.y*side/640;return {x,y,w:f.w*factor,h:f.h*factor};
+  }
+  function oneMask(i,api=false){
+    const mask=nativeMask(i),p=framePlacement(i),out=alphaCanvas();out.width=out.height=FRAME_SIZE;
+    const g=out.getContext('2d',{willReadFrequently:true});g.drawImage(mask,p.x,p.y,p.w,p.h);
+    if(api){
+      const data=g.getImageData(0,0,FRAME_SIZE,FRAME_SIZE);
+      for(let j=0;j<data.data.length;j+=4){const editable=data.data[j+3]>128;data.data[j]=data.data[j+1]=data.data[j+2]=255;data.data[j+3]=editable?0:255}
+      g.putImageData(data,0,0);
+    }return out;
+  }
+  function sheetPlacement(j,cols,rows,size,f,ref){
+    const cx=j%cols,cy=Math.floor(j/cols),x0=Math.round(cx*size/cols),x1=Math.round((cx+1)*size/cols),y0=Math.round(cy*size/rows),y1=Math.round((cy+1)*size/rows),
+      w=Math.max(...ref.map(v=>v.original?.w||v.w)),h=Math.max(...ref.map(v=>v.original?.h||v.h)),
+      scale=Math.min((x1-x0)/w,(y1-y0)/h),bx=x0+((x1-x0)-w*scale)/2,by=y0+((y1-y0)-h*scale)/2;
+    return {x:bx+((f.original?.x||0)+f.x)*scale,y:by+((f.original?.y||0)+f.y)*scale,w:f.w*scale,h:f.h*scale};
+  }
+  async function commitMasked(items){
+    const staged=[];for(const e of items){const old=frames[e.i];if(!old||old.w!==e.canvas.width||old.h!==e.canvas.height)throw Error('Kare boyutu uyuşmuyor');
+      staged.push({...e,blob:await maskPng(e.canvas)})}
+    for(const item of staged){frames[item.i]={...frames[item.i],canvas:item.canvas,blob:item.blob,editedName:item.name};await saveFrame(item.i)}
+    sync();
+  }
+  async function importMaskedFrame(file){
+    if(!masters[direction])throw Error('Önce ana maske yükle');
+    const bmp=await createImageBitmap(file);
+    try{
+      if(bmp.width!==FRAME_SIZE||bmp.height!==FRAME_SIZE)throw Error('AI tek kare 1024×1024 PNG olmalı');
+      const f=frames[selected],p=framePlacement(selected),cv=alphaCanvas();cv.width=f.w;cv.height=f.h;
+      cv.getContext('2d').drawImage(bmp,p.x,p.y,p.w,p.h,0,0,f.w,f.h);
+      await commitMasked([{i:selected,canvas:clipWithMask(cv,nativeMask(selected)),name:file.name}]);
+      info('AI karesi özgün maskeye kırpıldı; referans korundu.');
+    }finally{bmp.close()}
+  }
+  async function importMaskedAtlas(file){
+    if(!masters[direction])throw Error('Önce ana maske yükle');
+    const bmp=await createImageBitmap(file);
+    try{
+      const cols=Number($('sheetCols').value),rows=Number($('sheetRows').value),ids=chosen();
+      if(!Number.isInteger(cols)||!Number.isInteger(rows)||cols<1||rows<1||cols*rows>LIMIT||ids.length>cols*rows)throw Error('AI atlasının sütun/satır değerleri uyuşmuyor');
+      if(bmp.width!==bmp.height||bmp.width<512||bmp.width>8192)throw Error('AI atlası kare PNG olmalı');
+      const ref=ids.map(i=>frames[i]),staged=[];
+      for(let j=0;j<ids.length;j++){
+        const i=ids[j],f=frames[i],p=sheetPlacement(j,cols,rows,bmp.width,f,ref),cv=alphaCanvas();cv.width=f.w;cv.height=f.h;
+        cv.getContext('2d').drawImage(bmp,p.x,p.y,p.w,p.h,0,0,f.w,f.h);
+        staged.push({i,canvas:clipWithMask(cv,nativeMask(i)),name:file.name+'#'+(i+1)});
+      }
+      if(!confirm(ids.length+' AI karesi maskeyle kesilip geri alınsın mı? Kaynaklar korunur.'))return;
+      await commitMasked(staged);info(ids.length+' AI karesi ana maske ile kesildi ve geri alındı.');
+    }finally{bmp.close()}
+  }
+  $('loadMasterMask').onchange=e=>handle(async()=>{if(!frames.length)throw Error('Önce kaynak kareleri içe aktar');const f=e.target.files?.[0];if(!f)return;
+    masters[direction]=await prepareMaster(f,$('maskCols').value,$('maskRows').value);await saveFrame(0);sync();info('Ana maske '+direction+' yönüne kaydedildi.');e.target.value=''});
+  $('applySourceMask').onclick=()=>handle(async()=>{if(!masters[direction]||!confirm('AI karelerinin yerine maskelenmiş orijinal kareler konulacak; ham kaynak dosyalar saklanacak. Onaylıyor musun?'))return;
+    const copies=[];for(let i=0;i<frames.length;i++){const old=frames[i],original=await decode(old.source),canvas=clipWithMask(original.canvas,nativeMask(i,original));
+      copies.push({...original,canvas,blob:await maskPng(canvas),source:old.source,referenceFrame:{...original,canvas},name:old.name,editedName:null,x:old.x,y:old.y})}
+    for(let i=0;i<copies.length;i++){frames[i]=copies[i];await saveFrame(i)}sync();info('Orijinal kareler maske üzerinden kesildi; ham kaynaklar saklandı.')});
+  $('exportFrameMask').onclick=()=>handle(async()=>{await download(await maskPng(oneMask(selected)),frameName(selected).replace('.png','_alpha-mask.png'));info('Şeffaf kare maskesi hazır.')});
+  $('exportApiMask').onclick=()=>handle(async()=>{await download(await maskPng(oneMask(selected,true)),frameName(selected).replace('.png','_api-edit-mask.png'));info('API ters-alfa maskesi hazır: karakter şeffaf.')});
+  $('exportSheetMask').onclick=()=>handle(async()=>{const ids=chosen();if(!ids.length||!masters[direction])return;const n=ids.length,cols=$('exportCols').value==='auto'?Math.ceil(Math.sqrt(n)):Math.min(n,+$('exportCols').value),rows=Math.ceil(n/cols),size=Number($('exportSize').value),
+    out=alphaCanvas();out.width=out.height=size;const g=out.getContext('2d'),ref=ids.map(i=>frames[i]);
+    for(let j=0;j<n;j++){const i=ids[j],p=sheetPlacement(j,cols,rows,size,frames[i],ref);g.drawImage(nativeMask(i),p.x,p.y,p.w,p.h)}
+    await download(await maskPng(out),direction+'_'+n+'frame_'+cols+'x'+rows+'_alpha-mask.png');info('Atlas maskesi: AI geri alırken '+cols+' sütun, '+rows+' satır seç.')});
+  $('importMaskedSheet').onchange=e=>handle(async()=>{const f=e.target.files?.[0];if(f)await importMaskedAtlas(f);e.target.value=''});
+
+  const gridAwareSheetPrompt="MINECLONIE — GRID-AWARE SPRITESHEET CHARACTER TRANSFER V2\n\nTASK — Replace ONLY the character appearance in Image B with the character identity/design in Image A. This is NOT animation generation or a new spritesheet layout.\n\nIMAGE ROLES\nImage A is the definitive authority for character identity, face, hair, clothing, armor construction, materials, color palette, and visual rendering style.\nImage B is the definitive authority for canvas size, large-cell grid, all occupied and empty slots, pose order, facing direction, camera, and placement inside each frame.\n\nTWO DIFFERENT MAGENTA GRIDS — STRICTLY DISTINGUISH THEM\n1) THICK MAGENTA GRID: marks the boundaries between animation frame cells and the outer sheet boundary. Preserve every thick line at exactly its original position and thickness; do not change the number or size of cells.\n2) THIN MAGENTA GRID: many smaller coordinate subdivisions INSIDE each large frame cell. These are rulers to help match character scale and XY placement. THEY ARE NOT animation frames, character contours, bones, clothing seams, decorative stripes, or objects.\n3) Thin magenta lines may be intentionally interrupted around the character. Preserve the gaps: do not extend, bridge or draw missing line segments across the character or protected space. Do not repaint grid lines over the body.\n4) Never merge thin lines into thick ones. Never add, erase, move, resize, bend, rotate, recolor, blur, thicken or duplicate ANY magenta guide. Keep the grid in precisely the same canvas coordinates as Image B. If Image B has no magenta guide, add none.\n5) Magenta is not a character material. Do not create magenta artifacts on skin, clothing, hair or armor.\n\nFRAME SLOTS ARE NOT THE SAME AS ACTUAL ANIMATION FRAMES\nRead occupied frame cells LEFT-TO-RIGHT, TOP-TO-BOTTOM, treating all fine coordinate subdivisions as part of their parent large cell.\nA 3×3 sheet may have EXACTLY EIGHT actual animation frames and ONE intentionally EMPTY ninth cell (bottom right). Keep the ninth cell EMPTY, while retaining any existing guide lines inside it. DO NOT invent a ninth character, duplicate the previous pose, fill the empty cell, or crop away the empty cell.\nOther sheets may have all nine cells filled, or a different occupied/empty layout. Follow Image B, not a guessed frame count. Retain all empty cells and all real occupied cells exactly as supplied.\nA page may belong to a longer animation. Do not assume its final visible frame must connect to its first as a loop; do not create intermediate frames.\n\nSTRICT FRAME AND CANVAS STRUCTURE\nPreserve Image B EXACT overall width/height/aspect ratio and source rows, columns, occupied slots, blank slots, frame sequence and frame positions.\nChange character design only INSIDE the already occupied slots. Do not move the subject relative to either guide level, zoom individual frames, mirror, rotate, resize the canvas, rearrange cells, duplicate poses, remove cells, or invent extra art.\nWithin each occupied cell use the fine coordinates as an unchanging size/position reference. Keep stable head/body scale across the series while allowing genuine walk-pose silhouette changes. The source frame pose is the structural guide, but do not distort the anatomy to force pixel silhouette overlap.\nAll generated characters must have complete visible feet, hands and accessories within their existing cell; no cross-cell spill.\n\nCONSISTENT CHARACTER APPEARANCE\nEvery occupied slot shows ONE SAME character. Lock the hairstyle, face, armor plate count and shape, fabric style, stitching, accessories, boots, silhouette language, color temperature, contrast, outline sharpness and material roughness.\nDo not let adjacent frames have independently changed costume features, color patches, seams, skin tone, lighting directions, detailing or textures. No invented joints or extra limbs, no extreme local warp, blur, glow, ghosting, blended neighboring frames, painted motion trails, or random visual noise.\n\nTRANSPARENT RGBA OUTPUT\nOutput one COMPLETE transparent RGBA PNG spritesheet with exactly the original dimensions and grid/slot layout. Preserve existing thick and fine magenta guide lines as separate registration information only, with transparent pixels everywhere else outside the artwork.\nDo not add ANY page numbers, cell labels, legends, text, frames, background scenes, checkerboard fills, black/white mats, watermarks, or decorative elements.\nDo not erase the magenta grid or paint extra magenta lines. Do not add blur or feathered halos.\n\nSUCCESS ORDER\n(1) Preserve large-cell boundaries, fine-grid coordinates, occupied/empty slots exactly;\n(2) preserve each subject's position, stable scale, camera and frame sequence;\n(3) maintain identical character identity/materials/details across every occupied frame;\n(4) keep natural pose continuity and clean alpha edges.\n\nFINAL RULE: MAGENTA THICK GRID DEFINES FRAME SLOTS. MAGENTA THIN GRID ONLY DEFINES COORDINATES. EMPTY SLOTS STAY EMPTY. TRANSFER CHARACTER APPEARANCE ONLY.";
 
  const simpleSheetPrompt=`MINECLONIE — SPRITESHEET CHARACTER APPEARANCE TRANSFER
 
