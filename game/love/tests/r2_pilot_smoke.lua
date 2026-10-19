@@ -11,7 +11,7 @@ local function choose_tree(ctx)
   for _,o in ipairs(list) do
     if o.kind=="tree" then
       for _,d in ipairs({{1,0},{-1,0},{0,1},{0,-1}}) do
-        local x=o.x+d[1]*(o.radius+22),y=o.y+d[2]*(o.radius+22)
+        local x,y=o.x+d[1]*(o.radius+22),o.y+d[2]*(o.radius+22)
         if Collision.can_stand(ctx.building,x,y,ctx.player.radius) then
           local closest
           for _,n in ipairs(ctx.objects:objects_in({
@@ -36,7 +36,8 @@ function M.load(ctx)
   local sx,sy=ctx.camera:project(ctx.player.x,ctx.player.y,ctx.w,ctx.h)
   local x,y=ctx.camera:unproject(sx,sy,ctx.w,ctx.h)
   assert(math.abs(x-ctx.player.x)<.02 and math.abs(y-ctx.player.y)<.02)
-  fixture,approach={choose_tree(ctx)}
+  local tree,x,y=choose_tree(ctx)
+  fixture,approach=tree,{x,y}
 end
 local function goto_stage(name) stage=name;stage_frame=0 end
 function M.draw(ctx)
