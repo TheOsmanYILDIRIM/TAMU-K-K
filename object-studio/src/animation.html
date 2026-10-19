@@ -186,9 +186,11 @@ function messageStage(message){
 }
 function drawPose(r,x,y,w,h){
  if(!r||!r.box)return;
- const b=r.box,scale=Math.min(w*.90/b.w,h*.88/b.h);
- const dw=b.w*scale,dh=b.h*scale,dx=x+(w-dw)/2,dy=y+h*.94-dh;
- ctx.drawImage(r.canvas,b.x,b.y,b.w,b.h,dx,dy,dw,dh);
+ // The Blender camera defines a shared, fixed canvas coordinate system.
+ // Never crop/recenter each individual pose by its changing alpha bounds.
+ const scale=Math.min(w/r.canvas.width,h/r.canvas.height);
+ const dw=r.canvas.width*scale,dh=r.canvas.height*scale;
+ ctx.drawImage(r.canvas,x+(w-dw)/2,y+(h-dh)/2,dw,dh);
 }
 async function render(){
  const ticket=++state.drawTicket,d=state.direction,i=state.selected,frame=activeFrame();
