@@ -45,11 +45,18 @@ jobs:
           ./world-builder/node_modules/.bin/playwright install --with-deps chromium
           python3 -m http.server 8876 --bind 127.0.0.1 >/tmp/osman-r2-http.log 2>&1 &
           node world-builder/tests/r2-mobile-smoke.mjs
+          node object-studio/tests/animation-mobile-smoke.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: osman-r2-editor-mobile-smoke
           path: world-builder/screenshots/r2-*.png
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: osman-animation-scene-mobile-smoke
+          path: object-studio/screenshots/animation-scene-*.png
           if-no-files-found: warn
       - name: Build composite Pages artifact without replacing the old preview
         run: |
