@@ -1,8 +1,8 @@
-name: Mixamo all 4 directions 32 frame fixed-camera grid ZIP
+name: Mixamo four directions full 32 clean PNG ZIP
 on:
   push:
     branches: [experiment/blender-camera-reference-20261011]
-    paths: ['tools/mixamo_full32_render.py','tools/mixamo_full32_grid.py','.github/workflows/mixamo-full32-grid.yml']
+    paths: ['tools/mixamo_full32_render.py','.github/workflows/mixamo-full32-grid.yml']
   workflow_dispatch:
 jobs:
   render:
@@ -22,13 +22,11 @@ jobs:
           mkdir -p input
           git fetch origin 18fdb06e194a757b356de0668c7cd2246db80ece
           git show 18fdb06e194a757b356de0668c7cd2246db80ece:Walking.fbx > input/Walking.fbx
-          python3 -m py_compile tools/mixamo_full32_render.py tools/mixamo_full32_grid.py
+          python3 -m py_compile tools/mixamo_full32_render.py
       - name: Install Blender and Pillow
         run: sudo apt-get update && sudo apt-get install -y blender python3-pil python3-numpy libegl1 libgl1
       - name: Render all 32 frames with same fixed camera
         run: blender -b -t 2 --python-exit-code 2 --python tools/mixamo_full32_render.py
-      - name: Apply noncontact grid
-        run: python3 tools/mixamo_full32_grid.py
       - uses: actions/upload-artifact@v4
         with:
           name: frames-${{ matrix.direction }}
@@ -49,9 +47,10 @@ jobs:
         run: |
           python3 - <<'PY'
           import pathlib,json,zipfile,hashlib
+          from PIL import Image
           root=pathlib.Path('all_frames')
           dirs=('NE','NW','SE','SW')
-          mapping={'directions':{},'frame_count_per_direction':32,'total_frames':128,'camera':'fixed orthographic 45-degree','grid':'magenta #FF00FF, 48px, non-contact, 8px clearance','reference_source':'Mixamo Walking.fbx'}
+          mapping={'directions':{},'frame_count_per_direction':32,'total_frames':128,'camera':'fixed orthographic 45-degree','grid':'none','reference_source':'Mixamo Walking.fbx'}
           output=pathlib.Path('mixamo_all_4_directions_full_32_frames.zip')
           with zipfile.ZipFile(output,'w',zipfile.ZIP_DEFLATED,compresslevel=4) as z:
            for direction in dirs:
@@ -64,6 +63,10 @@ jobs:
             mapping['directions'][direction]=manifest['frames']
             for n,f in enumerate(files,1):
              assert f.name==f'frame_{n:02d}.png'
+             with Image.open(f) as im:
+              assert im.size==(1024,1024) and im.mode=='RGBA'
+              alpha=im.getchannel('A')
+              assert alpha.getextrema()[0]==0 and alpha.getbbox()
              z.write(f,f'{direction}/{f.name}')
            z.writestr('mapping.json',json.dumps(mapping,indent=2))
           with zipfile.ZipFile(output) as z:
@@ -72,7 +75,7 @@ jobs:
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: mixamo-all-4-directions-full-32-frame-zip
+          name: mixamo-four-directions-full-128-transparent-frames
           path: mixamo_all_4_directions_full_32_frames.zip
           if-no-files-found: error
           retention-days: 30
