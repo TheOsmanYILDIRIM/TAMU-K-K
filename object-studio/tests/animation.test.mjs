@@ -68,7 +68,7 @@ test('comparison merges ordered spritesheet PNG parts',()=>{
 
 test('single-frame ZIP input is bounded, verified and independent of page layout',()=>{
  const html=fs.readFileSync(path.join(root,'src/animation.html'),'utf8');
- for(const key of ['function unzip(file)','function crc32(data)','ZIP doğrulaması başarısız','File([data],name','function makeZip(files)','ZIP boyutu çok büyük'])
+ for(const key of ['function unzip(file)','function crc32(data)','ZIP doğrulaması başarısız','File([data],name','function makeZip(files)','ZIP boyutu 350 MB sınırını aşıyor'])
    assert.ok(html.includes(key),'missing '+key);
  assert.ok(html.includes("frameNumber(a.name)-frameNumber(b.name)"));
 });
