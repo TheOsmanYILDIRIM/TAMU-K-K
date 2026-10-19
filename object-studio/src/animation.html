@@ -29,7 +29,7 @@ button.active{background:var(--pale);color:#142318}
 #compareLabels{pointer-events:none;display:none;position:absolute;top:0;left:0;right:0;padding:8px;justify-content:space-around;font-size:12px;font-weight:750;text-shadow:0 1px 3px #000}
 #compareLabels.visible{display:flex}
 .playbar{justify-content:center;margin:9px 0}.playbar button{min-width:54px}
-.playbar #play{flex:1;max-width:190px}#speed{max-width:105px;flex:1;accent-color:#cde8aa}
+.playbar #play{flex:1;max-width:190px}.playbar{flex-wrap:wrap}.playbar button{flex-shrink:0}.ratebar{display:flex;gap:7px;align-items:center;justify-content:center;width:100%;flex-wrap:wrap;margin:5px 0}.ratebar button{flex:0 1 80px;padding:9px 6px}.ratebar #speed{min-width:75px;max-width:140px}#speed{max-width:105px;flex:1;accent-color:#cde8aa}
 #speedText{min-width:41px;color:var(--muted);font-variant-numeric:tabular-nums;font-size:12px}
 #strip{display:flex;gap:7px;overflow-x:auto;scroll-snap-type:x mandatory;padding:5px 1px}
 .framechip{flex:0 0 75px;scroll-snap-align:start;display:flex;flex-direction:column;gap:4px;padding:5px;background:#1b2b20;border:1px solid #3c5744;text-align:center}
@@ -72,8 +72,8 @@ kbd{font-family:inherit;color:var(--pale)}
       <button type="button" id="prev" aria-label="Önceki kare">◀</button>
       <button type="button" id="play" class="primary">▶ Oynat</button>
       <button type="button" id="next" aria-label="Sonraki kare">▶</button>
-      <button type="button" id="rate100" data-rate="100" class="active">100%</button><button type="button" id="rate50" data-rate="50">50%</button><button type="button" id="rate25" data-rate="25">25%</button><input id="speed" type="range" min="1" max="24" value="12" aria-label="Oynatma hızı"><span id="speedText">12 FPS</span>
-    </div>
+      </div>
+    <div class="ratebar"><button type="button" id="rate100" data-rate="100" class="active">100%</button><button type="button" id="rate50" data-rate="50">50%</button><button type="button" id="rate25" data-rate="25">25%</button><input id="speed" type="range" min="1" max="24" value="12" aria-label="Oynatma hızı"><span id="speedText">12 FPS</span></div>
     <div id="strip" role="group" aria-label="Yürüyüş kareleri"></div>
   </section>
   <section class="panel" aria-label="Seçili kare işlemleri">
@@ -281,10 +281,10 @@ function makeZip(files){
  return new Blob([...parts,...central,end],{type:'application/zip'});
 }
 async function unzip(file){
- if(file.size>180*1024*1024)throw Error('ZIP boyutu çok büyük');const buf=await file.arrayBuffer(),v=new DataView(buf),bytes=new Uint8Array(buf);
+ if(file.size>350*1024*1024)throw Error('ZIP boyutu 350 MB sınırını aşıyor');const buf=await file.arrayBuffer(),v=new DataView(buf),bytes=new Uint8Array(buf);
  const u16=i=>v.getUint16(i,true),u32=i=>v.getUint32(i,true),text=new TextDecoder();let end=-1;
  for(let p=buf.byteLength-22;p>=Math.max(0,buf.byteLength-65557);p--)if(u32(p)===0x06054b50){end=p;break}
- if(end<0)throw Error('ZIP dizini okunamadı');const n=u16(end+10);if(n>260)throw Error('ZIP çok fazla öğe içeriyor');
+ if(end<0)throw Error('ZIP dizini okunamadı');const n=u16(end+10);if(n>400)throw Error('ZIP çok fazla öğe içeriyor');
  let at=u32(end+16),out=[];
  for(let i=0;i<n;i++){
    if(at+46>buf.byteLength||u32(at)!==0x02014b50)throw Error('ZIP dizini bozuk');
