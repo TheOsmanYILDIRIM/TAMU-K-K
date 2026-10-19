@@ -205,17 +205,6 @@ async function render(){
      if(frame.variant)drawPose(variant,PREVIEW/2,0,PREVIEW/2,PREVIEW);
      else{ctx.fillStyle='#c5d7c2';ctx.font='17px system-ui';ctx.textAlign='center';ctx.fillText('AI varyantı yükle',PREVIEW*.75,PREVIEW*.5);ctx.textAlign='left'}}
    else drawPose(state.mode==='original'?src:(variant||src),0,0,PREVIEW,PREVIEW);
-   // Large frame identity in the empty right-side margin, never over the pose.
-   if(state.mode!=='compare'&&src.box){
-     const b=src.box,scale=Math.min(PREVIEW/src.canvas.width,PREVIEW/src.canvas.height);
-     const poseRight=(PREVIEW-src.canvas.width*scale)/2+(b.x+b.w)*scale;
-     const labelX=Math.max(poseRight+18,PREVIEW*.76);
-     if(labelX+55<PREVIEW){
-       ctx.font='700 35px system-ui';ctx.textAlign='left';ctx.fillStyle='#d7eabf';
-       ctx.fillText(String(i+1).padStart(2,'0'),labelX,PREVIEW*.20);
-       ctx.font='700 17px system-ui';ctx.fillStyle='#91ae94';ctx.fillText(d,labelX,PREVIEW*.20+25);
-     }
-   }
    if(!src.box)messageStage('Bu karede görünür alfa bulunamadı');
  }catch(e){if(ticket!==state.drawTicket)return;clearStage();messageStage('Görüntü çözülemedi');status(e.message,true)}
 }
@@ -261,6 +250,19 @@ function step(n){const len=frameList().length;if(!len)return;
 }
 function tick(t){if(state.playing&&frameList().length&&t-state.last>=1000/state.fps){state.last=t;step(1)}requestAnimationFrame(tick)}
 function png(canvas){return new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(Error('PNG oluşturulamadı')),'image/png'))}
+function labeledExport(source,index,direction){
+ const out=createCanvas(source.width,source.height),g=out.getContext('2d');g.drawImage(source,0,0);
+ const bb=bbox(source);if(!bb)return out;
+ const font=Math.max(28,Math.round(source.width*.065)),gap=Math.round(font*.35);
+ const right=bb.x+bb.w+gap,left=bb.x-font*2.5-gap;
+ const x=right+font*2.2<source.width?right:Math.max(8,left);
+ const y=Math.max(font+12,Math.min(source.height-font,bb.y+font));
+ g.textBaseline='alphabetic';g.textAlign='left';g.font='800 '+font+'px system-ui';
+ g.lineWidth=Math.max(3,Math.round(font*.07));g.strokeStyle='rgba(10,18,13,.9)';g.fillStyle='#e8f4db';
+ const number=String(index+1).padStart(2,'0');g.strokeText(number,x,y);g.fillText(number,x,y);
+ g.font='700 '+Math.round(font*.46)+'px system-ui';g.fillText(direction,x,y+font*.55);
+ return out;
+}
 function download(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}
 async function makeMask(d,i){
  const c=(await raster(d,i)).canvas,mask=createCanvas(c.width,c.height),mg=mask.getContext('2d',{willReadFrequently:true});
@@ -350,7 +352,7 @@ $('variantInput').onchange=e=>{const file=e.target.files?.[0];e.target.value='';
  action(async()=>{const d=state.direction,i=state.selected,fr=activeFrame(),src=(await raster(d,i)).canvas,blob=await constrainVariant(file,src);
    const changed={...fr,variant:blob,editedName:file.name};await transaction(store=>store.put(record(d,i,changed)));
    sets[d][i]=changed;resetCache();updateAll();status(d+' · '+String(i+1).padStart(2,'0')+' AI varyantı kaydedildi. Orijinal korunuyor.')})};
-$('exportOriginal').onclick=()=>action(async()=>{const f=activeFrame();if(!f)return;download(await png((await raster(state.direction,state.selected)).canvas),state.direction+'_'+String(state.selected+1).padStart(2,'0')+'_ORIGINAL.png')});
+$('exportOriginal').onclick=()=>action(async()=>{const f=activeFrame();if(!f)return;download(await png(labeledExport((await raster(state.direction,state.selected)).canvas,state.selected,state.direction)),state.direction+'_'+String(state.selected+1).padStart(2,'0')+'_ORIGINAL.png')});
 $('exportMask').onclick=()=>action(async()=>{if(!activeFrame())return;download(await png(await makeMask(state.direction,state.selected)),state.direction+'_'+String(state.selected+1).padStart(2,'0')+'_AI_EDIT_MASK.png');status('AI maskesi indirildi: şeffaf karakter alanı düzenlenebilir.')});
 $('exportVariant').onclick=()=>action(async()=>{const f=activeFrame();if(!f?.variant)return;download(await png((await raster(state.direction,state.selected,'variant')).canvas),state.direction+'_'+String(state.selected+1).padStart(2,'0')+'_VARIANT.png')});
 $('removeVariant').onclick=()=>action(async()=>{const f=activeFrame();if(!f?.variant||!confirm('Yalnız seçili karenin AI varyantı silinsin mi? Orijinal korunur.'))return;const fresh={...f,variant:null,editedName:null};await transaction(store=>store.put(record(state.direction,state.selected,fresh)));sets[state.direction][state.selected]=fresh;resetCache();updateAll();status('AI varyantı kaldırıldı, orijinal korundu.')});
