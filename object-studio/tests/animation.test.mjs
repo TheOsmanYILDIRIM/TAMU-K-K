@@ -336,7 +336,7 @@ test('new two-stage spritesheet flow records source sheet, split frames and fina
  for(const key of ['id="batchCount"','id="batchOriginal"','id="batchAIInput"','id="batchSplit"','id="batchCells"','id="repairPackage"','id="repairInput"','id="batchFinalZip"','id="batchBackup"','OsmanAnimationBatchStudioV1','batchFrameId','batchSourceFrames','batchSplit','batchRepairEntries','batchSaveRepaired','batchSave','batchGet']){
    assert.ok(html.includes(key),'missing '+key);
  }
- for(const key of ['_SOURCE_SHEET.png','/ORIGINAL.png','/GENERATED.png','/EDIT_MASK.png','_BACKUP.zip','generated_spritesheet.png']){
+ for(const key of ['_SOURCE_SHEET.png','_GENERATED.png','_EDIT_MASK.png','_BACKUP.zip','generated_spritesheet.png']){
    assert.ok(html.includes(key),'missing output '+key);
  }
  assert.match(html,/Math\.floor\(i\*32\/n\)/,'sampling must use deterministic source slots');
@@ -346,4 +346,13 @@ test('new two-stage spritesheet flow records source sheet, split frames and fina
  assert.ok(script);
  const syntax=spawnSync(process.execPath,['--check'],{input:script,encoding:'utf8'});
  assert.equal(syntax.status,0,syntax.stderr);
+});
+
+test('repair downloads generated PNG and edit mask separately, copies prompt and previews split AI animation',()=>{
+ const html=fs.readFileSync(path.join(root,'src/animation.html'),'utf8');
+ for(const key of ['id="sheetViewAnimate"','batchAnimateTick','batchRepairPrompt','batchCopyPrompt','entry.id+\'_GENERATED.png\'','entry.id+\'_EDIT_MASK.png\'','navigator.clipboard.writeText']){
+   assert.ok(html.includes(key),'missing '+key);
+ }
+ assert.ok(!html.includes("obj.key+(all?'_ALL_REPAIR'"),'repair must not export ZIP');
+ assert.ok(!html.includes("name:id+'/ORIGINAL.png'"),'repair must not include original Blender PNG');
 });
