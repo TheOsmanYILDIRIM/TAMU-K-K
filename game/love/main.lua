@@ -276,6 +276,8 @@ function love.load()
     end)
   end
   player=spawn()
+  -- Cold-boot and baseline must use the SAME R2 spawn camera before draw.
+  if cache_pilot_enabled then camera.x,camera.y=player.x,player.y end
   if stage6_session then
     player.query=building
     player.x,player.y=stage6_session.position.x,stage6_session.position.y
