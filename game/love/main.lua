@@ -493,7 +493,7 @@ function love.update(dt)
 end
 function love.draw()
   local perf_begin=love.timer.getTime()
-  if long_driver and boot_ready then long_driver:beforeDraw() end
+  if long_driver and boot_ready and long_driver.frame>0 then long_driver:beforeDraw() end
   Terrain.draw(stream,camera,w,h,r2_pilot and r2_pilot.render_options)
   if cache_pilot_enabled and not boot_ready then
     local g=love.graphics
@@ -654,7 +654,7 @@ function love.draw()
    or os.getenv("OSMAN_CHUNK_CACHE_SMOKE")=="1" then
     perf_tick("draw",perf_begin)
   end
-  if long_driver and boot_ready then
+  if long_driver and boot_ready and long_driver.frame>0 then
     long_driver:afterDraw(object_count)
   end
 end
