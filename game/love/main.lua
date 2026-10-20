@@ -206,7 +206,7 @@ local function spawn()
 end
 function love.load()
   boot_started=love.timer.getTime()
-  if cache_pilot_enabled and os.getenv("OSMAN_CACHE_DISPLAY") then
+  if os.getenv("OSMAN_CACHE_DISPLAY") then
     local ww,hh=os.getenv("OSMAN_CACHE_DISPLAY"):match("^(%d+)x(%d+)$")
     assert(ww and hh and tonumber(ww)>=320 and tonumber(hh)>=480)
     assert(love.window.setMode(tonumber(ww),tonumber(hh),{resizable=false}))
@@ -514,12 +514,26 @@ function love.draw()
   g.circle("fill",bx+joystick.dx*55,by+joystick.dy*55,22)
   g.setColor(1,1,1)
   frames=frames+1
+  if os.getenv("OSMAN_CHUNK_CACHE_BASELINE_SMOKE")=="1" and frames>=60
+   and stats.pending==0 then
+    local complete=true
+    for _,c in ipairs(stream:visible()) do
+      if not c._terrain_meshes then complete=false;break end
+    end
+    if complete then
+      love.graphics.captureScreenshot("chunk-cache-baseline.png")
+      print(string.format("CHUNK_CACHE_BASELINE_READY ms=%.2f chunks=%d memoryKiB=%.0f",
+        (love.timer.getTime()-boot_started)*1000,stats.loaded,collectgarbage("count")))
+      io.stdout:flush();love.event.quit();return
+    end
+  end
   if cache_pilot_enabled and os.getenv("OSMAN_CHUNK_CACHE_SMOKE")=="1"
-    and frames>=60 and stats.pending==0 then
+    and frames>=60 and stats.pending==0
+    and chunk_cache.metrics.writes+chunk_cache.metrics.hits>=stats.loaded then
     love.graphics.captureScreenshot("chunk-cache-game.png")
-    print(string.format("CHUNK_CACHE_GAME_SMOKE_OK hits=%d misses=%d writes=%d bytes=%d",
+    print(string.format("CHUNK_CACHE_GAME_SMOKE_OK hits=%d misses=%d writes=%d bytes=%d memoryKiB=%.0f",
      chunk_cache.metrics.hits,chunk_cache.metrics.misses,
-     chunk_cache.metrics.writes,chunk_cache.bytes))
+     chunk_cache.metrics.writes,chunk_cache.bytes,collectgarbage("count")))
     io.stdout:flush()
     love.event.quit()
     return
