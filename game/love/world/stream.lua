@@ -229,6 +229,9 @@ function Stream:update(camera,width,height,budget)
           assert(ok,result)
           if coroutine.status(job.thread)=="dead" then
             self.prefetch_done[job.key]=true
+            if result then
+              self.cache.metrics.prefetch_writes=(self.cache.metrics.prefetch_writes or 0)+1
+            end
             self.prefetch_job=nil
             break
           end
