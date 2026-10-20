@@ -1,0 +1,67 @@
+name: R2 persistent chunk cache experiment
+on:
+  push:
+    branches:
+      - experiment/r2-persistent-chunk-cache-20261020
+  workflow_dispatch:
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install real Lua and LOVE runtime
+        run: sudo apt-get update -qq && sudo apt-get install -y lua5.4 luajit love xvfb
+      - name: Lua5.4 and LuaJIT stage2/R2 parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd game/love
+          luac5.4 -p main.lua world/chunk_cache.lua world/stream.lua world/terrain_renderer.lua
+          for lua in lua5.4 luajit; do
+            "$lua" tests/world_stage2.lua
+            "$lua" tests/r2_visual_terrain.lua
+          done
+      - name: Real LÖVE baseline versus cold and warm persisted cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/osman-cache-artifacts
+          export OSMAN_R2_PILOT=1
+          export OSMAN_CACHE_DISPLAY=360x780
+          export XDG_DATA_HOME="$RUNNER_TEMP/r2-cache-performance-isolated"
+          mkdir -p "$XDG_DATA_HOME"
+          for mode in baseline cold warm; do
+            if [ "$mode" = baseline ]; then
+              export OSMAN_CHUNK_CACHE_PILOT=0
+              export OSMAN_CHUNK_CACHE_BASELINE_SMOKE=1
+              export OSMAN_CHUNK_CACHE_SMOKE=0
+            else
+              export OSMAN_CHUNK_CACHE_PILOT=1
+              export OSMAN_CHUNK_CACHE_BASELINE_SMOKE=0
+              export OSMAN_CHUNK_CACHE_SMOKE=1
+            fi
+            timeout 240s xvfb-run -a love game/love 2>&1 | tee "/tmp/osman-$mode.log"
+            if [ "$mode" = baseline ]; then
+              grep -q 'CHUNK_CACHE_BASELINE_READY' "/tmp/osman-$mode.log"
+              screenshot="chunk-cache-baseline.png"
+            else
+              grep -q 'CHUNK_CACHE_GAME_READY' "/tmp/osman-$mode.log"
+              grep -q 'CHUNK_CACHE_GAME_SMOKE_OK' "/tmp/osman-$mode.log"
+              screenshot="chunk-cache-game.png"
+            fi
+            shot="$(find "$XDG_DATA_HOME" -name "$screenshot" -print -quit)"
+            test -n "$shot"
+            cp "$shot" "/tmp/osman-cache-artifacts/$mode.png"
+            file "/tmp/osman-cache-artifacts/$mode.png" | grep -q 'PNG image data'
+          done
+          grep -E 'CHUNK_CACHE_(GAME_READY|BASELINE_READY|GAME_SMOKE_OK)' /tmp/osman-{baseline,cold,warm}.log
+          test "$(find "$XDG_DATA_HOME" -name '*.osc' | wc -l)" -ge 1
+          cp /tmp/osman-{baseline,cold,warm}.log /tmp/osman-cache-artifacts/
+      - name: Upload real screenshot and benchmark logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r2-chunk-cache-cold-warm-benchmark
+          path: /tmp/osman-cache-artifacts
+          if-no-files-found: warn
