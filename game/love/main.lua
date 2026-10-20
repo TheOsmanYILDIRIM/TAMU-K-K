@@ -74,8 +74,10 @@ local chunk_cache=cache_pilot_enabled and
    stamp=r2_pilot and "r2-fisilti-20261019-pinned" or "v1-generator-20261015",
    size=256,step=r2_pilot and 8 or 32,quality="standard"}) or nil
 local stream=Stream.new(query,r2_pilot and
-  {size=256,step=8,max_loaded=48,build_budget=8,cache=chunk_cache} or
-  {size=256,step=32,max_loaded=100,build_budget=5,cache=chunk_cache})
+  {size=256,step=8,max_loaded=48,build_budget=8,cache=chunk_cache,
+   prefetch_options=cache_pilot_enabled and r2_pilot.render_options or nil} or
+  {size=256,step=32,max_loaded=100,build_budget=5,cache=chunk_cache,
+   prefetch_options=cache_pilot_enabled and {quality="standard"} or nil})
 local boot_ready=not cache_pilot_enabled
 local boot_started=0
 local camera=Camera.new()
