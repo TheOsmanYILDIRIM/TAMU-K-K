@@ -113,6 +113,25 @@ local height_before=h.topography:height(704,128)
 assert(wet_before and signed_before>0)
 Terrain.draw(hs,{x=704,y=128,zoom=1.4},720,1100,{
  topography=h.topography,routes=h.routes,quality="standard"})
+-- World-space authored material must tint the background base BEFORE
+-- transparent forest feather: this prevents glowing polygon outlines.
+local bx,by=704,128
+assert(h.query:sample(bx,by).biome=="forest")
+local ex,ey=Iso.project(bx,by,h.topography:height(bx,by)*.35)
+local expected=Materials.color("forest",bx,by)
+local grad=h.topography:sample(bx,by)
+local shading=Materials.light(grad.gradient_x,grad.gradient_y)
+local checked=0
+for _,v in ipairs(river._terrain_meshes.meadow.vertices) do
+ if math.abs(v[1]-ex)<1e-7 and math.abs(v[2]-ey)<1e-7 then
+  for k=1,3 do
+   assert(math.abs(v[k+4]-math.min(1,expected[k]*shading))<1e-6,
+     "authored underlay color mismatches biome")
+  end
+  checked=checked+1
+ end
+end
+assert(checked>0,"missing background material sample at river crossing")
 local refined=assert(river._terrain_meshes.water,"R2 authored water is invisible")
 assert(#refined.vertices>#river.layers.water.vertices,
  "river should have more than the 8-unit marching contour")

@@ -53,15 +53,33 @@ local function mesh(flat,biome,query,opts)
  end
  return graphics().newMesh(out,"triangles","static")
 end
-local function meadow(chunk,opts)
+local function meadow(chunk,query,opts)
  local out={}
  local step,size=opts.grid,chunk.size
  assert(size%step==0,"profile step must divide chunk size")
+ -- The fallback is the bottom layer of EVERY terrain material. Previously
+ -- it stayed bright meadow under authored forest/rocky, so transparent
+ -- feather edges revealed luminous polygon outlines. Tint this base
+ -- using the existing authoritative biome query at absolute grid nodes.
+ -- Without authored regions Generator v1 remains bit-for-bit unchanged.
+ local memo={}
+ local function base_biome(x,y)
+  if not opts.boundaries then return "meadow" end
+  local key=x..":"..y
+  if not memo[key] then
+   local sample=query:sample(x,y)
+   assert(sample and (sample.biome=="meadow" or
+          sample.biome=="forest" or sample.biome=="rocky"),
+          "authored base material needs a valid biome")
+   memo[key]=sample.biome
+  end
+  return memo[key]
+ end
  for y=chunk.y,chunk.y+size-step,step do
   for x=chunk.x,chunk.x+size-step,step do
    for _,p in ipairs({{x,y},{x+step,y},{x+step,y+step},
                      {x,y},{x+step,y+step},{x,y+step}}) do
-    vertex(out,p[1],p[2],"meadow",opts)
+    vertex(out,p[1],p[2],base_biome(p[1],p[2]),opts)
    end
   end
  end
@@ -181,7 +199,7 @@ end
 local function rebuild(chunk,query,opts,key)
  local l=assert(chunk.layers,"chunk layers required")
  local meshes={
-  meadow=meadow(chunk,opts),
+  meadow=meadow(chunk,query,opts),
   forest=mesh(l.forest and l.forest.vertices,"forest",query,opts),
   rocky=mesh(l.rocky and l.rocky.vertices,"rocky",query,opts),
   water=mesh(water_vertices(chunk,query,opts),"water",query,opts),
