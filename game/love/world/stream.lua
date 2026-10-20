@@ -68,6 +68,7 @@ function Stream:needed(camera,width,height)
 end
 
 function Stream:update(camera,width,height,budget)
+  if self.cache and self.cache.poll then self.cache:poll() end
   budget=budget or self.build_budget
   assert(type(budget)=="number" and budget>=0 and budget==math.floor(budget),
          "invalid generation budget")
@@ -169,7 +170,7 @@ function Stream:update(camera,width,height,budget)
           local ok,why=coroutine.resume(chunk._cache_job)
           assert(ok,why)
           if coroutine.status(chunk._cache_job)=="dead" then
-            chunk._cache_payload=nil
+            if why==true then chunk._cache_payload=nil end
             chunk._cache_job=nil
             break
           end

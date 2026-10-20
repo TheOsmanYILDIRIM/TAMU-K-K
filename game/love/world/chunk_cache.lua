@@ -42,19 +42,83 @@ function Cache.new(options)
  end
  local limit=options.max_bytes or 192*1024*1024
  assert(limit>0 and limit<=1024*1024*1024,"invalid cache cap")
+ local writer
+ -- Compression, hash and disk IO must never block a frame.
+ if love.thread and love.thread.newThread and love.thread.newChannel then
+  local queue,replies=love.thread.newChannel(),love.thread.newChannel()
+  local thread=love.thread.newThread("world/chunk_cache_worker.lua")
+  thread:start(queue,replies)
+  writer={queue=queue,replies=replies,thread=thread}
+ end
  return setmetatable({dir=dir,signature="OSC1:"..options.seed..":"..options.stamp..":"..step..":"..quality,
-  bytes=bytes,max_bytes=limit,metrics={reads=0,hits=0,misses=0,invalid=0,writes=0,write_bytes=0,loaded_vertices=0}},Cache)
+  bytes=bytes,max_bytes=limit,writer=writer,pending={},pending_count=0,
+  reserved_bytes=0,metrics={reads=0,hits=0,misses=0,invalid=0,writes=0,
+   write_bytes=0,write_errors=0,loaded_vertices=0}},Cache)
 end
 function Cache:path(cx,cy)
  assert(cx==math.floor(cx) and cy==math.floor(cy),"invalid chunk coordinates")
  return self.dir.."/"..cx.."_"..cy..".osc"
 end
 function Cache:has(cx,cy)
- return love.filesystem.getInfo(self:path(cx,cy),"file")~=nil
+ local path=self:path(cx,cy)
+ return self.pending[path]~=nil or love.filesystem.getInfo(path,"file")~=nil
+end
+function Cache:poll()
+ local writer=self.writer
+ if not writer then return end
+ while true do
+  local reply=writer.replies:pop()
+  if not reply then break end
+  local reserve=self.pending[reply.path]
+  if reserve then
+   self.pending[reply.path]=nil
+   self.pending_count=self.pending_count-1
+   self.reserved_bytes=math.max(0,self.reserved_bytes-reserve)
+   if reply.ok then
+    self.bytes=self.bytes+reply.bytes
+    self.metrics.writes=self.metrics.writes+1
+    self.metrics.write_bytes=self.metrics.write_bytes+reply.bytes
+   else
+    self.metrics.write_errors=self.metrics.write_errors+1
+    print("CHUNK_CACHE_WRITE_ERROR "..tostring(reply.error))
+   end
+  end
+ end
+ local err=writer.thread:getError()
+ if err and not writer.failed then
+  writer.failed=true
+  self.metrics.write_errors=self.metrics.write_errors+self.pending_count
+  self.pending,self.pending_count,self.reserved_bytes={},0,0
+  print("CHUNK_CACHE_WORKER_ERROR "..tostring(err))
+ end
+end
+function Cache:flush(seconds)
+ if not self.writer then return true end
+ local start=love.timer.getTime()
+ while self.pending_count>0 and love.timer.getTime()-start<(seconds or 8) do
+  self:poll()
+  if self.pending_count>0 then love.timer.sleep(.005) end
+ end
+ self:poll()
+ return self.pending_count==0 and not self.writer.failed
+end
+function Cache:close()
+ if self.writer and not self.writer.closing then
+  self:flush(8)
+  self.writer.closing=true
+  if not self.writer.failed and self.writer.thread:isRunning() then
+   self.writer.queue:push(false)
+  end
+ end
 end
 function Cache:read(cx,cy,checkpoint)
  local path=self:path(cx,cy)
+ self:poll()
  self.metrics.reads=self.metrics.reads+1
+ if self.pending[path] then
+  self.metrics.misses=self.metrics.misses+1
+  return nil -- do not treat a still-written file as corrupt
+ end
  local info=love.filesystem.getInfo(path,"file")
  if not info then self.metrics.misses=self.metrics.misses+1;return nil end
  local function decode()
@@ -107,8 +171,14 @@ function Cache:read(cx,cy,checkpoint)
 end
 function Cache:write(cx,cy,meshes,checkpoint)
  local path=self:path(cx,cy)
- if love.filesystem.getInfo(path,"file") then return true end
+ self:poll()
+ if self.pending[path] or love.filesystem.getInfo(path,"file") then
+  return true
+ end
  if self.bytes>=self.max_bytes then return false,"cache cap reached" end
+ if self.writer and (self.writer.failed or self.pending_count>=3) then
+  return false,"writer busy or unavailable"
+ end
  local buffer,counts={},{}
  local total=0
  for _,name in ipairs(order) do
@@ -125,11 +195,32 @@ function Cache:write(cx,cy,meshes,checkpoint)
  end
  assert(total<=500000,"oversized chunk")
  local raw=table.concat(buffer)
+ local header="OSMAN-STATIC-CACHE-1\n"..self.signature.."\n"
+  ..table.concat(counts,",").."\n"
+ if self.writer then
+  local reserve=#raw+#header+128
+  if self.bytes+self.reserved_bytes+reserve>self.max_bytes then
+   return false,"cache cap reached"
+  end
+  self.pending[path]=reserve
+  self.pending_count=self.pending_count+1
+  self.reserved_bytes=self.reserved_bytes+reserve
+  local ok,err=pcall(function()
+   self.writer.queue:push({path=path,raw=raw,header=header,
+    limit=self.max_bytes-self.bytes})
+  end)
+  if not ok then
+   self.pending[path]=nil
+   self.pending_count=self.pending_count-1
+   self.reserved_bytes=self.reserved_bytes-reserve
+   return false,tostring(err)
+  end
+  return true,"queued"
+ end
+ -- Fallback when love.thread is unavailable (only for non-thread test hosts).
  local compressed=love.data.compress("string","lz4",raw)
- local data="OSMAN-STATIC-CACHE-1\n"..self.signature.."\n"
-  ..table.concat(counts,",").."\n"..sha(compressed).."\n"..compressed
+ local data=header..sha(compressed).."\n"..compressed
  if self.bytes+#data>self.max_bytes then return false,"cache cap reached" end
- -- Cache is disposable. A torn write is rejected by hash, never a save file.
  local ok,err=love.filesystem.write(path,data)
  if ok then
   self.bytes=self.bytes+#data

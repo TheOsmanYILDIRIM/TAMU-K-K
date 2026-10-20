@@ -827,3 +827,9 @@ function love.keypressed(key)
     else route_status="Stage6 reload refused: "..tostring(why) end
   end
 end
+
+-- A worker may still be compressing disposable geometry at shutdown.
+-- Drain only after gameplay has stopped, never inside the frame budget.
+function love.quit()
+ if chunk_cache then chunk_cache:close() end
+end

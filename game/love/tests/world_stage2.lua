@@ -259,6 +259,7 @@ love=nil
 
 -- Lightweight syntax gate; the expensive travel simulation is manual-only.
 assert(loadfile("tests/r2_long_traversal.lua"),"long traversal profiler syntax invalid")
+assert(loadfile("world/chunk_cache_worker.lua"),"cache worker syntax invalid")
 -- Renderer candidates must be queried once per resident chunk, not each
 -- frame. Live depletion, regrowth, duplicate IDs, world replacement and
 -- chunk re-entry must exactly retain original render/pick membership.
