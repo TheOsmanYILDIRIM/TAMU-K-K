@@ -38,6 +38,8 @@ function M.new(mode,stream,cache)
   distance=0,frame=0,pos={route[1][1],route[1][2]},last=now(),start=now(),
   samples={},events={},spikes={},unique={},completed=false,
   stats={},phase="outbound",frame_mesh=0,frame_vertices=0,frame_gpu_ms=0,
+  terrain_ms=0,objects_ms=0,previous_heap=collectgarbage("count"),
+  was_resident={},was_ready={},
   total_meshes=0,total_spikes=0,screenshot_count=0},M)
  local oldbuild=stream.chunker.build
  stream.chunker.build=function(chunker,cx,cy,checkpoint)
@@ -46,6 +48,22 @@ function M.new(mode,stream,cache)
   local result=oldbuild(chunker,cx,cy,checkpoint)
   self:event("build_complete",cx,cy,(now()-start)*1000,
    "elapsed wall time including coroutine yields")
+  return result
+ end
+ local terrain=require("world.terrain_renderer")
+ local base_draw=terrain.draw
+ terrain.draw=function(...)
+  local start=now()
+  local result=base_draw(...)
+  self.terrain_ms=(now()-start)*1000
+  return result
+ end
+ local objects=require("objects.renderer")
+ local base_object_draw=objects.draw
+ objects.draw=function(...)
+  local start=now()
+  local result=base_object_draw(...)
+  self.objects_ms=(now()-start)*1000
   return result
  end
  local g=love.graphics
@@ -112,7 +130,8 @@ end
 function M:beforeUpdate(player,camera)
  self.frame=self.frame+1
  self.frame_mesh,self.frame_vertices,self.frame_gpu_ms=0,0,0
- self:update_start=now()
+ self.terrain_ms,self.objects_ms=0,0
+ self.update_start=now()
  self:advance(player,camera)
  assert(self.frame<=600,"benchmark exceeded hard 600-frame cap")
  local key=cell(camera.x)..":"..cell(camera.y)
@@ -124,7 +143,21 @@ end
 function M:afterUpdate(stats)
  self.update_ms=(now()-self.update_start)*1000
  self.stats=stats
- self:beforeDraw()
+ local resident={}
+ for key,chunk in pairs(self.stream.resident) do
+  resident[key]=true
+  if not self.was_resident[key] then
+   self:event("chunk_resident",chunk.cx,chunk.cy,0,"loaded from build or cache")
+  end
+ end
+ for key in pairs(self.was_resident) do
+  if not resident[key] then
+   local cx,cy=key:match("^(-?%d+):(-?%d+)$")
+   self:event("chunk_evicted",tonumber(cx),tonumber(cy),0,"resident released")
+   self.was_ready[key]=nil
+  end
+ end
+ self.was_resident=resident
 end
 function M:beforeDraw()
  self.draw_start=now()
@@ -143,6 +176,17 @@ function M:afterDraw(object_count)
  local cm=self.cache and self.cache.metrics or {}
  local gpu=love.graphics.getStats and love.graphics.getStats() or {}
  local ram=collectgarbage("count")
+ if ram<self.previous_heap-512 then
+  self:event("heap_drop",cell(self.pos[1]),cell(self.pos[2]),
+    self.previous_heap-ram,"KiB decrease, possible GC")
+ end
+ self.previous_heap=ram
+ for _,chunk in ipairs(self.stream:visible()) do
+  if chunk._terrain_meshes and not self.was_ready[chunk.key] then
+   self.was_ready[chunk.key]=true
+   self:event("mesh_ready",chunk.cx,chunk.cy,self.terrain_ms,"complete mesh set")
+  end
+ end
  local row={self.frame,quote(self.phase),self.lap,num(finish-self.start),
   num(self.pos[1]),num(self.pos[2]),cell(self.pos[1]),cell(self.pos[2]),
   num(frame_dt),num(1000/math.max(.001,frame_dt)),num(update_ms),num(draw_ms),
@@ -151,14 +195,15 @@ function M:afterDraw(object_count)
   cm.writes or 0,cm.prefetch_writes or 0,cm.invalid or 0,
   self.frame_mesh,self.frame_vertices,num(self.frame_gpu_ms),
   object_count or 0,num(ram),num(gpu.texturememory or 0),
-  gpu.drawcalls or 0}
+  gpu.drawcalls or 0,num(self.terrain_ms),num(self.objects_ms)}
  self.samples[#self.samples+1]=row
  if frame_dt>=33.333 or update_ms+draw_ms>=33.333 then
   self.total_spikes=self.total_spikes+1
   self:event("frame_stall",cell(self.pos[1]),cell(self.pos[2]),
    frame_dt,string.format(
-    "cpuMs=%.2f update=%.2f draw=%.2f meshMs=%.2f mesh=%d vertices=%d pending=%d jobs=%d terrainJobs=%d heapKiB=%.1f hits=%d misses=%d writes=%d",
-    update_ms+draw_ms,update_ms,draw_ms,self.frame_gpu_ms,self.frame_mesh,
+    "cpuMs=%.2f update=%.2f draw=%.2f terrain=%.2f objects=%.2f meshAllocMs=%.2f mesh=%d vertices=%d pending=%d jobs=%d terrainJobs=%d heapKiB=%.1f hits=%d misses=%d writes=%d",
+    update_ms+draw_ms,update_ms,draw_ms,self.terrain_ms,self.objects_ms,
+    self.frame_gpu_ms,self.frame_mesh,
     self.frame_vertices,self.stats.pending or 0,jobs,terrain_jobs,ram,
     cm.hits or 0,cm.misses or 0,cm.writes or 0))
   if self.screenshot_count<3 and self.frame>3 then
@@ -187,7 +232,7 @@ function M:finish()
  "loaded","needed","pending","build_jobs","terrain_jobs",
  "cache_hits","cache_misses","cache_writes","prefetch_writes","cache_invalid",
  "mesh_alloc_calls","mesh_vertices","mesh_alloc_cpu_call_ms","objects","lua_heap_kib",
- "gpu_texture_bytes","gpu_drawcalls"}}
+ "gpu_texture_bytes","gpu_drawcalls","terrain_ms","objects_ms"}}
  for _,r in ipairs(self.samples) do csv[#csv+1]=r end
  local log={{"frame","elapsed_s","event","chunk_x","chunk_y","elapsed_ms","context"}}
  for _,v in ipairs(self.events) do log[#log+1]=v end
