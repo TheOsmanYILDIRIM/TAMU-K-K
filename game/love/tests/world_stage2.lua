@@ -224,6 +224,37 @@ staged:update(staged_cam,360,780)
 assert(evicted_mesh.released,"evicted asynchronous terrain leaked GPU mesh")
 print("CHUNK_PERF_INCREMENTAL_OK frames="..nframes.." layers=5 parity=1 eviction=1")
 
+-- Fully prepared terrain must be persisted even when other nearby
+-- chunks are still pending. Avoids losing complete geometry during travel.
+local write_calls=0
+local fake_cache={write=function(self,cx,cy,payload,checkpoint)
+ write_calls=write_calls+1
+ assert(type(payload)=="table" and cx==math.floor(cx) and
+   cy==math.floor(cy),"invalid queued terrain write")
+ return true
+end}
+local saving=Stream.new(iq,{size=256,step=32,max_loaded=12,
+ build_budget=1,cache=fake_cache,generation_ms=.12})
+local save_cam=Camera.new()
+save_cam.x,save_cam.y=128,128
+local near=saving:needed(save_cam,360,780)
+assert(#near>1 and near[1].cx==0 and near[1].cy==0,
+ "focal chunk must have highest stream priority")
+local first_chunk=near[1]
+saving.resident[first_chunk.key]={
+ key=first_chunk.key,cx=first_chunk.cx,cy=first_chunk.cy,
+ x=first_chunk.cx*256,y=first_chunk.cy*256,size=256,
+ _terrain_meshes={meadow={release=function() end}},
+ _cache_payload={meadow={},forest={},rocky={},water={},detail={}}}
+local incomplete=saving:update(save_cam,360,780,0)
+assert(incomplete.pending>0 and write_calls==1,
+ "ready terrain was not cached with other chunks pending")
+assert(saving.resident[first_chunk.key]._cache_payload==nil,
+ "completed write still retains the large CPU vertex arrays")
+saving:update(save_cam,360,780,0)
+assert(write_calls==1,"already cached chunk was redundantly written")
+print("CHUNK_CACHE_PENDING_SAVE_OK writes=1 pending="..incomplete.pending)
+
 love=nil
 
 -- Lightweight syntax gate; the expensive travel simulation is manual-only.

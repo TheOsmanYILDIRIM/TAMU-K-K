@@ -151,7 +151,11 @@ function Stream:update(camera,width,height,budget)
   self.ordered,self.wanted_count=ordered,#candidates
   -- Saving uses leftover frame budget and only fully completed geometry.
   -- Save files are disposable and entirely separate from Stage6 persistence.
-  if self.cache and clock and #ordered==#candidates then
+  -- Flush any fully prepared chunk independently of unrelated pending chunks.
+  -- The previous all-visible gate discarded completed CPU vertices on fast
+  -- camera travel before they could be persisted, causing repeat cache misses.
+  -- Work remains cooperative and bounded to 2ms of resume time per update.
+  if self.cache and clock and #ordered>0 then
     local save_deadline=clock()+.002
     for _,chunk in ipairs(ordered) do
       if chunk._cache_payload then
