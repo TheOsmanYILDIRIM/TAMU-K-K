@@ -111,7 +111,7 @@ love={graphics={
  newMesh=function(v,mode,usage)
   assert(mode=="triangles" and usage=="static")
   mesh_count=mesh_count+1;vertex_count=vertex_count+#v
-  return {release=function() end}
+  return {vertices=v,released=false,release=function(self) self.released=true end}
  end,
  clear=function() end,push=function() end,pop=function() end,
  translate=function() end,scale=function() end,setColor=function() end,
@@ -176,6 +176,54 @@ perf_scene("V1",Query.new(20261015),32,nil,nil)
 mesh_count,vertex_count=0,0
 perf_scene("R2",authored.query,8,{topography=authored.topography,
  routes=authored.routes,quality="standard"},authored.population)
+
+-- Deterministic parity, bounded cooperative work and GPU eviction.
+-- Exercise the real production timer path even though this is a CPU mesh mock.
+love.timer={getTime=os.clock}
+local iq=Query.new(20261015)
+local staged=Stream.new(iq,{size=256,step=32,max_loaded=1,
+ build_budget=1,generation_ms=.12})
+local staged_cam=Camera.new()
+staged_cam.x,staged_cam.y=128,128
+local wanted=staged:needed(staged_cam,360,780)[1]
+local ref_chunk=Chunks.new(iq,{size=256,step=32}):build(wanted.cx,wanted.cy)
+local ref_stream={query=iq,visible=function() return {ref_chunk} end}
+love.timer=nil
+Terrain.draw(ref_stream,staged_cam,360,780,{atmosphere=false})
+local expected=ref_chunk._terrain_meshes
+love.timer={getTime=os.clock}
+local first=staged:update(staged_cam,360,780)
+assert(first.created==0,"a chunk should not block until full completion")
+local nframes=0
+local ready
+repeat
+ nframes=nframes+1
+ staged:update(staged_cam,360,780)
+ Terrain.draw(staged,staged_cam,360,780,{atmosphere=false})
+ ready=staged:visible()[1]
+ if ready and ready._terrain_meshes then break end
+until nframes>=4000
+assert(nframes<4000 and ready and ready._terrain_meshes,
+ "time-sliced geometry failed to become visible")
+for _,name in ipairs({"meadow","forest","rocky","water","detail"}) do
+ local a,b=expected[name],ready._terrain_meshes[name]
+ assert((a==nil)==(b==nil),"material layer missing: "..name)
+ if a then
+  assert(#a.vertices==#b.vertices,"triangle loss: "..name)
+  for i=1,math.min(100,#a.vertices) do
+   for k=1,8 do
+    assert(math.abs(a.vertices[i][k]-b.vertices[i][k])<1e-9,
+     "staged mesh changed geometry/color: "..name)
+   end
+  end
+ end
+end
+local evicted_mesh=ready._terrain_meshes.meadow
+staged_cam.x,staged_cam.y=9000,9000
+staged:update(staged_cam,360,780)
+assert(evicted_mesh.released,"evicted asynchronous terrain leaked GPU mesh")
+print("CHUNK_PERF_INCREMENTAL_OK frames="..nframes.." layers=5 parity=1 eviction=1")
+
 love=nil
 
 print("WORLD_STAGE2_TEST_OK seed, masks, seam, query, streaming, revisit")
