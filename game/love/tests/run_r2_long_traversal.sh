@@ -56,14 +56,20 @@ for mode in ('baseline','cold','warm'):
     with (root/f'r2-long-{mode}-events.csv').open(newline='') as f:
         events=list(csv.DictReader(f))
     assert data['mode']==mode and data['speed_multiplier']==10 and data['route_laps']==2
-    assert data['frames']==len(rows) and 50<=len(rows)<=600
+    assert data['frames']==len(rows) and 50<=len(rows)<=4000
     assert data['distinct_camera_chunks']>=18
     assert all(int(row['frame'])==i and float(row['frame_ms'])>0 and float(row['fps'])>0
                for i,row in enumerate(rows,1))
     assert any(e['event']=='frame_stall' for e in events)
     assert any(e['event']=='chunk_resident' for e in events)
     assert data['synthetic_motion'] and data['android_not_tested']
-    paths.append([(row['world_x'],row['world_y']) for row in rows])
+    movement=[]
+    for row in rows:
+        pos=(row['world_x'],row['world_y'])
+        if not movement or movement[-1]!=pos: movement.append(pos)
+    paths.append(movement)
+    assert any(int(row['focal_ready'])==1 for row in rows)
+    assert data['visibility_waits']>0 and data['frames_with_drawable_focal']>0
     runs[mode]=data
     print(f"{mode}: {len(rows)} frames, {data['distinct_camera_chunks']} camera chunks, "
           f"p95={data['frame_ms']['p95']:.2f}ms p99={data['frame_ms']['p99']:.2f}ms "
