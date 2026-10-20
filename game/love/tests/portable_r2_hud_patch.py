@@ -40,14 +40,14 @@ replace('  if route_status~="" then g.print(route_status,safe_x+18,safe_y+84) en
     end
     local cm=chunk_cache and chunk_cache.metrics or {}
     g.setColor(.02,.09,.11,.84)
-    g.rectangle("fill",safe_x+8,safe_y+135,math.min(safe_w-16,600),53,8,8)
+    g.rectangle("fill",safe_x+8,safe_y+185,math.min(safe_w-16,600),53,8,8)
     g.setColor(.90,.96,.93)
     g.print(string.format("FPS %d  Frame %.0fms  Peak %.0fms  drops %d",
         love.timer.getFPS(),preview_frame_ms,preview_peak_display,preview_spikes),
-        safe_x+18,safe_y+138)
+        safe_x+18,safe_y+188)
     g.print(string.format("Ready %d/%d  loaded %d  cache H%d M%d W%d",
         ready_meshes,stats.needed,stats.loaded,cm.hits or 0,
-        cm.misses or 0,cm.writes or 0),safe_x+18,safe_y+162)
+        cm.misses or 0,cm.writes or 0),safe_x+18,safe_y+212)
   end""")
 entry.write_text(src,encoding="utf-8")
 print("R2_PORTABLE_FPS_HUD_READY")
