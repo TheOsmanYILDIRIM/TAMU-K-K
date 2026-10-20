@@ -228,4 +228,55 @@ love=nil
 
 -- Lightweight syntax gate; the expensive travel simulation is manual-only.
 assert(loadfile("tests/r2_long_traversal.lua"),"long traversal profiler syntax invalid")
+-- Renderer candidates must be queried once per resident chunk, not each
+-- frame. Live depletion, regrowth, duplicate IDs, world replacement and
+-- chunk re-entry must exactly retain original render/pick membership.
+local Renderer=require("objects.renderer")
+local objA={id="worldobj:v1:1:1:1",cx=0,cy=0,x=32,y=36,radius=6}
+local objB={id="worldobj:v1:1:2:2",cx=1,cy=0,x=280,y=40,radius=7}
+local objWrong={id="worldobj:v1:1:3:3",cx=0,cy=0,x=255,y=64,radius=3}
+local calls=0
+local depleted={}
+local fixtureWorld={generator_version=1}
+function fixtureWorld:is_depleted(id) return depleted[id]==true end
+function fixtureWorld:objects_in(bounds,include_depleted)
+ calls=calls+1
+ local raw=bounds.min_x==0 and {objA,objWrong,objB} or {objB,objWrong}
+ local out={}
+ for _,o in ipairs(raw) do
+  if include_depleted or not self:is_depleted(o.id) then out[#out+1]=o end
+ end
+ return out
+end
+local c0={key="0:0",cx=0,cy=0,x=0,y=0,size=256}
+local c1={key="1:0",cx=1,cy=0,x=256,y=0,size=256}
+local scene={visible=function() return {c0,c1} end}
+local first=Renderer.collect(fixtureWorld,scene)
+assert(#first==2 and first[1]==objA and first[2]==objB)
+for i=1,30 do
+ local again=Renderer.collect(fixtureWorld,scene)
+ assert(#again==2 and again[1]==objA and again[2]==objB)
+end
+assert(calls==2,"renderer rescanned static chunk objects every frame")
+depleted[objA.id]=true
+local removed=Renderer.collect(fixtureWorld,scene)
+assert(#removed==1 and removed[1]==objB and calls==2,
+ "depleted object remains rendered or cache reruns world query")
+depleted[objA.id]=nil -- R2 regrowth after world.day advancement
+local grown=Renderer.collect(fixtureWorld,scene)
+assert(#grown==2 and grown[1]==objA and calls==2,
+ "regrown object missing from resident static candidates")
+local replacement={generator_version=1,is_depleted=fixtureWorld.is_depleted,
+ objects_in=fixtureWorld.objects_in}
+Renderer.collect(replacement,scene)
+assert(calls==4,"new world identity failed to invalidate render candidates")
+local newChunk={key="0:0",cx=0,cy=0,x=0,y=0,size=256}
+Renderer.collect(fixtureWorld,{visible=function() return {newChunk} end})
+assert(calls==5,"revisited chunk did not refresh after eviction")
+-- A future mutable world must retain legacy live queries.
+local live={objects_in=fixtureWorld.objects_in}
+Renderer.collect(live,scene);Renderer.collect(live,scene)
+assert(calls==9,"non-v1 renderer queries were incorrectly cached")
+print("OBJECT_RENDER_CACHE_OK static=2 liveDeplete=1 regrow=1 identity=1 revisit=1")
+
 print("WORLD_STAGE2_TEST_OK seed, masks, seam, query, streaming, revisit")

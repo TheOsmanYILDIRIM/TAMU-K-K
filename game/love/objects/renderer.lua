@@ -35,13 +35,38 @@ local function object_sprite(g,camera,w,h,o,selected)
     g.ellipse("line",x,y,o.radius*z*1.5,o.radius*z*.8)
   end
 end
+-- Procedural instance coordinates and authored anchors are immutable for
+-- generator v1. Cache only candidate membership on resident chunks; depletion
+-- and R2 day-based regrowth MUST be read live every draw/pick. Chunk eviction
+-- bounds lifetime; different world identities (Stage6 publish) rebuild it.
 function R.collect(world,stream)
   local list,seen={},{}
+  local immutable=world.generator_version==1 and
+    type(world.is_depleted)=="function"
   for _,chunk in ipairs(stream:visible()) do
-    local items=world:objects_in({min_x=chunk.x,min_y=chunk.y,
-      max_x=chunk.x+chunk.size,max_y=chunk.y+chunk.size})
+    local items
+    if immutable then
+      if chunk._object_render_world~=world or
+        not chunk._object_render_candidates then
+        local all=world:objects_in({min_x=chunk.x,min_y=chunk.y,
+          max_x=chunk.x+chunk.size,max_y=chunk.y+chunk.size},true)
+        local owned={}
+        for _,o in ipairs(all) do
+          if o.cx==chunk.cx and o.cy==chunk.cy then
+            owned[#owned+1]=o
+          end
+        end
+        chunk._object_render_candidates=owned
+        chunk._object_render_world=world
+      end
+      items=chunk._object_render_candidates
+    else
+      items=world:objects_in({min_x=chunk.x,min_y=chunk.y,
+        max_x=chunk.x+chunk.size,max_y=chunk.y+chunk.size})
+    end
     for _,o in ipairs(items) do
-      if o.cx==chunk.cx and o.cy==chunk.cy and not seen[o.id] then
+      if (not immutable or not world:is_depleted(o.id)) and
+        o.cx==chunk.cx and o.cy==chunk.cy and not seen[o.id] then
         list[#list+1]=o;seen[o.id]=true
       end
     end
