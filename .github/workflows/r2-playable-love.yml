@@ -86,6 +86,37 @@ jobs:
           print('PORTABLE_LOVE_ZIP_OK',z.stat().st_size)
           PY
           sha256sum "$RUNNER_TEMP/export/Osman_Oyun_R2_Guncel.love" | tee "$RUNNER_TEMP/export/SHA256.txt"
+      - name: Bake 156 authored R2 chunks offline and add on-screen FPS diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 game/love/tests/portable_r2_hud_patch.py "$RUNNER_TEMP/gamepkg"
+          cp "$RUNNER_TEMP/gamepkg/main.lua" "$RUNNER_TEMP/r2-game-main.lua"
+          cp game/love/tests/prebake_r2_cache.lua "$RUNNER_TEMP/gamepkg/main.lua"
+          export XDG_DATA_HOME="$RUNNER_TEMP/r2-prebake-user"
+          mkdir -p "$XDG_DATA_HOME"
+          timeout 240s xvfb-run -a love "$RUNNER_TEMP/gamepkg" 2>&1 | tee "$RUNNER_TEMP/export/prebake.log"
+          grep -q 'R2_PREBAKE_DONE chunks=156 writes=156' "$RUNNER_TEMP/export/prebake.log"
+          cached="$(find "$XDG_DATA_HOME" -type d -name 'experimental-chunk-cache-1' -print -quit)"
+          test -n "$cached"
+          test "$(find "$cached" -type f -name '*.osc' | wc -l)" -eq 156
+          cp -a "$cached" "$RUNNER_TEMP/gamepkg/"
+          mv "$RUNNER_TEMP/r2-game-main.lua" "$RUNNER_TEMP/gamepkg/main.lua"
+          rm "$RUNNER_TEMP/export/Osman_Oyun_R2_Guncel.love"
+          (cd "$RUNNER_TEMP/gamepkg" && zip -qr "$RUNNER_TEMP/export/Osman_Oyun_R2_Guncel.love" .)
+          python3 - <<'PY'
+          import os,zipfile,pathlib
+          archive=pathlib.Path(os.environ["RUNNER_TEMP"])/"export/Osman_Oyun_R2_Guncel.love"
+          with zipfile.ZipFile(archive) as z:
+            assert z.testzip() is None
+            baked=[n for n in z.namelist() if n.endswith(".osc")]
+            assert len(baked)==156,len(baked)
+            main=z.read("main.lua").decode()
+            assert 'local r2_pilot_enabled=os.getenv("OSMAN_R2_PILOT")~="0"' in main
+            assert "Ready %d/%d" in main and "FPS %d" in main
+          print("R2_PREBAKED_LOVE_OK count",len(baked),"size",archive.stat().st_size)
+          PY
+          sha256sum "$RUNNER_TEMP/export/Osman_Oyun_R2_Guncel.love" > "$RUNNER_TEMP/export/SHA256.txt"
       - name: Real LÖVE/Xvfb smoke opens the packaged .love, not checkout source
         shell: bash
         run: |
@@ -97,6 +128,7 @@ jobs:
             2>&1 | tee "$RUNNER_TEMP/export/portable-runtime.log"
           grep -q 'CHUNK_CACHE_GAME_READY' "$RUNNER_TEMP/export/portable-runtime.log"
           grep -q 'CHUNK_CACHE_GAME_SMOKE_OK' "$RUNNER_TEMP/export/portable-runtime.log"
+          grep -E 'CHUNK_CACHE_GAME_READY.*hits=42 misses=0' "$RUNNER_TEMP/export/portable-runtime.log"
           screenshot="$(find "$XDG_DATA_HOME" -name chunk-cache-game.png -print -quit)"
           test -n "$screenshot" && test -s "$screenshot"
           cp "$screenshot" "$RUNNER_TEMP/export/R2_Guncel_Goruntu.png"
