@@ -274,7 +274,7 @@ local newChunk={key="0:0",cx=0,cy=0,x=0,y=0,size=256}
 Renderer.collect(fixtureWorld,{visible=function() return {newChunk} end})
 assert(calls==5,"revisited chunk did not refresh after eviction")
 -- A future mutable world must retain legacy live queries.
-local live={objects_in=fixtureWorld.objects_in}
+local live={objects_in=fixtureWorld.objects_in,is_depleted=fixtureWorld.is_depleted}
 Renderer.collect(live,scene);Renderer.collect(live,scene)
 assert(calls==9,"non-v1 renderer queries were incorrectly cached")
 print("OBJECT_RENDER_CACHE_OK static=2 liveDeplete=1 regrow=1 identity=1 revisit=1")
