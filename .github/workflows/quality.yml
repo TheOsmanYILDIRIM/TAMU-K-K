@@ -52,7 +52,7 @@ jobs:
           OSMAN_LOVE_STAT_SMOKE: '1'
         run: |
           set -euo pipefail
-          for size in 720x1100 320x700 360x780; do
+          for size in 720x1100 320x700 360x780 320x480; do
             OSMAN_STAT_DISPLAY="$size" timeout 100s xvfb-run -a love game/love \
               2>&1 | tee "/tmp/core-stat-smoke-$size.log"
             grep -q 'LOVE_STAT_SMOKE_OK' "/tmp/core-stat-smoke-$size.log"

@@ -198,7 +198,7 @@ end
 function love.load()
   if stat_smoke and stat_viewport then
     local vw,vh=stat_viewport:match("^(%d+)x(%d+)$")
-    assert(vw and vh and tonumber(vw)>=320 and tonumber(vh)>=700,
+    assert(vw and vh and tonumber(vw)>=320 and tonumber(vh)>=480,
       "invalid stat smoke viewport")
     assert(love.window.setMode(tonumber(vw),tonumber(vh),{resizable=false}),
       "cannot set stat smoke viewport")

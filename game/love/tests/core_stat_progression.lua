@@ -98,4 +98,49 @@ for _,size in ipairs({{320,700},{360,780},{392,850},{720,1100}}) do
   end
   assert(hud:hit(safe.w-4,safe.h-4,safe)=="stats_panel")
 end
+-- Regression: window may be 480dp tall and Android safe insets shrink it
+-- further. The stat panel must remain fully on-screen and touch geometry
+-- must match the rendered layout (including a landscape/short viewport).
+for _,s in ipairs({
+ {x=0,y=0,w=320,h=480},
+ {x=0,y=24,w=320,h=424},
+ {x=10,y=18,w=240,h=310},
+ {x=0,y=0,w=640,h=360},
+ {x=0,y=0,w=180,h=190}
+}) do
+ local hud=Hud.new()
+ local a=hud:layout(s)
+ local right,bottom=s.x+s.w,s.y+s.h
+ assert(a.toggle.x>=s.x and a.toggle.y>=s.y)
+ assert(a.toggle.x+a.toggle.w<=right+1e-7
+   and a.toggle.y+a.toggle.h<=bottom+1e-7)
+ assert(a.panel.x>=s.x and a.panel.y>=s.y
+   and a.panel.x+a.panel.w<=right+1e-7
+   and a.panel.y+a.panel.h<=bottom+1e-7)
+ assert(hud:hit(a.toggle.x+2,a.toggle.y+a.toggle.h/2,s)=="stats_toggle")
+ hud.open=true
+ if not a.compact_unavailable then
+  assert(#a.rows==6)
+  for _,row in ipairs(a.rows) do
+   assert(row.add.x>=s.x and row.add.y>=s.y)
+   assert(row.add.x+row.add.w<=right+1e-7
+      and row.add.y+row.add.h<=bottom+1e-7)
+   assert(hud:hit(row.add.x+row.add.w/2,
+     row.add.y+row.add.h/2,s)=="stats_add:"..row.id)
+  end
+ else
+  assert(#a.rows==0 and hud:hit(a.panel.x+3,a.panel.y+3,s)=="stats_panel")
+ end
+ local mock={}
+ for _,name in ipairs({"push","pop","setColor","rectangle","printf","print"}) do
+  mock[name]=function() end
+ end
+ hud:draw(mock,s,p)
+end
+for _,bad_area in ipairs({
+ {x=0,y=0,w=0,h=480}, {x=0,y=0,w=320,h=0},
+ {x=0,y=0,w=0/0,h=480}, {x=0,y=0,w=320,h=math.huge}
+}) do
+ bad(function() Hud.new():layout(bad_area) end)
+end
 print("CORE_STAT_PROGRESSION_OK levels, caps, XP ledger, stat spend, restore, skill contract, mobile HUD")

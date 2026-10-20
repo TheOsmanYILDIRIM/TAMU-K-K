@@ -4,23 +4,42 @@ local Rules=require("progression.rules")
 local H={}
 H.__index=H
 function H.new() return setmetatable({open=false},H) end
+local function finite(v)
+  return type(v)=="number" and v==v and v>-math.huge and v<math.huge
+end
 function H:layout(s)
-  assert(type(s)=="table" and s.w>=280 and s.h>=500,
+  -- getSafeArea can be smaller than the LÖVE window (insets, split-screen,
+  -- landscape, desktop resize). Those are valid viewports, not corrupt data.
+  assert(type(s)=="table" and finite(s.x) and finite(s.y)
+    and finite(s.w) and finite(s.h) and s.w>0 and s.h>0,
     "invalid stat HUD safe area")
-  local t={toggle={x=s.x+12,y=s.y+139,w=92,h=35}}
-  local y=s.y+179
-  local bottom=s.y+s.h-275-8
-  local height=math.max(196,math.min(239,bottom-y))
-  local panel={x=s.x+12,y=y,w=math.min(s.w-24,420),h=height}
-  t.panel=panel;t.rows={}
-  local step=math.min(30,(height-48)/6)
-  for i,id in ipairs(Rules.stats) do
-    local ry=y+32+(i-1)*step
-    t.rows[i]={id=id,x=panel.x+7,y=ry,w=panel.w-14,h=step}
-    t.rows[i].add={x=panel.x+panel.w-53,y=ry+1,w=43,h=step-2}
+  local compact=s.w<280 or s.h<500
+  local pad=compact and math.max(2,math.min(12,s.w*.03,s.h*.03)) or 12
+  local toggle_h=compact and math.max(1,math.min(35,s.h-2*pad)) or 35
+  local toggle={x=s.x+pad,y=s.y+(compact and pad or 139),
+    w=math.max(1,math.min(92,s.w-2*pad)),h=toggle_h}
+  local y=compact and math.min(s.y+s.h-pad,toggle.y+toggle.h+pad) or s.y+179
+  local bottom=compact and s.y+s.h-pad or s.y+s.h-275-8
+  local height=compact and math.max(0,math.min(239,bottom-y))
+    or math.max(196,math.min(239,bottom-y))
+  local panel={x=s.x+pad,y=y,w=math.max(1,math.min(s.w-2*pad,420)),h=height}
+  local t={toggle=toggle,panel=panel,rows={},
+    -- On exceptionally short/narrow surfaces keep the toggle and an
+    -- explicit notice; never create overlapping invisible +/- hitboxes.
+    compact_unavailable=height<196 or panel.w<170}
+  if not t.compact_unavailable then
+    local step=math.min(30,(height-48)/6)
+    for i,id in ipairs(Rules.stats) do
+      local ry=y+32+(i-1)*step
+      local add_w=math.min(43,math.max(1,panel.w*.24))
+      t.rows[i]={id=id,x=panel.x+7,y=ry,w=panel.w-14,h=step}
+      t.rows[i].add={x=panel.x+panel.w-add_w-10,y=ry+1,
+        w=add_w,h=step-2}
+    end
   end
   return t
 end
+
 local function inside(b,x,y)
   return x>=b.x and x<=b.x+b.w and y>=b.y and y<=b.y+b.h
 end
@@ -45,6 +64,15 @@ function H:draw(g,s,progression)
     a.toggle.w-4,"center")
   if self.open then
     local panel=a.panel
+    if a.compact_unavailable then
+      g.setColor(.04,.11,.14,.97)
+      g.rectangle("fill",panel.x,panel.y,panel.w,panel.h,7,7)
+      g.setColor(1,.94,.82)
+      g.printf("Rotate to portrait or enlarge window",panel.x+4,panel.y+4,
+        math.max(1,panel.w-8),"left")
+      g.pop()
+      return
+    end
     local state=progression.state
     g.setColor(.04,.11,.14,.97)
     g.rectangle("fill",panel.x,panel.y,panel.w,panel.h,9,9)
