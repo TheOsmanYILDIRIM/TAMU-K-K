@@ -66,6 +66,7 @@ local function mesh(flat,biome,query,opts,pause)
   if pause and i%128==0 then pause() end
  end
  if opts._cache_raw then opts._cache_raw[biome]=out end
+ if opts.cpu_only then return nil end
  return graphics().newMesh(out,"triangles","static")
 end
 local function meadow(chunk,query,opts,pause)
@@ -103,6 +104,7 @@ local function meadow(chunk,query,opts,pause)
   if pause then pause() end
  end
  if opts._cache_raw then opts._cache_raw.meadow=out end
+ if opts.cpu_only then return nil end
  return graphics().newMesh(out,"triangles","static")
 end
 local function detail_type(query,opts,x,y)
@@ -152,6 +154,7 @@ local function detail_mesh(chunk,query,opts,pause)
   if pause then pause() end
  end
  if opts._cache_raw then opts._cache_raw.detail=out end
+ if opts.cpu_only then return nil end
  return #out>0 and graphics().newMesh(out,"triangles","static") or nil
 end
 function Terrain.invalidate(chunk)
@@ -252,6 +255,26 @@ local function rebuild(chunk,query,opts,key,pause)
   chunk._cache_payload=local_opts._cache_raw
  end
  return meshes
+end
+-- Background CPU preparation reuses the exact normal rendering math but
+-- creates NO GPU resources. The resulting arrays are persisted before draw.
+function Terrain.prepare_cpu(chunk,query,options,checkpoint)
+ options=options or {}
+ local quality=options.quality or "standard"
+ local profile=Terrain.profile(quality)
+ local opts={grid=profile.grid,fleck=profile.fleck,
+  topography=options.topography,height_scale=options.height_scale or .35,
+  routes=options.routes,boundaries=authored_boundaries(query,options.routes),
+  _geo={},_cache_raw={meadow={},forest={},rocky={},water={},detail={}},
+  cpu_only=true}
+ local l=assert(chunk.layers,"chunk layers needed for precompute")
+ meadow(chunk,query,opts,checkpoint)
+ mesh(l.forest and l.forest.vertices,"forest",query,opts,checkpoint)
+ mesh(l.rocky and l.rocky.vertices,"rocky",query,opts,checkpoint)
+ mesh(water_vertices(chunk,query,opts,checkpoint),"water",query,opts,checkpoint)
+ detail_mesh(chunk,query,opts,checkpoint)
+ chunk._cache_payload=opts._cache_raw
+ return true
 end
 local function hydrate(chunk,key,pause)
  local meshes={}
