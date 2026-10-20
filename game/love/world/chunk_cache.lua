@@ -49,6 +49,9 @@ function Cache:path(cx,cy)
  assert(cx==math.floor(cx) and cy==math.floor(cy),"invalid chunk coordinates")
  return self.dir.."/"..cx.."_"..cy..".osc"
 end
+function Cache:has(cx,cy)
+ return love.filesystem.getInfo(self:path(cx,cy),"file")~=nil
+end
 function Cache:read(cx,cy,checkpoint)
  local path=self:path(cx,cy)
  self.metrics.reads=self.metrics.reads+1
@@ -94,6 +97,8 @@ function Cache:read(cx,cy,checkpoint)
  if not ok then
   self.metrics.invalid=self.metrics.invalid+1
   self.metrics.misses=self.metrics.misses+1
+  -- Disposable corrupt cache only: never touch game saves or authored files.
+  if love.filesystem.remove(path) then self.bytes=math.max(0,self.bytes-info.size) end
   return nil
  end
  self.metrics.hits=self.metrics.hits+1
