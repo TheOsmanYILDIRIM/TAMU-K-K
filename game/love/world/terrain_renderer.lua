@@ -20,41 +20,55 @@ local function light(topo,x,y)
  return Materials.light(s.gradient_x,s.gradient_y)
 end
 local function vertex(out,x,y,biome,opts,alpha)
- local sx,sy=projection(x,y,opts.topography,opts.height_scale)
+ local id=x..":"..y
+ local geo=opts._geo[id]
+ if not geo then
+  local sx,sy=projection(x,y,opts.topography,opts.height_scale)
+  geo={sx,sy,light(opts.topography,x,y)}
+  opts._geo[id]=geo
+ end
  local color=biome=="water" and water or Materials.color(biome,x,y)
- local shade=light(opts.topography,x,y)
- out[#out+1]={sx,sy,0,0,math.min(1,color[1]*shade),
+ local shade=geo[3]
+ local v={geo[1],geo[2],0,0,math.min(1,color[1]*shade),
   math.min(1,color[2]*shade),math.min(1,color[3]*shade),alpha or 1}
+ out[#out+1]=v
+ return v
 end
-local function mesh(flat,biome,query,opts)
+local function mesh(flat,biome,query,opts,pause)
  if not flat or #flat==0 then return nil end
- local out={}
- for _,p in ipairs(flat) do
-  local alpha=1
-  if biome~="meadow" then
-   local signed=query.field:channel(p[1],p[2],biome)
-   if biome=="water" then
-    -- C's authored water uses signed WORLD UNITS; Generator v1 water
-    -- continues using its original dimensionless scalar and threshold.
-    local band=.035
-    if opts.routes and opts.routes.features then
-     local authored=opts.routes.features:signed(p[1],p[2],"water")
-     if authored>=0 then band=3.2 end
-    end
-    alpha=Materials.edge_alpha(signed,band)
-   else
-    alpha=Materials.edge_alpha(signed,.055)
-    if opts.boundaries then
-     alpha=alpha*Materials.authored_feather(opts.boundaries,p[1],p[2],24)
+ local out,memo={},{}
+ for i,p in ipairs(flat) do
+  local id=p[1]..":"..p[2]
+  local cached=memo[id]
+  if cached then
+   out[#out+1]=cached
+  else
+   local alpha=1
+   if biome~="meadow" then
+    local signed=query.field:channel(p[1],p[2],biome)
+    if biome=="water" then
+     -- C's authoritative water mask is unchanged; cache repeat vertices.
+     local band=.035
+     if opts.routes and opts.routes.features then
+      local authored=opts.routes.features:signed(p[1],p[2],"water")
+      if authored>=0 then band=3.2 end
+     end
+     alpha=Materials.edge_alpha(signed,band)
+    else
+     alpha=Materials.edge_alpha(signed,.055)
+     if opts.boundaries then
+      alpha=alpha*Materials.authored_feather(opts.boundaries,p[1],p[2],24)
+     end
     end
    end
+   memo[id]=vertex(out,p[1],p[2],biome,opts,alpha)
   end
-  vertex(out,p[1],p[2],biome,opts,alpha)
+  if pause and i%128==0 then pause() end
  end
  return graphics().newMesh(out,"triangles","static")
 end
-local function meadow(chunk,query,opts)
- local out={}
+local function meadow(chunk,query,opts,pause)
+ local out,memo={},{}
  local step,size=opts.grid,chunk.size
  assert(size%step==0,"profile step must divide chunk size")
  -- The fallback is the bottom layer of EVERY terrain material. Previously
@@ -79,9 +93,13 @@ local function meadow(chunk,query,opts)
   for x=chunk.x,chunk.x+size-step,step do
    for _,p in ipairs({{x,y},{x+step,y},{x+step,y+step},
                      {x,y},{x+step,y+step},{x,y+step}}) do
-    vertex(out,p[1],p[2],base_biome(p[1],p[2]),opts)
+    local id=p[1]..":"..p[2]
+    local cached=memo[id]
+    if cached then out[#out+1]=cached
+    else memo[id]=vertex(out,p[1],p[2],base_biome(p[1],p[2]),opts) end
    end
   end
+  if pause then pause() end
  end
  return graphics().newMesh(out,"triangles","static")
 end
@@ -107,7 +125,7 @@ end
 local fleck_color={
  meadow={.60,.73,.45},forest={.34,.49,.36},
  rocky={.59,.62,.58},path={.59,.48,.36}}
-local function detail_mesh(chunk,query,opts)
+local function detail_mesh(chunk,query,opts,pause)
  local out={}
  local step=opts.fleck
  assert(chunk.size%step==0)
@@ -128,7 +146,9 @@ local function detail_mesh(chunk,query,opts)
        kind=="path" and .49 or .22}
    end
   end
- end end
+ end
+  if pause then pause() end
+ end
  return #out>0 and graphics().newMesh(out,"triangles","static") or nil
 end
 function Terrain.invalidate(chunk)
@@ -141,6 +161,12 @@ function Terrain.invalidate(chunk)
    if v and v.release then v:release() end
   end
  end
+ if chunk._terrain_stage then
+  for _,v in pairs(chunk._terrain_stage) do
+   if v and v.release then v:release() end
+  end
+ end
+ chunk._terrain_stage=nil;chunk._terrain_job=nil
  chunk._terrain_meshes=nil;chunk._terrain_key=nil
 end
 function Terrain.profile(quality)
@@ -170,7 +196,7 @@ local function river_near_chunk(chunk,routes)
  end
  return false
 end
-local function water_vertices(chunk,query,opts)
+local function water_vertices(chunk,query,opts,pause)
  if not river_near_chunk(chunk,opts.routes) then
   return chunk.layers.water and chunk.layers.water.vertices
  end
@@ -179,7 +205,7 @@ local function water_vertices(chunk,query,opts)
  assert(chunk.size%4==0,"fine river step must divide chunk size")
  return Marching.build(function(x,y)
   return query.field:channel(x,y,"water")
- end,chunk.x,chunk.y,chunk.size,4,0).vertices
+ end,chunk.x,chunk.y,chunk.size,4,0,pause).vertices
 end
 local boundaries_cache=setmetatable({},{__mode="k"})
 local function authored_boundaries(query,routes)
@@ -196,17 +222,27 @@ local function authored_boundaries(query,routes)
  end
  return edges
 end
-local function rebuild(chunk,query,opts,key)
+local function rebuild(chunk,query,opts,key,pause)
  local l=assert(chunk.layers,"chunk layers required")
- local meshes={
-  meadow=meadow(chunk,query,opts),
-  forest=mesh(l.forest and l.forest.vertices,"forest",query,opts),
-  rocky=mesh(l.rocky and l.rocky.vertices,"rocky",query,opts),
-  water=mesh(water_vertices(chunk,query,opts),"water",query,opts),
-  detail=detail_mesh(chunk,query,opts)}
- assert(not chunk._meshes,"another renderer owns chunk GPU meshes")
+ -- Shared world-position samples are reusable across overlapping material
+ -- triangles. Never alter triangle count, coordinates, or authored masks.
+ local local_opts=setmetatable({_geo={}}, {__index=opts})
+ local meshes={}
+ chunk._terrain_stage=meshes
+ meshes.meadow=meadow(chunk,query,local_opts,pause)
+ meshes.forest=mesh(l.forest and l.forest.vertices,"forest",query,local_opts,pause)
+ meshes.rocky=mesh(l.rocky and l.rocky.vertices,"rocky",query,local_opts,pause)
+ meshes.water=mesh(water_vertices(chunk,query,local_opts,pause),"water",query,local_opts,pause)
+ meshes.detail=detail_mesh(chunk,query,local_opts,pause)
+ -- Commit full material passes atomically. Retain any old complete mesh
+ -- during a quality-profile change to avoid partial repaint/flicker.
+ local old=chunk._terrain_meshes
+ if old then
+  for _,v in pairs(old) do if v and v.release then v:release() end end
+ end
+ chunk._terrain_stage=nil
  chunk._terrain_meshes=meshes
- chunk._meshes=meshes -- existing Stream eviction releases this table
+ chunk._meshes=meshes
  chunk._terrain_key=key
  return meshes
 end
@@ -236,9 +272,41 @@ function Terrain.draw(stream,camera,width,height,options)
  local sx,sy=Iso.project(camera.x,camera.y)
  lg.translate(-sx,-sy)
  local cached={}
+ local clock=love and love.timer and love.timer.getTime
+ if type(clock)~="function" then clock=nil end
+ local deadline=clock and clock()+.004
  for _,chunk in ipairs(stream:visible()) do
-  if chunk._terrain_key~=key then Terrain.invalidate(chunk) end
-  cached[#cached+1]=chunk._terrain_meshes or rebuild(chunk,stream.query,opts,key)
+  if not clock then
+   if chunk._terrain_key~=key then Terrain.invalidate(chunk) end
+   cached[#cached+1]=chunk._terrain_meshes or rebuild(chunk,stream.query,opts,key)
+  else
+   if chunk._terrain_key~=key then
+    local job=chunk._terrain_job
+    if not job or job.key~=key then
+     if job and chunk._terrain_stage then
+      for _,v in pairs(chunk._terrain_stage) do
+       if v and v.release then v:release() end
+      end
+      chunk._terrain_stage=nil
+     end
+     job={key=key,thread=coroutine.create(function()
+       return rebuild(chunk,stream.query,opts,key,function() coroutine.yield() end)
+     end)}
+     chunk._terrain_job=job
+    end
+    if clock()<deadline then
+     repeat
+      local ok,value=coroutine.resume(job.thread)
+      assert(ok,value)
+      if coroutine.status(job.thread)=="dead" then
+       chunk._terrain_job=nil
+       break
+      end
+     until clock()>=deadline
+    end
+   end
+   cached[#cached+1]=chunk._terrain_meshes
+  end
  end
  -- Render whole visible world in material passes. Painting a meadow chunk
  -- after a neighbour's forest/water layer creates hard rectangular seams.
