@@ -39,7 +39,9 @@ function M.new(mode,stream,cache)
   samples={},events={},spikes={},unique={},completed=false,
   stats={},phase="outbound",frame_mesh=0,frame_vertices=0,frame_gpu_ms=0,
   terrain_ms=0,objects_ms=0,previous_heap=collectgarbage("count"),
-  was_resident={},was_ready={},
+  was_resident={},was_ready={},waiting=false,visibility_wait_start=nil,
+  visibility_wait_ms={},visibility_wait_frames=0,
+  visited_ready_frames=0,
   total_meshes=0,total_spikes=0,screenshot_count=0},M)
  local oldbuild=stream.chunker.build
  stream.chunker.build=function(chunker,cx,cy,checkpoint)
@@ -133,8 +135,10 @@ function M:beforeUpdate(player,camera)
  self.terrain_ms,self.objects_ms=0,0
  self.update_start=now()
  if self.frame==1 then self.start=self.update_start;self.last=nil end
- self:advance(player,camera)
- assert(self.frame<=600,"benchmark exceeded hard 600-frame cap")
+ -- Advance 10x only when the camera's focal terrain is actually visible.
+ -- This prevents an artificially high FPS from drawing an empty world.
+ if not self.waiting and not self.completed then self:advance(player,camera) end
+ assert(self.frame<=4000,"benchmark exceeded hard 4000-frame cap")
  local key=cell(camera.x)..":"..cell(camera.y)
  if not self.unique[key] then
   self.unique[key]=true
@@ -165,7 +169,7 @@ function M:beforeDraw()
 end
 function M:afterDraw(object_count)
  local finish=now()
- local frame_dt=(finish-(self.last or self.draw_start))*1000
+ local frame_dt=(finish-(self.last or self.update_start))*1000
  self.last=finish
  local draw_ms=(finish-self.draw_start)*1000
  local update_ms=self.update_ms or 0
@@ -182,10 +186,34 @@ function M:afterDraw(object_count)
     self.previous_heap-ram,"KiB decrease, possible GC")
  end
  self.previous_heap=ram
+ local ready_chunks=0
  for _,chunk in ipairs(self.stream:visible()) do
-  if chunk._terrain_meshes and not self.was_ready[chunk.key] then
-   self.was_ready[chunk.key]=true
-   self:event("mesh_ready",chunk.cx,chunk.cy,self.terrain_ms,"complete mesh set")
+  if chunk._terrain_meshes then
+   ready_chunks=ready_chunks+1
+   if not self.was_ready[chunk.key] then
+    self.was_ready[chunk.key]=true
+    self:event("mesh_ready",chunk.cx,chunk.cy,self.terrain_ms,"complete mesh set")
+   end
+  end
+ end
+ local focal=self.stream:get_loaded(cell(self.pos[1]),cell(self.pos[2]))
+ local focal_ready=focal and focal._terrain_meshes~=nil or false
+ if not focal_ready then
+  self.visibility_wait_frames=self.visibility_wait_frames+1
+  if not self.waiting then
+   self.waiting=true
+   self.visibility_wait_start=finish
+   self:event("visibility_wait_start",cell(self.pos[1]),cell(self.pos[2]),0,
+    "focal chunk mesh missing, travel paused")
+  end
+ else
+  self.visited_ready_frames=self.visited_ready_frames+1
+  if self.waiting then
+   local wait_ms=(finish-self.visibility_wait_start)*1000
+   self.visibility_wait_ms[#self.visibility_wait_ms+1]=wait_ms
+   self:event("visibility_ready",cell(self.pos[1]),cell(self.pos[2]),wait_ms,
+    "focal chunk became drawable")
+   self.waiting=false;self.visibility_wait_start=nil
   end
  end
  local row={self.frame,quote(self.phase),self.lap,num(finish-self.start),
@@ -196,7 +224,8 @@ function M:afterDraw(object_count)
   cm.writes or 0,cm.prefetch_writes or 0,cm.invalid or 0,
   self.frame_mesh,self.frame_vertices,num(self.frame_gpu_ms),
   object_count or 0,num(ram),num(gpu.texturememory or 0),
-  gpu.drawcalls or 0,num(self.terrain_ms),num(self.objects_ms)}
+  gpu.drawcalls or 0,num(self.terrain_ms),num(self.objects_ms),
+  focal_ready and 1 or 0,ready_chunks,self.waiting and 1 or 0}
  self.samples[#self.samples+1]=row
  if frame_dt>=33.333 or update_ms+draw_ms>=33.333 then
   self.total_spikes=self.total_spikes+1
@@ -213,7 +242,7 @@ function M:afterDraw(object_count)
     self.screenshot_count..".png")
   end
  end
- if self.completed then self:finish() end
+ if self.completed and not self.waiting then self:finish() end
 end
 function M:finish()
  local dt,cpu,updates,draws={}, {}, {}, {}
@@ -233,7 +262,8 @@ function M:finish()
  "loaded","needed","pending","build_jobs","terrain_jobs",
  "cache_hits","cache_misses","cache_writes","prefetch_writes","cache_invalid",
  "mesh_alloc_calls","mesh_vertices","mesh_alloc_cpu_call_ms","objects","lua_heap_kib",
- "gpu_texture_bytes","gpu_drawcalls","terrain_ms","objects_ms"}}
+ "gpu_texture_bytes","gpu_drawcalls","terrain_ms","objects_ms",
+ "focal_ready","ready_terrain_chunks","waiting_for_visibility"}}
  for _,r in ipairs(self.samples) do csv[#csv+1]=r end
  local log={{"frame","elapsed_s","event","chunk_x","chunk_y","elapsed_ms","context"}}
  for _,v in ipairs(self.events) do log[#log+1]=v end
@@ -241,7 +271,14 @@ function M:finish()
  assert(love.filesystem.write(prefix.."-events.csv",serialize(log)))
  local summary={
   mode=self.mode,seed=20261018,frames=self.frame,route_laps=2,
-  speed_multiplier=speed_multiplier,max_frame_budget=600,
+  speed_multiplier=speed_multiplier,max_frame_budget=4000,
+  visibility_waits=#self.visibility_wait_ms,
+  visibility_wait_frames=self.visibility_wait_frames,
+  visibility_wait_ms={p50=percentile(self.visibility_wait_ms,.5),
+    p95=percentile(self.visibility_wait_ms,.95),
+    p99=percentile(self.visibility_wait_ms,.99),
+    max=percentile(self.visibility_wait_ms,1)},
+  frames_with_drawable_focal=self.visited_ready_frames,
   distinct_camera_chunks=counts(self.unique),events=#self.events,
   stalls_over_33ms=self.total_spikes,min_fps=minfps,
   frame_ms={p50=percentile(dt,.5),p95=percentile(dt,.95),
@@ -258,8 +295,9 @@ function M:finish()
  local Json=require("save.json")
  assert(love.filesystem.write(prefix.."-summary.json",Json.encode(summary)))
  print(string.format(
-  "R2_LONG_TRAVERSAL_OK mode=%s frames=%d traveledCameraChunks=%d stalls33=%d frame_p95=%.3f frame_p99=%.3f frame_max=%.3f fps_min=%.2f cacheHits=%d cacheWrites=%d",
-  self.mode,self.frame,summary.distinct_camera_chunks,self.total_spikes,
+  "R2_LONG_TRAVERSAL_OK mode=%s frames=%d traveledCameraChunks=%d waits=%d waitP95=%.2f stalls33=%d frame_p95=%.3f frame_p99=%.3f frame_max=%.3f fps_min=%.2f cacheHits=%d cacheWrites=%d",
+  self.mode,self.frame,summary.distinct_camera_chunks,
+  summary.visibility_waits,summary.visibility_wait_ms.p95,self.total_spikes,
   summary.frame_ms.p95,summary.frame_ms.p99,summary.frame_ms.max,minfps,
   summary.cache.hits or 0,summary.cache.writes or 0))
  io.stdout:flush()
