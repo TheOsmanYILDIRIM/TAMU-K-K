@@ -1,6 +1,11 @@
 name: R2 persistent chunk cache experiment
 # Expensive experiment: do not run on routine pushes.
 on:
+  push:
+    branches:
+      - experiment/r2-persistent-chunk-cache-20261020
+    paths:
+      - .github/workflows/r2-persistent-cache.yml
   workflow_dispatch:
 jobs:
   benchmark:
@@ -21,6 +26,7 @@ jobs:
             "$lua" tests/r2_visual_terrain.lua
           done
       - name: Real LÖVE baseline versus cold and warm persisted cache
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           set -euo pipefail
@@ -70,10 +76,16 @@ jobs:
           timeout 240s xvfb-run -a love game/love 2>&1 | tee /tmp/osman-prefetch.log
           grep -q 'CHUNK_CACHE_PREFETCH_OK' /tmp/osman-prefetch.log
           cp /tmp/osman-{baseline,cold,warm,repair,prefetch}.log /tmp/osman-cache-artifacts/
+      - name: Run one-time requested full traversal test
+        if: github.event_name == 'push'
+        shell: bash
+        run: bash game/love/tests/run_r2_long_traversal.sh /tmp/osman-long-traversal
       - name: Upload real screenshot and benchmark logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: r2-chunk-cache-cold-warm-benchmark
-          path: /tmp/osman-cache-artifacts
+          path: |
+            /tmp/osman-cache-artifacts/
+            /tmp/osman-long-traversal/
           if-no-files-found: warn
