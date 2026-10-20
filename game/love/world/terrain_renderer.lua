@@ -65,6 +65,7 @@ local function mesh(flat,biome,query,opts,pause)
   end
   if pause and i%128==0 then pause() end
  end
+ if opts._cache_raw then opts._cache_raw[biome]=out end
  return graphics().newMesh(out,"triangles","static")
 end
 local function meadow(chunk,query,opts,pause)
@@ -101,6 +102,7 @@ local function meadow(chunk,query,opts,pause)
   end
   if pause then pause() end
  end
+ if opts._cache_raw then opts._cache_raw.meadow=out end
  return graphics().newMesh(out,"triangles","static")
 end
 local function detail_type(query,opts,x,y)
@@ -149,6 +151,7 @@ local function detail_mesh(chunk,query,opts,pause)
  end
   if pause then pause() end
  end
+ if opts._cache_raw then opts._cache_raw.detail=out end
  return #out>0 and graphics().newMesh(out,"triangles","static") or nil
 end
 function Terrain.invalidate(chunk)
@@ -226,7 +229,8 @@ local function rebuild(chunk,query,opts,key,pause)
  local l=assert(chunk.layers,"chunk layers required")
  -- Shared world-position samples are reusable across overlapping material
  -- triangles. Never alter triangle count, coordinates, or authored masks.
- local local_opts=setmetatable({_geo={}}, {__index=opts})
+ local local_opts=setmetatable({_geo={},_cache_raw=opts.cache and
+  {meadow={},forest={},rocky={},water={},detail={}} or nil}, {__index=opts})
  local meshes={}
  chunk._terrain_stage=meshes
  meshes.meadow=meadow(chunk,query,local_opts,pause)
@@ -244,6 +248,24 @@ local function rebuild(chunk,query,opts,key,pause)
  chunk._terrain_meshes=meshes
  chunk._meshes=meshes
  chunk._terrain_key=key
+ if opts.cache and not chunk._cache_vertices then
+  chunk._cache_payload=local_opts._cache_raw
+ end
+ return meshes
+end
+local function hydrate(chunk,key,pause)
+ local meshes={}
+ chunk._terrain_stage=meshes
+ for _,name in ipairs({"meadow","forest","rocky","water","detail"}) do
+  local raw=assert(chunk._cache_vertices[name],"cache is missing a material")
+  if #raw>0 then meshes[name]=graphics().newMesh(raw,"triangles","static") end
+  if pause then pause() end
+ end
+ chunk._terrain_stage=nil
+ chunk._terrain_meshes=meshes
+ chunk._meshes=meshes
+ chunk._terrain_key=key
+ chunk._cache_vertices=nil -- release decoded CPU RAM after GPU upload
  return meshes
 end
 function Terrain.draw(stream,camera,width,height,options)
@@ -262,7 +284,8 @@ function Terrain.draw(stream,camera,width,height,options)
  end
  local opts={grid=profile.grid,fleck=profile.fleck,
   topography=options.topography,height_scale=scale,routes=options.routes,
-  boundaries=authored_boundaries(stream.query,options.routes)}
+  boundaries=authored_boundaries(stream.query,options.routes),
+  cache=stream.cache}
  local key=quality..":"..tostring(scale)..":"..tostring(options.topography)
           ..":"..tostring(options.routes)..":"..tostring(stream.query)
  lg.clear(.065,.105,.118,1)
@@ -278,7 +301,9 @@ function Terrain.draw(stream,camera,width,height,options)
  for _,chunk in ipairs(stream:visible()) do
   if not clock then
    if chunk._terrain_key~=key then Terrain.invalidate(chunk) end
-   cached[#cached+1]=chunk._terrain_meshes or rebuild(chunk,stream.query,opts,key)
+   cached[#cached+1]=chunk._terrain_meshes or
+     (chunk._cache_vertices and hydrate(chunk,key) or
+      rebuild(chunk,stream.query,opts,key))
   else
    if chunk._terrain_key~=key then
     local job=chunk._terrain_job
@@ -290,6 +315,9 @@ function Terrain.draw(stream,camera,width,height,options)
       chunk._terrain_stage=nil
      end
      job={key=key,thread=coroutine.create(function()
+       if chunk._cache_vertices then
+        return hydrate(chunk,key,function() coroutine.yield() end)
+       end
        return rebuild(chunk,stream.query,opts,key,function() coroutine.yield() end)
      end)}
      chunk._terrain_job=job
