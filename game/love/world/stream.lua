@@ -24,7 +24,7 @@ function Stream.new(query, opts)
   return setmetatable({
     query=query,chunker=chunker,
     max_loaded=max_loaded,build_budget=build_budget,
-    generation_ms=generation_ms,jobs={},
+    generation_ms=generation_ms,jobs={},cache=opts.cache,
     resident={}, ordered={}, wanted_count=0
   }, Stream)
 end
@@ -104,7 +104,16 @@ function Stream:update(camera,width,height,budget)
         local job=self.jobs[c.key]
         if not job then
           job=coroutine.create(function()
-            return self.chunker:build(c.cx,c.cy,function() coroutine.yield() end)
+            local checkpoint=function() coroutine.yield() end
+            if self.cache then
+              local vertices=self.cache:read(c.cx,c.cy,checkpoint)
+              if vertices then
+                return {key=c.key,cx=c.cx,cy=c.cy,x=c.cx*self.chunker.size,
+                  y=c.cy*self.chunker.size,size=self.chunker.size,layers={},
+                  _cache_vertices=vertices}
+              end
+            end
+            return self.chunker:build(c.cx,c.cy,checkpoint)
           end)
           self.jobs[c.key]=job
         end
@@ -120,7 +129,14 @@ function Stream:update(camera,width,height,budget)
         until clock()>=deadline
         if clock()>=deadline then break end
       else
-        self.resident[c.key]=self.chunker:build(c.cx,c.cy)
+        local v=self.cache and self.cache:read(c.cx,c.cy)
+        if v then
+          self.resident[c.key]={key=c.key,cx=c.cx,cy=c.cy,
+            x=c.cx*self.chunker.size,y=c.cy*self.chunker.size,
+            size=self.chunker.size,layers={},_cache_vertices=v}
+        else
+          self.resident[c.key]=self.chunker:build(c.cx,c.cy)
+        end
         created=created+1
       end
     end
@@ -131,6 +147,31 @@ function Stream:update(camera,width,height,budget)
     if chunk then ordered[#ordered+1]=chunk end
   end
   self.ordered,self.wanted_count=ordered,#candidates
+  -- Saving uses leftover frame budget and only fully completed geometry.
+  -- Save files are disposable and entirely separate from Stage6 persistence.
+  if self.cache and clock and #ordered==#candidates then
+    local save_deadline=clock()+.002
+    for _,chunk in ipairs(ordered) do
+      if chunk._cache_payload then
+        if not chunk._cache_job then
+          chunk._cache_job=coroutine.create(function()
+            return self.cache:write(chunk.cx,chunk.cy,chunk._cache_payload,
+              function() coroutine.yield() end)
+          end)
+        end
+        repeat
+          local ok,why=coroutine.resume(chunk._cache_job)
+          assert(ok,why)
+          if coroutine.status(chunk._cache_job)=="dead" then
+            chunk._cache_payload=nil
+            chunk._cache_job=nil
+            break
+          end
+        until clock()>=save_deadline
+        if clock()>=save_deadline then break end
+      end
+    end
+  end
   return {created=created, loaded=#ordered, needed=#candidates,
           pending=#candidates-#ordered}
 end
