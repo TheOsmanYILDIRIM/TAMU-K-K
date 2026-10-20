@@ -1,0 +1,112 @@
+name: R2 portable playable LOVE package
+on:
+  push:
+    branches:
+      - experiment/r2-persistent-chunk-cache-20261020
+    paths:
+      - .github/workflows/r2-playable-love.yml
+  workflow_dispatch:
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install real LÖVE runtime and ZIP
+        run: sudo apt-get update -qq && sudo apt-get install -y love xvfb lua5.4 zip
+      - name: Make standalone R2 package in a disposable staging copy
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/gamepkg/data/worldbuild" "$RUNNER_TEMP/export"
+          cp -a game/love/. "$RUNNER_TEMP/gamepkg/"
+          cp data/worldbuild/fisilti_ormani.r2.v1.json "$RUNNER_TEMP/gamepkg/data/worldbuild/"
+          cp data/worldbuild/osman_overworld.v2.json "$RUNNER_TEMP/gamepkg/data/worldbuild/"
+          python3 - <<'PY'
+          import hashlib,pathlib,re
+          root=pathlib.Path(__import__('os').environ['RUNNER_TEMP'])/'gamepkg'
+          p=root/'main.lua'
+          text=p.read_text()
+          opts=[
+            ('local r2_pilot_enabled=os.getenv("OSMAN_R2_PILOT")=="1"',
+             'local r2_pilot_enabled=os.getenv("OSMAN_R2_PILOT")~="0"'),
+            ('local cache_pilot_enabled=os.getenv("OSMAN_CHUNK_CACHE_PILOT")=="1"',
+             'local cache_pilot_enabled=os.getenv("OSMAN_CHUNK_CACHE_PILOT")~="0"')]
+          for a,b in opts:
+            assert text.count(a)==1,'launch flag changed: '+a
+            text=text.replace(a,b)
+          p.write_text(text)
+          p=root/'world/r2_playable.lua'
+          source=p.read_text()
+          old=r'local function source_read\(name\)\n.*?\nend\nlocal function read_doc'
+          replacement='''local function source_read(name)
+            -- Package-only adapter; SHA256 hash checks in read_doc remain exact.
+            assert(files[name],"unknown R2 authored map")
+            local bytes,err=love.filesystem.read("data/worldbuild/"..name)
+            assert(bytes,"R2 authored map missing from LOVE package: "..tostring(err))
+            return bytes
+          end
+          local function read_doc'''
+          source,n=re.subn(old,replacement,source,flags=re.S)
+          assert n==1,'R2 source-read anchor changed'
+          p.write_text(source)
+          for name,expected in {
+            'fisilti_ormani.r2.v1.json':'df5d0eeca59030e6585558c15d8f1e7bf049638ea8032dc17c1b80c74106f598',
+            'osman_overworld.v2.json':'ac5903fd22cd466cfc1786cbeef44f2679be87317c6bfd757a05a282172f78dc'
+          }.items():
+            blob=(root/'data/worldbuild'/name).read_bytes()
+            assert hashlib.sha256(blob).hexdigest()==expected,'R2 authored source hash mismatch'
+          assert (root/'world/chunk_cache_worker.lua').is_file()
+          assert (root/'assets/core_plasma_front_spritesheet_32x512.png').is_file()
+          assert (root/'conf.lua').is_file()
+          assert (root/'main.lua').is_file()
+          print('PORTABLE_LOVE_SOURCE_HASH_OK')
+          PY
+          cat > "$RUNNER_TEMP/gamepkg/PORTABLE_BUILD_README.txt" <<'EOF'
+          Osman Oyun - R2 Fisilti Ormani
+          Experimental playable prototype (not production save).
+          Launch using LÖVE 11.x: love Osman_Oyun_R2_Guncel.love
+          R2 authored world and persistent disposable terrain cache start enabled.
+          Use WASD / touch controls. Game progress is session-only.
+          To disable preview R2 at desktop: OSMAN_R2_PILOT=0.
+          No Stage6 real player save is modified by this package.
+          Build branch: experiment/r2-persistent-chunk-cache-20261020
+          EOF
+          (cd "$RUNNER_TEMP/gamepkg" && zip -qr "$RUNNER_TEMP/export/Osman_Oyun_R2_Guncel.love" .)
+          python3 - <<'PY'
+          import os,zipfile,pathlib
+          z=pathlib.Path(os.environ['RUNNER_TEMP'])/'export/Osman_Oyun_R2_Guncel.love'
+          with zipfile.ZipFile(z) as f:
+            assert f.testzip() is None
+            for name in ('main.lua','conf.lua','world/r2_playable.lua',
+               'world/chunk_cache_worker.lua',
+               'data/worldbuild/fisilti_ormani.r2.v1.json',
+               'data/worldbuild/osman_overworld.v2.json'):
+               assert name in f.namelist(),name
+          print('PORTABLE_LOVE_ZIP_OK',z.stat().st_size)
+          PY
+          sha256sum "$RUNNER_TEMP/export/Osman_Oyun_R2_Guncel.love" | tee "$RUNNER_TEMP/export/SHA256.txt"
+      - name: Real LÖVE/Xvfb smoke opens the packaged .love, not checkout source
+        shell: bash
+        run: |
+          set -euo pipefail
+          export XDG_DATA_HOME="$RUNNER_TEMP/portable-love-disposable-user"
+          mkdir -p "$XDG_DATA_HOME"
+          OSMAN_CHUNK_CACHE_SMOKE=1 OSMAN_CACHE_DISPLAY=360x780 timeout 180s \
+            xvfb-run -a love "$RUNNER_TEMP/export/Osman_Oyun_R2_Guncel.love" \
+            2>&1 | tee "$RUNNER_TEMP/export/portable-runtime.log"
+          grep -q 'CHUNK_CACHE_GAME_READY' "$RUNNER_TEMP/export/portable-runtime.log"
+          grep -q 'CHUNK_CACHE_GAME_SMOKE_OK' "$RUNNER_TEMP/export/portable-runtime.log"
+          screenshot="$(find "$XDG_DATA_HOME" -name chunk-cache-game.png -print -quit)"
+          test -n "$screenshot" && test -s "$screenshot"
+          cp "$screenshot" "$RUNNER_TEMP/export/R2_Guncel_Goruntu.png"
+          file "$RUNNER_TEMP/export/R2_Guncel_Goruntu.png" | grep -q 'PNG image data'
+          echo PORTABLE_LOVE_REAL_ENGINE_OK
+      - name: Upload verified playable LOVE and evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Osman-Oyun-R2-Guncel-LOVE
+          path: |
+            ${{ runner.temp }}/export/
+          if-no-files-found: error
