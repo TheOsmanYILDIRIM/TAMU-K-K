@@ -83,7 +83,7 @@ jobs:
           grep -q 'LOVE_STAGE6_REOPEN_OK' /tmp/stat-stage6-reopen.log
           grep -q 'LOVE_INTEGRATION_SMOKE_OK' /tmp/stat-stage6-reopen.log
       - name: R2 H real A-F combined schema, Node, Lua5.4 and LuaJIT
-        if: github.ref_name == 'main' || github.ref_name == 'experiment/worldbuild-r2-compat-20261019'
+        if: github.ref_name == 'main' || github.ref_name == 'experiment/worldbuild-r2-compat-20261019' || github.ref_name == 'experiment/r2-organic-visual-20261020'
         shell: bash
         run: |
           set -euo pipefail
@@ -100,7 +100,7 @@ jobs:
             "$interpreter" tests/r2_h_compat.lua
           done
       - name: R2 H real LÖVE/Xvfb authored river + ecology PNG smoke
-        if: github.ref_name == 'main' || github.ref_name == 'experiment/worldbuild-r2-compat-20261019'
+        if: github.ref_name == 'main' || github.ref_name == 'experiment/worldbuild-r2-compat-20261019' || github.ref_name == 'experiment/r2-organic-visual-20261020'
         shell: bash
         run: |
           set -euo pipefail
@@ -115,7 +115,7 @@ jobs:
             file "/tmp/r2-h-compat-$scene.png" | grep -q 'PNG image data'
           done
       - name: Upload R2 H integrated world preview
-        if: github.ref_name == 'main' || github.ref_name == 'experiment/worldbuild-r2-compat-20261019'
+        if: github.ref_name == 'main' || github.ref_name == 'experiment/worldbuild-r2-compat-20261019' || github.ref_name == 'experiment/r2-organic-visual-20261020'
         uses: actions/upload-artifact@v4
         with:
           name: r2-h-compat-world-preview
