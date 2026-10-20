@@ -60,7 +60,8 @@ for mode in ('baseline','cold','warm'):
     assert data['distinct_camera_chunks']>=18
     assert all(int(row['frame'])==i and float(row['frame_ms'])>0 and float(row['fps'])>0
                for i,row in enumerate(rows,1))
-    assert any(e['event']=='frame_stall' for e in events)
+    # Zero stalls is a success, not a failed benchmark contract.
+    assert data['stalls_over_33ms']==sum(e['event']=='frame_stall' for e in events)
     assert any(e['event']=='chunk_resident' for e in events)
     assert data['synthetic_motion'] and data['android_not_tested']
     movement=[]
