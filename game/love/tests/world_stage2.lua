@@ -92,4 +92,90 @@ for _=1,8 do stats=stream:update(camera,720,1100) end
 assert(stream.resident[origin_key] and stream.resident[origin_key]~=before)
 assert(stats.loaded==stats.needed)
 assert(not pcall(function() stream:update(camera,720,1100,-1) end))
+
+-- Ajan I: controlled CPU-only baseline. A GPU timing or Android FPS claim is NOT
+-- inferred from these synthetic frames. Both variants use identical camera paths.
+local Terrain=require("world.terrain_renderer")
+local Json=require("save.json")
+local H=require("world.r2_compat_bridge")
+local Renderer=require("objects.renderer")
+local function read_map(name)
+ local f=assert(io.open("../../data/worldbuild/"..name,"rb"))
+ local bytes=f:read("*a");f:close()
+ return Json.decode(bytes)
+end
+local authored=H.new(read_map("fisilti_ormani.r2.v1.json"),
+ read_map("osman_overworld.v2.json"))
+local mesh_count,vertex_count=0,0
+love={graphics={
+ newMesh=function(v,mode,usage)
+  assert(mode=="triangles" and usage=="static")
+  mesh_count=mesh_count+1;vertex_count=vertex_count+#v
+  return {release=function() end}
+ end,
+ clear=function() end,push=function() end,pop=function() end,
+ translate=function() end,scale=function() end,setColor=function() end,
+ draw=function() end
+}}
+local function percentile(a,p)
+ local copy={}
+ for i,v in ipairs(a) do copy[i]=v end
+ table.sort(copy)
+ return copy[math.max(1,math.ceil(#copy*p))]
+end
+local function perf_scene(label,q,step,render_options,objs)
+ collectgarbage("collect")
+ local s=Stream.new(q,{size=256,step=step,max_loaded=12,build_budget=2})
+ local camera=Camera.new()
+ local paths={{0,0,1},{0,0,1},{256,0,1},{512,0,1},
+   {768,0,1},{768,0,1},{768,0,1.5},{256,0,.85},
+   {0,0,1},{0,0,1}}
+ if label=="R2" then
+  paths={{704,128,1},{704,128,1},{960,128,1},
+    {1216,128,1},{704,128,1.4},{704,128,1.4},
+    {448,128,.85},{704,128,1},{704,128,1},{960,128,1}}
+ end
+ local stream_ms,terrain_ms,frame_ms,build_ms={}, {}, {},{}
+ local builds,loaded,peak_mem,visible_lag=0,0,0,0
+ local oldbuild=s.chunker.build
+ s.chunker.build=function(self,cx,cy)
+  local begin=os.clock()
+  local c=oldbuild(self,cx,cy)
+  builds=builds+1;build_ms[#build_ms+1]=(os.clock()-begin)*1000
+  return c
+ end
+ local before=collectgarbage("count")
+ for _,p in ipairs(paths) do
+  camera.x,camera.y,camera.zoom=p[1],p[2],p[3]
+  local start=os.clock()
+  local st=s:update(camera,360,780)
+  local mid=os.clock()
+  Terrain.draw(s,camera,360,780,render_options)
+  local finish=os.clock()
+  stream_ms[#stream_ms+1]=(mid-start)*1000
+  terrain_ms[#terrain_ms+1]=(finish-mid)*1000
+  frame_ms[#frame_ms+1]=(finish-start)*1000
+  loaded=st.loaded
+  visible_lag=visible_lag+st.pending
+  peak_mem=math.max(peak_mem,collectgarbage("count")-before)
+  if objs then
+   local t=os.clock()
+   Renderer.collect(objs,s)
+   terrain_ms[#terrain_ms+1]=(os.clock()-t)*1000 -- object-query-only
+  end
+ end
+ local function fmt(a)
+  return string.format("p50=%.3f p95=%.3f p99=%.3f max=%.3f",
+   percentile(a,.5),percentile(a,.95),percentile(a,.99),percentile(a,1))
+ end
+ print(string.format("CHUNK_PERF_BASELINE %s frames=%d builds=%d loaded=%d pendingSum=%d mesh=%d vertices=%d peakKiB=%.0f stream[%s] render[%s] frame[%s] build[%s]",
+  label,#paths,builds,loaded,visible_lag,mesh_count,vertex_count,peak_mem,
+  fmt(stream_ms),fmt(terrain_ms),fmt(frame_ms),fmt(build_ms)))
+end
+perf_scene("V1",Query.new(20261015),32,nil,nil)
+mesh_count,vertex_count=0,0
+perf_scene("R2",authored.query,8,{topography=authored.topography,
+ routes=authored.routes,quality="standard"},authored.population)
+love=nil
+
 print("WORLD_STAGE2_TEST_OK seed, masks, seam, query, streaming, revisit")
