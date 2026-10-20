@@ -91,6 +91,25 @@ local stage4_smoke=os.getenv("OSMAN_LOVE_STAGE4_SMOKE")=="1"
 local liquid_smoke=os.getenv("OSMAN_LOVE_LIQUID_SMOKE")=="1"
 local smoke=stage4_smoke or liquid_smoke or os.getenv("OSMAN_LOVE_SMOKE")=="1" or os.getenv("OSMAN_LOVE_INTEGRATION_SMOKE")=="1"
 local frames=0
+local perf_sample={update={},draw={},peakKiB=0}
+local function perf_tick(name,started)
+ local a=perf_sample[name]
+ a[#a+1]=(love.timer.getTime()-started)*1000
+ perf_sample.peakKiB=math.max(perf_sample.peakKiB,collectgarbage("count"))
+end
+local function perf_report(mode)
+ local function metrics(a)
+  local b={} for i,n in ipairs(a) do b[i]=n end
+  table.sort(b)
+  local function q(p) return b[math.max(1,math.ceil(#b*p))] or 0 end
+  return string.format("p50=%.3f p95=%.3f p99=%.3f max=%.3f",
+    q(.5),q(.95),q(.99),q(1))
+ end
+ collectgarbage("collect")
+ print(string.format("CHUNK_CACHE_FRAME_METRICS mode=%s update[%s] draw[%s] peakKiB=%.0f afterGCKiB=%.0f",
+  mode,metrics(perf_sample.update),metrics(perf_sample.draw),
+  perf_sample.peakKiB,collectgarbage("count")))
+end
 local screenshot_done=false
 local stage5_world_shot=false
 local stats={loaded=0,needed=0,pending=0}
@@ -358,6 +377,7 @@ local function keyboard()
   return wx,wy
 end
 function love.update(dt)
+  local perf_begin=love.timer.getTime()
   if cache_pilot_enabled and not boot_ready then
     stats=stream:update(camera,w,h)
     local ready=stats.pending==0 and stats.loaded>0
@@ -371,6 +391,7 @@ function love.update(dt)
        chunk_cache.metrics.hits,chunk_cache.metrics.misses))
       io.stdout:flush()
     end
+    perf_tick("update",perf_begin)
     return
   end
   local ax,ay=keyboard()
@@ -446,8 +467,13 @@ function love.update(dt)
   end
   if not debug_view then camera.x,camera.y=player.x,player.y end
   stats=stream:update(camera,w,h)
+  if os.getenv("OSMAN_CHUNK_CACHE_BASELINE_SMOKE")=="1"
+   or os.getenv("OSMAN_CHUNK_CACHE_SMOKE")=="1" then
+    perf_tick("update",perf_begin)
+  end
 end
 function love.draw()
+  local perf_begin=love.timer.getTime()
   Terrain.draw(stream,camera,w,h,r2_pilot and r2_pilot.render_options)
   if cache_pilot_enabled and not boot_ready then
     local g=love.graphics
@@ -464,6 +490,7 @@ function love.draw()
     g.rectangle("fill",w*.1,h*.5,w*.8*ready/math.max(1,stats.needed),14)
     g.setColor(1,1,1)
     g.print(string.format("%d / %d chunks",ready,stats.needed),w*.1,h*.54)
+    perf_tick("draw",perf_begin)
     return
   end
   object_count=ObjectRenderer.draw(objects,stream,camera,w,h,player,selected_target,harvesting)
@@ -524,6 +551,7 @@ function love.draw()
       love.graphics.captureScreenshot("chunk-cache-baseline.png")
       print(string.format("CHUNK_CACHE_BASELINE_READY ms=%.2f chunks=%d memoryKiB=%.0f",
         (love.timer.getTime()-boot_started)*1000,stats.loaded,collectgarbage("count")))
+      perf_report("baseline")
       io.stdout:flush();love.event.quit();return
     end
   end
@@ -534,6 +562,7 @@ function love.draw()
     print(string.format("CHUNK_CACHE_GAME_SMOKE_OK hits=%d misses=%d writes=%d bytes=%d memoryKiB=%.0f",
      chunk_cache.metrics.hits,chunk_cache.metrics.misses,
      chunk_cache.metrics.writes,chunk_cache.bytes,collectgarbage("count")))
+    perf_report(chunk_cache.metrics.hits>0 and "warm" or "cold")
     io.stdout:flush()
     love.event.quit()
     return
@@ -592,6 +621,10 @@ function love.draw()
     print(string.format("%s frames=%d chunks=%d objects=%d wood=%d stone=%d player=(%.1f,%.1f)",liquid_smoke and "LOVE_LIQUID_SMOKE_OK" or (stage4_smoke and "LOVE_STAGE4_SMOKE_OK" or "LOVE_INTEGRATION_SMOKE_OK"),frames,stats.loaded,object_count,inventory:count("core:wood_log"),inventory:count("core:stone"),player.x,player.y))
     io.stdout:flush()
     love.event.quit()
+  end
+  if os.getenv("OSMAN_CHUNK_CACHE_BASELINE_SMOKE")=="1"
+   or os.getenv("OSMAN_CHUNK_CACHE_SMOKE")=="1" then
+    perf_tick("draw",perf_begin)
   end
 end
 safe_area=function()
