@@ -29,6 +29,9 @@ local stat_smoke=os.getenv("OSMAN_LOVE_STAT_SMOKE")=="1"
 local stat_viewport=os.getenv("OSMAN_STAT_DISPLAY")
 local stage6_world_id=os.getenv("OSMAN_STAGE6_WORLD_ID")
 local r2_pilot_enabled=os.getenv("OSMAN_R2_PILOT")=="1"
+local cache_pilot_enabled=os.getenv("OSMAN_CHUNK_CACHE_PILOT")=="1"
+assert(not (cache_pilot_enabled and stage6_enabled),
+ "experimental geometry cache cannot coexist with Stage6 until accepted")
 assert(not (r2_pilot_enabled and (stage6_enabled or stage6_create or stage6_reopen_smoke)),
   "R2 pilot is session-only; Stage6 save/create/reopen flags are forbidden")
 local r2_pilot=r2_pilot_enabled and require("world.r2_playable").new() or nil
@@ -66,9 +69,15 @@ local stat_hud=StatHud.new()
 local progression -- Session-only until a versioned Stage6 migration is approved.
 local placement_target=nil
 local placement_rotation=0
+local chunk_cache=cache_pilot_enabled and
+  require("world.chunk_cache").new({seed=query.seed,
+   stamp=r2_pilot and "r2-fisilti-20261019-pinned" or "v1-generator-20261015",
+   size=256,step=r2_pilot and 8 or 32,quality="standard"}) or nil
 local stream=Stream.new(query,r2_pilot and
-  {size=256,step=8,max_loaded=48,build_budget=8} or
-  {size=256,step=32,max_loaded=100,build_budget=5})
+  {size=256,step=8,max_loaded=48,build_budget=8,cache=chunk_cache} or
+  {size=256,step=32,max_loaded=100,build_budget=5,cache=chunk_cache})
+local boot_ready=not cache_pilot_enabled
+local boot_started=0
 local camera=Camera.new()
 if r2_pilot then r2_pilot:mount_camera(camera) end
 local joystick=Joystick.new(64)
@@ -196,6 +205,12 @@ local function spawn()
   error("No safe player spawn found within 512 world units")
 end
 function love.load()
+  boot_started=love.timer.getTime()
+  if cache_pilot_enabled and os.getenv("OSMAN_CACHE_DISPLAY") then
+    local ww,hh=os.getenv("OSMAN_CACHE_DISPLAY"):match("^(%d+)x(%d+)$")
+    assert(ww and hh and tonumber(ww)>=320 and tonumber(hh)>=480)
+    assert(love.window.setMode(tonumber(ww),tonumber(hh),{resizable=false}))
+  end
   if stat_smoke and stat_viewport then
     local vw,vh=stat_viewport:match("^(%d+)x(%d+)$")
     assert(vw and vh and tonumber(vw)>=320 and tonumber(vh)>=480,
@@ -343,6 +358,21 @@ local function keyboard()
   return wx,wy
 end
 function love.update(dt)
+  if cache_pilot_enabled and not boot_ready then
+    stats=stream:update(camera,w,h)
+    local ready=stats.pending==0 and stats.loaded>0
+    for _,c in ipairs(stream:visible()) do
+      if not c._terrain_meshes then ready=false;break end
+    end
+    if ready then
+      boot_ready=true
+      print(string.format("CHUNK_CACHE_GAME_READY ms=%.2f hits=%d misses=%d",
+       (love.timer.getTime()-boot_started)*1000,
+       chunk_cache.metrics.hits,chunk_cache.metrics.misses))
+      io.stdout:flush()
+    end
+    return
+  end
   local ax,ay=keyboard()
   player:update(dt,ax,ay)
   if selected_target and not harvesting.active and (not stage4_smoke or stage4_before) then
@@ -419,6 +449,23 @@ function love.update(dt)
 end
 function love.draw()
   Terrain.draw(stream,camera,w,h,r2_pilot and r2_pilot.render_options)
+  if cache_pilot_enabled and not boot_ready then
+    local g=love.graphics
+    local ready=0
+    for _,c in ipairs(stream:visible()) do
+      if c._terrain_meshes then ready=ready+1 end
+    end
+    g.clear(.04,.07,.08,1)
+    g.setColor(.93,.96,.90)
+    g.print("Preparing the world",math.max(20,w*.1),h*.44)
+    g.setColor(.19,.39,.38)
+    g.rectangle("fill",w*.1,h*.5,w*.8,14)
+    g.setColor(.53,.85,.68)
+    g.rectangle("fill",w*.1,h*.5,w*.8*ready/math.max(1,stats.needed),14)
+    g.setColor(1,1,1)
+    g.print(string.format("%d / %d chunks",ready,stats.needed),w*.1,h*.54)
+    return
+  end
   object_count=ObjectRenderer.draw(objects,stream,camera,w,h,player,selected_target,harvesting)
   local ghost
   if not r2_pilot and stage_hud.placing and placement_target then
@@ -467,6 +514,16 @@ function love.draw()
   g.circle("fill",bx+joystick.dx*55,by+joystick.dy*55,22)
   g.setColor(1,1,1)
   frames=frames+1
+  if cache_pilot_enabled and os.getenv("OSMAN_CHUNK_CACHE_SMOKE")=="1"
+    and frames>=60 and stats.pending==0 then
+    love.graphics.captureScreenshot("chunk-cache-game.png")
+    print(string.format("CHUNK_CACHE_GAME_SMOKE_OK hits=%d misses=%d writes=%d bytes=%d",
+     chunk_cache.metrics.hits,chunk_cache.metrics.misses,
+     chunk_cache.metrics.writes,chunk_cache.bytes))
+    io.stdout:flush()
+    love.event.quit()
+    return
+  end
   if stat_smoke and frames>=25 and stats.loaded>0 and stats.pending==0 then
     assert(progression:stat("etkime")==2 and progression.state.unspent_points==1)
     love.graphics.captureScreenshot("core-stat-progression-smoke"
