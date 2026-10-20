@@ -67,3 +67,36 @@ transfer consciousness, activate skills, or persist progression in save_v2.
 Stage6 explicit play does NOT award session XP to avoid non-atomic cross-save commits.
 The HUD displays SESSION ONLY / NOT SAVED. Do not mistake test snapshot/restore
 for production durable saving. A new versioned save contract and migration are required.
+
+## Manual performance investigation: 10x long traversal (expensive)
+
+Run **only** after chunk streaming, terrain, GPU allocation, cache, camera, or
+memory behavior changes, when investigating frame stalls, or before a risky
+performance release. **Do not** run for routine edits, small tests, asset/UI
+changes, or every CI push. Standard Lua regression parses the profiler only;
+the full traversal is never part of routine `quality.yml`.
+
+From the repository root, on a system with LÖVE, Python3, `timeout` and
+optionally Xvfb:
+
+```sh
+bash game/love/tests/run_r2_long_traversal.sh
+```
+
+The script uses an **isolated disposable XDG_DATA_HOME** and three real-engine
+runs (cache off / cold / warm), with the same seed, 10x scripted world-space
+movement and two laps across a large area. Each **actual rendered frame** gets
+wall-clock frame-ms/derived instantaneous FPS, update/terrain/object timings,
+mesh allocation call durations, cache counters, resident/pending/build jobs,
+memory and GPU-reported counters in CSV. A separate timestamped event log
+correlates sudden spikes with chunk generation/eviction, mesh completion,
+cache reads/writes, background prefetch, and large heap drops. One JSON summary
+per mode gives p50/p95/p99/max and stall counts. Evidence is retained in the
+path printed by the runner, which has a default 120-second **per-mode** timeout
+(overridable with `OSMAN_PROFILE_TIMEOUT_SEC`). The test's virtual 10x travel
+speed does **not** accelerate actual CPU/GPU work, and it does **not** validate
+player collision, Android hardware FPS, or GPU execution timestamps.
+
+The expensive GitHub cache workflow is explicitly `workflow_dispatch`-only;
+the long-run test can be run manually with the script above when needed. Do not
+treat an unexecuted or skipped long-run test as passing.
