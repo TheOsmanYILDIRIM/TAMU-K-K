@@ -25,6 +25,8 @@ function Stream.new(query, opts)
     query=query,chunker=chunker,
     max_loaded=max_loaded,build_budget=build_budget,
     generation_ms=generation_ms,jobs={},cache=opts.cache,
+    prefetch_options=opts.prefetch_options,
+    prefetch_done={},prefetch_job=nil,previous_camera=nil,
     resident={}, ordered={}, wanted_count=0
   }, Stream)
 end
@@ -171,6 +173,69 @@ function Stream:update(camera,width,height,budget)
         if clock()>=save_deadline then break end
       end
     end
+  end
+  -- Low-priority prefetch: builds complete CPU geometry for nearby unseen
+  -- chunks, writes immutable cache files, and NEVER creates GPU resources.
+  -- Do not compete with visibility or outstanding mesh creation.
+  if self.cache and self.prefetch_options and clock
+    and #ordered==#candidates then
+    local ready=true
+    for _,chunk in ipairs(ordered) do
+      if not chunk._terrain_meshes or chunk._cache_payload then
+        ready=false;break
+      end
+    end
+    if ready then
+      local job=self.prefetch_job
+      if job and want[job.key] then self.prefetch_job=nil;job=nil end
+      if not job then
+        local minx,miny,maxx,maxy=view_range(camera,width,height,self.chunker.size)
+        local lookx,looky=0,0
+        if self.previous_camera then
+          lookx=camera.x-self.previous_camera.x
+          looky=camera.y-self.previous_camera.y
+        end
+        local best,best_score
+        for cy=miny-1,maxy+1 do for cx=minx-1,maxx+1 do
+          local key=Chunks.key(cx,cy)
+          if not want[key] and not self.prefetch_done[key]
+            and not self.cache:has(cx,cy) then
+            local dx=(cx+.5)*self.chunker.size-camera.x
+            local dy=(cy+.5)*self.chunker.size-camera.y
+            local score=dx*dx+dy*dy-2*self.chunker.size*
+              (dx*math.max(-1,math.min(1,lookx/64))+
+               dy*math.max(-1,math.min(1,looky/64)))
+            if not best or score<best_score then
+              best={key=key,cx=cx,cy=cy};best_score=score
+            end
+          end
+        end end
+        if best then
+          local item=best
+          job={key=item.key,thread=coroutine.create(function()
+            local checkpoint=function() coroutine.yield() end
+            local chunk=self.chunker:build(item.cx,item.cy,checkpoint)
+            local Terrain=require("world.terrain_renderer")
+            Terrain.prepare_cpu(chunk,self.query,self.prefetch_options,checkpoint)
+            return self.cache:write(item.cx,item.cy,chunk._cache_payload,checkpoint)
+          end)}
+          self.prefetch_job=job
+        end
+      end
+      if job then
+        local until_time=clock()+.001
+        repeat
+          local ok,result=coroutine.resume(job.thread)
+          assert(ok,result)
+          if coroutine.status(job.thread)=="dead" then
+            self.prefetch_done[job.key]=true
+            self.prefetch_job=nil
+            break
+          end
+        until clock()>=until_time
+      end
+    end
+    self.previous_camera={x=camera.x,y=camera.y}
   end
   return {created=created, loaded=#ordered, needed=#candidates,
           pending=#candidates-#ordered}
