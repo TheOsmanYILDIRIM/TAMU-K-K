@@ -545,6 +545,13 @@ function love.draw()
   g.circle("fill",bx+joystick.dx*55,by+joystick.dy*55,22)
   g.setColor(1,1,1)
   frames=frames+1
+  if cache_pilot_enabled and os.getenv("OSMAN_CHUNK_CACHE_PREFETCH_SMOKE")=="1"
+    and boot_ready and (chunk_cache.metrics.prefetch_writes or 0)>=1 then
+    print(string.format("CHUNK_CACHE_PREFETCH_OK prepared=%d bytes=%d",
+      chunk_cache.metrics.prefetch_writes,chunk_cache.bytes))
+    perf_report("prefetch")
+    io.stdout:flush();love.event.quit();return
+  end
   if os.getenv("OSMAN_CHUNK_CACHE_BASELINE_SMOKE")=="1" and frames>=60
    and stats.pending==0 then
     local complete=true
@@ -563,9 +570,10 @@ function love.draw()
     and frames>=60 and stats.pending==0
     and chunk_cache.metrics.writes+chunk_cache.metrics.hits>=stats.loaded then
     love.graphics.captureScreenshot("chunk-cache-game.png")
-    print(string.format("CHUNK_CACHE_GAME_SMOKE_OK hits=%d misses=%d writes=%d bytes=%d memoryKiB=%.0f",
-     chunk_cache.metrics.hits,chunk_cache.metrics.misses,
-     chunk_cache.metrics.writes,chunk_cache.bytes,collectgarbage("count")))
+    print(string.format("CHUNK_CACHE_GAME_SMOKE_OK hits=%d misses=%d invalid=%d writes=%d prefetch=%d bytes=%d memoryKiB=%.0f",
+     chunk_cache.metrics.hits,chunk_cache.metrics.misses,chunk_cache.metrics.invalid,
+     chunk_cache.metrics.writes,chunk_cache.metrics.prefetch_writes or 0,
+     chunk_cache.bytes,collectgarbage("count")))
     perf_report(chunk_cache.metrics.hits>0 and "warm" or "cold")
     io.stdout:flush()
     love.event.quit()
