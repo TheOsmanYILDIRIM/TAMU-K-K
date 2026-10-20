@@ -4,8 +4,11 @@
 -- It does NOT validate physics, Android, display refresh, or GPU execution time.
 local M={}
 M.__index=M
-local route={{64,128},{704,128},{2048,128},{2048,1536},
- {-768,1536},{-768,-384},{64,128}}
+-- 10x simulated movement per actual rendered frame; never inflate measured FPS.
+-- Two identical laps cover dry terrain, river, dense objects and new chunk seams.
+local speed_multiplier=10
+local route={{64,128},{704,128},{2048,128},{3328,960},
+ {3328,2048},{-1536,2048},{-1536,-896},{64,128}}
 local function now() return love.timer.getTime() end
 local function cell(x) return math.floor(x/256) end
 local function finite(x) return x==x and x<math.huge and x>-math.huge end
@@ -81,7 +84,7 @@ function M:event(kind,cx,cy,value,context)
 end
 function M:advance(player,camera)
  assert(not self.completed,"advance after benchmark completion")
- local remaining=24 -- world units per RENDERED frame, same path for every mode
+ local remaining=24*speed_multiplier -- 10x route progression, real timings untouched
  while remaining>0 do
   local next=route[self.segment]
   local dx,dy=next[1]-self.pos[1],next[2]-self.pos[2]
@@ -111,6 +114,7 @@ function M:beforeUpdate(player,camera)
  self.frame_mesh,self.frame_vertices,self.frame_gpu_ms=0,0,0
  self:update_start=now()
  self:advance(player,camera)
+ assert(self.frame<=600,"benchmark exceeded hard 600-frame cap")
  local key=cell(camera.x)..":"..cell(camera.y)
  if not self.unique[key] then
   self.unique[key]=true
@@ -182,7 +186,7 @@ function M:finish()
  "chunk_x","chunk_y","frame_ms","fps","update_ms","draw_ms","cpu_ms",
  "loaded","needed","pending","build_jobs","terrain_jobs",
  "cache_hits","cache_misses","cache_writes","prefetch_writes","cache_invalid",
- "gpu_new_mesh","gpu_new_vertices","gpu_new_mesh_ms","objects","lua_heap_kib",
+ "mesh_alloc_calls","mesh_vertices","mesh_alloc_cpu_call_ms","objects","lua_heap_kib",
  "gpu_texture_bytes","gpu_drawcalls"}}
  for _,r in ipairs(self.samples) do csv[#csv+1]=r end
  local log={{"frame","elapsed_s","event","chunk_x","chunk_y","elapsed_ms","context"}}
@@ -191,6 +195,7 @@ function M:finish()
  assert(love.filesystem.write(prefix.."-events.csv",serialize(log)))
  local summary={
   mode=self.mode,seed=20261018,frames=self.frame,route_laps=2,
+  speed_multiplier=speed_multiplier,max_frame_budget=600,
   distinct_camera_chunks=counts(self.unique),events=#self.events,
   stalls_over_33ms=self.total_spikes,min_fps=minfps,
   frame_ms={p50=percentile(dt,.5),p95=percentile(dt,.95),
@@ -202,7 +207,8 @@ function M:finish()
   peak_lua_heap_kib=peak,total_gpu_mesh_allocations=self.total_meshes,
   cache=self.cache and self.cache.metrics or {},
   cache_size_bytes=self.cache and self.cache.bytes or 0,
-  synthetic_motion=true,physics_not_tested=true,android_not_tested=true}
+  synthetic_motion=true,physics_not_tested=true,android_not_tested=true,
+  gpu_execution_time_not_measured=true}
  local Json=require("save.json")
  assert(love.filesystem.write(prefix.."-summary.json",Json.encode(summary)))
  print(string.format(
