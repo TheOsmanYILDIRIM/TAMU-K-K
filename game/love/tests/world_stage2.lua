@@ -234,7 +234,7 @@ assert(loadfile("tests/r2_long_traversal.lua"),"long traversal profiler syntax i
 local Renderer=require("objects.renderer")
 local objA={id="worldobj:v1:1:1:1",cx=0,cy=0,x=32,y=36,radius=6}
 local objB={id="worldobj:v1:1:2:2",cx=1,cy=0,x=280,y=40,radius=7}
-local objWrong={id="worldobj:v1:1:3:3",cx=0,cy=0,x=255,y=64,radius=3}
+local objWrong={id="worldobj:v1:1:3:3",cx=2,cy=0,x=512,y=64,radius=3}
 local calls=0
 local depleted={}
 local fixtureWorld={generator_version=1}
