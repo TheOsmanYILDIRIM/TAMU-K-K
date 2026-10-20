@@ -226,4 +226,6 @@ print("CHUNK_PERF_INCREMENTAL_OK frames="..nframes.." layers=5 parity=1 eviction
 
 love=nil
 
+-- Lightweight syntax gate; the expensive travel simulation is manual-only.
+assert(loadfile("tests/r2_long_traversal.lua"),"long traversal profiler syntax invalid")
 print("WORLD_STAGE2_TEST_OK seed, masks, seam, query, streaming, revisit")
