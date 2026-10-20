@@ -132,6 +132,7 @@ function M:beforeUpdate(player,camera)
  self.frame_mesh,self.frame_vertices,self.frame_gpu_ms=0,0,0
  self.terrain_ms,self.objects_ms=0,0
  self.update_start=now()
+ if self.frame==1 then self.start=self.update_start;self.last=nil end
  self:advance(player,camera)
  assert(self.frame<=600,"benchmark exceeded hard 600-frame cap")
  local key=cell(camera.x)..":"..cell(camera.y)
@@ -164,7 +165,7 @@ function M:beforeDraw()
 end
 function M:afterDraw(object_count)
  local finish=now()
- local frame_dt=(finish-self.last)*1000
+ local frame_dt=(finish-(self.last or self.draw_start))*1000
  self.last=finish
  local draw_ms=(finish-self.draw_start)*1000
  local update_ms=self.update_ms or 0
