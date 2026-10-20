@@ -55,9 +55,23 @@ jobs:
             cp "$shot" "/tmp/osman-cache-artifacts/$mode.png"
             file "/tmp/osman-cache-artifacts/$mode.png" | grep -q 'PNG image data'
           done
-          grep -E 'CHUNK_CACHE_(GAME_READY|BASELINE_READY|GAME_SMOKE_OK)' /tmp/osman-{baseline,cold,warm}.log
-          test "$(find "$XDG_DATA_HOME" -name '*.osc' | wc -l)" -ge 1
-          cp /tmp/osman-{baseline,cold,warm}.log /tmp/osman-cache-artifacts/
+          grep -E 'CHUNK_CACHE_(GAME_READY|BASELINE_READY|GAME_SMOKE_OK|FRAME_METRICS)' /tmp/osman-{baseline,cold,warm}.log
+          test "$(find "$XDG_DATA_HOME" -name '*.osc' | wc -l)" -ge 42
+          # A corrupt disposable mesh must regenerate, never alter Stage6 or authored files.
+          target="$(find "$XDG_DATA_HOME" -name '0_0.osc' -print -quit)"
+          test -n "$target"
+          printf 'corrupt experimental cache' > "$target"
+          export OSMAN_CHUNK_CACHE_PILOT=1
+          export OSMAN_CHUNK_CACHE_SMOKE=1
+          timeout 240s xvfb-run -a love game/love 2>&1 | tee /tmp/osman-repair.log
+          grep -q 'CHUNK_CACHE_GAME_SMOKE_OK' /tmp/osman-repair.log
+          grep -E 'CHUNK_CACHE_GAME_SMOKE_OK.*invalid=[1-9]' /tmp/osman-repair.log
+          # A warmed world should prepare an additional unseen chunk only in idle time.
+          export OSMAN_CHUNK_CACHE_SMOKE=0
+          export OSMAN_CHUNK_CACHE_PREFETCH_SMOKE=1
+          timeout 240s xvfb-run -a love game/love 2>&1 | tee /tmp/osman-prefetch.log
+          grep -q 'CHUNK_CACHE_PREFETCH_OK' /tmp/osman-prefetch.log
+          cp /tmp/osman-{baseline,cold,warm,repair,prefetch}.log /tmp/osman-cache-artifacts/
       - name: Upload real screenshot and benchmark logs
         if: always()
         uses: actions/upload-artifact@v4
