@@ -78,6 +78,13 @@ local stream=Stream.new(query,r2_pilot and
    prefetch_options=cache_pilot_enabled and r2_pilot.render_options or nil} or
   {size=256,step=32,max_loaded=100,build_budget=5,cache=chunk_cache,
    prefetch_options=cache_pilot_enabled and {quality="standard"} or nil})
+local long_mode=os.getenv("OSMAN_R2_LONG_TRAVERSAL")
+assert(not long_mode or
+  (r2_pilot_enabled and not stage6_enabled and
+   (long_mode=="baseline" or long_mode=="cold" or long_mode=="warm") and
+   cache_pilot_enabled==(long_mode~="baseline")),
+  "long traversal requires R2 + matching cache mode, no Stage6")
+local long_driver
 local boot_ready=not cache_pilot_enabled
 local boot_started=0
 local camera=Camera.new()
@@ -276,6 +283,9 @@ function love.load()
     end)
   end
   player=spawn()
+  if long_mode then
+    long_driver=require("tests.r2_long_traversal").new(long_mode,stream,chunk_cache)
+  end
   -- Cold-boot and baseline must use the SAME R2 spawn camera before draw.
   if cache_pilot_enabled then camera.x,camera.y=player.x,player.y end
   if stage6_session then
@@ -398,8 +408,12 @@ function love.update(dt)
     perf_tick("update",perf_begin)
     return
   end
-  local ax,ay=keyboard()
-  player:update(dt,ax,ay)
+  if long_driver then
+    long_driver:beforeUpdate(player,camera)
+  else
+    local ax,ay=keyboard()
+    player:update(dt,ax,ay)
+  end
   if selected_target and not harvesting.active and (not stage4_smoke or stage4_before) then
     local o=objects:get(selected_target)
     if not o or objects:is_depleted(selected_target) then selected_target=nil
@@ -471,6 +485,7 @@ function love.update(dt)
   end
   if not debug_view then camera.x,camera.y=player.x,player.y end
   stats=stream:update(camera,w,h)
+  if long_driver then long_driver:afterUpdate(stats) end
   if os.getenv("OSMAN_CHUNK_CACHE_BASELINE_SMOKE")=="1"
    or os.getenv("OSMAN_CHUNK_CACHE_SMOKE")=="1" then
     perf_tick("update",perf_begin)
@@ -478,6 +493,7 @@ function love.update(dt)
 end
 function love.draw()
   local perf_begin=love.timer.getTime()
+  if long_driver and boot_ready then long_driver:beforeDraw() end
   Terrain.draw(stream,camera,w,h,r2_pilot and r2_pilot.render_options)
   if cache_pilot_enabled and not boot_ready then
     local g=love.graphics
@@ -637,6 +653,9 @@ function love.draw()
   if os.getenv("OSMAN_CHUNK_CACHE_BASELINE_SMOKE")=="1"
    or os.getenv("OSMAN_CHUNK_CACHE_SMOKE")=="1" then
     perf_tick("draw",perf_begin)
+  end
+  if long_driver and boot_ready then
+    long_driver:afterDraw(object_count)
   end
 end
 safe_area=function()
