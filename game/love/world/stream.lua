@@ -15,12 +15,16 @@ function Stream.new(query, opts)
   local chunker = Chunks.new(query, opts)
   local max_loaded = opts.max_loaded or 144
   local build_budget = opts.build_budget or 4
+  local generation_ms = opts.generation_ms or 3
+  assert(type(generation_ms)=="number" and generation_ms>0
+    and generation_ms<math.huge, "invalid time budget")
   assert(max_loaded > 0 and max_loaded == math.floor(max_loaded)
      and build_budget > 0 and build_budget == math.floor(build_budget),
      "invalid stream budgets")
   return setmetatable({
     query=query,chunker=chunker,
-    max_loaded=max_loaded, build_budget=build_budget,
+    max_loaded=max_loaded,build_budget=build_budget,
+    generation_ms=generation_ms,jobs={},
     resident={}, ordered={}, wanted_count=0
   }, Stream)
 end
@@ -76,14 +80,49 @@ function Stream:update(camera,width,height,budget)
           if mesh and mesh.release then mesh:release() end
         end
       end
+      -- A partially prepared terrain job can already own GPU meshes.
+      if chunk._terrain_stage then
+        for _,mesh in pairs(chunk._terrain_stage) do
+          if mesh and mesh.release then mesh:release() end
+        end
+        chunk._terrain_stage=nil
+      end
+      chunk._terrain_job=nil
       self.resident[key]=nil
     end
   end
+  for key in pairs(self.jobs) do
+    if not want[key] then self.jobs[key]=nil end
+  end
+  local clock=love and love.timer and love.timer.getTime
+  if type(clock)~="function" then clock=nil end
+  local deadline=clock and clock()+self.generation_ms/1000
   local created=0
   for _,c in ipairs(candidates) do
     if not self.resident[c.key] and created<budget then
-      self.resident[c.key]=self.chunker:build(c.cx,c.cy)
-      created=created+1
+      if clock then
+        local job=self.jobs[c.key]
+        if not job then
+          job=coroutine.create(function()
+            return self.chunker:build(c.cx,c.cy,function() coroutine.yield() end)
+          end)
+          self.jobs[c.key]=job
+        end
+        repeat
+          local ok,value=coroutine.resume(job)
+          assert(ok,value)
+          if coroutine.status(job)=="dead" then
+            self.resident[c.key]=value
+            self.jobs[c.key]=nil
+            created=created+1
+            break
+          end
+        until clock()>=deadline
+        if clock()>=deadline then break end
+      else
+        self.resident[c.key]=self.chunker:build(c.cx,c.cy)
+        created=created+1
+      end
     end
   end
   local ordered={}

@@ -17,14 +17,14 @@ function Chunks.key(cx, cy)
   return tostring(cx)..":"..tostring(cy)
 end
 
-function Chunks:build(cx, cy)
+function Chunks:build(cx, cy, checkpoint)
   local key = Chunks.key(cx, cy)
   local x0, y0 = cx*self.size, cy*self.size
   local output = {key=key, cx=cx, cy=cy, x=x0, y=y0, size=self.size, layers={}}
   for _,name in ipairs({"forest","rocky","water"}) do
     output.layers[name] = Marching.build(function(x,y)
       return self.query.field:channel(x,y,name)
-    end, x0,y0,self.size,self.step,0)
+    end, x0,y0,self.size,self.step,0,checkpoint)
   end
   return output
 end

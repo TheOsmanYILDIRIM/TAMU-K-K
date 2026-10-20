@@ -37,11 +37,12 @@ local segments = {
   [11]={{2,3}}, [12]={{2,4}}, [13]={{1,2}}, [14]={{1,4}}
 }
 
-function M.build(sampler, origin_x, origin_y, size, step, threshold)
+function M.build(sampler, origin_x, origin_y, size, step, threshold, checkpoint)
   assert(type(sampler) == "function", "sampler required")
   assert(type(size) == "number" and size > 0
      and type(step) == "number" and step > 0
      and size / step == math.floor(size / step), "step must divide size")
+  assert(checkpoint==nil or type(checkpoint)=="function", "invalid checkpoint")
   threshold = threshold or 0
   local n = size / step
   local rows = {}
@@ -55,6 +56,7 @@ function M.build(sampler, origin_x, origin_y, size, step, threshold)
       row[ix+1] = {x = x, y = y, value = v}
     end
     rows[iy+1] = row
+    if checkpoint then checkpoint() end
   end
   local output = {vertices = {}, contours = {}}
   for iy = 1, n do
@@ -92,6 +94,7 @@ function M.build(sampler, origin_x, origin_y, size, step, threshold)
         end
       end
     end
+    if checkpoint then checkpoint() end
   end
   return output
 end
