@@ -1,8 +1,6 @@
 name: R2 persistent chunk cache experiment
+# Expensive experiment: do not run on routine pushes.
 on:
-  push:
-    branches:
-      - experiment/r2-persistent-chunk-cache-20261020
   workflow_dispatch:
 jobs:
   benchmark:
