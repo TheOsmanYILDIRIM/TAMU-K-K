@@ -6,6 +6,27 @@ local now=0
 local function advance(ms) now=now+ms/1000 end
 local files={}
 local function digest(s) return string.rep(string.char(#s%251),32) end
+-- Portable 64-byte mock vertex records; LuaJIT 2.1 has no string.pack/unpack.
+-- This fixture tests cache bookkeeping, integrity and cooperative timing,
+-- not native LÖVE float64 encoding (which remains production-owned).
+local function pack_vertex(_,_,...)
+ local out={}
+ for i=1,select("#",...) do
+  local value=string.format("%+08.2f",select(i,...))
+  assert(#value==8,"fixture float record overflow")
+  out[#out+1]=value
+ end
+ return table.concat(out)
+end
+local function unpack_vertex(_,buffer,pos)
+ advance(.04)
+ local values={}
+ for i=0,7 do
+  values[i+1]=assert(tonumber(buffer:sub(pos+i*8,pos+i*8+7)))
+ end
+ return values[1],values[2],values[3],values[4],
+   values[5],values[6],values[7],values[8],pos+64
+end
 love={
  timer={getTime=function() return now end},
  filesystem={
@@ -21,8 +42,8 @@ love={
   encode=function(_,_,s) return (s:gsub(".",function(c) return string.format("%02x",c:byte()) end)) end,
   compress=function(_,_,s) return s end,
   decompress=function(_,_,s) advance(13);return s end,
-  pack=function(_,fmt,...) return string.pack(fmt,...) end,
-  unpack=function(fmt,s,pos) advance(.04);return string.unpack(fmt,s,pos) end
+  pack=pack_vertex,
+  unpack=unpack_vertex
  }
 }
 local Cache=require("world.chunk_cache")
