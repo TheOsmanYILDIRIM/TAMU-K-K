@@ -72,13 +72,39 @@ end
 
 -- Production synchronous API stays exact. R2 can drive the same search
 -- cooperatively by checkpointing after each collision call.
-local function search(query,sx,sy,gx,gy,r,cell,max_nodes,checkpoint)
+local function search(query,sx,sy,gx,gy,r,cell,max_nodes,checkpoint,goals)
   W.assert_query(query)
   cell=cell or 16;max_nodes=max_nodes or 2048
   assert(W.finite(cell) and cell>0 and W.finite(r) and r>=0 and
     type(max_nodes)=='number' and max_nodes>=1 and max_nodes%1==0)
   local ax,ay=math.floor(sx/cell+.5),math.floor(sy/cell+.5)
   local bx,by=math.floor(gx/cell+.5),math.floor(gy/cell+.5)
+  -- A single A* for any valid approach cell. No shared/world-persistent
+  -- walkability state: live obstacles are checked by the normal collision API.
+  local target_list,target_keys
+  if goals then
+    target_list,target_keys={},{}
+    for _,goal in ipairs(goals) do
+      assert(type(goal)=='table' and W.finite(goal.x) and W.finite(goal.y),
+        'invalid approach goal')
+      local tx,ty=math.floor(goal.x/cell+.5),math.floor(goal.y/cell+.5)
+      local id=key(tx,ty)
+      if not target_keys[id] then
+        target_list[#target_list+1]={x=tx,y=ty}
+        target_keys[id]=true
+      end
+    end
+    assert(#target_list>0 and #target_list<=16,'unsupported approach goal count')
+  end
+  local function estimate(x,y)
+    if not target_list then return heuristic(x,y,bx,by) end
+    local best=math.huge
+    for _,target in ipairs(target_list) do
+      local h=heuristic(x,y,target.x,target.y)
+      if h<best then best=h end
+    end
+    return best
+  end
   local function checked_stand(x,y)
     local result=C.can_stand(query,x,y,r)
     if checkpoint then checkpoint() end
@@ -113,10 +139,10 @@ local function search(query,sx,sy,gx,gy,r,cell,max_nodes,checkpoint)
       return nil,'start_connector_blocked'
     end
   end
-  if not free(bx,by) then return nil,'goal_blocked' end
+  if not target_list and not free(bx,by) then return nil,'goal_blocked' end
 
   local start=key(ax,ay)
-  local root={key=start,x=ax,y=ay,g=0,f=heuristic(ax,ay,bx,by)}
+  local root={key=start,x=ax,y=ay,g=0,f=estimate(ax,ay)}
   local nodes={[start]=root}
   local closed={}
   local put,take,rise,position=open_set()
@@ -127,7 +153,8 @@ local function search(query,sx,sy,gx,gy,r,cell,max_nodes,checkpoint)
     if not cur then return nil,'unreachable' end
     visited=visited+1
     if visited>max_nodes then return nil,'search_limit' end
-    if cur.x==bx and cur.y==by then
+    if (target_keys and target_keys[cur.key]) or
+      (not target_list and cur.x==bx and cur.y==by) then
       local result={}
       while cur.key~=start do
         result[#result+1]={x=cur.x*cell,y=cur.y*cell}
@@ -151,7 +178,7 @@ local function search(query,sx,sy,gx,gy,r,cell,max_nodes,checkpoint)
           ((d[1]==0 or d[2]==0) or
             (free(cur.x+d[1],cur.y) and free(cur.x,cur.y+d[2])))
           and clear_edge(cur.x,cur.y,x,y) then
-          local f=g+heuristic(x,y,bx,by)
+          local f=g+estimate(x,y)
           if node then
             node.g,node.f,node.parent=g,f,cur.key
             rise(assert(position[k],'an open candidate lost its heap slot'))
@@ -172,6 +199,28 @@ end
 
 -- R2-only cooperative search. An individual collision call is not preemptible,
 -- but elapsed time and count are bounded between coroutine checkpoints.
+local function make_runner(worker)
+  local run={}
+  function run:step(budget_ms,max_queries)
+    assert(coroutine.status(worker)~="dead","completed path search")
+    budget_ms=budget_ms or 2
+    max_queries=max_queries or 8
+    assert(type(budget_ms)=="number" and budget_ms>0 and budget_ms<math.huge)
+    assert(type(max_queries)=="number" and max_queries>=1 and
+      max_queries%1==0)
+    local clock=(love and love.timer and love.timer.getTime) or os.clock
+    local end_at=clock()+budget_ms/1000
+    for _=1,max_queries do
+      local ok,result,reason=coroutine.resume(worker)
+      if not ok then error(result,2) end
+      if coroutine.status(worker)=="dead" then return true,result,reason end
+      if clock()>=end_at then break end
+    end
+    return false
+  end
+  return run
+end
+
 function P.begin(query,sx,sy,gx,gy,r,cell,max_nodes)
   local worker=coroutine.create(function()
     -- R2-only tap shortcut: prove a clear, short direct line with the same
@@ -229,26 +278,87 @@ function P.begin(query,sx,sy,gx,gy,r,cell,max_nodes)
     -- exactly as before. Stage5/6 still call unchanged synchronous P.find.
     return search(query,sx,sy,gx,gy,r,cell,max_nodes,coroutine.yield)
   end)
-  local run={}
-  function run:step(budget_ms,max_queries)
-    assert(coroutine.status(worker)~="dead","completed path search")
-    budget_ms=budget_ms or 2
-    max_queries=max_queries or 8
-    assert(type(budget_ms)=="number" and budget_ms>0 and budget_ms<math.huge)
-    assert(type(max_queries)=="number" and max_queries>=1 and
-      max_queries%1==0)
-    local clock=(love and love.timer and love.timer.getTime) or os.clock
-    local end_at=clock()+budget_ms/1000
-    for _=1,max_queries do
-      local ok,result,reason=coroutine.resume(worker)
-      if not ok then error(result,2) end
-      if coroutine.status(worker)=="dead" then
-        return true,result,reason
-      end
-      if clock()>=end_at then break end
+  return make_runner(worker)
+end
+
+-- R2-only object interaction. Evaluate all approach points in ONE search,
+-- not up to eight independent 1024-node A* searches per tap. A short, live
+-- collision-validated approach is tried first. A blocked line falls back to
+-- one shared search with admissible minimum-of-goals octile heuristic.
+function P.begin_any(query,sx,sy,goals,r,cell,max_nodes)
+  W.assert_query(query)
+  assert(type(goals)=='table' and #goals>0 and #goals<=16,
+    'invalid approach destinations')
+  assert(W.finite(sx) and W.finite(sy) and W.finite(r) and r>=0)
+  cell=cell or 16
+  assert(W.finite(cell) and cell>0)
+  local targets={}
+  local seen={}
+  for i,g in ipairs(goals) do
+    assert(type(g)=='table' and W.finite(g.x) and W.finite(g.y),
+      'nonfinite approach destination')
+    local x=math.floor(g.x/cell+.5)*cell
+    local y=math.floor(g.y/cell+.5)*cell
+    local k=key(x,y)
+    if not seen[k] then
+      targets[#targets+1]={x=x,y=y,dist=(x-sx)^2+(y-sy)^2,index=i}
+      seen[k]=true
     end
-    return false
   end
-  return run
+  table.sort(targets,function(a,b)
+    if a.dist~=b.dist then return a.dist<b.dist end
+    return a.index<b.index
+  end)
+  local worker=coroutine.create(function()
+    -- A 32-unit sweep keeps R2 topography collider bounds small. Yield after
+    -- each real collision; the player's own CCD remains authoritative.
+    local initial=C.can_stand(query,sx,sy,r)
+    coroutine.yield()
+    if initial then
+      local ax=math.floor(sx/cell+.5)*cell
+      local ay=math.floor(sy/cell+.5)*cell
+      local start_ok=C.can_stand(query,ax,ay,r)
+      coroutine.yield()
+      if start_ok then
+        local connector=true
+        if ax~=sx or ay~=sy then
+          local ex,ey,hit=C.move(query,sx,sy,ax-sx,ay-sy,r)
+          connector=not hit and math.abs(ex-ax)<1e-5 and math.abs(ey-ay)<1e-5
+          coroutine.yield()
+        end
+        if connector then
+          for _,goal in ipairs(targets) do
+            local delta_x,delta_y=goal.x-sx,goal.y-sy
+            local length=math.sqrt(goal.dist)
+            if length<=640 then
+              local valid=C.can_stand(query,goal.x,goal.y,r)
+              coroutine.yield()
+              if valid then
+                local n=math.max(1,math.ceil(length/32))
+                local px,py=sx,sy
+                local clear=true
+                for k=1,n do
+                  local x=sx+delta_x*k/n
+                  local y=sy+delta_y*k/n
+                  local ex,ey,hit=C.move(query,px,py,x-px,y-py,r)
+                  coroutine.yield()
+                  if hit or math.abs(ex-x)>1e-5 or math.abs(ey-y)<1e-5 then
+                    clear=false;break
+                  end
+                  px,py=x,y
+                end
+                if clear then
+                  if length<1e-7 then return {},nil end
+                  return {{x=goal.x,y=goal.y}},nil
+                end
+              end
+            end
+          end
+        end
+      end
+    end
+    return search(query,sx,sy,0,0,r,cell,max_nodes,coroutine.yield,targets)
+  end)
+  return make_runner(worker)
 end
 return P
