@@ -23,6 +23,7 @@ jobs:
       - name: Validate mobile probe percentiles and diagnostic mode isolation
         run: |
           (cd game/love && lua5.4 tests/r2_android_probe.lua)
+          (cd game/love && lua5.4 tests/r2_topography_surface.lua && luajit tests/r2_topography_surface.lua)
       - name: Make standalone R2 package in a disposable staging copy
         shell: bash
         run: |

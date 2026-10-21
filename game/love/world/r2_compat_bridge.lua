@@ -31,7 +31,10 @@ function M.new(a,m)
  local Valley=require("world.r2_valley_surface")
  local valley=Valley.new(features)
  local topography=Topo.new({
-  height_at=function(x,y) return valley:height(region_query,x,y) end
+  height_at=function(x,y) return valley:height(region_query,x,y) end,
+  -- Explicit R2 static-world opt-in: preserve the exact 5-point cliff
+  -- classification while reusing it during repeated fixed physics steps.
+  static_collider_cache=true
  })
  local site
  for _,s in ipairs(m.sites) do

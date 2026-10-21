@@ -71,7 +71,12 @@ function M.new(opts)
   return setmetatable({height_at=sample_height,zones=zones,gentle_grade=gentle,
     max_walk_grade=max_walk,max_ramp_grade=max_ramp,max_step_rise=max_step,
     max_build_grade=build_grade,max_build_delta=build_delta,
-    sample_stride=stride,gradient_step=gradient_step},M)
+    sample_stride=stride,gradient_step=gradient_step,
+    -- R2 authored/Generator v1 height is immutable. Dynamic/production
+    -- topography MUST leave this disabled, keeping every collider live.
+    _collider_cache=opts.static_collider_cache and {
+      values={},keys={},count=0,cursor=1,limit=8192,hits=0,misses=0
+    } or nil},M)
 end
 
 function M:height(x,y)
@@ -198,12 +203,33 @@ function M:colliders(min_x,min_y,max_x,max_y,cell)
   local result={}
   for iy=iy0,iy1 do for ix=ix0,ix1 do
     local x,y=ix*cell,iy*cell
-    -- Multi-point sampling is conservative for narrow cliff strips.
-    local points={{x,y},{x+cell,y},{x,y+cell},{x+cell,y+cell},{x+cell/2,y+cell/2}}
-    local cliff=false
-    for _,p in ipairs(points) do
-      if not self:zone(p[1],p[2]) and
-         self:sample(p[1],p[2]).class == "cliff" then cliff=true;break end
+    local cache=self._collider_cache
+    local id=cache and (cell..":"..ix..":"..iy)
+    local cliff=cache and cache.values[id]
+    if cliff==nil then
+      -- Multi-point sampling is conservative for narrow cliff strips.
+      -- Cache only the immutable *boolean*, not mutable obstacle rectangles.
+      local points={{x,y},{x+cell,y},{x,y+cell},{x+cell,y+cell},{x+cell/2,y+cell/2}}
+      cliff=false
+      for _,p in ipairs(points) do
+        if not self:zone(p[1],p[2]) and
+           self:sample(p[1],p[2]).class == "cliff" then cliff=true;break end
+      end
+      if cache then
+        if cache.count < cache.limit then
+          cache.count=cache.count+1
+          cache.keys[cache.count]=id
+        else
+          local pos=cache.cursor
+          cache.values[cache.keys[pos]]=nil
+          cache.keys[pos]=id
+          cache.cursor=pos%cache.limit+1
+        end
+        cache.values[id]=cliff
+        cache.misses=cache.misses+1
+      end
+    else
+      cache.hits=cache.hits+1
     end
     if cliff then result[#result+1]={x=x,y=y,w=cell,h=cell} end
   end end

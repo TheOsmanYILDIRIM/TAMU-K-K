@@ -93,4 +93,42 @@ fails(function() Topo.new({height_at=function()return 0 end,
  {id="b",kind="steps",min_x=1,min_y=1,max_x=3,max_y=3}}}) end)
 local wrapped=Topo.new({world={get_height=function(self,x,y) return x+y end}})
 approx(wrapped:height(12,-4),8)
+
+-- A full 180 physics-step idle/move episode must reuse immutable cliff
+-- classifications but keep the exact obstacle rectangles and their order.
+local checks=0
+local function h(x,y)
+ checks=checks+1
+ return x>=16 and 16 or 0
+end
+local raw=Topo.new({height_at=h})
+local fast=Topo.new({height_at=h,static_collider_cache=true})
+for _,bounds in ipairs({{-16,-16,32,32},{0,0,32,32},{4,4,12,12},
+  {-24,-8,8,16},{9,9,23,23},{-8,-8,24,24}}) do
+ local a=raw:colliders(bounds[1],bounds[2],bounds[3],bounds[4],8)
+ local b=fast:colliders(bounds[1],bounds[2],bounds[3],bounds[4],8)
+ assert(#a==#b,"R2 collider cache changed cliff count")
+ for i=1,#a do
+  for _,key in ipairs({"x","y","w","h"}) do
+   assert(a[i][key]==b[i][key],"cliff rectangle changed "..key)
+  end
+ end
+end
+local before=checks
+local original=fast:colliders(0,0,32,32,8)
+for _=1,180 do
+ local current=fast:colliders(0,0,32,32,8)
+ assert(#current==#original)
+end
+assert(checks==before,"cached repeated geometry must not resample height")
+assert(fast._collider_cache.hits>=180*16 and fast._collider_cache.misses>0)
+assert(fast._collider_cache.count<=fast._collider_cache.limit)
+-- Mutable worlds are not cached by default; moving a cliff must stay live.
+local current_slope=0
+local dynamic=Topo.new({height_at=function(x,y) return x*current_slope end})
+assert(#dynamic:colliders(0,0,16,16,8)==0)
+current_slope=1
+assert(#dynamic:colliders(0,0,16,16,8)==4)
+print("R2_STATIC_COLLIDER_CACHE_PARITY_OK unchanged_rects=180x16")
+
 print("R2 topography contract, ramps, steps, sight, building, chunks, colliders OK")
