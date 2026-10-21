@@ -58,7 +58,10 @@ function M:step(ax,ay)
   local dx,dy=ax*speed*STEP,ay*speed*STEP
   local ox,oy=self.x,self.y
   self.x,self.y,self.blocked=C.move(self.query,self.x,self.y,dx,dy,self.radius)
-  local new_surface=surface_at(self.query,self.x,self.y)
+  -- The surface is sampled once when the collision leaves position unchanged.
+  -- Recheck it on every fixed step (not across steps): terrain can change at rest.
+  local new_surface=(self.x==ox and self.y==oy) and surface
+    or surface_at(self.query,self.x,self.y)
   self.surface_multiplier=new_surface.speed_multiplier
   self.immersion=new_surface.immersion
   local moved_x,moved_y=self.x-ox,self.y-oy

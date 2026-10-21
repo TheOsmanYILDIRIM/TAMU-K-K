@@ -85,4 +85,48 @@ assert(nav.path==nil)
 assert(nav:navigate_to(48,0,8,250))
 nav:update(1/60,-1,0)
 assert(nav.path==nil,'direct manual input overrides route')
+-- Idle optimization must not cache across physics steps or skip collision checks.
+local surface_calls,obstacle_calls=0,0
+local wet=false
+local tracked={
+  obstacles=function()
+    obstacle_calls=obstacle_calls+1
+    return {}
+  end,
+  surface_at=function()
+    surface_calls=surface_calls+1
+    return {speed_multiplier=wet and .55 or 1,immersion=wet and .5 or 0}
+  end
+}
+local idle=Player.new(tracked,{x=40,y=40,radius=2,speed=60})
+assert(surface_calls==1 and obstacle_calls==1,'spawn validates surface and collision')
+surface_calls,obstacle_calls=0,0
+for _=1,180 do assert(idle:update(1/60,0,0)==1) end
+assert(surface_calls==180,'stationary steps must sample surface exactly once')
+assert(obstacle_calls==180,'stationary steps must still validate collision')
+assert(idle.x==40 and idle.y==40 and idle.state=='idle'
+  and idle.frame==180,'idle fixed-step behavior changed')
+wet=true
+idle:update(1/60,0,0)
+assert(surface_calls==181 and obstacle_calls==181
+  and idle.surface_multiplier==.55 and idle.immersion==.5,
+  'terrain changes while idle must be visible on the next step')
+idle:update(1/60,1,0)
+near(idle.x,40.55)
+assert(surface_calls==183 and obstacle_calls==182,
+  'moving steps must resample their destination surface')
+assert(idle.state=='walk' and idle.surface_multiplier==.55)
+-- A new solid occupying the player's idle location must still raise an error.
+local new_solid=false
+local changing={
+  obstacles=function()
+    return new_solid and {{x=18,y=18,w=4,h=4}} or {}
+  end,
+  surface_at=function() return {speed_multiplier=1,immersion=0} end
+}
+local stationary=Player.new(changing,{x=20,y=20,radius=2})
+new_solid=true
+assert(not pcall(function() stationary:update(1/60,0,0) end),
+  'idle collision guard must reject newly introduced solids')
+print('PLAYER_IDLE_QUERY_PARITY_OK surface=180 obstacle=180 across 180 steps')
 print('player stage3 fixed-step, CCD, slide, direction, joystick, A*, depth tests OK')
