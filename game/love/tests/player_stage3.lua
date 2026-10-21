@@ -130,3 +130,126 @@ assert(not pcall(function() stationary:update(1/60,0,0) end),
   'idle collision guard must reject newly introduced solids')
 print('PLAYER_IDLE_QUERY_PARITY_OK surface=180 obstacle=180 across 180 steps')
 print('player stage3 fixed-step, CCD, slide, direction, joystick, A*, depth tests OK')
+
+-- Exact reference A* oracle from the pre-heap algorithm. This checks that
+-- faster open ordering and single-search free-cache preserve actual waypoints,
+-- corner cutting, failure reasons and max-node budget (not just endpoints).
+local function legacy_find(query,sx,sy,gx,gy,r,cell,max_nodes)
+  cell=cell or 16;max_nodes=max_nodes or 2048
+  local ax,ay=math.floor(sx/cell+.5),math.floor(sy/cell+.5)
+  local bx,by=math.floor(gx/cell+.5),math.floor(gy/cell+.5)
+  local function key(x,y) return x..','..y end
+  local function free(x,y) return C.can_stand(query,x*cell,y*cell,r) end
+  local function edge(x0,y0,x1,y1)
+    local sx0,sy0=x0*cell,y0*cell
+    local ex,ey=x1*cell,y1*cell
+    local nx,ny,hit=C.move(query,sx0,sy0,ex-sx0,ey-sy0,r)
+    return not hit and math.abs(nx-ex)<1e-5 and math.abs(ny-ey)<1e-5
+  end
+  local function h(x,y)
+    local a,b=math.abs(x-bx),math.abs(y-by)
+    return math.max(a,b)+(math.sqrt(2)-1)*math.min(a,b)
+  end
+  if not C.can_stand(query,sx,sy,r) then return nil,'start_blocked' end
+  if not free(ax,ay) then return nil,'start_cell_blocked' end
+  if ax~=bx or ay~=by then
+    local fx,fy,hit=C.move(query,sx,sy,ax*cell-sx,ay*cell-sy,r)
+    if hit or math.abs(fx-ax*cell)>1e-5 or math.abs(fy-ay*cell)>1e-5 then
+      return nil,'start_connector_blocked'
+    end
+  end
+  if not free(bx,by) then return nil,'goal_blocked' end
+  local dirs={{0,-1},{-1,0},{1,0},{0,1},{-1,-1},{1,-1},{-1,1},{1,1}}
+  local start=key(ax,ay)
+  local nodes={[start]={x=ax,y=ay,g=0,f=h(ax,ay)}}
+  local open={[start]=true};local closed={};local visited=0
+  while true do
+    local best,cur
+    for k in pairs(open) do
+      local n=nodes[k]
+      if not cur or n.f<cur.f-1e-9 or
+        (math.abs(n.f-cur.f)<=1e-9 and (n.g<cur.g-1e-9 or
+        (math.abs(n.g-cur.g)<=1e-9 and k<best))) then
+        best,cur=k,n
+      end
+    end
+    if not best then return nil,'unreachable' end
+    visited=visited+1
+    if visited>max_nodes then return nil,'search_limit' end
+    if cur.x==bx and cur.y==by then
+      local path={}
+      while best~=start do
+        local n=nodes[best]
+        table.insert(path,1,{x=n.x*cell,y=n.y*cell})
+        best=n.parent
+      end
+      return path,nil
+    end
+    open[best]=nil;closed[best]=true
+    for _,d in ipairs(dirs) do
+      local x,y=cur.x+d[1],cur.y+d[2]
+      local k=key(x,y)
+      if not closed[k] and free(x,y) and
+        ((d[1]==0 or d[2]==0) or
+          (free(cur.x+d[1],cur.y) and free(cur.x,cur.y+d[2])))
+        and edge(cur.x,cur.y,x,y) then
+        local g=cur.g+((d[1]~=0 and d[2]~=0) and math.sqrt(2) or 1)
+        if not nodes[k] or g<nodes[k].g-1e-9 then
+          nodes[k]={x=x,y=y,g=g,f=g+h(x,y),parent=best}
+          open[k]=true
+        end
+      end
+    end
+  end
+end
+
+local obstacle_fixtures={
+  {},
+  {{x=64,y=-24,w=16,h=112}},
+  {{x=24,y=8,w=24,h=80},{x=72,y=-64,w=24,h=80}},
+  {{x=-4,y=-4,w=8,h=8}},
+  {{x=124,y=-4,w=8,h=8}},
+  {{x=16,y=-8,w=16,h=16}}
+}
+local cases={
+ {0,0,256,256,1,8,900,1},
+ {0,0,128,0,1,8,600,2},
+ {0,0,128,64,1,8,600,3},
+ {0,0,64,0,1,8,250,4},
+ {0,0,128,0,1,8,250,5},
+ {0,0,48,0,1,8,2,6},
+ {0,0,48,0,1,8,250,6},
+ {4,4,80,40,1,8,600,1}
+}
+local total_old,total_new=0,0
+local unpack_args=table.unpack or unpack
+for i,case in ipairs(cases) do
+  local raw=fixture(obstacle_fixtures[case[8]])
+  local tracked={calls=0}
+  function tracked:obstacles(...)
+    self.calls=self.calls+1
+    return raw:obstacles(...)
+  end
+  local args={case[1],case[2],case[3],case[4],case[5],case[6],case[7]}
+  local original,reason1=legacy_find(tracked,unpack_args(args))
+  local calls_old=tracked.calls
+  tracked.calls=0
+  local optimized,reason2=Path.find(tracked,unpack_args(args))
+  local calls_new=tracked.calls
+  assert(reason1==reason2,"A* failure reason differs at case "..i)
+  assert((original==nil)==(optimized==nil),"A* path existence differs at case "..i)
+  if original then
+    assert(#original==#optimized,"A* waypoints differ at case "..i)
+    for n=1,#original do
+      assert(original[n].x==optimized[n].x and
+             original[n].y==optimized[n].y,
+             "A* deterministic route differs at case "..i.." node "..n)
+    end
+  end
+  total_old=total_old+calls_old
+  total_new=total_new+calls_new
+end
+assert(total_new<total_old,"pathfinder should reduce repeated collision queries")
+print(string.format("PATHFINDER_ASTAR_PARITY_OK cases=%d obstacle_queries_old=%d new=%d",
+  #cases,total_old,total_new))
+
