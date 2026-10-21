@@ -301,3 +301,48 @@ end
 assert(value and value.ok and repeated.path and not repeated._nav_pending,
   "new tap should replace pending route without stale completion")
 print("R2_COOPERATIVE_ASTAR_OK compare=exact attempts=sequential manual_cancel=pass retap=pass")
+
+-- R2 tap responsiveness: direct open terrain should be ready in just a few
+-- updates, using the same swept collision checks as player movement.
+local straight={calls=0}
+function straight:obstacles(...) self.calls=self.calls+1;return {} end
+local baseline_direct=Path.find(straight,0,0,320,0,1,16,1024)
+local baseline_calls=straight.calls
+straight.calls=0
+local quick=Path.begin(straight,0,0,320,0,1,16,1024)
+local quick_updates,quick_done,quick_result=0,false
+while not quick_done and quick_updates<80 do
+  quick_updates=quick_updates+1
+  quick_done,quick_result=quick:step(100,8)
+end
+assert(quick_done and quick_result and #quick_result==1 and
+  quick_result[1].x==320 and quick_result[1].y==0,
+  'near clear tap did not take safe direct route')
+assert(quick_updates<=5 and straight.calls<baseline_calls,
+  'near clear route must complete rapidly with fewer collision queries')
+local direct_steps=quick_updates
+-- A wall must prevent a direct shortcut; original A* detour remains exact.
+local around=fixture({{x=48,y=-8,w=16,h=16}})
+local original,reason=Path.find(around,0,0,96,0,1,16,450)
+local fallback=Path.begin(around,0,0,96,0,1,16,450)
+local got,route,why,updates=false,nil,nil,0
+repeat
+  updates=updates+1
+  got,route,why=fallback:step(100,8)
+until got or updates>500
+assert(got and why==reason and (route==nil)==(original==nil),
+  'blocked shortcut failed to fall back to original A*')
+if original then
+  assert(#original==#route)
+  for i=1,#original do
+    assert(original[i].x==route[i].x and original[i].y==route[i].y,
+      'A* fallback route mismatch')
+  end
+end
+local same=Path.begin(straight,2,0,3,0,1,16,50)
+local ok_same,unchanged=false,nil
+repeat ok_same,unchanged=same:step(100,8) until ok_same
+assert(unchanged and #unchanged==0,
+  'same-cell tap must preserve synchronous path semantics')
+print(string.format('R2_NEAR_TAP_DIRECT_OK frames=%d queries=%d baseline_queries=%d blocked_fallback=pass',
+  direct_steps,straight.calls,baseline_calls))
