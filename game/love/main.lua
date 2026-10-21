@@ -413,6 +413,17 @@ function love.update(dt)
   else
     local ax,ay=keyboard()
     player:update(dt,ax,ay)
+    if r2_pilot then
+      local nav=player:take_navigation_result()
+      if nav then
+        if not nav.ok then
+          route_status=selected_target and "No approach route" or
+            ("No path: "..tostring(nav.reason))
+          selected_target=nil
+        elseif selected_target then route_status="Approaching resource"
+        else route_status="Navigating" end
+      end
+    end
   end
   if selected_target and not harvesting.active and (not stage4_smoke or stage4_before) then
     local o=objects:get(selected_target)
@@ -675,18 +686,27 @@ local function select_object(o)
   local distance=(o.x-player.x)^2+(o.y-player.y)^2
   if distance<=(harvesting.range+o.radius)^2 then return end
   -- Navigate to an approach ring outside the object's shared collision box.
-  local reached=false
+  local goals={}
   for _,d in ipairs({{1,0},{0,1},{-1,0},{0,-1},{1,1},{-1,1},{-1,-1},{1,-1}}) do
     local mag=math.sqrt(d[1]*d[1]+d[2]*d[2])
     local px=o.x+d[1]/mag*(o.radius+24)
     local py=o.y+d[2]/mag*(o.radius+24)
     if math.abs(px-player.x)+math.abs(py-player.y)<2048 then
-      local ok=player:navigate_to(px,py,16,1024)
-      if ok then reached=true;break end
+      goals[#goals+1]={x=px,y=py}
     end
   end
-  if not reached then selected_target=nil;route_status="No approach route"
-  else route_status="Approaching "..o.kind end
+  if r2_pilot then
+    if #goals==0 then selected_target=nil;route_status="No approach route"
+    else player:navigate_candidates_async(goals,16,1024)
+      route_status="Finding approach..." end
+  else
+    local reached=false
+    for _,goal in ipairs(goals) do
+      if player:navigate_to(goal.x,goal.y,16,1024) then reached=true;break end
+    end
+    if not reached then selected_target=nil;route_status="No approach route"
+    else route_status="Approaching "..o.kind end
+  end
 end
 local function interact_nearest()
   local best,dist=nil,math.huge
@@ -778,8 +798,13 @@ local function release(id,x,y)
     else
       selected_target=nil
       local gx,gy=camera:unproject(x,y,w,h)
-      local ok,reason=player:navigate_to(gx,gy,16,1024)
-      route_status=ok and "Navigating" or ("No path: "..tostring(reason))
+      if r2_pilot then
+        player:navigate_candidates_async({{x=gx,y=gy}},16,1024)
+        route_status="Finding route..."
+      else
+        local ok,reason=player:navigate_to(gx,gy,16,1024)
+        route_status=ok and "Navigating" or ("No path: "..tostring(reason))
+      end
     end
   end
   fingers[id]=nil
