@@ -192,9 +192,18 @@ helper=r'''local function measured_new_mesh(vertices,mode,usage)
   return mesh
 end'''
 src=src.replace(old,old+"\n"+helper,1)
-assert src.count("if drawables[name] then lg.draw(drawables[name]) end")==1
-src=src.replace("if drawables[name] then lg.draw(drawables[name]) end",
-                "if not Terrain.diag_skip_render and drawables[name] then lg.draw(drawables[name]) end",1)
+old_pass="""   if drawables[name] then
+    lg.draw(drawables[name])
+    material_calls=material_calls+1
+   end"""
+new_pass="""   if drawables[name] then
+    if not Terrain.diag_skip_render then
+     lg.draw(drawables[name])
+     material_calls=material_calls+1
+    end
+   end"""
+assert src.count(old_pass)==1,"unexpected terrain material pass"
+src=src.replace(old_pass,new_pass,1)
 assert src.count("if options.atmosphere~=false then")==1
 src=src.replace("if options.atmosphere~=false then",
                 "if options.atmosphere~=false and not Terrain.diag_skip_render then",1)
