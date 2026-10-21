@@ -49,3 +49,71 @@ end
 -- Default Stream:needed ordering and cap remain unchanged when opt-in is off.
 assert(#world:needed(cam,720,1600)==48)
 print("R2_VIEWPORT_RENDER_ONLY_TEST_OK")
+
+-- Real Terrain.draw contract under a deterministic graphics mock. The Canvas
+-- caches only complete static materials and invalidates on mesh/camera/size/DPI.
+local Terrain=require("world.terrain_renderer")
+local target=nil
+local draws={terrain=0,canvas=0,builds=0,releases=0}
+local pw,ph,dpi=720,1600,1
+local function new_canvas()
+ draws.builds=draws.builds+1
+ return {is_canvas=true,release=function() draws.releases=draws.releases+1 end}
+end
+love={graphics={
+ newCanvas=function(w,h,settings)
+  assert(w==pw and h==ph and settings.dpiscale==dpi)
+  return new_canvas()
+ end,
+ getPixelDimensions=function() return pw,ph end,
+ getDPIScale=function() return dpi end,
+ setCanvas=function(c) target=c end,
+ clear=function() end,push=function() end,pop=function() end,
+ translate=function() end,scale=function() end,setColor=function() end,
+ draw=function(item)
+  if item.is_canvas then
+   assert(target==nil,"drawing Canvas into itself")
+   draws.canvas=draws.canvas+1
+  else
+   draws.terrain=draws.terrain+1
+  end
+ end,
+}}
+local q={field={},sample=function() return {biome="meadow"} end}
+local meshA={is_canvas=false}
+local chunk={x=0,y=0,cx=0,cy=0,size=256,
+ _terrain_meshes={meadow=meshA}}
+local scene={query=q,wanted_count=1,visible=function() return {chunk} end}
+local cam2=Camera.new()
+cam2.x,cam2.y,cam2.zoom=0,0,1.7
+local opts={canvas_cache=true,viewport_cull=true,atmosphere=false}
+local key="standard:0.35:nil:nil:"..tostring(q)
+chunk._terrain_key=key
+Terrain.draw(scene,cam2,720,1600,opts)
+assert(draws.terrain==1 and draws.canvas==1 and draws.builds==1)
+Terrain.draw(scene,cam2,720,1600,opts)
+assert(draws.terrain==1 and draws.canvas==2 and
+ Terrain._canvas_hits==1,"stationary Canvas should bypass all material meshes")
+cam2.x=16
+Terrain.draw(scene,cam2,720,1600,opts)
+assert(draws.terrain==2 and draws.builds==1,
+ "camera movement must repaint existing Canvas")
+chunk._terrain_meshes={meadow={is_canvas=false}}
+Terrain.draw(scene,cam2,720,1600,opts)
+assert(draws.terrain==3,"mesh identity change must invalidate")
+scene.wanted_count=2
+Terrain.draw(scene,cam2,720,1600,opts)
+assert(draws.terrain==4,"incomplete streamed scene must bypass old Canvas")
+scene.wanted_count=1
+pw,ph,dpi=691,1536,1
+Terrain.draw(scene,cam2,691,1536,opts)
+assert(draws.builds==2 and draws.releases==1,
+ "resizing must release and recreate high-DPI compatible Canvas")
+pw,ph,dpi=1382,3072,2
+Terrain.draw(scene,cam2,691,1536,opts)
+assert(draws.builds==3 and draws.releases==2,
+ "pixel-density change must recreate Canvas at physical size")
+opts.canvas_cache=false
+Terrain.draw(scene,cam2,691,1536,opts)
+assert(draws.releases==3,"disabling cached terrain must release framebuffer")
+print("R2_CANVAS_INVALIDATION_OK still/move/mesh/pending/resize/dpi/disable")

@@ -113,8 +113,8 @@ assert(surface_calls==181 and obstacle_calls==181
   'terrain changes while idle must be visible on the next step')
 idle:update(1/60,1,0)
 near(idle.x,40.55)
-assert(surface_calls==183 and obstacle_calls==182,
-  'moving steps must resample their destination surface')
+assert(surface_calls==183 and obstacle_calls==183,
+  'moving step must resample destination and recheck swept collision')
 assert(idle.state=='walk' and idle.surface_multiplier==.55)
 -- A new solid occupying the player's idle location must still raise an error.
 local new_solid=false

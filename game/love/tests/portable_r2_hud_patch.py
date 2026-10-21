@@ -257,15 +257,23 @@ r'''    if entry.player then
 print("R2_ANDROID_DIAGNOSTICS_PATCH_OK")
 
 # Render-only R2 package switch: never alter production world/logic.
-patch(main,[("local preview_frame_ms=0",r'''local viewport_experiment=os.getenv("OSMAN_R2_VIEWPORT_EXPERIMENT")=="1"
+patch(main,[("local preview_frame_ms=0",r'''-- R2 package: viewport coverage is now active by default. The paired Linux
+-- render bench can still disable the Canvas without changing the viewport.
+local viewport_experiment=os.getenv("OSMAN_R2_VIEWPORT_EXPERIMENT")~="0"
+local canvas_experiment=os.getenv("OSMAN_R2_CANVAS_CACHE")~="0"
 if viewport_experiment then
   assert(r2_pilot,"viewport experiment requires R2")
   stream.viewport_cover=true
   r2_pilot.render_options.viewport_cull=true
+  r2_pilot.render_options.canvas_cache=canvas_experiment
 end
 local terrain_visible,terrain_total,terrain_material_calls=0,0,0
+local terrain_canvas_hits,terrain_canvas_builds=0,0
 Terrain.on_visibility=function(visible,total,calls)
   terrain_visible,terrain_total,terrain_material_calls=visible,total,calls
+end
+Terrain.on_canvas=function(_,hits,builds)
+  terrain_canvas_hits,terrain_canvas_builds=hits,builds
 end
 local preview_frame_ms=0''')])
 with main.open("a",encoding="utf-8") as out:
@@ -285,8 +293,8 @@ if os.getenv("OSMAN_R2_RENDER_BENCH")=="1" then
     source_draw(...)
     bench_draw_ms=(love.timer.getTime()-started)*1000
     if bench_raw==209 and g.captureScreenshot then
-      g.captureScreenshot(viewport_experiment and "r2-viewport-on.png" or
-        "r2-viewport-off.png")
+      g.captureScreenshot(canvas_experiment and "r2-terrain-canvas.png" or
+        "r2-terrain-direct.png")
     end
   end
   local source_present=g.present
@@ -314,14 +322,15 @@ if os.getenv("OSMAN_R2_RENDER_BENCH")=="1" then
         local px,py=g.getPixelDimensions()
         local ww,hh=g.getDimensions()
         local t50,t95,t99=android_probe:quantiles("terrain")
-        print(string.format("R2_RENDER_BENCH mode=%s samples=%d fb=%dx%d logical=%dx%d dpi=%.2f draw_p50=%.3f draw_p95=%.3f draw_p99=%.3f present_p50=%.3f present_p95=%.3f present_p99=%.3f terrain_p50=%.3f terrain_p95=%.3f terrain_p99=%.3f drawcalls_p50=%.0f batched_p50=%.0f terrain_visible_p50=%.0f terrain_resident_p50=%.0f material_calls_p50=%.0f",
-          viewport_experiment and "ON" or "OFF",#bench_draw,px,py,ww,hh,
+        print(string.format("R2_RENDER_BENCH mode=%s samples=%d fb=%dx%d logical=%dx%d dpi=%.2f draw_p50=%.3f draw_p95=%.3f draw_p99=%.3f present_p50=%.3f present_p95=%.3f present_p99=%.3f terrain_p50=%.3f terrain_p95=%.3f terrain_p99=%.3f drawcalls_p50=%.0f batched_p50=%.0f terrain_visible_p50=%.0f terrain_resident_p50=%.0f material_calls_p50=%.0f canvas_hits=%d canvas_builds=%d",
+          canvas_experiment and "CANVAS" or "DIRECT",#bench_draw,px,py,ww,hh,
           g.getDPIScale and g.getDPIScale() or 1,
           q(bench_draw,.5),q(bench_draw,.95),q(bench_draw,.99),
           q(bench_present,.5),q(bench_present,.95),q(bench_present,.99),
           t50,t95,t99,
           q(bench_calls,.5),q(bench_batched,.5),
-          q(bench_terrain,.5),q(bench_total,.5),q(bench_pass,.5)))
+          q(bench_terrain,.5),q(bench_total,.5),q(bench_pass,.5),
+          terrain_canvas_hits,terrain_canvas_builds))
         io.stdout:flush()
         love.event.quit(0)
       end

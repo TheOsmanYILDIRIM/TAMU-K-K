@@ -198,29 +198,30 @@ jobs:
             grep -q "R2_PROXY_RESULT mode=$([ "$mode" = FULL ] && echo 1 || echo 2) samples=180" "$RUNNER_TEMP/export/proxy-$mode.log"
           done
           echo "R2_PROXY_LINUX_OK viewport=720x1600 affinity=1core virtual_memory_limit=1536MiB gpu=software_or_runner_not_mobile"
-      - name: Fixed-camera 720x1600 R2 viewport OFF/ON, present and drawcalls
+      - name: Fixed-camera 720x1600 R2 terrain DIRECT/CANVAS, present and drawcalls
         shell: bash
         run: |
           set -euo pipefail
-          for mode in OFF ON; do
+          for mode in DIRECT CANVAS; do
             export XDG_DATA_HOME="$RUNNER_TEMP/render-bench-$mode"
             mkdir -p "$XDG_DATA_HOME"
-            if [ "$mode" = ON ]; then export OSMAN_R2_VIEWPORT_EXPERIMENT=1; else export OSMAN_R2_VIEWPORT_EXPERIMENT=0; fi
+            export OSMAN_R2_VIEWPORT_EXPERIMENT=1
+            if [ "$mode" = CANVAS ]; then export OSMAN_R2_CANVAS_CACHE=1; else export OSMAN_R2_CANVAS_CACHE=0; fi
             OSMAN_R2_RENDER_BENCH=1 OSMAN_CACHE_DISPLAY=720x1600 \
               timeout 120s xvfb-run -a -s '-screen 0 1024x1800x24' \
               love "$RUNNER_TEMP/export/Osman_Oyun_R2_Guncel.love" \
               2>&1 | tee "$RUNNER_TEMP/export/render-$mode.log"
             grep -q "R2_RENDER_BENCH mode=$mode samples=180 fb=" "$RUNNER_TEMP/export/render-$mode.log"
-            shot="$(find "$XDG_DATA_HOME" -name "r2-viewport-$(echo "$mode" | tr '[:upper:]' '[:lower:]').png" -print -quit)"
+            shot="$(find "$XDG_DATA_HOME" -name "r2-terrain-$(echo "$mode" | tr '[:upper:]' '[:lower:]').png" -print -quit)"
             test -n "$shot" && test -s "$shot"
-            cp "$shot" "$RUNNER_TEMP/export/viewport-$mode.png"
+            cp "$shot" "$RUNNER_TEMP/export/terrain-$mode.png"
           done
           /usr/bin/python3 - <<'PY'
           import os,pathlib
           from PIL import Image,ImageChops
           root=pathlib.Path(os.environ["RUNNER_TEMP"])/"export"
-          off=Image.open(root/"viewport-OFF.png").convert("RGB")
-          on=Image.open(root/"viewport-ON.png").convert("RGB")
+          off=Image.open(root/"terrain-DIRECT.png").convert("RGB")
+          on=Image.open(root/"terrain-CANVAS.png").convert("RGB")
           assert off.size==on.size==(720,1600), (off.size,on.size)
           w,h=off.size
           # Check margins away from avatar; do not assert entire animated HUD.
@@ -235,8 +236,21 @@ jobs:
               pixels+=a.width*a.height
           ratio=differences/max(1,pixels)
           print(f"R2_VIEWPORT_PNG_EDGE_COMPARE changed_ratio={ratio:.5f} pixels={pixels}")
-          assert ratio<.12,"viewport render changed too many visible edge pixels"
-          print("R2_VIEWPORT_SAME_CAMERA_PNG_OK")
+          assert ratio<.025,"static Canvas changed too many visible edge pixels"
+          print("R2_CANVAS_SAME_CAMERA_PNG_OK")
+          import re
+          direct=(root/"render-DIRECT.log").read_text(errors="replace")
+          cached=(root/"render-CANVAS.log").read_text(errors="replace")
+          def result(text):
+              line=next((line for line in text.splitlines() if "R2_RENDER_BENCH mode=" in line),None)
+              assert line,"missing render benchmark"
+              return {k:float(v) for k,v in re.findall(r"([a-z][a-z0-9_]*)=(\d+(?:\.\d+)?)",line)}
+          a,b=result(direct),result(cached)
+          assert a["material_calls_p50"]>100,a
+          assert b["material_calls_p50"]==0 and b["canvas_hits"]>=180,b
+          assert b["canvas_builds"]>=1,b
+          print("R2_CANVAS_BENCH_VERIFIED material_p50",a["material_calls_p50"],
+                b["material_calls_p50"],"cpu_draw_p50",a["draw_p50"],b["draw_p50"])
           PY
       - name: Viewport render regression, Lua 5.4 and LuaJIT
         run: |

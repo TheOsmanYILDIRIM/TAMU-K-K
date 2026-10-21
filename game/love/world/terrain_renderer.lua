@@ -303,6 +303,44 @@ local function overlaps_screen(chunk,camera,width,height,height_scale)
     and sy+edge>=-pad and sy<=height+pad
 end
 
+
+-- R2 static terrain framebuffer cache, opt-in only. No authored data or
+-- physics enters the Canvas. It must be invalidated on every mesh/camera/DPI
+-- change and is bypassed while visible chunks are still being prepared.
+local function canvas_state_valid(s,stream,chunks,key,camera,w,h,pw,ph,dpi,opts)
+ if not s or s.stream~=stream or s.key~=key or
+    s.x~=camera.x or s.y~=camera.y or s.zoom~=camera.zoom or
+    s.w~=w or s.h~=h or s.pw~=pw or s.ph~=ph or s.dpi~=dpi or
+    s.cull~=opts.viewport_cull or s.fog~=(opts.atmosphere~=false) or
+    #s.chunks~=#chunks then return false end
+ for i,chunk in ipairs(chunks) do
+  if s.chunks[i]~=chunk or s.meshes[i]~=chunk._terrain_meshes then return false end
+ end
+ return true
+end
+local function all_meshes_ready(stream,chunks,key)
+ if #chunks==0 or #chunks~=stream.wanted_count then return false end
+ for _,chunk in ipairs(chunks) do
+  if not chunk._terrain_meshes or chunk._terrain_key~=key or
+     chunk._terrain_job or chunk._terrain_stage then return false end
+ end
+ return true
+end
+local function show_canvas(lg,canvas)
+ lg.clear(.065,.105,.118,1)
+ lg.push("all")
+ lg.setColor(1,1,1,1)
+ lg.draw(canvas)
+ lg.pop()
+end
+local function signal_canvas(hit)
+ if hit then Terrain._canvas_hits=(Terrain._canvas_hits or 0)+1
+ else Terrain._canvas_builds=(Terrain._canvas_builds or 0)+1 end
+ if Terrain.on_canvas then
+  Terrain.on_canvas(hit,Terrain._canvas_hits or 0,Terrain._canvas_builds or 0)
+ end
+end
+
 function Terrain.draw(stream,camera,width,height,options)
  local lg=graphics()
  assert(type(stream)=="table" and type(stream.visible)=="function"
@@ -323,6 +361,52 @@ function Terrain.draw(stream,camera,width,height,options)
   cache=stream.cache}
  local key=quality..":"..tostring(scale)..":"..tostring(options.topography)
           ..":"..tostring(options.routes)..":"..tostring(stream.query)
+ local chunks=stream:visible()
+ local want_canvas=options.canvas_cache==true and lg.newCanvas
+                  and lg.getPixelDimensions and lg.getDPIScale
+ local pw,ph,dpi
+ local ready=false
+ if want_canvas then
+  pw,ph=lg.getPixelDimensions()
+  dpi=lg.getDPIScale()
+  ready=all_meshes_ready(stream,chunks,key)
+  local old=Terrain._canvas_state
+  if ready and canvas_state_valid(old,stream,chunks,key,camera,
+      width,height,pw,ph,dpi,options) then
+   show_canvas(lg,old.canvas)
+   if Terrain.on_visibility then
+    Terrain.on_visibility(old.visible,#chunks,0)
+   end
+   signal_canvas(true)
+   return
+  end
+ else
+  -- Never retain a previous full-frame GPU allocation when cache is disabled.
+  if Terrain._canvas_state then
+   Terrain._canvas_state.canvas:release()
+   Terrain._canvas_state=nil
+  end
+ end
+ local canvas_target
+ if ready then
+  local old=Terrain._canvas_state
+  if old and (old.pw~=pw or old.ph~=ph or old.dpi~=dpi) then
+   old.canvas:release()
+   Terrain._canvas_state=nil
+   old=nil
+  end
+  if old then canvas_target=old.canvas
+  else
+   local ok,value=pcall(lg.newCanvas,pw,ph,{dpiscale=dpi})
+   if ok then
+    canvas_target=value
+   elseif not Terrain._canvas_unsupported then
+    Terrain._canvas_unsupported=true
+    print("R2_CANVAS_UNAVAILABLE "..tostring(value))
+   end
+  end
+  if canvas_target then lg.setCanvas(canvas_target) end
+ end
  lg.clear(.065,.105,.118,1)
  lg.push("all")
  lg.translate(width/2,height/2)
@@ -334,7 +418,7 @@ function Terrain.draw(stream,camera,width,height,options)
  local clock=love and love.timer and love.timer.getTime
  if type(clock)~="function" then clock=nil end
  local deadline=clock and clock()+.004
- for _,chunk in ipairs(stream:visible()) do
+ for _,chunk in ipairs(chunks) do
   count_total=count_total+1
   local draw_chunk=not options.viewport_cull or
     overlaps_screen(chunk,camera,width,height,scale)
@@ -408,6 +492,20 @@ function Terrain.draw(stream,camera,width,height,options)
   lg.setColor(1,1,1,1)
   lg.draw(Terrain._fog)
   lg.pop()
+ end
+ if canvas_target then
+  lg.setCanvas()
+  local refs,meshes={},{}
+  for i,chunk in ipairs(chunks) do
+   refs[i],meshes[i]=chunk,chunk._terrain_meshes
+  end
+  Terrain._canvas_state={canvas=canvas_target,stream=stream,key=key,
+   x=camera.x,y=camera.y,zoom=camera.zoom,
+   w=width,h=height,pw=pw,ph=ph,dpi=dpi,
+   cull=options.viewport_cull,fog=options.atmosphere~=false,
+   visible=#cached,chunks=refs,meshes=meshes}
+  show_canvas(lg,canvas_target)
+  signal_canvas(false)
  end
 end
 return Terrain
