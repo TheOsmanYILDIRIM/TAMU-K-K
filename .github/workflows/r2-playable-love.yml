@@ -15,7 +15,7 @@ on:
 jobs:
   package:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: Install real LÖVE runtime and ZIP
@@ -23,11 +23,6 @@ jobs:
       - name: Validate mobile probe percentiles and diagnostic mode isolation
         run: |
           (cd game/love && lua5.4 tests/r2_android_probe.lua)
-      - name: Explicit Stage3 and viewport regression on Lua 5.4 and LuaJIT
-        run: |
-          set -euo pipefail
-          (cd game/love && lua5.4 tests/player_stage3.lua && luajit tests/player_stage3.lua)
-          (cd game/love && lua5.4 tests/r2_viewport.lua && luajit tests/r2_viewport.lua)
       - name: Make standalone R2 package in a disposable staging copy
         shell: bash
         run: |
@@ -243,6 +238,14 @@ jobs:
           assert ratio<.12,"viewport render changed too many visible edge pixels"
           print("R2_VIEWPORT_SAME_CAMERA_PNG_OK")
           PY
+      - name: Viewport render regression, Lua 5.4 and LuaJIT
+        run: |
+          set -euo pipefail
+          (cd game/love && lua5.4 tests/r2_viewport.lua && luajit tests/r2_viewport.lua)
+      - name: Explicit Stage3 regression, Lua 5.4 and LuaJIT
+        run: |
+          set -euo pipefail
+          (cd game/love && lua5.4 tests/player_stage3.lua && luajit tests/player_stage3.lua)
       - name: Upload verified playable LOVE and evidence
         if: always()
         uses: actions/upload-artifact@v4
