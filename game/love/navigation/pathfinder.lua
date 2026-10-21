@@ -70,19 +70,31 @@ local function open_set()
   return put,take,rise,position
 end
 
-function P.find(query,sx,sy,gx,gy,r,cell,max_nodes)
+-- Production synchronous API stays exact. R2 can drive the same search
+-- cooperatively by checkpointing after each collision call.
+local function search(query,sx,sy,gx,gy,r,cell,max_nodes,checkpoint)
   W.assert_query(query)
   cell=cell or 16;max_nodes=max_nodes or 2048
   assert(W.finite(cell) and cell>0 and W.finite(r) and r>=0 and
     type(max_nodes)=='number' and max_nodes>=1 and max_nodes%1==0)
   local ax,ay=math.floor(sx/cell+.5),math.floor(sy/cell+.5)
   local bx,by=math.floor(gx/cell+.5),math.floor(gy/cell+.5)
+  local function checked_stand(x,y)
+    local result=C.can_stand(query,x,y,r)
+    if checkpoint then checkpoint() end
+    return result
+  end
+  local function checked_move(x,y,dx,dy)
+    local nx,ny,hit=C.move(query,x,y,dx,dy,r)
+    if checkpoint then checkpoint() end
+    return nx,ny,hit
+  end
   local free_cells={}
   local function free(x,y)
     local k=key(x,y)
     local value=free_cells[k]
     if value==nil then
-      value=C.can_stand(query,x*cell,y*cell,r)
+      value=checked_stand(x*cell,y*cell)
       free_cells[k]=value
     end
     return value
@@ -90,13 +102,13 @@ function P.find(query,sx,sy,gx,gy,r,cell,max_nodes)
   local function clear_edge(x0,y0,x1,y1)
     local startx,starty=x0*cell,y0*cell
     local ex,ey=x1*cell,y1*cell
-    local nx,ny,hit=C.move(query,startx,starty,ex-startx,ey-starty,r)
+    local nx,ny,hit=checked_move(startx,starty,ex-startx,ey-starty)
     return not hit and math.abs(nx-ex)<1e-5 and math.abs(ny-ey)<1e-5
   end
-  if not C.can_stand(query,sx,sy,r) then return nil,'start_blocked' end
+  if not checked_stand(sx,sy) then return nil,'start_blocked' end
   if not free(ax,ay) then return nil,'start_cell_blocked' end
   if ax~=bx or ay~=by then
-    local fx,fy,hit=C.move(query,sx,sy,ax*cell-sx,ay*cell-sy,r)
+    local fx,fy,hit=checked_move(sx,sy,ax*cell-sx,ay*cell-sy)
     if hit or math.abs(fx-ax*cell)>1e-5 or math.abs(fy-ay*cell)>1e-5 then
       return nil,'start_connector_blocked'
     end
@@ -152,5 +164,38 @@ function P.find(query,sx,sy,gx,gy,r,cell,max_nodes)
       end
     end
   end
+end
+
+function P.find(query,sx,sy,gx,gy,r,cell,max_nodes)
+  return search(query,sx,sy,gx,gy,r,cell,max_nodes)
+end
+
+-- R2-only cooperative search. An individual collision call is not preemptible,
+-- but elapsed time and count are bounded between coroutine checkpoints.
+function P.begin(query,sx,sy,gx,gy,r,cell,max_nodes)
+  local worker=coroutine.create(function()
+    return search(query,sx,sy,gx,gy,r,cell,max_nodes,coroutine.yield)
+  end)
+  local run={}
+  function run:step(budget_ms,max_queries)
+    assert(coroutine.status(worker)~="dead","completed path search")
+    budget_ms=budget_ms or 2
+    max_queries=max_queries or 8
+    assert(type(budget_ms)=="number" and budget_ms>0 and budget_ms<math.huge)
+    assert(type(max_queries)=="number" and max_queries>=1 and
+      max_queries%1==0)
+    local clock=(love and love.timer and love.timer.getTime) or os.clock
+    local end_at=clock()+budget_ms/1000
+    for _=1,max_queries do
+      local ok,result,reason=coroutine.resume(worker)
+      if not ok then error(result,2) end
+      if coroutine.status(worker)=="dead" then
+        return true,result,reason
+      end
+      if clock()>=end_at then break end
+    end
+    return false
+  end
+  return run
 end
 return P
