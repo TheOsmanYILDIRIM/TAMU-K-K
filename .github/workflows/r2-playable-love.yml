@@ -6,6 +6,9 @@ on:
     paths:
       - .github/workflows/r2-playable-love.yml
       - game/love/tests/portable_r2_hud_patch.py
+      - game/love/world/stream.lua
+      - game/love/world/terrain_renderer.lua
+      - game/love/tests/r2_viewport.lua
       - game/love/core/r2_android_probe.lua
       - game/love/tests/r2_android_probe.lua
   workflow_dispatch:
@@ -16,10 +19,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install real LÖVE runtime and ZIP
-        run: sudo apt-get update -qq && sudo apt-get install -y love xvfb lua5.4 zip
+        run: sudo apt-get update -qq && sudo apt-get install -y love xvfb lua5.4 luajit python3-pil zip
       - name: Validate mobile probe percentiles and diagnostic mode isolation
         run: |
           (cd game/love && lua5.4 tests/r2_android_probe.lua)
+      - name: Explicit Stage3 and viewport regression on Lua 5.4 and LuaJIT
+        run: |
+          set -euo pipefail
+          (cd game/love && lua5.4 tests/player_stage3.lua && luajit tests/player_stage3.lua)
+          (cd game/love && lua5.4 tests/r2_viewport.lua && luajit tests/r2_viewport.lua)
       - name: Make standalone R2 package in a disposable staging copy
         shell: bash
         run: |
@@ -195,6 +203,46 @@ jobs:
             grep -q "R2_PROXY_RESULT mode=$([ "$mode" = FULL ] && echo 1 || echo 2) samples=180" "$RUNNER_TEMP/export/proxy-$mode.log"
           done
           echo "R2_PROXY_LINUX_OK viewport=720x1600 affinity=1core virtual_memory_limit=1536MiB gpu=software_or_runner_not_mobile"
+      - name: Fixed-camera 720x1600 R2 viewport OFF/ON, present and drawcalls
+        shell: bash
+        run: |
+          set -euo pipefail
+          for mode in OFF ON; do
+            export XDG_DATA_HOME="$RUNNER_TEMP/render-bench-$mode"
+            mkdir -p "$XDG_DATA_HOME"
+            if [ "$mode" = ON ]; then export OSMAN_R2_VIEWPORT_EXPERIMENT=1; else export OSMAN_R2_VIEWPORT_EXPERIMENT=0; fi
+            OSMAN_R2_RENDER_BENCH=1 OSMAN_CACHE_DISPLAY=720x1600 \
+              timeout 120s xvfb-run -a -s '-screen 0 1024x1800x24' \
+              love "$RUNNER_TEMP/export/Osman_Oyun_R2_Guncel.love" \
+              2>&1 | tee "$RUNNER_TEMP/export/render-$mode.log"
+            grep -q "R2_RENDER_BENCH mode=$mode samples=180 fb=" "$RUNNER_TEMP/export/render-$mode.log"
+            shot="$(find "$XDG_DATA_HOME" -name "r2-viewport-$(echo "$mode" | tr '[:upper:]' '[:lower:]').png" -print -quit)"
+            test -n "$shot" && test -s "$shot"
+            cp "$shot" "$RUNNER_TEMP/export/viewport-$mode.png"
+          done
+          /usr/bin/python3 - <<'PY'
+          import os,pathlib
+          from PIL import Image,ImageChops
+          root=pathlib.Path(os.environ["RUNNER_TEMP"])/"export"
+          off=Image.open(root/"viewport-OFF.png").convert("RGB")
+          on=Image.open(root/"viewport-ON.png").convert("RGB")
+          assert off.size==on.size==(720,1600), (off.size,on.size)
+          w,h=off.size
+          # Check margins away from avatar; do not assert entire animated HUD.
+          boxes=[(0,int(h*.36),int(w*.12),int(h*.82)),
+                 (int(w*.88),int(h*.36),w,int(h*.82)),
+                 (int(w*.2),int(h*.85),int(w*.8),h)]
+          differences=0;pixels=0
+          for box in boxes:
+              a=off.crop(box);b=on.crop(box)
+              diff=ImageChops.difference(a,b)
+              differences+=sum(1 for pixel in diff.getdata() if max(pixel)>15)
+              pixels+=a.width*a.height
+          ratio=differences/max(1,pixels)
+          print(f"R2_VIEWPORT_PNG_EDGE_COMPARE changed_ratio={ratio:.5f} pixels={pixels}")
+          assert ratio<.12,"viewport render changed too many visible edge pixels"
+          print("R2_VIEWPORT_SAME_CAMERA_PNG_OK")
+          PY
       - name: Upload verified playable LOVE and evidence
         if: always()
         uses: actions/upload-artifact@v4

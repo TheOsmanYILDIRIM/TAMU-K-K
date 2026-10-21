@@ -246,3 +246,78 @@ r'''    if entry.player then
     end''')
 ])
 print("R2_ANDROID_DIAGNOSTICS_PATCH_OK")
+
+# Render-only R2 package switch: never alter production world/logic.
+patch(main,[("local preview_frame_ms=0",r'''local viewport_experiment=os.getenv("OSMAN_R2_VIEWPORT_EXPERIMENT")=="1"
+if viewport_experiment then
+  assert(r2_pilot,"viewport experiment requires R2")
+  stream.viewport_cover=true
+  r2_pilot.render_options.viewport_cull=true
+end
+local terrain_visible,terrain_total,terrain_material_calls=0,0,0
+Terrain.on_visibility=function(visible,total,calls)
+  terrain_visible,terrain_total,terrain_material_calls=visible,total,calls
+end
+local preview_frame_ms=0''')])
+with main.open("a",encoding="utf-8") as out:
+    out.write(r'''
+-- Disposable fixed camera R2 render/present wall-time bench. LÖVE present
+-- calls are timed on CPU; this is NEVER a GPU timestamp or Android FPS.
+if os.getenv("OSMAN_R2_RENDER_BENCH")=="1" then
+  assert(r2_pilot and cache_pilot_enabled,"requires R2 disposable cache")
+  local bench_samples,bench_raw={},0
+  local bench_present,bench_draw,bench_calls,bench_batched={},{},{},{}
+  local bench_terrain,bench_total,bench_pass={},{},{}
+  local bench_draw_ms=0
+  local g=love.graphics
+  local source_draw=love.draw
+  love.draw=function(...)
+    local started=love.timer.getTime()
+    source_draw(...)
+    bench_draw_ms=(love.timer.getTime()-started)*1000
+    if bench_raw==209 and g.captureScreenshot then
+      g.captureScreenshot(viewport_experiment and "r2-viewport-on.png" or
+        "r2-viewport-off.png")
+    end
+  end
+  local source_present=g.present
+  g.present=function(...)
+    local before=g.getStats()
+    local started=love.timer.getTime()
+    source_present(...)
+    local present_ms=(love.timer.getTime()-started)*1000
+    if boot_ready and android_probe.ready==stats.needed and stats.needed>0 then
+      bench_raw=bench_raw+1
+      if bench_raw>30 and bench_raw<=210 then
+        bench_present[#bench_present+1]=present_ms
+        bench_draw[#bench_draw+1]=bench_draw_ms
+        bench_calls[#bench_calls+1]=before.drawcalls or 0
+        bench_batched[#bench_batched+1]=before.drawcallsbatched or 0
+        bench_terrain[#bench_terrain+1]=terrain_visible
+        bench_total[#bench_total+1]=terrain_total
+        bench_pass[#bench_pass+1]=terrain_material_calls
+      end
+      if bench_raw==210 then
+        local function q(a,p)
+          table.sort(a)
+          return a[math.max(1,math.ceil(#a*p))] or 0
+        end
+        local px,py=g.getPixelDimensions()
+        local ww,hh=g.getDimensions()
+        local t50,t95,t99=android_probe:quantiles("terrain")
+        print(string.format("R2_RENDER_BENCH mode=%s samples=%d fb=%dx%d logical=%dx%d dpi=%.2f draw_p50=%.3f draw_p95=%.3f draw_p99=%.3f present_p50=%.3f present_p95=%.3f present_p99=%.3f terrain_p50=%.3f terrain_p95=%.3f terrain_p99=%.3f drawcalls_p50=%.0f batched_p50=%.0f terrain_visible_p50=%.0f terrain_resident_p50=%.0f material_calls_p50=%.0f",
+          viewport_experiment and "ON" or "OFF",#bench_draw,px,py,ww,hh,
+          g.getDPIScale and g.getDPIScale() or 1,
+          q(bench_draw,.5),q(bench_draw,.95),q(bench_draw,.99),
+          q(bench_present,.5),q(bench_present,.95),q(bench_present,.99),
+          t50,t95,t99,
+          q(bench_calls,.5),q(bench_batched,.5),
+          q(bench_terrain,.5),q(bench_total,.5),q(bench_pass,.5)))
+        io.stdout:flush()
+        love.event.quit(0)
+      end
+    end
+  end
+end
+''')
+print("R2_VIEWPORT_PACKAGE_OPT_IN_OK")

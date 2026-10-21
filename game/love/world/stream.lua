@@ -1,6 +1,7 @@
 -- Camera-centred, bounded, incremental chunk residency.
 -- Pure Lua: production renderer owns GPU meshes, logic never calls LOVE.
 local Chunks = require("world.chunks")
+local Iso = require("world.iso")
 local Stream = {}
 Stream.__index = Stream
 
@@ -46,6 +47,17 @@ local function view_range(camera,width,height,size)
          math.floor(max_x/size)+1,math.floor(max_y/size)+1
 end
 
+-- Screen-space overlap is a diamond bounding box, not centre distance.
+-- The opt-in path protects foreground silhouettes without changing physics.
+local function overlaps_view(cx,cy,size,camera,width,height,padding)
+  local x,y=Iso.project(cx*size-camera.x,cy*size-camera.y)
+  local z=camera.zoom
+  local edge=size*math.sqrt(.5)*z
+  local sx,sy=width*.5+x*z,height*.5+y*z
+  return sx+edge>=-padding and sx-edge<=width+padding
+     and sy+edge>=-padding and sy<=height+padding
+end
+
 function Stream:needed(camera,width,height)
   assert(camera and type(camera.unproject)=="function"
      and type(camera.x)=="number" and type(camera.y)=="number",
@@ -61,6 +73,23 @@ function Stream:needed(camera,width,height)
     }
   end end
   table.sort(candidates,less)
+  if self.viewport_cover then
+    -- Render-only R2 opt-in: no foreground-screen chunk may be sacrificed
+    -- to the historical 48-nearest-centres cap. Noncritical halo is capped.
+    -- This may require >48 chunks at extreme zoom-out: monitor memory.
+    local required,halo={},{}
+    local pad=120*camera.zoom+16
+    for _,c in ipairs(candidates) do
+      if overlaps_view(c.cx,c.cy,size,camera,width,height,pad) then
+        required[#required+1]=c
+      else halo[#halo+1]=c end
+    end
+    for _,c in ipairs(halo) do
+      if #required>=self.max_loaded then break end
+      required[#required+1]=c
+    end
+    return required
+  end
   while #candidates > self.max_loaded do
     candidates[#candidates]=nil
   end

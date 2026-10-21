@@ -291,6 +291,18 @@ local function hydrate(chunk,key,pause)
  chunk._cache_vertices=nil -- release decoded CPU RAM after GPU upload
  return meshes
 end
+-- Render-only, conservative screen AABB. Keep all mesh/material geometry
+-- unchanged; height allowance covers R2 relief without topography samples.
+local function overlaps_screen(chunk,camera,width,height,height_scale)
+ local x,y=Iso.project(chunk.x-camera.x,chunk.y-camera.y)
+ local z=camera.zoom
+ local edge=chunk.size*math.sqrt(.5)*z
+ local sx,sy=width*.5+x*z,height*.5+y*z
+ local pad=(16+32*height_scale)*z+16
+ return sx+edge>=-pad and sx-edge<=width+pad
+    and sy+edge>=-pad and sy<=height+pad
+end
+
 function Terrain.draw(stream,camera,width,height,options)
  local lg=graphics()
  assert(type(stream)=="table" and type(stream.visible)=="function"
@@ -318,15 +330,20 @@ function Terrain.draw(stream,camera,width,height,options)
  local sx,sy=Iso.project(camera.x,camera.y)
  lg.translate(-sx,-sy)
  local cached={}
+ local count_total=0
  local clock=love and love.timer and love.timer.getTime
  if type(clock)~="function" then clock=nil end
  local deadline=clock and clock()+.004
  for _,chunk in ipairs(stream:visible()) do
+  count_total=count_total+1
+  local draw_chunk=not options.viewport_cull or
+    overlaps_screen(chunk,camera,width,height,scale)
   if not clock then
    if chunk._terrain_key~=key then Terrain.invalidate(chunk) end
-   cached[#cached+1]=chunk._terrain_meshes or
+   local drawable=chunk._terrain_meshes or
      (chunk._cache_vertices and hydrate(chunk,key) or
       rebuild(chunk,stream.query,opts,key))
+   if draw_chunk then cached[#cached+1]=drawable end
   else
    if chunk._terrain_key~=key then
     local job=chunk._terrain_job
@@ -356,18 +373,25 @@ function Terrain.draw(stream,camera,width,height,options)
      until clock()>=deadline
     end
    end
-   cached[#cached+1]=chunk._terrain_meshes
+   if draw_chunk then cached[#cached+1]=chunk._terrain_meshes end
   end
  end
  -- Render whole visible world in material passes. Painting a meadow chunk
  -- after a neighbour's forest/water layer creates hard rectangular seams.
  lg.setColor(1,1,1,1)
+ local material_calls=0
  for _,name in ipairs({"meadow","forest","rocky","water","detail"}) do
   for _,drawables in ipairs(cached) do
-   if drawables[name] then lg.draw(drawables[name]) end
+   if drawables[name] then
+    lg.draw(drawables[name])
+    material_calls=material_calls+1
+   end
   end
  end
  lg.pop()
+ if Terrain.on_visibility then
+  Terrain.on_visibility(#cached,count_total,material_calls)
+ end
  if options.atmosphere~=false then
   -- Smooth screen-space vertex alpha, never separate hard-edged rectangles.
   if not Terrain._fog or Terrain._fog_width~=width or Terrain._fog_height~=height then
