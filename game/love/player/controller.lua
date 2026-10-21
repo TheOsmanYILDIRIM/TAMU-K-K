@@ -66,10 +66,17 @@ local function poll_navigation(self)
   end
   -- One candidate and 2ms / 8 collision checkpoints maximum per update.
   -- On failure try the next original approach candidate on the NEXT frame.
-  local goal=job.goals[job.index]
   if not job.search then
-    job.search=Path.begin(self.query,job.x,job.y,goal.x,goal.y,
-      self.radius,job.cell,job.max_nodes)
+    if #job.goals>1 then
+      -- One dynamic-obstacle-safe A* to any reachable interaction location.
+      -- No world-level nav bake and no repeated A* per approach direction.
+      job.search=Path.begin_any(self.query,job.x,job.y,job.goals,
+        self.radius,job.cell,job.max_nodes)
+    else
+      local goal=job.goals[1]
+      job.search=Path.begin(self.query,job.x,job.y,goal.x,goal.y,
+        self.radius,job.cell,job.max_nodes)
+    end
   end
   local finished,path,reason=job.search:step(2,8)
   if not finished then return end
@@ -78,13 +85,9 @@ local function poll_navigation(self)
     self._nav_result={ok=true}
     self._nav_pending=nil
   else
-    job.last_reason=reason
-    job.index=job.index+1
-    job.search=nil
-    if job.index>#job.goals then
-      self._nav_pending=nil
-      self._nav_result={ok=false,reason=job.last_reason}
-    end
+    -- The multi-goal worker considered all candidates in one search.
+    self._nav_pending=nil
+    self._nav_result={ok=false,reason=reason}
   end
 end
 function M:stop_navigation()
