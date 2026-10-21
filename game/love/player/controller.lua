@@ -37,7 +37,60 @@ function M:navigate_to(x,y,cell,max_nodes)
   self.path=path;self.path_index=1
   return true
 end
-function M:stop_navigation() self.path=nil;self.path_index=1 end
+-- One outstanding R2 request: preserve ordered approach candidates.
+function M:navigate_candidates_async(goals,cell,max_nodes)
+  assert(type(goals)=="table" and #goals>0,"navigation goals required")
+  local copy={}
+  for _,point in ipairs(goals) do
+    assert(type(point)=="table" and W.finite(point.x) and W.finite(point.y),
+      "invalid navigation destination")
+    copy[#copy+1]={x=point.x,y=point.y}
+  end
+  self:stop_navigation()
+  self._nav_result=nil
+  self._nav_pending={goals=copy,index=1,cell=cell,max_nodes=max_nodes,
+    x=self.x,y=self.y,last_reason=nil}
+  return true,"queued"
+end
+function M:take_navigation_result()
+  local result=self._nav_result
+  self._nav_result=nil
+  return result
+end
+local function poll_navigation(self)
+  local job=self._nav_pending
+  if not job then return end
+  if self.x~=job.x or self.y~=job.y then
+    self:stop_navigation()
+    return
+  end
+  -- One candidate and 2ms / 8 collision checkpoints maximum per update.
+  -- On failure try the next original approach candidate on the NEXT frame.
+  local goal=job.goals[job.index]
+  if not job.search then
+    job.search=Path.begin(self.query,job.x,job.y,goal.x,goal.y,
+      self.radius,job.cell,job.max_nodes)
+  end
+  local finished,path,reason=job.search:step(2,8)
+  if not finished then return end
+  if path then
+    self.path=path;self.path_index=1
+    self._nav_result={ok=true}
+    self._nav_pending=nil
+  else
+    job.last_reason=reason
+    job.index=job.index+1
+    job.search=nil
+    if job.index>#job.goals then
+      self._nav_pending=nil
+      self._nav_result={ok=false,reason=job.last_reason}
+    end
+  end
+end
+function M:stop_navigation()
+  self.path=nil;self.path_index=1
+  self._nav_pending=nil
+end
 function M:step(ax,ay)
   assert(W.finite(ax) and W.finite(ay),'nonfinite input axis')
   if ax~=0 or ay~=0 then self:stop_navigation()
@@ -74,6 +127,11 @@ end
 function M:update(dt,ax,ay)
   assert(W.finite(dt) and dt>=0,'invalid frame delta')
   ax,ay=ax or 0,ay or 0
+  if ax~=0 or ay~=0 then
+    if self._nav_pending then self:stop_navigation() end
+  else
+    poll_navigation(self) -- once per frame, not per fixed physics substep
+  end
   -- Deliberately drop pause spikes; bounded catch-up is a game-design policy.
   self.accumulator=self.accumulator+math.min(dt,STEP*6)
   local steps=0
