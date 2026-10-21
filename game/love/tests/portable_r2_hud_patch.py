@@ -21,7 +21,10 @@ patch(main,[
 ("local object_count=0",r'''local object_count=0
 -- Package-only, in-memory R2 device probe. No simulation/save changes.
 local android_probe=require("core.r2_android_probe").new()
-if os.getenv("OSMAN_R2_DIAG_CULL_SMOKE")=="1" then android_probe.mode=2 end
+-- Conservative pre-sort screen culling is the R2 portable gameplay default.
+-- The unculled FULL mode remains available for controlled diagnostic A/B.
+if os.getenv("OSMAN_R2_FORCE_FULL")~="1" or
+   os.getenv("OSMAN_R2_DIAG_CULL_SMOKE")=="1" then android_probe.mode=2 end
 local diag_font,diag_font_size
 local base_stream_update=stream.update
 function stream:update(...)

@@ -139,7 +139,7 @@ jobs:
             2>&1 | tee "$RUNNER_TEMP/export/portable-runtime.log"
           grep -q 'CHUNK_CACHE_GAME_READY' "$RUNNER_TEMP/export/portable-runtime.log"
           grep -q 'CHUNK_CACHE_GAME_SMOKE_OK' "$RUNNER_TEMP/export/portable-runtime.log"
-          grep -q 'R2_PERF_PROFILE mode=FULL' "$RUNNER_TEMP/export/portable-runtime.log"
+          grep -q 'R2_PERF_PROFILE mode=CULL FAST' "$RUNNER_TEMP/export/portable-runtime.log"
           grep -E 'CHUNK_CACHE_GAME_READY.*hits=42 misses=0' "$RUNNER_TEMP/export/portable-runtime.log"
           screenshot="$(find "$XDG_DATA_HOME" -name chunk-cache-game.png -print -quit)"
           test -n "$screenshot" && test -s "$screenshot"
@@ -190,7 +190,13 @@ jobs:
           for mode in FULL CULL; do
             export XDG_DATA_HOME="$RUNNER_TEMP/lowresource-$mode"
             mkdir -p "$XDG_DATA_HOME"
-            if [ "$mode" = CULL ]; then export OSMAN_R2_DIAG_CULL_SMOKE=1; else unset OSMAN_R2_DIAG_CULL_SMOKE || true; fi
+            if [ "$mode" = FULL ]; then
+              export OSMAN_R2_FORCE_FULL=1
+              unset OSMAN_R2_DIAG_CULL_SMOKE || true
+            else
+              unset OSMAN_R2_FORCE_FULL || true
+              export OSMAN_R2_DIAG_CULL_SMOKE=1
+            fi
             (ulimit -v 1572864; OSMAN_R2_PROXY_BENCH=1 OSMAN_CACHE_DISPLAY=720x1600 \
               timeout 150s taskset -c "$first_cpu" \
               xvfb-run -a -s '-screen 0 1024x1800x24' \
