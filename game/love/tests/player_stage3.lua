@@ -253,3 +253,51 @@ assert(total_new<total_old,"pathfinder should reduce repeated collision queries"
 print(string.format("PATHFINDER_ASTAR_PARITY_OK cases=%d obstacle_queries_old=%d new=%d",
   #cases,total_old,total_new))
 
+
+-- R2-only cooperative navigation; Stage5/6 keeps synchronous API.
+local slow=fixture({{x=16,y=-8,w=16,h=16}})
+local reference,reference_reason=Path.find(slow,0,0,48,0,1,8,250)
+local pending=Path.begin(slow,0,0,48,0,1,8,250)
+local updates,finished,async_path,async_reason=0,false
+while not finished and updates<10000 do
+  updates=updates+1
+  finished,async_path,async_reason=pending:step(100,1)
+end
+assert(finished and updates>1 and async_reason==reference_reason)
+assert(#async_path==#reference,"cooperative A* route length differs")
+for i=1,#reference do
+  assert(async_path[i].x==reference[i].x and
+    async_path[i].y==reference[i].y,"cooperative A* waypoint differs")
+end
+local co=Player.new(slow,{x=0,y=0,speed=72,radius=1})
+assert(co:navigate_candidates_async({{x=24,y=0},{x=48,y=0}},8,250))
+assert(co._nav_pending and not co.path,"touch must not run search synchronously")
+local done,loops=nil,0
+for _=1,10000 do
+  co:update(1/60,0,0)
+  loops=loops+1
+  done=co:take_navigation_result()
+  if done then break end
+end
+assert(done and done.ok and co.path,"blocked first approach must fall through")
+assert(loops>1 and not co._nav_pending,"cooperative attempts need multiple updates")
+for _=1,280 do co:update(1/60,0,0) end
+assert(math.abs(co.x-48)<2 and math.abs(co.y)<2,"cooperative route not traversed")
+local override=Player.new(empty,{x=0,y=0,radius=1})
+override:navigate_candidates_async({{x=2048,y=2048}},8,2048)
+override:update(1/60,1,0)
+assert(not override._nav_pending and not override.path and
+  not override:take_navigation_result(),"manual joystick must cancel pending route")
+local repeated=Player.new(empty,{x=0,y=0,radius=1})
+repeated:navigate_candidates_async({{x=2048,y=2048}},8,2048)
+repeated:update(1/60,0,0)
+repeated:navigate_candidates_async({{x=16,y=0}},8,200)
+local value
+for _=1,1000 do
+  repeated:update(1/60,0,0)
+  value=repeated:take_navigation_result()
+  if value then break end
+end
+assert(value and value.ok and repeated.path and not repeated._nav_pending,
+  "new tap should replace pending route without stale completion")
+print("R2_COOPERATIVE_ASTAR_OK compare=exact attempts=sequential manual_cancel=pass retap=pass")
