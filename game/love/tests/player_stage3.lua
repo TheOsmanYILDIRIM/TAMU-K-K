@@ -346,3 +346,39 @@ assert(unchanged and #unchanged==0,
   'same-cell tap must preserve synchronous path semantics')
 print(string.format('R2_NEAR_TAP_DIRECT_OK frames=%d queries=%d baseline_queries=%d blocked_fallback=pass',
   direct_steps,straight.calls,baseline_calls))
+
+-- R2 object selection uses one cooperative multi-goal search; non-R2 P.find
+-- and the original eight-route oracle stay unchanged.
+local approach_goals={{x=160,y=0},{x=160,y=64},{x=112,y=0},
+  {x=160,y=-64},{x=192,y=32},{x=128,y=32},{x=128,y=-32},{x=192,y=-32}}
+local live_object=fixture({{x=150,y=-12,w=24,h=24}})
+local controller=Player.new(live_object,{x=0,y=0,speed=72,radius=1})
+controller:navigate_candidates_async(approach_goals,16,1024)
+assert(controller._nav_pending and controller.path==nil,
+  'object tap must enqueue without starting a synchronous search')
+local success,updates=nil,0
+repeat
+  updates=updates+1
+  controller:update(1/60,0,0)
+  success=controller:take_navigation_result()
+until success or updates>2000
+assert(success and success.ok and controller.path and updates<80,
+  'one-search approach must finish and choose a reachable goal')
+local dest=controller.path[#controller.path]
+local found=false
+for _,goal in ipairs(approach_goals) do
+  if math.floor(goal.x/16+.5)*16==dest.x and
+     math.floor(goal.y/16+.5)*16==dest.y then found=true end
+end
+assert(found and C.can_stand(live_object,dest.x,dest.y,1),
+  'async approach target must be a reachable snapped candidate')
+local second=Player.new(live_object,{x=0,y=0,radius=1})
+second:navigate_candidates_async(approach_goals,16,1024)
+second:update(1/60,0,0)
+second:navigate_candidates_async({{x=16,y=0}},16,100)
+assert(second._nav_pending and #second._nav_pending.goals==1,
+  'new touch must atomically replace a pending object approach')
+second:update(1/60,1,0)
+assert(not second._nav_pending and not second.path,
+  'manual movement must cancel object route before taking control')
+print('R2_MULTIGOAL_OBJECT_APPROACH_OK result_frames='..updates)
