@@ -6,6 +6,18 @@ Cache.__index=Cache
 local order={"meadow","forest","rocky","water","detail"}
 local format="<dddddddd"
 local function valid(v) return type(v)=="number" and v==v and math.abs(v)<math.huge end
+-- unpack() always returns numeric doubles; preserve NaN/Inf rejection without
+-- eight dynamic type checks and abs calls per vertex.
+local huge=math.huge
+local function finite_vertex(v) return v==v and v<huge and v>-huge end
+-- Additive diagnostics only. Never include coroutine suspension in CPU timing.
+local function sample(metrics,phase,start)
+ if not start then return end
+ local ms=(love.timer.getTime()-start)*1000
+ local key="read_"..phase
+ metrics[key.."_ms"]=(metrics[key.."_ms"] or 0)+ms
+ metrics[key.."_max_ms"]=math.max(metrics[key.."_max_ms"] or 0,ms)
+end
 local function sha(src)
  return love.data.encode("string","hex",love.data.hash("sha256",src))
 end
@@ -122,8 +134,11 @@ function Cache:read(cx,cy,checkpoint)
  local info=love.filesystem.getInfo(path,"file")
  if not info then self.metrics.misses=self.metrics.misses+1;return nil end
  local function decode()
+  local clock=love.timer and love.timer.getTime
   assert(info.size>64 and info.size<20*1024*1024,"invalid file length")
+  local started=clock and clock()
   local encoded=assert(love.filesystem.read(path))
+  sample(self.metrics,"io",started)
   local parts=assert(lines(encoded),"missing cache header")
   assert(parts[1]=="OSMAN-STATIC-CACHE-1" and parts[2]==self.signature,
     "stale cache version/content")
@@ -137,23 +152,37 @@ function Cache:read(cx,cy,checkpoint)
    total=total+count
   end
   assert(#counts==#order and total<=500000,"invalid layer layout")
-  assert(#parts[4]==64 and sha(parts[5])==parts[4],"cache checksum mismatch")
+  local started_hash=clock and clock()
+  local digest=sha(parts[5])
+  sample(self.metrics,"hash",started_hash)
+  assert(#parts[4]==64 and digest==parts[4],"cache checksum mismatch")
+  local started_lz4=clock and clock()
   local buffer=love.data.decompress("string","lz4",parts[5])
+  sample(self.metrics,"lz4",started_lz4)
   assert(#buffer==total*64,"cache vertex byte length mismatch")
   local result={}
   local pos=1
+  local unpack_vertex=love.data.unpack
+  local started_unpack=clock and clock()
   for i,name in ipairs(order) do
    local out={}
    for j=1,counts[i] do
-    local x,y,u,v,r,g,b,a,newpos=love.data.unpack(format,buffer,pos)
-    assert(valid(x) and valid(y) and valid(u) and valid(v)
-      and valid(r) and valid(g) and valid(b) and valid(a),"cache NaN/Inf")
+    local x,y,u,v,r,g,b,a,newpos=unpack_vertex(format,buffer,pos)
+    assert(finite_vertex(x) and finite_vertex(y) and
+      finite_vertex(u) and finite_vertex(v) and
+      finite_vertex(r) and finite_vertex(g) and
+      finite_vertex(b) and finite_vertex(a),"cache NaN/Inf")
     pos=newpos
     out[j]={x,y,u,v,r,g,b,a}
-    if checkpoint and j%256==0 then checkpoint() end
+    if checkpoint and j%256==0 then
+      sample(self.metrics,"unpack",started_unpack)
+      checkpoint()
+      started_unpack=clock and clock()
+    end
    end
    result[name]=out
   end
+  sample(self.metrics,"unpack",started_unpack)
   assert(pos==#buffer+1,"trailing cache data")
   return result,total
  end

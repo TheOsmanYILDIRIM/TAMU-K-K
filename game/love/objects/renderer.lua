@@ -1,6 +1,7 @@
 -- Sorted 45-degree world-foot sprites; GPU-independent placement and mutable state.
 local Depth=require("player.depth")
-local R={}
+local R={metrics={collect_calls=0,cold_queries=0,cold_query_ms=0,
+ cold_query_max_ms=0,collect_last_ms=0,collect_max_ms=0}}
 local CoreVisual=require("player.core_visual")
 local AxeStrike=require("player.axe_strike")
 local axe_image=nil
@@ -40,6 +41,9 @@ end
 -- and R2 day-based regrowth MUST be read live every draw/pick. Chunk eviction
 -- bounds lifetime; different world identities (Stage6 publish) rebuild it.
 function R.collect(world,stream)
+  local clock=love and love.timer and love.timer.getTime
+  local started=clock and clock()
+  R.metrics.collect_calls=R.metrics.collect_calls+1
   local list,seen={},{}
   local immutable=world.generator_version==1 and
     type(world.is_depleted)=="function"
@@ -48,8 +52,15 @@ function R.collect(world,stream)
     if immutable then
       if chunk._object_render_world~=world or
         not chunk._object_render_candidates then
+        local cold_started=clock and clock()
         local all=world:objects_in({min_x=chunk.x,min_y=chunk.y,
           max_x=chunk.x+chunk.size,max_y=chunk.y+chunk.size},true)
+        R.metrics.cold_queries=R.metrics.cold_queries+1
+        if cold_started then
+          local ms=(clock()-cold_started)*1000
+          R.metrics.cold_query_ms=R.metrics.cold_query_ms+ms
+          R.metrics.cold_query_max_ms=math.max(R.metrics.cold_query_max_ms,ms)
+        end
         local owned={}
         for _,o in ipairs(all) do
           if o.cx==chunk.cx and o.cy==chunk.cy then
@@ -70,6 +81,11 @@ function R.collect(world,stream)
         list[#list+1]=o;seen[o.id]=true
       end
     end
+  end
+  if started then
+    local ms=(clock()-started)*1000
+    R.metrics.collect_last_ms=ms
+    R.metrics.collect_max_ms=math.max(R.metrics.collect_max_ms,ms)
   end
   return list
 end
