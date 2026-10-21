@@ -158,6 +158,23 @@ love.update=function(dt)
   r2_base_love_update(dt)
   android_probe:add("update",(love.timer.getTime()-t)*1000)
 end
+-- Dedicated CI proxy run, deterministic idle camera/seed and 180+ samples.
+-- Deliberately excludes Android/GPU/thermal emulation claims.
+if os.getenv("OSMAN_R2_PROXY_BENCH")=="1" then
+  local base_draw=love.draw
+  love.draw=function(...)
+    base_draw(...)
+    if boot_ready and android_probe.total>=240 and android_probe.ready==stats.needed then
+      local fp50,fp95,fp99,fmax=android_probe:quantiles("frame")
+      local up50,up95=android_probe:quantiles("update")
+      local ob50,ob95=android_probe:quantiles("objects")
+      local pl50,pl95=android_probe:quantiles("player")
+      print(string.format("R2_PROXY_RESULT mode=%d samples=180 ready=%d needed=%d frame_p50=%.2f frame_p95=%.2f frame_p99=%.2f frame_max=%.2f update_p50=%.2f update_p95=%.2f objects_p50=%.2f objects_p95=%.2f player_p50=%.2f player_p95=%.2f",android_probe.mode,android_probe.ready,stats.needed,fp50,fp95,fp99,fmax,up50,up95,ob50,ob95,pl50,pl95))
+      io.stdout:flush()
+      love.event.quit(0)
+    end
+  end
+end
 ''')
 
 terrain=root/"world/terrain_renderer.lua"

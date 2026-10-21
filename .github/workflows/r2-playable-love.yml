@@ -177,6 +177,24 @@ jobs:
           cp "$screenshot" "$RUNNER_TEMP/export/R2_CULL_FAST_Goruntu.png"
           file "$RUNNER_TEMP/export/R2_CULL_FAST_Goruntu.png" | grep -q 'PNG image data'
           echo R2_CULL_FAST_REAL_ENGINE_OK
+      - name: Low-resource 720x1600 Linux proxy benchmark (not Tecno hardware)
+        shell: bash
+        run: |
+          set -euo pipefail
+          first_cpu="$(awk '/Cpus_allowed_list:/ {split($2,a,",");split(a[1],b,"-");print b[1]}' /proc/self/status)"
+          test -n "$first_cpu"
+          for mode in FULL CULL; do
+            export XDG_DATA_HOME="$RUNNER_TEMP/lowresource-$mode"
+            mkdir -p "$XDG_DATA_HOME"
+            if [ "$mode" = CULL ]; then export OSMAN_R2_DIAG_CULL_SMOKE=1; else unset OSMAN_R2_DIAG_CULL_SMOKE || true; fi
+            (ulimit -v 1572864; OSMAN_R2_PROXY_BENCH=1 OSMAN_CACHE_DISPLAY=720x1600 \
+              timeout 150s taskset -c "$first_cpu" \
+              xvfb-run -a -s '-screen 0 1024x1800x24' \
+              love "$RUNNER_TEMP/export/Osman_Oyun_R2_Guncel.love") \
+              2>&1 | tee "$RUNNER_TEMP/export/proxy-$mode.log"
+            grep -q "R2_PROXY_RESULT mode=$([ "$mode" = FULL ] && echo 1 || echo 2) samples=180" "$RUNNER_TEMP/export/proxy-$mode.log"
+          done
+          echo "R2_PROXY_LINUX_OK viewport=720x1600 affinity=1core virtual_memory_limit=1536MiB gpu=software_or_runner_not_mobile"
       - name: Upload verified playable LOVE and evidence
         if: always()
         uses: actions/upload-artifact@v4
