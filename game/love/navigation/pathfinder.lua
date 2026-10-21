@@ -174,6 +174,59 @@ end
 -- but elapsed time and count are bounded between coroutine checkpoints.
 function P.begin(query,sx,sy,gx,gy,r,cell,max_nodes)
   local worker=coroutine.create(function()
+    -- R2-only tap shortcut: prove a clear, short direct line with the same
+    -- swept collision primitive as the player. Never speculate through walls.
+    -- Limit the sweep rectangle with <=32-unit sections so each R2 topography
+    -- query examines a small number of lattice cells.
+    local grid=cell or 16
+    local tx=math.floor(gx/grid+.5)*grid
+    local ty=math.floor(gy/grid+.5)*grid
+    local dx,dy=tx-sx,ty-sy
+    local length=math.sqrt(dx*dx+dy*dy)
+    local start_grid_x=math.floor(sx/grid+.5)*grid
+    local start_grid_y=math.floor(sy/grid+.5)*grid
+    if length>0 and length<=640 and
+       (start_grid_x~=tx or start_grid_y~=ty) then
+      local start_ok=C.can_stand(query,sx,sy,r)
+      coroutine.yield()
+      if start_ok then
+        -- Preserve the legacy requirement that the start grid cell is clear.
+        local ax,ay=start_grid_x,start_grid_y
+        local cell_ok=C.can_stand(query,ax,ay,r)
+        coroutine.yield()
+        if cell_ok then
+          local connector_ok=true
+          if ax~=sx or ay~=sy then
+            local cx,cy,hit=C.move(query,sx,sy,ax-sx,ay-sy,r)
+            connector_ok=not hit and math.abs(cx-ax)<1e-5 and math.abs(cy-ay)<1e-5
+            coroutine.yield()
+          end
+          if connector_ok then
+            local goal_ok=C.can_stand(query,tx,ty,r)
+            coroutine.yield()
+            if goal_ok then
+              local n=math.ceil(length/32)
+              local previous_x,previous_y=sx,sy
+              local clear=true
+              for i=1,n do
+                local x=sx+dx*i/n
+                local y=sy+dy*i/n
+                local nx,ny,hit=C.move(query,previous_x,previous_y,
+                  x-previous_x,y-previous_y,r)
+                coroutine.yield()
+                if hit or math.abs(nx-x)>1e-5 or math.abs(ny-y)>1e-5 then
+                  clear=false;break
+                end
+                previous_x,previous_y=x,y
+              end
+              if clear then return {{x=tx,y=ty}},nil end
+            end
+          end
+        end
+      end
+    end
+    -- If direct travel is blocked, the original deterministic A* searches
+    -- exactly as before. Stage5/6 still call unchanged synchronous P.find.
     return search(query,sx,sy,gx,gy,r,cell,max_nodes,coroutine.yield)
   end)
   local run={}
