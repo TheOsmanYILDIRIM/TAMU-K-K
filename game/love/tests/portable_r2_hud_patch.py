@@ -21,6 +21,7 @@ patch(main,[
 ("local object_count=0",r'''local object_count=0
 -- Package-only, in-memory R2 device probe. No simulation/save changes.
 local android_probe=require("core.r2_android_probe").new()
+if os.getenv("OSMAN_R2_DIAG_CULL_SMOKE")=="1" then android_probe.mode=2 end
 local diag_font,diag_font_size
 local base_stream_update=stream.update
 function stream:update(...)
@@ -38,6 +39,15 @@ Terrain.draw=function(...)
 end
 Terrain.on_mesh=function(ms,vertices)
   android_probe:mesh(ms,vertices)
+end
+-- Time the unchanged production player update separately from the stream.
+local base_player_update=Controller.update
+Controller.update=function(self,...)
+  local started=love.timer.getTime()
+  local steps=base_player_update(self,...)
+  android_probe:add("player",(love.timer.getTime()-started)*1000)
+  android_probe.last_steps=steps
+  return steps
 end
 local base_object_collect=ObjectRenderer.collect
 ObjectRenderer.collect=function(...)
@@ -187,23 +197,35 @@ obj=root/"objects/renderer.lua"
 patch(obj,[
 ("function R.draw(world,stream,camera,w,h,player,selected_id,harvesting)",r'''-- Screen-only conservative culling experiment. Never removes candidate objects,
 -- changes interaction/collision state, or excludes the player's sprite.
+-- R2 pilot terrain is bounded (Generator v1 0..24, valley down to -2).
+-- Its height displacement is <= 8.4*zoom at scale .35; 32*zoom
+-- gives conservative room without calling the costly height query.
+-- This is a PACKAGE-ONLY opt-in experiment, not the general renderer.
+local Iso=require("world.iso")
 local function on_screen(camera,w,h,o)
-  local x,y=camera:project(o.x,o.y,w,h)
+  local sx,sy=Iso.project(o.x-camera.x,o.y-camera.y)
   local z=camera.zoom
+  local x,y=w*.5+sx*z,h*.5+sy*z
   local side=(o.kind=="tree" and 28 or 22)*z+o.radius*z*1.5+12
-  local top=(o.kind=="tree" and 82 or 36)*z+12
-  local bottom=o.radius*z*.9+12
+  local top=(o.kind=="tree" and 82 or 36)*z+12+32*z
+  local bottom=o.radius*z*.9+12+32*z
   return x>=-side and x<=w+side and y>=-bottom and y<=h+top
 end
 function R.draw(world,stream,camera,w,h,player,selected_id,harvesting)
   R.diag_culled=0'''),
+("  for _,o in ipairs(all) do order[#order+1]={id=o.id,depth=Depth.key(o.x,o.y),object=o} end",
+r'''  for _,o in ipairs(all) do
+    if not R.diag_cull or on_screen(camera,w,h,o) then
+      order[#order+1]={id=o.id,depth=Depth.key(o.x,o.y),object=o}
+    else
+      R.diag_culled=R.diag_culled+1
+    end
+  end'''),
 ('    if entry.player then player_sprite(g,camera,w,h,player,visual)\n    else object_sprite(g,camera,w,h,entry.object,entry.id==selected_id) end',
 r'''    if entry.player then
       player_sprite(g,camera,w,h,player,visual)
-    elseif not R.diag_cull or on_screen(camera,w,h,entry.object) then
-      object_sprite(g,camera,w,h,entry.object,entry.id==selected_id)
     else
-      R.diag_culled=R.diag_culled+1
+      object_sprite(g,camera,w,h,entry.object,entry.id==selected_id)
     end''')
 ])
 print("R2_ANDROID_DIAGNOSTICS_PATCH_OK")

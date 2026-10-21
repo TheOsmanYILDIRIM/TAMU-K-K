@@ -2,8 +2,8 @@
 -- No gameplay state, disk writes, screenshots, or Stage6 integrations.
 local Probe={}
 Probe.__index=Probe
-local names={"frame","update","stream","terrain","objects","collect","upload","read_io","lz4"}
-local modes={"FULL","CULL","NO OBJECTS","NO TERRAIN"}
+local names={"frame","update","player","stream","terrain","objects","collect","upload","read_io","lz4"}
+local modes={"FULL","CULL FAST","NO OBJECTS","NO TERRAIN"}
 local size=180
 function Probe.new()
   local self=setmetatable({mode=1,history={},current={},total=0,
@@ -103,6 +103,7 @@ function Probe:lines()
     string.format("CPU ms: p50/p95/p99/max [%d]",math.min(self.total,size)),
     formatted(self,"frame","Frame"),
     formatted(self,"update","Update"),
+    formatted(self,"player","Player"),
     formatted(self,"stream","Stream"),
     formatted(self,"terrain","Terrain"),
     formatted(self,"objects","Objects"),
@@ -112,7 +113,7 @@ function Probe:lines()
     formatted(self,"lz4","LZ4"),
     string.format("Lua %.1fMB peak %.1fMB tex %.1fMB",
       self.lua_mib,self.lua_peak_mib,self.tex_mib),
-    string.format("newMesh last %d | verts %d",self.uploaded,self.vertices),
+    string.format("newMesh %d verts %d | steps %d",self.uploaded,self.vertices,self.last_steps or 0),
     "GPU timing: not measured (CPU calls only)"
   }
   return self.cache_lines

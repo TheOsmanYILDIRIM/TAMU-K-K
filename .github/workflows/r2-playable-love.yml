@@ -5,6 +5,9 @@ on:
       - experiment/r2-persistent-chunk-cache-20261020
     paths:
       - .github/workflows/r2-playable-love.yml
+      - game/love/tests/portable_r2_hud_patch.py
+      - game/love/core/r2_android_probe.lua
+      - game/love/tests/r2_android_probe.lua
   workflow_dispatch:
 jobs:
   package:
@@ -156,6 +159,24 @@ jobs:
           cp "$screenshot" "$RUNNER_TEMP/export/R2_Mobil_Dikey_Onizleme.png"
           file "$RUNNER_TEMP/export/R2_Mobil_Dikey_Onizleme.png" | grep -q 'PNG image data'
           echo R2_PORTRAIT_PREBAKE_OK
+      - name: Real R2 CULL FAST mode smoke (same pinned world, visible foreground)
+        shell: bash
+        run: |
+          set -euo pipefail
+          export XDG_DATA_HOME="$RUNNER_TEMP/portable-cull-disposable-user"
+          mkdir -p "$XDG_DATA_HOME"
+          OSMAN_R2_DIAG_CULL_SMOKE=1 OSMAN_CHUNK_CACHE_SMOKE=1 \
+            OSMAN_CACHE_DISPLAY=691x1536 timeout 120s \
+            xvfb-run -a -s '-screen 0 1280x2000x24' \
+            love "$RUNNER_TEMP/export/Osman_Oyun_R2_Guncel.love" \
+            2>&1 | tee "$RUNNER_TEMP/export/cull-runtime.log"
+          grep -q 'R2_PERF_PROFILE mode=CULL FAST' "$RUNNER_TEMP/export/cull-runtime.log"
+          grep -q 'CHUNK_CACHE_GAME_SMOKE_OK' "$RUNNER_TEMP/export/cull-runtime.log"
+          screenshot="$(find "$XDG_DATA_HOME" -name chunk-cache-game.png -print -quit)"
+          test -n "$screenshot" && test -s "$screenshot"
+          cp "$screenshot" "$RUNNER_TEMP/export/R2_CULL_FAST_Goruntu.png"
+          file "$RUNNER_TEMP/export/R2_CULL_FAST_Goruntu.png" | grep -q 'PNG image data'
+          echo R2_CULL_FAST_REAL_ENGINE_OK
       - name: Upload verified playable LOVE and evidence
         if: always()
         uses: actions/upload-artifact@v4
