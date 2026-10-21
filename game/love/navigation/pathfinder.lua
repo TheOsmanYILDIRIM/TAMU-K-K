@@ -342,7 +342,7 @@ function P.begin_any(query,sx,sy,goals,r,cell,max_nodes)
                   local y=sy+delta_y*k/n
                   local ex,ey,hit=C.move(query,px,py,x-px,y-py,r)
                   coroutine.yield()
-                  if hit or math.abs(ex-x)>1e-5 or math.abs(ey-y)<1e-5 then
+                  if hit or math.abs(ex-x)>1e-5 or math.abs(ey-y)>1e-5 then
                     clear=false;break
                   end
                   px,py=x,y
