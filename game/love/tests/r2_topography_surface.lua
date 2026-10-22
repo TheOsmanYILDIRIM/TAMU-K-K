@@ -132,3 +132,38 @@ assert(#dynamic:colliders(0,0,16,16,8)==4)
 print("R2_STATIC_COLLIDER_CACHE_PARITY_OK unchanged_rects=180x16")
 
 print("R2 topography contract, ramps, steps, sight, building, chunks, colliders OK")
+
+-- R2 prewarm reuses the immutable collider classification exactly, but
+-- production/dynamic topography receives no speculative cached result.
+local samples=0
+local hot=Topo.new({height_at=function(x,y)
+  samples=samples+1
+  return x>40 and (x-40)*.75 or 0
+end,static_collider_cache=true})
+local cold=Topo.new({height_at=function(x,y)
+  return x>40 and (x-40)*.75 or 0
+end})
+local max_one=0
+for i=1,1000 do
+  local n,complete=hot:prewarm_colliders(0,0,48,100,3)
+  if n>max_one then max_one=n end
+  if complete then break end
+end
+assert(max_one<=3 and hot._collider_cache.count<=169)
+local warmed_samples=samples
+for _,region in ipairs({{-16,-16,40,24},{24,0,48,32},{-40,-24,24,40}}) do
+ local expected=cold:colliders(region[1],region[2],region[3],region[4],8)
+ local actual=hot:colliders(region[1],region[2],region[3],region[4],8)
+ assert(#expected==#actual)
+ for i=1,#actual do
+  assert(expected[i].x==actual[i].x and expected[i].y==actual[i].y)
+ end
+end
+assert(samples==warmed_samples,'warmed region queried height again')
+local unused=Topo.new({height_at=function(x,y) return x end})
+assert(select(1,unused:prewarm_colliders(0,0,32,100,3))==0)
+assert(unused._collider_cache==nil)
+local misses=hot._collider_cache.misses
+hot:prewarm_colliders(64,0,16,100,1)
+assert(hot._collider_cache.misses>misses,'moving player should warm a new region')
+print('R2_COLLIDER_PREWARM_OK bound=3 parity=pass dynamic=live no_extra_height=pass')
