@@ -382,3 +382,23 @@ second:update(1/60,1,0)
 assert(not second._nav_pending and not second.path,
   'manual movement must cancel object route before taking control')
 print('R2_MULTIGOAL_OBJECT_APPROACH_OK result_frames='..updates)
+
+-- Pure controller boundary: R2-only idle preload never runs on manual input,
+-- while searching, or while following a path; Stage5/6 remain unaffected.
+local preheat=Player.new(empty,{x=0,y=0,radius=1})
+local warmed=0
+preheat._r2_collider_preheat={prewarm_colliders=function(_,x,y,radius,ms,count)
+ warmed=warmed+1
+ assert(radius==96 and ms==.6 and count==4)
+end}
+preheat:update(1/60,0,0)
+assert(warmed==1)
+preheat:update(1/60,1,0)
+assert(warmed==1)
+preheat:navigate_candidates_async({{x=128,y=0}},8,900)
+preheat:update(1/60,0,0)
+assert(warmed==1)
+preheat:stop_navigation()
+preheat:update(1/60,0,0)
+assert(warmed==2)
+print('R2_IDLE_PREWARM_GATING_OK')
