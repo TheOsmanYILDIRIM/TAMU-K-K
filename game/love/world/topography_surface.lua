@@ -235,4 +235,56 @@ function M:colliders(min_x,min_y,max_x,max_y,cell)
   end end
   return result
 end
+
+-- Low-priority R2-only immutable cliff-cell warming near an idle player.
+-- Uses exactly the same authoritative collider classification/cache as
+-- M:colliders; never caches mutable objects, or stores world/save data.
+-- A single slow height sample cannot be preempted, so time is best-effort.
+function M:prewarm_colliders(x,y,radius,max_ms,max_cells)
+  local cache=self._collider_cache
+  if not cache then return 0,false end -- dynamic topography is always live
+  check(x);check(y)
+  radius=positive(radius or 96,"prewarm radius")
+  max_ms=positive(max_ms or .6,"prewarm time budget")
+  max_cells=positive(max_cells or 4,"prewarm cell budget")
+  assert(max_cells%1==0 and max_cells<=16,"invalid prewarm cell budget")
+  local cell=8
+  local cx,cy=math.floor(x/cell),math.floor(y/cell)
+  local ring_max=math.ceil(radius/cell)
+  assert(ring_max<=32,"prewarm radius too large")
+  local state=self._prewarm_state
+  -- Small movements retain work; restart only when the player changes cell.
+  if not state or state.cx~=cx or state.cy~=cy or state.ring_max~=ring_max then
+    state={cx=cx,cy=cy,ring_max=ring_max,ring=0,offset=0}
+    self._prewarm_state=state
+  end
+  local now=(love and love.timer and love.timer.getTime) or os.clock
+  local deadline=now()+max_ms/1000
+  local built,seen=0,0
+  while state.ring<=ring_max and built<max_cells and seen<32 do
+    if now()>=deadline then break end
+    local ring,offset=state.ring,state.offset
+    local dx,dy
+    if ring==0 then dx,dy=0,0
+    else
+      local side=2*ring
+      if offset<side then dx,dy=-ring+offset,-ring
+      elseif offset<2*side then dx,dy=ring,-ring+offset-side
+      elseif offset<3*side then dx,dy=ring-(offset-2*side),ring
+      else dx,dy=-ring,ring-(offset-3*side) end
+    end
+    state.offset=offset+1
+    if state.offset==(ring==0 and 1 or 8*ring) then
+      state.ring=ring+1;state.offset=0
+    end
+    seen=seen+1
+    local ix,iy=cx+dx,cy+dy
+    local key=cell..":"..ix..":"..iy
+    if cache.values[key]==nil then
+      self:colliders(ix*cell,iy*cell,(ix+1)*cell,(iy+1)*cell,cell)
+      built=built+1
+    end
+  end
+  return built,state.ring>ring_max
+end
 return M
