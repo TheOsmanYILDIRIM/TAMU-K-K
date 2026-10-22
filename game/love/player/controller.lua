@@ -144,6 +144,12 @@ function M:update(dt,ax,ay)
     steps=steps+1
   end
   if self.accumulator<0 then self.accumulator=0 end
+  -- R2-only, idle-background cliff preparation: never compete with a touch
+  -- route, manual movement or a currently followed path.
+  if self._r2_collider_preheat and not self._nav_pending and not self.path and
+     ax==0 and ay==0 then
+    self._r2_collider_preheat:prewarm_colliders(self.x,self.y,96,.6,4)
+  end
   return steps
 end
 return M
