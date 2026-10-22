@@ -86,7 +86,9 @@ function M:spawn_player(building)
         local x,y=ax+dx,ay+dy
         if self.query:is_walkable(x,y) and
            Collision.can_stand(building,x,y,5) then
-          return Controller.new(building,{x=x,y=y,radius=5,speed=96})
+          local player=Controller.new(building,{x=x,y=y,radius=5,speed=96})
+          player._r2_collider_preheat=self.topography
+          return player
         end
       end
     end end
