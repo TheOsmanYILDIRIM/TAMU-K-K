@@ -4,6 +4,7 @@ local R={metrics={collect_calls=0,cold_queries=0,cold_query_ms=0,
  cold_query_max_ms=0,collect_last_ms=0,collect_max_ms=0}}
 local CoreVisual=require("player.core_visual")
 local AxeStrike=require("player.axe_strike")
+local VisualVariants=require("objects.visual_variants")
 local axe_image=nil
 local function player_sprite(g,camera,w,h,player,visual_context)
   return CoreVisual.draw(g,camera,w,h,player,visual_context)
@@ -11,25 +12,7 @@ end
 local function object_sprite(g,camera,w,h,o,selected)
   local x,y=camera:project(o.x,o.y,w,h)
   local z=camera.zoom
-  g.setColor(0,.09,.08,.33)
-  g.ellipse("fill",x,y+3*z,o.radius*z*1.25,o.radius*z*.60)
-  if o.kind=="tree" then
-    g.setColor(.28,.19,.12)
-    g.rectangle("fill",x-4*z,y-39*z,8*z,39*z)
-    g.setColor(.14,.29,.19)
-    g.polygon("fill",x-24*z,y-23*z,x,y-69*z,x+24*z,y-23*z)
-    g.setColor(.19,.40,.26)
-    g.polygon("fill",x-22*z,y-37*z,x,y-78*z,x+22*z,y-37*z)
-    g.setColor(.31,.52,.32)
-    g.polygon("fill",x-14*z,y-51*z,x,y-79*z,x+14*z,y-51*z)
-  else
-    g.setColor(.25,.31,.34)
-    g.polygon("fill",x-17*z,y-4*z,x-13*z,y-21*z,x+3*z,y-32*z,x+17*z,y-17*z,x+14*z,y,x-7*z,y+3*z)
-    g.setColor(.50,.54,.52)
-    g.polygon("fill",x-13*z,y-21*z,x+3*z,y-32*z,x+17*z,y-17*z,x,y-13*z)
-    g.setColor(.36,.41,.43)
-    g.polygon("fill",x-17*z,y-4*z,x,y-13*z,x+14*z,y,x-7*z,y+3*z)
-  end
+  VisualVariants.draw(g,x,y,z,o)
   if selected then
     g.setColor(1,.82,.3,.9)
     g.setLineWidth(2)
