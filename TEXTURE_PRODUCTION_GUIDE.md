@@ -110,3 +110,20 @@ python scripts/texture_prepare.py source_tree.png T-01_candidate.png --kind obje
 - Onay sunumu **gerçek işlenmiş PNG** üzerinden izometrik 2:1 grid üzerinde, doğal oyun mesafesiyle birlikte gösterilir. Sunumdaki büyütme yönteminin yalnız önizleme olduğu açıkça belirtilir. Her asset için kaynak / işlenmiş aday statüsü, tam piksel ölçüsü, gerçek görünür RGB renk sayısı, alfa, SHA-256/manifest ve production'a yazılma durumu belirtilir. Bir sunum çizimi üretim PNG'sinin yerini alamaz.
 - Önce kullanıcı **kaynak görseli**, sonra **işlenmiş adayın grid ve oyun ölçeğindeki görünümünü** ayrı kabul eder; ikisi olmadan production asset'i değiştirme. Doğal ağaç siluetiyle salt PNG'den tam 45° azimut / 35,264° ortografik kamera açısı matematiksel olarak doğrulanamaz. Bu kontrol için gerçek 3D geometri/kamera veya bilinen referans eksenleri gerekir.
 - İşlenmiş PNG ve manifest bu oturumda yerel teslimdir; **GitHub'a production görseli yüklenmedi**. Kaynağın, adayın ve manifestin kalıcı asset depolaması ve gerçek LÖVE/Android oyun testleri ayrıca açık kalır.
+
+## 7. Kalıcı obje sürüm arşivi — Drive (2026-10-26)
+
+Ana klasör: [OSMAN OYUN / Texture_Archive](https://drive.google.com/drive/folders/1n3nkFdX3rPluAHU5aS95Ci5nYBp8_CHe) (mevcut Google Drive `oyun` klasörünün altında, paylaşımı değiştirilmedi).
+
+- [T-01 · Yaşlı meşe](https://drive.google.com/drive/folders/1roURVeSUEl5icpmnHIg2bBBB0tBVWXPW)
+- [T-02 · İğne yapraklı](https://drive.google.com/drive/folders/12WL7WGrEVkKBhL0bOtSBKnDQT_fAogpH)
+- [T-03 · Genç ağaç](https://drive.google.com/drive/folders/10F0u-hQ6hOwSAyjJ1e5f1PmUVVXmnEhO)
+- [R-01 · Küçük taşlar](https://drive.google.com/drive/folders/1Jgxu6ugMD30UCYpJ0oEMJB5WqV6S79vR)
+- [R-02 · Orta kaya](https://drive.google.com/drive/folders/1rq3ko2htSS-FvBgsOcAdOtSvY_aMeM4t)
+- [R-03 · Büyük kaya](https://drive.google.com/drive/folders/1lcNmAVhl-DUaCXq4s8A5miOrCLz9yLD-)
+- [R-04 · Kaya çıkıntısı](https://drive.google.com/drive/folders/1l4oUiirnAm948XIKbb8T5v2lKhI6kixg)
+
+- Her objenin **her orijinal üretimi**, **her Python işleme varyantı** ve **her izometrik/oyun ölçeği kontrolü** aynı obje klasörüne ayrı dosya olarak kaydedilir: `<ID>_source_v001.png`, `<ID>_processed_v001.png`, `<ID>_review_v001.png`; yeni sürümler `v002`, `v003` olarak devam eder. Kullanıcının daha önce onayladığı sürüm korunur, asla üzerine yazılmaz.
+- Kaynak, türetilmiş görüntü, prompt, parametreler, giriş/çıkış SHA-256, Drive dosya kimliği, karar (`candidate/approved/rejected`) ve zamana ilişkin bilgileri sürüm manifestinde tut. `review` sunumunu kaynak RGBA yerine koyma.
+- Sadece burada klasörlerin **oluşturulmuş olması**, PNG'lerin yüklenmiş olduğu veya sonraki her dosyanın otomatik yükleneceği anlamına gelmez. Her üretim/işleme turunda Drive'a gerçek dosya yüklemesini ve metadata geri okumasını ayrı doğrula; erişim/araç engelini açık bırak. Drive'a yüklemeden yerel/GitHub sürümleri silme.
+- Oyun runtime dosyalarını Drive'dan çekmez. Yalnız açıkça seçilen/manuel kabul edilmiş işlenmiş PNG oyunun `game/love/assets/` katmanına bağlanır. T-01 görsel olarak kabul edilmiş olsa da kaynak PNG ve oyun smoke testleri ayrıca doğrulanır. Zemin texture'larını tekrar üretme veya değiştirme.
