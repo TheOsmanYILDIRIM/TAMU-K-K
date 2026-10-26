@@ -55,3 +55,7 @@ GitHub Actions'taki `LOVE Stage 5 inventory crafting building` workflow'u Lua 5.
 ## Koruma
 
 `main` üzerindeki stüdyo ve veri dosyalarını, yedekleri, kayıtları, PNG'leri ve IndexedDB kullanıcı verilerini koru. World Builder'ın yayınlanan `world-builder/` kaynakları ve 2D tasarım notu `main` üzerinde korunur; Pages artık ayrı deney dalından checkout yapmaz (doğrulama: Actions #39125381260). Tamamlanmamış mobil vadi demosu ayrı Beyin görevinde açık kalır; eski deney kodları topluca `main`e taşınmaz. Varlıklar lisans/kaynak/hash doğrulaması sonrasında entegre edilir.
+
+## 🎨 Obje texture sürüm arşivi (Google Drive)
+
+GPT Image kaynakları, Python ile işlenmiş adaylar ve izometrik kontrol görsellerinin **tüm sürümleri** Drive'daki [Texture_Archive](https://drive.google.com/drive/folders/1n3nkFdX3rPluAHU5aS95Ci5nYBp8_CHe) altında obje kimliğine göre saklanır. [Üretim/kalite yönergesi](TEXTURE_PRODUCTION_GUIDE.md) ve [Python hazırlama aracı](scripts/texture_prepare.py). Zemin texture'ları tamamlanmıştır; yeni üretim kapsamı mevcut ağaç ve kaya objeleridir. Drive saklama işlemi otomatik senkronize değildir; her onaylı kaynak/aday yüklenip dosya kimliği ve SHA-256 manifestte doğrulanmalıdır. Drive klasörü oyun runtime bağımlılığı değildir.
