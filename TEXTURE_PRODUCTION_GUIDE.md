@@ -86,3 +86,18 @@ Bu örnek **tileable düzeltmesi yapmaz**. Çimen için 64 RGB renk sınırıdı
 - Kesin dikişsizliği GPT Image'ın iddiasından veya kenar metriklerinden çıkarma. 3×3 tekrar görünümü ve gerekiyorsa manuel rötuş şart.
 
 Bu rehber, texture ailesini çoğaltmak için bir **karar/kabul sözleşmesidir**, otomatik oyun entegrasyonu veya henüz yapılmamış testlerin başarı beyanı değildir.
+
+## 6. Test edilmiş yardımcı Python aracı (2026-10-26)
+
+Kod: [`scripts/texture_prepare.py`](scripts/texture_prepare.py). Bağımlılıklar: `pillow`, `numpy`, `scikit-learn`, `scikit-image` (örn. `python -m pip install pillow numpy scikit-learn scikit-image`). Aracı kaynak dosyadan ayrı çıktı yoluyla kullan:
+
+```sh
+python scripts/texture_prepare.py source_grass.png grass_meadow_0.png --kind ground
+python scripts/texture_prepare.py source_tree.png T-01_candidate.png --kind object --size 256
+```
+
+- Zemin varsayılanı: 128×128 LANCZOS, Lab K-means (64 renk üst sınır, `random_state=42`, `n_init=10`, dithering yok), sRGB PNG, SHA-256 içeren `*.manifest.json` ve `*_tile_preview.png` (3×3) çıktısı.
+- Obje: gerçek RGBA girdisi zorunlu; alfa tahmin edilmez. Premultiplied-alpha mantığıyla LANCZOS boyutlandırma, oranı koruma, kare tuvale alt-orta pivotla yerleştirme ve yalnız görünür RGB piksellerini en fazla 64 renge indirme uygular. `--size 256` sadece obje için **aday** bir değerdir, onaylı oyun ölçüsü değildir.
+- ICC varsa sRGB'ye dönüştürür; ICC yoksa sRGB varsayımını manifestte kaydeder. Kaynak dosyayı değiştirmez, aynı isimli çıktı üzerine yazmayı reddeder. **Seam tespit metrikleri ve 3×3 önizleme vardır; otomatik dikiş düzeltme yoktur.** Dikişsizliği metrikler değil manuel görsel kabul belirler.
+- 2026-10-26 sentetik kontrolü: 256×256 RGB zemin ve rastgele alfa içeren 256×256 RGBA obje girdilerinden 128×128 çıktı alındı; dosyalar yeniden açıldı, ikisinde de 64 görünür RGB renk ölçüldü, obje alfa değerleri 0–244 aralığında korundu. Python sözdizimi kontrol edildi. Bu sentetik test; gerçek üretim görseli, oyun içi smoke, CI veya Android cihaz kabulü değildir.
+- GPT Image için 7 mevcut obje (T-01/02/03, R-01/02/03/04) ve 6 çimen slotu ayrı bağımsız kaynak promptları olarak hazırlanmıştır; gerçek image üretimi ve oyuna entegrasyon **henüz yapılmadı**. Mevcut production texture dosyalarına dokunulmaz.
