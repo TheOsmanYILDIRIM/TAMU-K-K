@@ -364,6 +364,7 @@ jobs:
         run: |
           set -euo pipefail
           cd game/love
+          python ../../scripts/terrain25d_color_profiles.py --ci-emit
           luac5.4 -p world/terrain25d_runtime.lua world/terrain25d_shore.lua world/terrain25d_materials.lua objects/terrain25d_sprites.lua tests/terrain25d_runtime.lua tests/terrain25d_shore.lua
           for interpreter in lua5.4 luajit; do
             "$interpreter" tests/terrain25d_shore.lua
