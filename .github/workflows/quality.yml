@@ -9,6 +9,15 @@ jobs:
       - run: python -m unittest discover -s tests -v
       - name: Install Lua and real LÖVE test runtime
         run: sudo apt-get update -qq && sudo apt-get install -y lua5.4 luajit love xvfb
+      - name: 25D geometry and real R2 authored mesh (Lua 5.4 / LuaJIT)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd game/love
+          luac5.4 -p world/terrain25d_geometry.lua world/terrain25d_lighting.lua tests/terrain25d_geometry.lua
+          for interpreter in lua5.4 luajit; do
+            "$interpreter" tests/terrain25d_geometry.lua
+          done
       - name: Stat/skill contract and existing Stage5/Stage6 regression (Lua 5.4 and LuaJIT)
         shell: bash
         run: |
@@ -84,7 +93,7 @@ jobs:
           grep -q 'LOVE_STAGE6_REOPEN_OK' /tmp/stat-stage6-reopen.log
           grep -q 'LOVE_INTEGRATION_SMOKE_OK' /tmp/stat-stage6-reopen.log
       - name: R2 H real A-F combined schema, Node, Lua5.4 and LuaJIT
-        if: github.ref_name == 'main' || github.ref_name == 'experiment/worldbuild-r2-compat-20261019' || github.ref_name == 'experiment/r2-gv-integration-20261020'
+        if: github.ref_name == 'main' || github.ref_name == 'experiment/worldbuild-r2-compat-20261019' || github.ref_name == 'experiment/r2-gv-integration-20261020' || github.ref_name == 'experiment/25d-terrain-20261028'
         shell: bash
         run: |
           set -euo pipefail
@@ -101,7 +110,7 @@ jobs:
             "$interpreter" tests/r2_h_compat.lua
           done
       - name: R2 H real LÖVE/Xvfb authored river + ecology PNG smoke
-        if: github.ref_name == 'main' || github.ref_name == 'experiment/worldbuild-r2-compat-20261019' || github.ref_name == 'experiment/r2-gv-integration-20261020'
+        if: github.ref_name == 'main' || github.ref_name == 'experiment/worldbuild-r2-compat-20261019' || github.ref_name == 'experiment/r2-gv-integration-20261020' || github.ref_name == 'experiment/25d-terrain-20261028'
         shell: bash
         run: |
           set -euo pipefail
@@ -116,7 +125,7 @@ jobs:
             file "/tmp/r2-h-compat-$scene.png" | grep -q 'PNG image data'
           done
       - name: Upload R2 H integrated world preview
-        if: github.ref_name == 'main' || github.ref_name == 'experiment/worldbuild-r2-compat-20261019' || github.ref_name == 'experiment/r2-gv-integration-20261020'
+        if: github.ref_name == 'main' || github.ref_name == 'experiment/worldbuild-r2-compat-20261019' || github.ref_name == 'experiment/r2-gv-integration-20261020' || github.ref_name == 'experiment/25d-terrain-20261028'
         uses: actions/upload-artifact@v4
         with:
           name: r2-h-compat-world-preview

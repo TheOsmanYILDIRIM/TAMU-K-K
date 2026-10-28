@@ -71,3 +71,30 @@ local r2like={water_mask=function(_,x,y) return math.abs(x-704)<11 and math.abs(
 local river=Geo.build_chunk(r2like,slope,{size=64,height_scale=.35},{x=672,y=96},8)
 assert(river.vertices[5*9+5][13]==1 and river.vertices[1][13]==0)
 print('TERRAIN25D_EXTENDED_OK vertical_seam=1 texture_tint=1 river_contract=1')
+
+-- Real authored R2 A-F topography and physical water-mask regression.
+local Json=require("save.json")
+local H=require("world.r2_compat_bridge")
+local function doc(name)
+ local f=assert(io.open("../../data/worldbuild/"..name,"rb"))
+ local content=f:read("*a");f:close()
+ return Json.decode(content)
+end
+local world=H.new(doc("fisilti_ormani.r2.v1.json"),doc("osman_overworld.v2.json"))
+assert(world.query.seed==20261018 and world.topography)
+local wetBefore,signedBefore=world.query:water_mask(704,128)
+assert(wetBefore and signedBefore>0,"authored R2 river crossing missing")
+local heightBefore=world.topography:height(704,128)
+local ro={size=32,height_scale=.35}
+local rleft=Geo.build_chunk(world.query,world.topography,ro,{x=672,y=96},8)
+local rright=Geo.build_chunk(world.query,world.topography,ro,{x=704,y=96},8)
+local rbelow=Geo.build_chunk(world.query,world.topography,ro,{x=672,y=128},8)
+for i=0,4 do
+ eq(rleft.vertices[i*5+5],rright.vertices[i*5+1])
+ eq(rleft.vertices[4*5+i+1],rbelow.vertices[i+1])
+end
+assert(rleft.vertices[4*5+5][13]==1,"R2 wet vertex not captured")
+local wetAfter,signedAfter=world.query:water_mask(704,128)
+assert(wetBefore==wetAfter and signedBefore==signedAfter)
+assert(heightBefore==world.topography:height(704,128))
+print("TERRAIN25D_R2_AUTHORED_OK seam=2 wet=1 physical_unchanged=1")
