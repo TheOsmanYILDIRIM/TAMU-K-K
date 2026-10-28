@@ -43,7 +43,10 @@ local function vertex(x,y,topography,scale,kind,signed)
   -- Distances here are AUTHORED river centreline-to-bank world units,
   -- not the mixed procedural water scalar (typically [-1,1]).
   local near=clamp((signed+6)/6)
-  return {px,py,0,0,.43,.43,.315,.08+near*.34}
+  -- Narrow, low-opacity sediment rim; no flat gray fill over the forest.
+  local grain=.5+.5*math.sin(x*.083+y*.137)*math.cos(x*.109-y*.071)
+  return {px,py,0,0,.36+grain*.075,.34+grain*.065,
+    .245+grain*.045,(.035+near*.20)*(.80+grain*.20)}
  else
   return {px,py,0,0,.41,.33,.215,.66}
  end
@@ -75,6 +78,16 @@ function Shore.build(chunk,query,topography,routes,scale,checkpoint)
     "nonfinite authoritative water scalar")
   return signed
  end
+ -- Water shape remains the exact gameplay water_mask. Visual depth must
+ -- use the authored centreline's world-unit signed distance where present;
+ -- Generator-v1's scalar [-1,1] is not a meaningful depth measure.
+ local visual_water_sampler=function(x,y)
+   if features and type(features.signed)=="function" then
+     local authored=features:signed(x,y,"water")
+     if type(authored)=="number" and authored>0 then return authored end
+   end
+   return math.max(0,water_sampler(x,y))
+ end
  local raw_water=(chunk.layers and chunk.layers.water
    and chunk.layers.water.vertices) or {}
  local bank,path={},{}
@@ -100,7 +113,7 @@ function Shore.build(chunk,query,topography,routes,scale,checkpoint)
   path=project(out.vertices,topography,scale,"path",water_sampler,checkpoint)
  end
  return {path=path,bank=bank,
-   water=project(raw_water,topography,scale,"water",water_sampler,checkpoint),
+   water=project(raw_water,topography,scale,"water",visual_water_sampler,checkpoint),
    refined=is_river,authored_path=is_path}
 end
 return Shore

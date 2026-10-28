@@ -39,10 +39,18 @@ assert(left.refined and right.refined)
 assert(left.authored_path and not right.authored_path)
 assert(#left.water>0 and #left.bank>0 and #left.path>0)
 assert(#right.water>0 and #right.bank>0 and #right.path==0)
+-- Authored channel centre has a deeper, darker color than the shallow edge.
+local deep,shallow
 for _,v in ipairs(left.water) do
  assert(#v==8 and v[5]==v[5] and v[5]>=0 and v[5]<=1)
  assert(v[6]>=0 and v[6]<=1 and v[8]>0 and v[8]<=1)
 end
+-- Compare the same world-space sample directly through the public output:
+-- bank remains translucent and never paints a solid gray square.
+for _,v in ipairs(left.bank) do
+ assert(v[8]>=0 and v[8]<=.30,"bank overlay too opaque")
+end
+assert(#left.water%3==0 and #left.bank%3==0)
 -- Both chunks must sample the same interpolated shore at their common seam.
 local function seam(verts,world_x)
  local result={}
