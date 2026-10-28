@@ -74,13 +74,21 @@ end
 function Sprite:queue(g,camera,w,h,o,selected)
  local family
  if o.kind=="tree" then
-   family=hash(o.id)%5==0 and "conifer" or "oak"
- elseif o.kind=="rock" then family="boulder"
+   local variety=hash(o.id)%12
+   family=variety==0 and "broadleaf" or
+     (variety<=2 and "conifer" or "oak")
+ elseif o.kind=="rock" then
+   local variety=hash(o.id)%12
+   family=variety==0 and "rock_spire" or
+     (variety==1 and "rock_cluster" or "boulder")
  else family=self.families[o.kind] and o.kind or "shrub" end
  local choices=self.families[family] or self.families.oak
- local a=choices[1+hash(o.id)%#choices]
- local x,y=camera:project(o.x,o.y,w,h)
  local z=camera.zoom
+ -- Far-zoom sprite LOD: retain stable silhouettes but limit GPU page
+ -- diversity to two stable approved variants per family.
+ local n=z<.8 and math.min(#choices,2) or #choices
+ local a=choices[1+hash(o.id)%n]
+ local x,y=camera:project(o.x,o.y,w,h)
  -- Render-only size variation; physics radius, harvest and selection unchanged.
  local base=family=="oak" and .50 or
    (family=="conifer" and .58 or (family=="boulder" and .35 or .34))

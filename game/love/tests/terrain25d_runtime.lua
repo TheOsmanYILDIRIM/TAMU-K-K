@@ -1,46 +1,63 @@
--- Pure Lua mock test: atlas loading, chunk ownership, determinism, sprites.
+-- Pure Lua regression: all 228 source IDs, lazy multi-page images, GPU eviction.
 package.path="./?.lua;./?/init.lua;"..package.path
-local uploads,draws=0,0
-local image={}
-function image:getDimensions() return 1056,396 end
-function image:setFilter() end
-function image:setWrap() end
-function image:release() self.released=true end
-local extra_image={}
-function extra_image:getDimensions() return 128,128 end
-function extra_image:setFilter() end
-function extra_image:setWrap() end
-function extra_image:release() self.released=true end
-local extra_loads=0
+local uploads,draws,pastes,decoded,created=0,0,0,0,0
+local function fakeImage(w,h)
+ local v={w=w,h=h,released=false}
+ function v:getDimensions() return self.w,self.h end
+ function v:setFilter() end
+ function v:setWrap() end
+ function v:release() self.released=true end
+ return v
+end
+local pilotImage=fakeImage(1056,396)
+local generatedImages={}
+local function fakeData(w,h)
+ local d={w=w,h=h,released=false}
+ function d:getDimensions() return self.w,self.h end
+ function d:paste(other,x,y,sx,sy,pw,ph)
+   assert(not self.released and not other.released)
+   assert(x>=0 and y>=0 and x+pw<=self.w and y+ph<=self.h)
+   assert(other.w==128 and other.h==128 and
+     sx==0 and sy==0 and pw==128 and ph==128)
+   pastes=pastes+1
+ end
+ function d:release() self.released=true end
+ return d
+end
 local g={
- newImage=function(p)
-   if p=="assets/terrain25d/atlas_00.png" then return image end
-   assert(p=="assets/terrain25d/atlas_01.png")
-   extra_loads=extra_loads+1
-   extra_image.released=false
-   return extra_image
+ newImage=function(input)
+   if type(input)=="string" then
+     assert(input=="assets/terrain25d/atlas_00.png")
+     return pilotImage
+   end
+   assert(type(input)=="table" and input.w and input.h)
+   created=created+1
+   local im=fakeImage(input.w,input.h)
+   generatedImages[#generatedImages+1]=im
+   return im
  end,
  newQuad=function(x,y,w,h,aw,ah)
-   assert(x>=0 and y>=0 and w>0 and h>0 and x+w<=aw and y+h<=ah)
+   assert(x>=0 and y>=0 and w>0 and h>0 and
+     x+w<=aw+0.00001 and y+h<=ah+0.00001)
    return {x,y,w,h}
  end,
- newSpriteBatch=function(img,max,usage)
-   assert((img==image or img==extra_image) and max>=200 and usage=="stream")
-   local batch={count=0}
-   function batch:add(quad,x,y,r,sx,sy,ox,oy)
+ newSpriteBatch=function(im,max,usage)
+   assert(im and max>=200 and usage=="stream")
+   local b={count=0}
+   function b:add(quad,x,y,r,sx,sy,ox,oy)
      assert(quad and sx>0 and sy>0 and ox==64 and oy==124)
      self.count=self.count+1
    end
-   function batch:clear() self.count=0 end
-   function batch:release() self.released=true end
-   return batch
+   function b:clear() self.count=0 end
+   function b:release() self.released=true end
+   return b
  end,
  newMesh=function(vertices,mode,usage)
-   assert(mode=="triangles" and usage=="static" and #vertices>0
-       and #vertices%3==0)
+   assert(mode=="triangles" and usage=="static" and
+     #vertices>0 and #vertices%3==0)
    uploads=uploads+1
-   local m={vertices=vertices,released=false}
-   function m:setTexture(im) assert(im==image or im==extra_image) end
+   local m={released=false}
+   function m:setTexture(im) assert(im and im.getDimensions) end
    function m:release() self.released=true end
    return m
  end,
@@ -50,9 +67,28 @@ local g={
  draw=function() draws=draws+1 end
 }
 love={graphics=g,timer={getTime=function() return 0 end},
- filesystem={read=function(p)
-   local f=assert(io.open(p,"rb"));local s=f:read("*a");f:close();return s
- end}}
+ image={newImageData=function(a,b)
+   if type(a)=="string" then
+     assert(a:match("^assets/terrain25d/source_png/"))
+     local fp=assert(io.open(a,"rb"),"missing sourced PNG: "..a)
+     assert(fp:read(8)=="\137PNG\r\n\26\n","not a PNG: "..a)
+     fp:close()
+     decoded=decoded+1
+     return fakeData(128,128)
+   end
+   assert(type(a)=="number" and type(b)=="number" and a>0 and b>0)
+   return fakeData(a,b)
+ end},
+ filesystem={
+   read=function(p)
+     local f=assert(io.open(p,"rb"));local s=f:read("*a");f:close();return s
+   end,
+   getInfo=function(p)
+     if p=="assets/terrain25d/atlas_00.png" then return {type="file"} end
+     return nil
+   end
+ }
+}
 local Runtime=require("world.terrain25d_runtime")
 local Sprite=require("objects.terrain25d_sprites")
 local pilot={
@@ -67,79 +103,80 @@ local pilot={
  },
  routes={},render_options={height_scale=.35}
 }
-local runtime=Runtime.new(pilot)
-assert(runtime.catalog_counts.total==228 and runtime.catalog_counts.packed==20)
-local sprites=Sprite.new(runtime,runtime.manifest)
-assert(runtime:family(20,50)~="wetland",
-  "Generator scalar values are not authored bank distances")
-assert(runtime:family(220,220)=="wetland",
-  "physical water must retain wetland material")
+local rt=Runtime.new(pilot)
+assert(rt.catalog_counts.total==228 and rt.catalog_counts.packed==228
+  and rt.catalog_counts.pages==25,"lossy 228-asset manifest")
+assert(#rt.manifest.atlas_pages==25 and #rt.manifest.assets==228)
+local allIds={}
+for _,a in ipairs(rt.manifest.assets) do
+ assert(a.source_drive_id and not allIds[a.source_drive_id])
+ allIds[a.source_drive_id]=true
+end
+assert(created==0 and decoded==0,"boot eagerly assembled an atlas")
+local sprites=Sprite.new(rt,rt.manifest)
+assert(created==0,"constructing SpriteBatch metadata eagerly uploaded images")
+assert(rt:family(20,50)~="wetland")
+assert(rt:family(220,220)=="wetland")
 local chunk={x=0,y=0,size=256,cx=0,cy=0,
  layers={water={vertices={{200,200},{232,200},{232,232}}}}}
 local stream={visible=function() return {chunk} end}
 local cam={x=0,y=0,zoom=1.2,
  project=function(_,x,y,w,h) return w/2+x,h/2+y end}
-runtime:draw(stream,cam,360,780)
-assert(runtime.built==1 and uploads>1 and runtime.visible==1)
+rt:draw(stream,cam,360,780)
+assert(rt.built==1 and uploads>1 and rt.visible==1)
 local before=uploads
-runtime:draw(stream,cam,360,780)
-assert(uploads==before and runtime.uploads_per_frame==0)
+rt:draw(stream,cam,360,780)
+assert(uploads==before and rt.uploads_per_frame==0)
 assert(chunk._meshes==chunk._25d_meshes)
 local released=0
 for _,mesh in pairs(chunk._meshes) do
  mesh:release();assert(mesh.released);released=released+1
 end
 assert(released==before)
+assert(rt.atlas_resident_pages>=1 and
+  rt.atlas_estimated_gpu_bytes>=1056*396*4)
+-- The boulder page is separate from the preserved pilot atlas. It must
+-- assemble only when selected and keep source PNG pixels distinct.
+local srcpage=rt.page_metadata["atlas_01.png"]
+assert(srcpage and #srcpage.sources==2 and
+  srcpage.width==264 and srcpage.height==132)
+local priorDecodes=decoded
+local img=rt:page("atlas_01.png")
+assert(img:getDimensions()==srcpage.width, "invalid generated atlas width")
+assert(decoded==priorDecodes+2 and pastes>=2)
+assert(rt:page("atlas_01.png")==img,"atlas page rebuilt while cached")
+-- Direct a real object to the new approved page, preserving renderer API.
+local choices={}
+for _,a in ipairs(sprites.families.boulder) do
+ if a.page=="atlas_01.png" then choices[#choices+1]=a end
+end
+assert(#choices==2)
+sprites.families.boulder=choices
 sprites:begin_frame()
-sprites:queue(g,cam,360,780,{x=4,y=9,id="tree:1",kind="tree",radius=12},false)
-sprites:queue(g,cam,360,780,{x=4,y=19,id="rock:1",kind="rock",radius=8},true)
-sprites:queue(g,cam,360,780,{x=10000,y=10000,id="off",kind="tree",radius=12},false)
-assert(sprites.visible==2 and sprites.culled==1 and sprites.pending==2)
+sprites:queue(g,cam,360,780,
+  {x=4,y=19,id="rock:page01",kind="rock",radius=8},false)
+sprites:queue(g,cam,360,780,
+  {x=10000,y=10000,id="off",kind="rock",radius=8},false)
+assert(sprites.visible==1 and sprites.culled==1 and
+  rt.page_pins["atlas_01.png"]==1)
 sprites:flush(g)
-assert(sprites.batches==1 and sprites.pending==0)
-assert(draws>=1)
-assert(runtime.atlas_resident_pages==1 and
-  runtime.atlas_estimated_gpu_bytes==1056*396*4)
-
--- A second packed page is simulated in the mock manifest only: no new
--- user assets are approved or packaged by this test.
-local Json=require("save.json")
-local manifest=Json.decode(assert(love.filesystem.read("assets/terrain25d/manifest.json")))
-manifest.atlas_pages[#manifest.atlas_pages+1]={
- filename="atlas_01.png",width=128,height=128,sha256="mock-page"}
-for _,a in ipairs(manifest.assets) do
- if a.kind=="object" and a.family=="boulder" then
-   a.atlas_page="atlas_01.png"
-   a.uv_rect=Json.decode("[0,0,1,1]")
- end
-end
-local old_read=love.filesystem.read
-love.filesystem.read=function(path)
- if path=="assets/terrain25d/manifest.json" then return Json.encode(manifest) end
- return old_read(path)
-end
-local multi=Runtime.new(pilot)
-love.filesystem.read=old_read
-local multi_sprites=Sprite.new(multi,multi.manifest)
-assert(extra_loads==0,"unused approved page must not be uploaded")
-multi_sprites:begin_frame()
-multi_sprites:queue(g,cam,360,780,
- {x=5,y=12,id="rock:page1",kind="rock",radius=8},false)
-assert(extra_loads==1 and multi_sprites.pending==1)
--- A depth-ordered page switch must flush the first batch.
-multi_sprites:queue(g,cam,360,780,
- {x=4,y=22,id="tree:page0",kind="tree",radius=12},false)
-multi_sprites:flush(g)
-assert(multi_sprites.batches==2,"cross-page depth-order batch flush lost")
-multi:prune_pages({resident={}}, {})
-assert(not extra_image.released,"live sprite pin must protect its image")
-for _=1,3 do multi_sprites:begin_frame() end
-local hold={_25d_ground_pages={["atlas_01.png"]=true}}
-multi:prune_pages({resident={hold=hold}}, {})
-assert(not extra_image.released,"resident terrain mesh must protect page")
-multi:prune_pages({resident={}}, {})
-assert(extra_image.released and multi.page_images["atlas_01.png"]==nil,
-  "idle page must be reclaimed after sprite and terrain release")
-assert(multi.atlas_estimated_gpu_bytes==1056*396*4)
+rt:prune_pages({resident={}}, {})
+assert(rt.page_images["atlas_01.png"]==img and not img.released,
+  "pinned sprite page evicted")
+for i=1,3 do sprites:begin_frame() end
+rt:prune_pages({resident={held={_25d_ground_pages={
+  ["atlas_01.png"]=true}}}}, {})
+assert(not img.released,"resident terrain mesh lost its atlas")
+rt:prune_pages({resident={}}, {})
+assert(img.released and rt.page_images["atlas_01.png"]==nil,
+  "orphaned page not evicted")
+local old=decoded
+local reloaded=rt:page("atlas_01.png")
+assert(reloaded~=img and decoded==old+2,
+  "page was not reconstructed after eviction")
+rt:prune_pages({resident={}}, {})
+assert(reloaded.released)
+assert(draws>0 and rt.atlas_resident_pages==1)
 print("TERRAIN25D_RUNTIME_OK uploads="..uploads.." released="..released..
-  " lazy_page_loads="..extra_loads)
+  " pages="..rt.catalog_counts.pages.." assets="..rt.catalog_counts.packed..
+  " decoded="..decoded.." generated="..created)

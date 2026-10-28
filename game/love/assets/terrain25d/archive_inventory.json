@@ -2,7 +2,7 @@
   "version": 1,
   "source": "Google Drive Texture_Archive (metadata snapshot 2026-10-28)",
   "source_folder": "1n3nkFdX3rPluAHU5aS95Ci5nYBp8_CHe",
-  "warning": "All 228 original PNGs are verified and copied into source_png; ownership is declared by the user. Only the separate 20-entry pilot manifest is packed for runtime; raw originals are not automatically GPU-resident.",
+  "warning": "228 user-created source PNGs are represented in the runtime multi-page atlas manifest; 20 pilot entries retain atlas_00. Other pages are generated from PNG sources only on demand; they are not pre-baked PNG binaries. Stream eviction and sprite pins manage GPU residency.",
   "summary": {
     "total": 228,
     "terrain": 168,
@@ -69,7 +69,11 @@
     "verified_source_binaries": 228,
     "raw_repo_source_count": 228,
     "raw_repo_bytes": 3439371,
-    "pending_runtime_packing": 208
+    "pending_runtime_packing": 0,
+    "runtime_catalog_entries": 228,
+    "runtime_atlas_pages": 25,
+    "generated_pages": 24,
+    "all_pages_rgba8_bytes": 17284608
   },
   "assets": [
     {
@@ -121,7 +125,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_boulder_17mLqn5_w0zgdWZ_Sk2p2R1T8YBa29Op_",
+      "packed_atlas_page": "atlas_01.png"
     },
     {
       "family": "boulder",
@@ -137,7 +143,9 @@
       "source_repo_path": "game/love/assets/terrain25d/source_png/boulder/boulder_v004_128_lab64.png",
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_boulder_1hkaHyb5IcqhUmXcPsZo1PNqXzEQt_Q9f",
+      "packed_atlas_page": "atlas_01.png"
     },
     {
       "family": "broadleaf",
@@ -152,7 +160,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_broadleaf_1__Ol_mDrs6QGvNQbTMYOBt0tr8A_85_E",
+      "packed_atlas_page": "atlas_02.png"
     },
     {
       "family": "broadleaf",
@@ -167,7 +177,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_broadleaf_1r4mDlFLODrIodcgKdg8AH0LxtqNXUPWM",
+      "packed_atlas_page": "atlas_02.png"
     },
     {
       "family": "broadleaf",
@@ -182,7 +194,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_broadleaf_1fTUcS8BzGjmwAN0WLO7UQjo_uXWZ4GDw",
+      "packed_atlas_page": "atlas_02.png"
     },
     {
       "family": "broadleaf",
@@ -197,7 +211,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_broadleaf_130aSKx9rabeodcFCCMWSJayVsjmCg_Kx",
+      "packed_atlas_page": "atlas_02.png"
     },
     {
       "family": "broadleaf",
@@ -212,7 +228,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_broadleaf_1X7j6dotnv_nSP_N6od9NNC42UIVlkcsi",
+      "packed_atlas_page": "atlas_02.png"
     },
     {
       "family": "broadleaf",
@@ -227,7 +245,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_broadleaf_16DpJZg6NXlmRItoZHWM_5zG9cwcRq8cv",
+      "packed_atlas_page": "atlas_02.png"
     },
     {
       "family": "broadleaf",
@@ -242,7 +262,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_broadleaf_1aFxoyeLrb8HQ08eGRydmryBIsnUDxoAV",
+      "packed_atlas_page": "atlas_02.png"
     },
     {
       "family": "broadleaf",
@@ -257,7 +279,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_broadleaf_1Y3V6VJPmsfWGx_Q_AP1GD5Botg5cBR6K",
+      "packed_atlas_page": "atlas_02.png"
     },
     {
       "family": "broadleaf",
@@ -272,7 +296,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_broadleaf_1NDrzHDXR4_JEZ6J16_DZkU3UmE18I4uQ",
+      "packed_atlas_page": "atlas_02.png"
     },
     {
       "family": "broadleaf",
@@ -287,7 +313,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_broadleaf_1lnSPYZ40qoGyg0VmQ53XwIQz17pmybUS",
+      "packed_atlas_page": "atlas_02.png"
     },
     {
       "family": "conifer",
@@ -338,7 +366,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_conifer_1fLF5tw8jBYqEFAlrgTvh8QuCpvON9YDJ",
+      "packed_atlas_page": "atlas_03.png"
     },
     {
       "family": "conifer",
@@ -353,7 +383,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_conifer_1yQSvRvEXFznjPoKJPvSlL2CeDbGFei7k",
+      "packed_atlas_page": "atlas_03.png"
     },
     {
       "family": "conifer",
@@ -368,7 +400,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_conifer_16GC01Pp1nPMziO51yg1f_rw7kgpjAPwW",
+      "packed_atlas_page": "atlas_03.png"
     },
     {
       "family": "conifer",
@@ -384,7 +418,9 @@
       "source_repo_path": "game/love/assets/terrain25d/source_png/conifer/conifer_v006_128_lab64.png",
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_conifer_19jDdh9UuTMcNMNXq0eG_UNJ1jvK1aQfX",
+      "packed_atlas_page": "atlas_03.png"
     },
     {
       "family": "dead_tree",
@@ -399,7 +435,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_dead_tree_1qiCRYrRIlagZVCaKQO_PEI88tCWpBUNF",
+      "packed_atlas_page": "atlas_04.png"
     },
     {
       "family": "dead_tree",
@@ -414,7 +452,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_dead_tree_1g9QyDL7hSb9sMuieMLCZ9nTu2gvlk5QJ",
+      "packed_atlas_page": "atlas_04.png"
     },
     {
       "family": "dead_tree",
@@ -429,7 +469,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_dead_tree_1fzQg1yuZu62ZjkD1nfDNSCRL6O4GPK6k",
+      "packed_atlas_page": "atlas_04.png"
     },
     {
       "family": "dirt",
@@ -480,7 +522,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1BHkfw0IXpIpOIgRBi4XTmEwM_NLd2bZa",
+      "packed_atlas_page": "atlas_05.png"
     },
     {
       "family": "dirt",
@@ -495,7 +539,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1Ocn9R3B8s_HLHl_SRdxaLN__sG0428J1",
+      "packed_atlas_page": "atlas_05.png"
     },
     {
       "family": "dirt",
@@ -510,7 +556,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1DVjjt3Gk0uKtA_gfkTy040LCk_xFmarr",
+      "packed_atlas_page": "atlas_05.png"
     },
     {
       "family": "dirt",
@@ -525,7 +573,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1yRlTYXRGS7eXGZEjBFyn9urxS1B7yExq",
+      "packed_atlas_page": "atlas_05.png"
     },
     {
       "family": "dirt",
@@ -540,7 +590,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1flJ19Vp3sI545harIBYoTy_4uYMYp62n",
+      "packed_atlas_page": "atlas_05.png"
     },
     {
       "family": "dirt",
@@ -555,7 +607,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1CGNTtDoPaCqmmDAuFITqE9vJ6yc_EGPE",
+      "packed_atlas_page": "atlas_05.png"
     },
     {
       "family": "dirt",
@@ -570,7 +624,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1INFCShj5WJSmRPJm0vDhBb783aFkOiZF",
+      "packed_atlas_page": "atlas_05.png"
     },
     {
       "family": "dirt",
@@ -585,7 +641,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1kfpQ0E_kIyhEDUvpAe06HwPU02wfDhKd",
+      "packed_atlas_page": "atlas_05.png"
     },
     {
       "family": "dirt",
@@ -600,7 +658,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1zlCV3df_7CPD29CECLpEttomVxtHH6gk",
+      "packed_atlas_page": "atlas_05.png"
     },
     {
       "family": "dirt",
@@ -615,7 +675,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1xfW2q750EGwb7lBKlUFykkN1EUXrWKK1",
+      "packed_atlas_page": "atlas_05.png"
     },
     {
       "family": "dirt",
@@ -630,7 +692,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1uA_oZlLmIG6T4aatXYQpvzfwa08WPdUK",
+      "packed_atlas_page": "atlas_05.png"
     },
     {
       "family": "dirt",
@@ -645,7 +709,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1HGt9huJf9KC0Kwc9g8WQvIFBJ8ipDonE",
+      "packed_atlas_page": "atlas_05.png"
     },
     {
       "family": "dirt",
@@ -660,7 +726,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1khqVEJij5ty7w9S2GRQyamSIC5Xs2_30",
+      "packed_atlas_page": "atlas_05.png"
     },
     {
       "family": "dirt",
@@ -675,7 +743,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1qQAw8334JqxFzJRQyTDlj1xDiyMxZMRt",
+      "packed_atlas_page": "atlas_05.png"
     },
     {
       "family": "dirt",
@@ -690,7 +760,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1Xn0UF2XkQ_mCwQ1sEa4uHSN9w9r3kYZ_",
+      "packed_atlas_page": "atlas_05.png"
     },
     {
       "family": "dirt",
@@ -705,7 +777,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1rswYhTHKF4vHKw7xvg9iLc29bchGdNUW",
+      "packed_atlas_page": "atlas_05.png"
     },
     {
       "family": "dirt",
@@ -720,7 +794,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1C0rSViuwsRuOi9Zy0I8giNFVSoz1NsH8",
+      "packed_atlas_page": "atlas_06.png"
     },
     {
       "family": "dirt",
@@ -735,7 +811,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1cC198AoANaIWHRndguc0cR3j3HYpGx3v",
+      "packed_atlas_page": "atlas_06.png"
     },
     {
       "family": "dirt",
@@ -750,7 +828,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1jbBT5wqslBoZzkgrNeMJQRlKRhxENbe4",
+      "packed_atlas_page": "atlas_06.png"
     },
     {
       "family": "dirt",
@@ -765,7 +845,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1KhIRwkORcE_9o_mzPRBTKyY5dtERV4ND",
+      "packed_atlas_page": "atlas_06.png"
     },
     {
       "family": "dirt",
@@ -780,7 +862,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1bKMeKaK2n0LoUsmqr5I3hinVHHqeJULS",
+      "packed_atlas_page": "atlas_06.png"
     },
     {
       "family": "dirt",
@@ -795,7 +879,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1nE8s3O23FOqGtEkfEOKkfjTyomqi8GoK",
+      "packed_atlas_page": "atlas_06.png"
     },
     {
       "family": "dirt",
@@ -810,7 +896,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1g_T8TTI_mYDcoBrLA_KDmnMvkh_918SW",
+      "packed_atlas_page": "atlas_06.png"
     },
     {
       "family": "dirt",
@@ -825,7 +913,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1ySwC2Ody3CxJFH4z5HgL0wIA3G0sJ2AV",
+      "packed_atlas_page": "atlas_06.png"
     },
     {
       "family": "dirt",
@@ -840,7 +930,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1Y7XXEJLRRXzXGye9B3NDyh1HKaYSbPkA",
+      "packed_atlas_page": "atlas_06.png"
     },
     {
       "family": "dirt",
@@ -855,7 +947,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1u_EmdiY0SFhal6yM9HdPY6xvpg_4WHwi",
+      "packed_atlas_page": "atlas_06.png"
     },
     {
       "family": "dirt",
@@ -870,7 +964,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1LI2_DV_0njFpkDZc0t3dhVti3jiDPnZG",
+      "packed_atlas_page": "atlas_06.png"
     },
     {
       "family": "dirt",
@@ -885,7 +981,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_1RF1nRyy0my6aCO7UFEOSkODb2exH8UU5",
+      "packed_atlas_page": "atlas_06.png"
     },
     {
       "family": "dirt",
@@ -901,7 +999,9 @@
       "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtC_12.png",
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_dirt_15lmiHY1havVfMXA6__9_li0Kp0B9otLc",
+      "packed_atlas_page": "atlas_06.png"
     },
     {
       "family": "fallen_log",
@@ -916,7 +1016,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_fallen_log_1CdkeX5QiQW1k3ssBPxqN0P_bIKaNEjua",
+      "packed_atlas_page": "atlas_07.png"
     },
     {
       "family": "fallen_log",
@@ -931,7 +1033,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_fallen_log_1wt3ufp0O41vPX9TQGv90zC0pgPM02BHW",
+      "packed_atlas_page": "atlas_07.png"
     },
     {
       "family": "fallen_log",
@@ -946,7 +1050,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_fallen_log_1yzJziyFQyhMFI7ujEiV8gtwg_QvqU_LI",
+      "packed_atlas_page": "atlas_07.png"
     },
     {
       "family": "forest",
@@ -997,7 +1103,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1mBoDouJz2KrOZsUrFuzfFNGmw_6eag0t",
+      "packed_atlas_page": "atlas_08.png"
     },
     {
       "family": "forest",
@@ -1012,7 +1120,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_10ZmZeWGHoNmQcO7tUwuy1A_UaYLXTklV",
+      "packed_atlas_page": "atlas_08.png"
     },
     {
       "family": "forest",
@@ -1027,7 +1137,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1ygJYAZOvrFF7_eE5J4aJxW9hHsljjDH2",
+      "packed_atlas_page": "atlas_08.png"
     },
     {
       "family": "forest",
@@ -1042,7 +1154,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1VBe2cUDvWlsoejvyipIwLkcNb7D2E_h6",
+      "packed_atlas_page": "atlas_08.png"
     },
     {
       "family": "forest",
@@ -1057,7 +1171,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1c53RWUbH4Dc9XkC1HsOMacllQiBpy8d7",
+      "packed_atlas_page": "atlas_08.png"
     },
     {
       "family": "forest",
@@ -1072,7 +1188,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1R9Cy6lUOFp5ZSHe3gbgr4KjOFv4QqFFi",
+      "packed_atlas_page": "atlas_08.png"
     },
     {
       "family": "forest",
@@ -1087,7 +1205,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1JibRyt98gxJbL3fo0abEuhsKtGOU6yoo",
+      "packed_atlas_page": "atlas_08.png"
     },
     {
       "family": "forest",
@@ -1102,7 +1222,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_139sP3ekSTxHrLXeNClfb0fhNw4B2ApKM",
+      "packed_atlas_page": "atlas_08.png"
     },
     {
       "family": "forest",
@@ -1117,7 +1239,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1KJNGppM47hRyXmC7Id5boAQ6Ir8uYq2n",
+      "packed_atlas_page": "atlas_08.png"
     },
     {
       "family": "forest",
@@ -1132,7 +1256,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1uDFiP_SZFyDrATz1uKQkHZf_s_BqF_XG",
+      "packed_atlas_page": "atlas_08.png"
     },
     {
       "family": "forest",
@@ -1147,7 +1273,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1hVggbBLgxI0cfbXe9mN0zC44x1FHIA_0",
+      "packed_atlas_page": "atlas_08.png"
     },
     {
       "family": "forest",
@@ -1162,7 +1290,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1qaWirYf_UElNx2nGCbwzG3RBIxy0ymI9",
+      "packed_atlas_page": "atlas_08.png"
     },
     {
       "family": "forest",
@@ -1177,7 +1307,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_110PC5FYdgvvtppzMNZ9BzJVzxuVDVwoS",
+      "packed_atlas_page": "atlas_08.png"
     },
     {
       "family": "forest",
@@ -1192,7 +1324,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1SxVAtJTZ92QV4ndQWax_wO0lwuVIz2AJ",
+      "packed_atlas_page": "atlas_08.png"
     },
     {
       "family": "forest",
@@ -1207,7 +1341,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1GUT0tU5a2JabMWU1y8V8MYd0Z9nlsqOx",
+      "packed_atlas_page": "atlas_08.png"
     },
     {
       "family": "forest",
@@ -1222,7 +1358,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1WhL9xSW_HIGketVPIjJCEnybBONuoi2I",
+      "packed_atlas_page": "atlas_08.png"
     },
     {
       "family": "forest",
@@ -1237,7 +1375,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1jg3YGdDzNbzSfXUok2FB7SjoiFgZ13ba",
+      "packed_atlas_page": "atlas_09.png"
     },
     {
       "family": "forest",
@@ -1252,7 +1392,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1PhaNZwSkm9oYjrp3H0ldDLJ53BFcdJDw",
+      "packed_atlas_page": "atlas_09.png"
     },
     {
       "family": "forest",
@@ -1267,7 +1409,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_12MiZ3jSvd4HEF7Qcv0LmRyNGWgvzBwpP",
+      "packed_atlas_page": "atlas_09.png"
     },
     {
       "family": "forest",
@@ -1282,7 +1426,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1FuEBUhLT04tCx8xgbsP88KJddPj15Urp",
+      "packed_atlas_page": "atlas_09.png"
     },
     {
       "family": "forest",
@@ -1297,7 +1443,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1F7GwwcLfsfTpKsCrvi9Rk89opd8A7Gi8",
+      "packed_atlas_page": "atlas_09.png"
     },
     {
       "family": "forest",
@@ -1312,7 +1460,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1TrZpRNmgCbGPOJ2Dv0x1kSrZN8s_j1u5",
+      "packed_atlas_page": "atlas_09.png"
     },
     {
       "family": "forest",
@@ -1327,7 +1477,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1PCBzWI_PAXn8SJt_hjsbY09A1MVjBa5t",
+      "packed_atlas_page": "atlas_09.png"
     },
     {
       "family": "forest",
@@ -1342,7 +1494,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1z3Z1lMDp7XcrxHMSP2BLR913RKSLStxR",
+      "packed_atlas_page": "atlas_09.png"
     },
     {
       "family": "forest",
@@ -1357,7 +1511,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1DwHU3IcKxmUet0MQiJbgdXSz5N1HwO9s",
+      "packed_atlas_page": "atlas_09.png"
     },
     {
       "family": "forest",
@@ -1372,7 +1528,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1SefEbEuoaQTPSDy0tcUH_tMrnx8kdVXp",
+      "packed_atlas_page": "atlas_09.png"
     },
     {
       "family": "forest",
@@ -1387,7 +1545,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1MWoIaeJhb8UyqgZcHv3C2cGdQrnUylP_",
+      "packed_atlas_page": "atlas_09.png"
     },
     {
       "family": "forest",
@@ -1402,7 +1562,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_10uHn8MFxOoRbMVFVFCediKXvlJUu4mfR",
+      "packed_atlas_page": "atlas_09.png"
     },
     {
       "family": "forest",
@@ -1417,7 +1579,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1oYmqgyGGEMjrF2hnGJ_0HVjEJVZvJXBS",
+      "packed_atlas_page": "atlas_09.png"
     },
     {
       "family": "forest",
@@ -1432,7 +1596,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1d9rxSVMlU_KGi7oFvvNS_mMNU5rji_1x",
+      "packed_atlas_page": "atlas_09.png"
     },
     {
       "family": "forest",
@@ -1447,7 +1613,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1h0c_7Uyu7rYCHuD2KuWH2O7dhGiCLN81",
+      "packed_atlas_page": "atlas_09.png"
     },
     {
       "family": "forest",
@@ -1462,7 +1630,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_14PUDQcw2m_3Hp_LV9P0rWe5hqzCJUqqk",
+      "packed_atlas_page": "atlas_09.png"
     },
     {
       "family": "forest",
@@ -1477,7 +1647,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_1hp85ri3eHQcNZ3uWLwqWOmJgUMz3UrqI",
+      "packed_atlas_page": "atlas_10.png"
     },
     {
       "family": "forest",
@@ -1493,7 +1665,9 @@
       "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122859_r3c4_12.png",
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_forest_17S3g7zJz98t6eJDMytoxODJ3vjRhEwRZ",
+      "packed_atlas_page": "atlas_10.png"
     },
     {
       "family": "grass",
@@ -1544,7 +1718,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_1SnRuaODH71hb4rmQX_yvvAoH6EZKr_Db",
+      "packed_atlas_page": "atlas_11.png"
     },
     {
       "family": "grass",
@@ -1559,7 +1735,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_18KshlpvRgKkzm9_HnQ0lENury_fXfss8",
+      "packed_atlas_page": "atlas_11.png"
     },
     {
       "family": "grass",
@@ -1574,7 +1752,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_1VI6ryUJSzu7BA2_CVwpyFZbf6rVQvyUk",
+      "packed_atlas_page": "atlas_11.png"
     },
     {
       "family": "grass",
@@ -1589,7 +1769,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_1n3m99_cSx_HYd3Dj7wOci8exlHsX6uoG",
+      "packed_atlas_page": "atlas_11.png"
     },
     {
       "family": "grass",
@@ -1604,7 +1786,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_16SI2hvmTrhZl9xJpH9F3_KI_1qx4dhF4",
+      "packed_atlas_page": "atlas_11.png"
     },
     {
       "family": "grass",
@@ -1619,7 +1803,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_10Ql__VjMqwOJxZpAusStvm__edutnBYj",
+      "packed_atlas_page": "atlas_11.png"
     },
     {
       "family": "grass",
@@ -1634,7 +1820,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_1sQZ_FOmfx96CODgDQ5ejWPCD_lV_DWQW",
+      "packed_atlas_page": "atlas_11.png"
     },
     {
       "family": "grass",
@@ -1649,7 +1837,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_1ykEl08C1y6fFxBgtcaMYq2YKhzJc0Ozf",
+      "packed_atlas_page": "atlas_11.png"
     },
     {
       "family": "grass",
@@ -1664,7 +1854,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_1ZRQ8YXGegwJgCl9c_E_xTGGBQwtXQSov",
+      "packed_atlas_page": "atlas_11.png"
     },
     {
       "family": "grass",
@@ -1679,7 +1871,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_1rYvcKSsmTyXHrEL7hC0ZV53QRgj_rYwB",
+      "packed_atlas_page": "atlas_11.png"
     },
     {
       "family": "grass",
@@ -1694,7 +1888,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_1EgDyZtgoSH04Ummqg7pL8uf0qg0aBLob",
+      "packed_atlas_page": "atlas_11.png"
     },
     {
       "family": "grass",
@@ -1709,7 +1905,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_1Kymghv2ErGhbwBpxaDjPkruHcxE4illL",
+      "packed_atlas_page": "atlas_11.png"
     },
     {
       "family": "grass",
@@ -1724,7 +1922,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_1CG0G6hUqIxkR_jGAbJAvwpDvyQXwcZ0T",
+      "packed_atlas_page": "atlas_11.png"
     },
     {
       "family": "grass",
@@ -1739,7 +1939,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_18mlVD_dkblCZaVOcyJzLcAN2iOpKVMQj",
+      "packed_atlas_page": "atlas_11.png"
     },
     {
       "family": "grass",
@@ -1754,7 +1956,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_1gdbV3NusRla9bmy1mbeDLx_o_Fg34MA_",
+      "packed_atlas_page": "atlas_11.png"
     },
     {
       "family": "grass",
@@ -1769,7 +1973,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_1LdbnXoCCHYsyKhbdziW5O0C9HgHF44nw",
+      "packed_atlas_page": "atlas_11.png"
     },
     {
       "family": "grass",
@@ -1784,7 +1990,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_17iwHmhecPiAF27AoKV3MaKDgcHpSFpyX",
+      "packed_atlas_page": "atlas_12.png"
     },
     {
       "family": "grass",
@@ -1799,7 +2007,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_1qLgq_6G1a0A2IS0HH8QcSF9n2GGny8vD",
+      "packed_atlas_page": "atlas_12.png"
     },
     {
       "family": "grass",
@@ -1814,7 +2024,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_1iOJFgpeSh9QScIUck4oT01araCw3_JH_",
+      "packed_atlas_page": "atlas_12.png"
     },
     {
       "family": "grass",
@@ -1829,7 +2041,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_14L4nWZBMS8AsC_ew_RK3HvwM1EUJ5OuJ",
+      "packed_atlas_page": "atlas_12.png"
     },
     {
       "family": "grass",
@@ -1844,7 +2058,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_1hcNVn9Z964gfJag3rd4Ika6Lr5ayaub0",
+      "packed_atlas_page": "atlas_12.png"
     },
     {
       "family": "grass",
@@ -1859,7 +2075,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_1RF9m_P1e_M5SAvtHeugMVcM1lnZho0ym",
+      "packed_atlas_page": "atlas_12.png"
     },
     {
       "family": "grass",
@@ -1874,7 +2092,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_1_1YdqZA_mr70imV86SeCAuPW2VLJ7c1b",
+      "packed_atlas_page": "atlas_12.png"
     },
     {
       "family": "grass",
@@ -1889,7 +2109,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_1X_0AnmB08tTYwpRNFgO6hEPx6edhhLiG",
+      "packed_atlas_page": "atlas_12.png"
     },
     {
       "family": "grass",
@@ -1904,7 +2126,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_1KNl49YaCY0HbJKtoF1djbMa0ZlqPZpQp",
+      "packed_atlas_page": "atlas_12.png"
     },
     {
       "family": "grass",
@@ -1919,7 +2143,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_1QFCQgARLfHZ_wSYeUZ7AfnQ13yBAgTdB",
+      "packed_atlas_page": "atlas_12.png"
     },
     {
       "family": "grass",
@@ -1934,7 +2160,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_1mdX_6JOCuKNsJA0aLZr0KBM2BFB8r8Hj",
+      "packed_atlas_page": "atlas_12.png"
     },
     {
       "family": "grass",
@@ -1949,7 +2177,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_1fJw1Jx8NseMHIlVJhK8WPcip7EuNiuBj",
+      "packed_atlas_page": "atlas_12.png"
     },
     {
       "family": "grass",
@@ -1964,7 +2194,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_1WaDrbjg6sNoCGWzS1DCgqfmNet_i_f2m",
+      "packed_atlas_page": "atlas_12.png"
     },
     {
       "family": "grass",
@@ -1979,7 +2211,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_19qH7eTv62_TN05t4Ktz8viBRyCwXuHaq",
+      "packed_atlas_page": "atlas_12.png"
     },
     {
       "family": "grass",
@@ -1994,7 +2228,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_1QJ2n0JyHkDIIt8kk8d2NFxVYXhlpLECR",
+      "packed_atlas_page": "atlas_12.png"
     },
     {
       "family": "grass",
@@ -2009,7 +2245,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_1xGx_xeCZl_0Hv5DFn2UlW6R7qu2eCFzV",
+      "packed_atlas_page": "atlas_12.png"
     },
     {
       "family": "grass",
@@ -2024,7 +2262,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_1A7LBzkJrO_sBkVnSiMlojxYbwBZchNA8",
+      "packed_atlas_page": "atlas_13.png"
     },
     {
       "family": "grass",
@@ -2040,7 +2280,9 @@
       "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122816_r3c4_12.png",
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_grass_11fsftmN06VCmWRjJxP_w5cXyUdN3s4xB",
+      "packed_atlas_page": "atlas_13.png"
     },
     {
       "family": "oak",
@@ -2091,7 +2333,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_oak_1cWqpjcrEHT3p_vjVIAbGMSwTaNNPV51U",
+      "packed_atlas_page": "atlas_14.png"
     },
     {
       "family": "oak",
@@ -2106,7 +2350,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_oak_1t7bH1iC8UjZD3ugKJGoFm_kNMJK32UV9",
+      "packed_atlas_page": "atlas_14.png"
     },
     {
       "family": "oak",
@@ -2121,7 +2367,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_oak_1N8htahfrBqATONqmx7cDrPz4sO7J_8HE",
+      "packed_atlas_page": "atlas_14.png"
     },
     {
       "family": "oak",
@@ -2136,7 +2384,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_oak_1snTBNXQt1ri0T5hDMvAdtTz2KI4IScfr",
+      "packed_atlas_page": "atlas_14.png"
     },
     {
       "family": "oak",
@@ -2152,7 +2402,9 @@
       "source_repo_path": "game/love/assets/terrain25d/source_png/oak/oak_v007_128_lab64.png",
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_oak_1WBR5SXEU7jVgWHH5884_KfbciPQdqF2a",
+      "packed_atlas_page": "atlas_14.png"
     },
     {
       "family": "reeds",
@@ -2204,7 +2456,9 @@
       "source_repo_path": "game/love/assets/terrain25d/source_png/reeds/reeds_v003_128_lab64.png",
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_reeds_1QBuDp9wqo1qmDbzC9xYbrlr0Q2pcgOhR",
+      "packed_atlas_page": "atlas_15.png"
     },
     {
       "family": "rock",
@@ -2255,7 +2509,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1TNh9lGC0wkLcUT_pHZ6Lq4bYo1UybyVE",
+      "packed_atlas_page": "atlas_16.png"
     },
     {
       "family": "rock",
@@ -2270,7 +2526,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1QqCzX1oNpQ1eEmPe3_XYsefHyPyWXhj9",
+      "packed_atlas_page": "atlas_16.png"
     },
     {
       "family": "rock",
@@ -2285,7 +2543,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1lBk7jEnzUThFnnAsVXwke__EwJj5Re7F",
+      "packed_atlas_page": "atlas_16.png"
     },
     {
       "family": "rock",
@@ -2300,7 +2560,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1DIU_JxF1gSAhvjl1VfhDw33Z_rBNvI_g",
+      "packed_atlas_page": "atlas_16.png"
     },
     {
       "family": "rock",
@@ -2315,7 +2577,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1CUcbR_HVpkNFhJsAhzF00AQQKeQvowhm",
+      "packed_atlas_page": "atlas_16.png"
     },
     {
       "family": "rock",
@@ -2330,7 +2594,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1BWb32Pd0PRby7I_ivfJoj_UDKTky0pUZ",
+      "packed_atlas_page": "atlas_16.png"
     },
     {
       "family": "rock",
@@ -2345,7 +2611,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1mwQv1egpkfT2py0t376PEYSvOID2BKmf",
+      "packed_atlas_page": "atlas_16.png"
     },
     {
       "family": "rock",
@@ -2360,7 +2628,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1BHEkjFmrxcA1Ubngcoe10C3f_aehaIAc",
+      "packed_atlas_page": "atlas_16.png"
     },
     {
       "family": "rock",
@@ -2375,7 +2645,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1c_Ik16YcfGdNrAX7igwJaq_7LvPTEReD",
+      "packed_atlas_page": "atlas_16.png"
     },
     {
       "family": "rock",
@@ -2390,7 +2662,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1WVL3SGRtq_fmxJ42SkjEFM2YQIkzjuPj",
+      "packed_atlas_page": "atlas_16.png"
     },
     {
       "family": "rock",
@@ -2405,7 +2679,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_12uYt_U9iR_Cm9FYT_TjdILC_IYLyCQBi",
+      "packed_atlas_page": "atlas_16.png"
     },
     {
       "family": "rock",
@@ -2420,7 +2696,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1PD1CoTEb4y5Dl8UMNNapQS4JyaHHl5q7",
+      "packed_atlas_page": "atlas_16.png"
     },
     {
       "family": "rock",
@@ -2435,7 +2713,9 @@
       "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockB_06__drive_1mWGUSfYLmt0dcVo6ODBAhgFXkPran7WE.png",
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1mWGUSfYLmt0dcVo6ODBAhgFXkPran7WE",
+      "packed_atlas_page": "atlas_16.png"
     },
     {
       "family": "rock",
@@ -2450,7 +2730,9 @@
       "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockB_06__drive_1Rz7Uwr7IQt0xkDfesjlJ-pSrrLIWG1tu.png",
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1Rz7Uwr7IQt0xkDfesjlJ_pSrrLIWG1tu",
+      "packed_atlas_page": "atlas_16.png"
     },
     {
       "family": "rock",
@@ -2465,7 +2747,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1tEiqBSY2ht4BAky69ZqI70ou0XhRQz5y",
+      "packed_atlas_page": "atlas_16.png"
     },
     {
       "family": "rock",
@@ -2480,7 +2764,9 @@
       "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockB_08__drive_1GRVcef1IB3pWYqpaKw4_WdWqXLGPXg0S.png",
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1GRVcef1IB3pWYqpaKw4_WdWqXLGPXg0S",
+      "packed_atlas_page": "atlas_16.png"
     },
     {
       "family": "rock",
@@ -2495,7 +2781,9 @@
       "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockB_08__drive_1LB1v5GX1RtIwXBIEewOkkciF6HdpuPNw.png",
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1LB1v5GX1RtIwXBIEewOkkciF6HdpuPNw",
+      "packed_atlas_page": "atlas_17.png"
     },
     {
       "family": "rock",
@@ -2510,7 +2798,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1j1c_FbeQkIePYK_9d91ZiQJ1gEs9s3H2",
+      "packed_atlas_page": "atlas_17.png"
     },
     {
       "family": "rock",
@@ -2525,7 +2815,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1_qwGpesJxayqTILMSpW49czzo77c7Cb_",
+      "packed_atlas_page": "atlas_17.png"
     },
     {
       "family": "rock",
@@ -2540,7 +2832,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_12FYJusHXyTr8N0URZd_Nt3yrjbtFrGa1",
+      "packed_atlas_page": "atlas_17.png"
     },
     {
       "family": "rock",
@@ -2555,7 +2849,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1C_VQtDsasLkXwtEEDGGom7oWtk_DsJ81",
+      "packed_atlas_page": "atlas_17.png"
     },
     {
       "family": "rock",
@@ -2570,7 +2866,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1Ym7c3F_ZQnvB8nmOxfyRvbSfXCQG5AZ3",
+      "packed_atlas_page": "atlas_17.png"
     },
     {
       "family": "rock",
@@ -2585,7 +2883,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1rzDUmVsnRuxUND_YsiEumDU8WkNhlz4c",
+      "packed_atlas_page": "atlas_17.png"
     },
     {
       "family": "rock",
@@ -2600,7 +2900,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1DXXK8GyB1ep7X2IoZtlpeXkzXQLuosz_",
+      "packed_atlas_page": "atlas_17.png"
     },
     {
       "family": "rock",
@@ -2615,7 +2917,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1FGNX50qA_hhzFVon6zwEytlPv1VNDOo5",
+      "packed_atlas_page": "atlas_17.png"
     },
     {
       "family": "rock",
@@ -2630,7 +2934,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1F25dlFuWaMjUgL2EvAA1r_v9p7ukrSuJ",
+      "packed_atlas_page": "atlas_17.png"
     },
     {
       "family": "rock",
@@ -2645,7 +2951,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1lIVE1lPeipT7tQ4y4utZZOIL_rwOXEVW",
+      "packed_atlas_page": "atlas_17.png"
     },
     {
       "family": "rock",
@@ -2660,7 +2968,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1r1NMxlUthq7qFrNElCgKXiPuaDyg3Rxk",
+      "packed_atlas_page": "atlas_17.png"
     },
     {
       "family": "rock",
@@ -2675,7 +2985,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1atP_91DaG6P1mAdsWtoegKsplX8Pp3Av",
+      "packed_atlas_page": "atlas_17.png"
     },
     {
       "family": "rock",
@@ -2691,7 +3003,9 @@
       "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockC_09.png",
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1Ab5raHnNwOhBPdmOCYDfPXDjJJI96uS7",
+      "packed_atlas_page": "atlas_17.png"
     },
     {
       "family": "rock",
@@ -2706,7 +3020,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_1dk6KAlCzdJJjP0a9fZj7kq9uECjYvdFg",
+      "packed_atlas_page": "atlas_17.png"
     },
     {
       "family": "rock",
@@ -2721,7 +3037,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_rock_18rQSCvgys6d8CvfjZLPAky7Aewk3lZdV",
+      "packed_atlas_page": "atlas_17.png"
     },
     {
       "family": "rock_cluster",
@@ -2736,7 +3054,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_rock_cluster_1iLLoHs2DJSDXRuLs9wQ_V9jhpnW_XBOe",
+      "packed_atlas_page": "atlas_18.png"
     },
     {
       "family": "rock_cluster",
@@ -2751,7 +3071,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_rock_cluster_1Tj_VglEV4ALKV0kjqs3zVwNh3nw8IF_8",
+      "packed_atlas_page": "atlas_18.png"
     },
     {
       "family": "rock_cluster",
@@ -2766,7 +3088,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_rock_cluster_1ZRgyTvB51VqP9WgM68r0WIBEoo6UF_QC",
+      "packed_atlas_page": "atlas_18.png"
     },
     {
       "family": "rock_cluster",
@@ -2781,7 +3105,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_rock_cluster_1XYpmelKd0w__hLlstgT_8iOJX0jKVorn",
+      "packed_atlas_page": "atlas_18.png"
     },
     {
       "family": "rock_cluster",
@@ -2796,7 +3122,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_rock_cluster_1VyFJgEKpgowr5ngGBhurNA9lV_NQIeOa",
+      "packed_atlas_page": "atlas_18.png"
     },
     {
       "family": "rock_cluster",
@@ -2811,7 +3139,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_rock_cluster_1txmE_3UVxzPxP5oDQAEhF7Huf5c_XFue",
+      "packed_atlas_page": "atlas_18.png"
     },
     {
       "family": "rock_cluster",
@@ -2826,7 +3156,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_rock_cluster_12rJY7o5EZ3Wv82YYjCcobSJLNBTZYs3u",
+      "packed_atlas_page": "atlas_18.png"
     },
     {
       "family": "rock_cluster",
@@ -2841,7 +3173,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_rock_cluster_1TuIlgvgtZv3luacwWC8knCCWuAXFJRqO",
+      "packed_atlas_page": "atlas_18.png"
     },
     {
       "family": "rock_cluster",
@@ -2856,7 +3190,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_rock_cluster_194C3M5VeXt2V0mynZIzs3uw_YdKHzcVO",
+      "packed_atlas_page": "atlas_18.png"
     },
     {
       "family": "rock_spire",
@@ -2871,7 +3207,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_rock_spire_1_txTSFWvw58PrYgRRx4mW8lxENw4xgHF",
+      "packed_atlas_page": "atlas_19.png"
     },
     {
       "family": "rock_spire",
@@ -2886,7 +3224,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_rock_spire_1R5SiUW2j5Y8j35WAXO_hd9chrtJDEstt",
+      "packed_atlas_page": "atlas_19.png"
     },
     {
       "family": "rock_spire",
@@ -2901,7 +3241,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_rock_spire_1peTwx_rfd2VHOkGCNVzx6ORdw6MV6_rB",
+      "packed_atlas_page": "atlas_19.png"
     },
     {
       "family": "rock_spire",
@@ -2916,7 +3258,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_rock_spire_1XcxYENxi7yIi2XqrkPAiCs9HZ7DuQF0V",
+      "packed_atlas_page": "atlas_19.png"
     },
     {
       "family": "shrub",
@@ -2967,7 +3311,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_shrub_1_4w_0Kg09aD7IbQFjttH1KgdH2Wdcs_J",
+      "packed_atlas_page": "atlas_20.png"
     },
     {
       "family": "shrub",
@@ -2982,7 +3328,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_shrub_1fhL7vjmaIU63yk_y3SE2pOhViCw1Ifu_",
+      "packed_atlas_page": "atlas_20.png"
     },
     {
       "family": "shrub",
@@ -2997,7 +3345,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_shrub_1CQnIZyhZGFwnaoG3MNei2OVi9MQiYN_U",
+      "packed_atlas_page": "atlas_20.png"
     },
     {
       "family": "shrub",
@@ -3012,7 +3362,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_shrub_1lKo1U_FBPG5VF4F27kuCgg6ulJPXC7V7",
+      "packed_atlas_page": "atlas_20.png"
     },
     {
       "family": "shrub",
@@ -3027,7 +3379,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_shrub_1zqsq_yjlmR0XmLn0H9F25HjQ7ixXI52h",
+      "packed_atlas_page": "atlas_20.png"
     },
     {
       "family": "shrub",
@@ -3043,7 +3397,9 @@
       "source_repo_path": "game/love/assets/terrain25d/source_png/shrub/shrub_v008_128_lab64.png",
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_shrub_1_0guU_RSOMs_Yndl84hgatEIooahXN69",
+      "packed_atlas_page": "atlas_20.png"
     },
     {
       "family": "stump",
@@ -3058,7 +3414,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_stump_1NksegZ_Vo9M_u2NchOLFUHHPrzzlCLyD",
+      "packed_atlas_page": "atlas_21.png"
     },
     {
       "family": "stump",
@@ -3073,7 +3431,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_stump_1MJcyKhSqzwl_MvP83J7YUfrY9dFY2qF6",
+      "packed_atlas_page": "atlas_21.png"
     },
     {
       "family": "water_rocks",
@@ -3088,7 +3448,9 @@
       "height": 128,
       "png_color_type": 6,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "object_variant_water_rocks_13vfbNUjrnbXH2uuAxY_BIu1E7WV_D_u6",
+      "packed_atlas_page": "atlas_22.png"
     },
     {
       "family": "wetland",
@@ -3139,7 +3501,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_1K6ih66JkayyvFQfq8lC5AUq1Wndkrylb",
+      "packed_atlas_page": "atlas_23.png"
     },
     {
       "family": "wetland",
@@ -3154,7 +3518,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_1AVz3g1xVaouPBdppFZ60QrAAm8Gb3eiK",
+      "packed_atlas_page": "atlas_23.png"
     },
     {
       "family": "wetland",
@@ -3169,7 +3535,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_1uatKGmszn5VITyzpH2nCTepDtPMrOdi1",
+      "packed_atlas_page": "atlas_23.png"
     },
     {
       "family": "wetland",
@@ -3184,7 +3552,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_1jSwDCUbGKsJ_4ckXqpCNY75o9C_mWCOd",
+      "packed_atlas_page": "atlas_23.png"
     },
     {
       "family": "wetland",
@@ -3199,7 +3569,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_1MIIpoDXSBWKv7_sZwy9NtmKhzMTAaL2E",
+      "packed_atlas_page": "atlas_23.png"
     },
     {
       "family": "wetland",
@@ -3214,7 +3586,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_1cJ3zSo_JVdrPcPLEnn2C5jwpcRm0kRLQ",
+      "packed_atlas_page": "atlas_23.png"
     },
     {
       "family": "wetland",
@@ -3229,7 +3603,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_15Xt_5gMIR_OXSh1rZcP5LU74Y35ciwXb",
+      "packed_atlas_page": "atlas_23.png"
     },
     {
       "family": "wetland",
@@ -3244,7 +3620,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_1lYUTq9SgAMovqfr_XGou_46jv5is6ExD",
+      "packed_atlas_page": "atlas_23.png"
     },
     {
       "family": "wetland",
@@ -3259,7 +3637,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_1erIJYWG5IyvO3jVfXLj1c_oEI4pVc0wK",
+      "packed_atlas_page": "atlas_23.png"
     },
     {
       "family": "wetland",
@@ -3274,7 +3654,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_1GitAt2Bw2KQqYxAhGxbCMvHqZJy0Tiy0",
+      "packed_atlas_page": "atlas_23.png"
     },
     {
       "family": "wetland",
@@ -3289,7 +3671,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_1ejfsZKEW06CSL89Y_SzJhsvTJDajla8N",
+      "packed_atlas_page": "atlas_23.png"
     },
     {
       "family": "wetland",
@@ -3304,7 +3688,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_1wQAFmHezr53oUu_S_qsTxGrkT4O5F6ZZ",
+      "packed_atlas_page": "atlas_23.png"
     },
     {
       "family": "wetland",
@@ -3319,7 +3705,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_1ghpLvtLblRUxOu8k_QaUkeI1yXVasAin",
+      "packed_atlas_page": "atlas_23.png"
     },
     {
       "family": "wetland",
@@ -3334,7 +3722,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_1k80IJwHIwFTNvgJFr0BXFNi7M0NRbKMG",
+      "packed_atlas_page": "atlas_23.png"
     },
     {
       "family": "wetland",
@@ -3349,7 +3739,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_1E8wee6gVkLtB3j2AOuVwzJSbUZmv4Lln",
+      "packed_atlas_page": "atlas_23.png"
     },
     {
       "family": "wetland",
@@ -3364,7 +3756,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_1_OwbvCTrxRQfOSVJ7PoVid2s_F1kWyRb",
+      "packed_atlas_page": "atlas_23.png"
     },
     {
       "family": "wetland",
@@ -3379,7 +3773,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_1k8Sr6Lm_lpmMcsUj2nPS95scLJQfn0_E",
+      "packed_atlas_page": "atlas_24.png"
     },
     {
       "family": "wetland",
@@ -3394,7 +3790,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_16bKileOSelUX43W6fAykcYg1S3y8IoLz",
+      "packed_atlas_page": "atlas_24.png"
     },
     {
       "family": "wetland",
@@ -3409,7 +3807,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_1nvwiPqvHLNjuB2x82fGpmdnxCw_fOVsh",
+      "packed_atlas_page": "atlas_24.png"
     },
     {
       "family": "wetland",
@@ -3424,7 +3824,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_1kSFb__uFYumUDbCDyLdaexZ8TBZTx5R_",
+      "packed_atlas_page": "atlas_24.png"
     },
     {
       "family": "wetland",
@@ -3439,7 +3841,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_11DYVKCQ6BfpaTRBx9mcHdyOeugZOk_FE",
+      "packed_atlas_page": "atlas_24.png"
     },
     {
       "family": "wetland",
@@ -3454,7 +3858,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_1X1ZqfM4buLVOt2Gz2BvitUgHHEllyfkc",
+      "packed_atlas_page": "atlas_24.png"
     },
     {
       "family": "wetland",
@@ -3469,7 +3875,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_1k3QMFFHc6zjadVN9FkvDc_FvCkjTiF9R",
+      "packed_atlas_page": "atlas_24.png"
     },
     {
       "family": "wetland",
@@ -3484,7 +3892,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_1Ng5WbfMjpAYM78oR9SUDstMFBdCYI0IE",
+      "packed_atlas_page": "atlas_24.png"
     },
     {
       "family": "wetland",
@@ -3499,7 +3909,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_1QDCb_ElJgEKJ0UUSdp5Uch7d5rEkyfkv",
+      "packed_atlas_page": "atlas_24.png"
     },
     {
       "family": "wetland",
@@ -3514,7 +3926,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_17wyLvlxdNa8XGJPyOALDDd5lnK1OKem6",
+      "packed_atlas_page": "atlas_24.png"
     },
     {
       "family": "wetland",
@@ -3529,7 +3943,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_1c0xxOeLJZ47UMTuK_wQt2Rjk3gtiI_8y",
+      "packed_atlas_page": "atlas_24.png"
     },
     {
       "family": "wetland",
@@ -3544,7 +3960,9 @@
       "height": 128,
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_1WTrH1uPqYNqW_aZ8KNEI0h6JhURTz_fB",
+      "packed_atlas_page": "atlas_24.png"
     },
     {
       "family": "wetland",
@@ -3560,7 +3978,9 @@
       "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_C_12_128_64.png",
       "png_color_type": 3,
       "ownership_status": "user_declared_creator_2026-10-28",
-      "license_status": "user_declared_creator"
+      "license_status": "user_declared_creator",
+      "material_or_variant_id": "material_wetland_1Z6Nj51kX_MCTaG8mQKjJ0HkCBttb_mL_",
+      "packed_atlas_page": "atlas_24.png"
     }
   ],
   "source_import": {

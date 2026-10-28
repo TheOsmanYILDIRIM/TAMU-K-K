@@ -4,27 +4,31 @@ local Iso=require("world.iso")
 local Json=require("save.json")
 local Shore=require("world.terrain25d_shore")
 local Materials=require("world.terrain25d_materials")
+local Atlas=require("world.terrain25d_atlas")
 local Runtime={}; Runtime.__index=Runtime
 function Runtime.new(pilot)
  assert(pilot and pilot.query and pilot.topography and pilot.routes and pilot.render_options,
    "authored R2 pilot required")
  local m=Json.decode(assert(love.filesystem.read("assets/terrain25d/manifest.json")))
  assert(m.version==1 and #m.assets>=20 and m.atlas_pages[1],"25D manifest invalid")
- -- Keep all Drive IDs in the archive, but accept GPU assets ONLY if reviewed
- -- and physically packed. Metadata-only assets must never be fake-loaded.
+ -- Source PNGs belong to the user and were byte-verified in GitHub.
+ -- The manifest explicitly maps every runtime asset to an archived Drive ID.
  local archive=Json.decode(assert(love.filesystem.read(
    "assets/terrain25d/archive_inventory.json"),"25D source catalog unavailable"))
  assert(archive.version==1 and #archive.assets>=#m.assets,"asset archive invalid")
  local available={}
  for _,a in ipairs(archive.assets) do
-   if a.review_status=="pilot_binary_verified" then
+   if a.review_status=="pilot_binary_verified" or
+      a.review_status=="source_binary_verified" then
      available[a.source_drive_id]=a
    end
  end
  for _,a in ipairs(m.assets) do
    local source=available[a.source_drive_id]
-   assert(source and source.sha256==a.sha256 and source.family==a.family,
-     "packed atlas material not approved in archive")
+   assert(source and source.sha256==a.sha256 and source.family==a.family
+     and source.kind==a.kind and source.width==128 and source.height==128
+     and source.ownership_status=="user_declared_creator_2026-10-28",
+     "packed atlas material has no verified source")
  end
  local pages={}
  for _,page in ipairs(m.atlas_pages) do
@@ -36,20 +40,45 @@ function Runtime.new(pilot)
    pages[page.filename]=page
  end
  assert(pages["atlas_00.png"],"pilot atlas missing")
+ local mapped_sources={}
+ for _,page in ipairs(m.atlas_pages) do
+   if page.generated_from_sources then
+     assert(type(page.sources)=="table" and #page.sources>0 and
+       #page.sources<=16,"invalid sourced page size")
+     for _,src in ipairs(page.sources) do
+       local archived=assert(available[src.source_drive_id],
+         "atlas page references missing source")
+       assert(src.sha256==archived.sha256 and
+         src.path==archived.source_repo_path:sub(#"game/love/assets/terrain25d/"+1)
+         and src.x>=0 and src.y>=0 and src.x+128<=page.width
+         and src.y+128<=page.height and
+         not mapped_sources[src.source_drive_id],
+         "atlas page source/placement mismatch")
+       mapped_sources[src.source_drive_id]=page.filename
+     end
+   end
+ end
  local fam={}
  for _,a in ipairs(m.assets) do
    assert(pages[a.atlas_page] and type(a.uv_rect)=="table"
      and #a.uv_rect==4,"packed material missing atlas page/UV")
+   if pages[a.atlas_page].generated_from_sources then
+     assert(mapped_sources[a.source_drive_id]==a.atlas_page,
+       "atlas UV references wrong source page")
+   end
    local f=fam[a.family] or {};f[#f+1]=a;fam[a.family]=f
  end
  for _,kind in ipairs({"grass","forest","dirt","rock","wetland","oak","conifer","boulder"}) do
    assert(fam[kind] and #fam[kind]>0,"atlas material absent: "..kind)
-   table.sort(fam[kind],function(a,b) return a.id<b.id end)
+ end
+ for _,list in pairs(fam) do
+   table.sort(list,function(a,b) return a.id<b.id end)
  end
  local self=setmetatable({pilot=pilot,manifest=m,families=fam,
    page_metadata=pages,page_images={},page_pins={},
    atlas_resident_pages=0,atlas_estimated_gpu_bytes=0,
-   catalog_counts={total=#archive.assets,packed=#m.assets},
+   catalog_counts={total=#archive.assets,packed=#m.assets,
+     pages=#m.atlas_pages},
    built=0,visible=0,draw_calls=0,uploads_per_frame=0,build_budget=1,step=32},Runtime)
  -- Keep the pilot page for current sprites; all other pages load on demand.
  self.atlas=self:page("atlas_00.png")
@@ -59,7 +88,7 @@ function Runtime:page(name)
  local meta=assert(self.page_metadata[name],"atlas page is not packed")
  local image=self.page_images[name]
  if not image then
-   image=love.graphics.newImage("assets/terrain25d/"..name)
+   image=Atlas.load(meta)
    local w,h=image:getDimensions()
    assert(w==meta.width and h==meta.height,"atlas dimensions mismatch: "..name)
    image:setFilter("nearest","nearest");image:setWrap("clamp","clamp")
