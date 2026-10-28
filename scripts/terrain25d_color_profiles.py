@@ -94,5 +94,5 @@ if __name__=='__main__':
     root=Path(__file__).resolve().parents[1]/'game/love/assets/terrain25d'
     content=json.dumps(build(root),separators=(',',':'),sort_keys=True)
     if '--ci-emit' in sys.argv:
-        print('OSMAN25D_COLOR_PROFILES_B64='+base64.b64encode(zlib.compress(content.encode(),9)).decode())
+        print('OSMAN25D_COLOR_PROFILES_JSON='+content)
     else:print(content)
