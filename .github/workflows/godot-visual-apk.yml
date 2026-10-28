@@ -65,6 +65,8 @@ jobs:
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y xvfb libgl1-mesa-dri
+          godot --headless --path demos/godot-visual --editor --import 2>&1 | tee /tmp/osman-godot-import.log
+          if grep -Eq 'SCRIPT ERROR:|Failed to load script|Parse Error:' /tmp/osman-godot-import.log; then exit 1; fi
           timeout 90s xvfb-run -a -s "-screen 0 720x1280x24" godot --path demos/godot-visual --rendering-driver opengl3 --script res://capture.gd 2>&1 | tee /tmp/osman-godot-visual.log
           grep -q 'OSMAN_VISUAL_CAPTURE_OK' /tmp/osman-godot-visual.log
           if grep -Eq 'SCRIPT ERROR:|Failed to load script|Parse Error:' /tmp/osman-godot-visual.log; then echo 'GDSCRIPT_RUNTIME_FAILURE'; exit 1; fi
