@@ -189,6 +189,7 @@ jobs:
           local world=Bridge.new(doc("fisilti_ormani.r2.v1.json"),doc("osman_overworld.v2.json"))
           local mesh,times={},{}
           local frames=0
+          local centerX,centerY,viewScale=0,0,1
           local img
           function love.load()
             love.window.setMode(960,640,{vsync=0})
@@ -206,6 +207,15 @@ jobs:
               for _,v in ipairs(Geo.love_vertices(chunk)) do vertices[#vertices+1]=v end
             end end
             assert(#vertices>0)
+            local xMin,yMin,xMax,yMax=math.huge,math.huge,-math.huge,-math.huge
+            for _,v in ipairs(vertices) do
+              xMin=math.min(xMin,v[1]); xMax=math.max(xMax,v[1])
+              yMin=math.min(yMin,v[2]); yMax=math.max(yMax,v[2])
+            end
+            centerX,centerY=(xMin+xMax)/2,(yMin+yMax)/2
+            viewScale=math.min(880/math.max(1,xMax-xMin),560/math.max(1,yMax-yMin),3)
+            print(string.format("TERRAIN25D_GPU_BOUNDS x=%.2f..%.2f y=%.2f..%.2f scale=%.3f",
+              xMin,xMax,yMin,yMax,viewScale))
             mesh=love.graphics.newMesh(vertices,"triangles","static")
             mesh:setTexture(img)
             print("TERRAIN25D_GPU_MESH_CREATED vertices="..#vertices)
@@ -214,9 +224,9 @@ jobs:
             local t=love.timer.getTime()
             love.graphics.clear(.12,.17,.18,1)
             love.graphics.push()
-            love.graphics.translate(480,210)
-            love.graphics.scale(1.4,1.4)
-            love.graphics.translate(-25,-280)
+            love.graphics.translate(480,320)
+            love.graphics.scale(viewScale,viewScale)
+            love.graphics.translate(-centerX,-centerY)
             love.graphics.draw(mesh)
             love.graphics.pop()
             times[#times+1]=(love.timer.getTime()-t)*1000
