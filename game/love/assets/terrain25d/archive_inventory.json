@@ -2,7 +2,7 @@
   "version": 1,
   "source": "Google Drive Texture_Archive (metadata snapshot 2026-10-28)",
   "source_folder": "1n3nkFdX3rPluAHU5aS95Ci5nYBp8_CHe",
-  "warning": "Metadata-only catalog. No full binary or license approval of non-pilot entries is claimed. Do not package or render unverified entries. Duplicate names are kept by Drive ID. Ten additional original Drive files independently re-downloaded and SHA256/128px/alpha checked; licensing remains pending, no files packed.",
+  "warning": "All 228 original PNGs are verified and copied into source_png; ownership is declared by the user. Only the separate 20-entry pilot manifest is packed for runtime; raw originals are not automatically GPU-resident.",
   "summary": {
     "total": 228,
     "terrain": 168,
@@ -65,7 +65,11 @@
       }
     ],
     "verified_nonpilot_binaries": 10,
-    "pending_binary_or_license": 194
+    "pending_binary_or_license": 0,
+    "verified_source_binaries": 228,
+    "raw_repo_source_count": 228,
+    "raw_repo_bytes": 3439371,
+    "pending_runtime_packing": 208
   },
   "assets": [
     {
@@ -80,8 +84,11 @@
       "width": 128,
       "height": 128,
       "alpha_mode": "transparent",
-      "license_status": "user_declared_ai_generated",
-      "packed_atlas_page": "atlas_00.png"
+      "license_status": "user_declared_creator",
+      "packed_atlas_page": "atlas_00.png",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/boulder/boulder_v001_128_lab64.png",
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28"
     },
     {
       "family": "boulder",
@@ -95,8 +102,11 @@
       "width": 128,
       "height": 128,
       "alpha_mode": "transparent",
-      "license_status": "user_declared_ai_generated",
-      "packed_atlas_page": "atlas_00.png"
+      "license_status": "user_declared_creator",
+      "packed_atlas_page": "atlas_00.png",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/boulder/boulder_v002_128_lab64.png",
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28"
     },
     {
       "family": "boulder",
@@ -104,7 +114,14 @@
       "source_drive_id": "17mLqn5_w0zgdWZ-Sk2p2R1T8YBa29Op-",
       "size_bytes": 19608,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/boulder/boulder_v003_128_lab64.png",
+      "sha256": "39b55e855b5baf89f9f9c6a1a9dd50e0d4552c940c67d30891afc838b451615f",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "boulder",
@@ -112,11 +129,15 @@
       "source_drive_id": "1hkaHyb5IcqhUmXcPsZo1PNqXzEQt-Q9f",
       "size_bytes": 20876,
       "kind": "object",
-      "review_status": "binary_verified_license_pending",
+      "review_status": "source_binary_verified",
       "sha256": "a0aa9e2d94453d04ee5400ccb3f285f594ebb153ea6ecf4fe76d57808f059d78",
       "width": 128,
       "height": 128,
-      "alpha_mode": "transparent"
+      "alpha_mode": "transparent",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/boulder/boulder_v004_128_lab64.png",
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "broadleaf",
@@ -124,7 +145,14 @@
       "source_drive_id": "1_-Ol-mDrs6QGvNQbTMYOBt0tr8A_85_E",
       "size_bytes": 23486,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/broadleaf/broadleaf_v001_128_lab64.png",
+      "sha256": "774c40d20dc23b2167d4b054d387a69060d1af510373530b808fcc6217d4b91b",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "broadleaf",
@@ -132,7 +160,14 @@
       "source_drive_id": "1r4mDlFLODrIodcgKdg8AH0LxtqNXUPWM",
       "size_bytes": 22828,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/broadleaf/broadleaf_v002_128_lab64.png",
+      "sha256": "ffe21901d70ca70e13b8e1b315c55d902b93ba96a830f8229ff8912002c0518e",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "broadleaf",
@@ -140,7 +175,14 @@
       "source_drive_id": "1fTUcS8BzGjmwAN0WLO7UQjo_uXWZ4GDw",
       "size_bytes": 19086,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/broadleaf/broadleaf_v003_128_lab64.png",
+      "sha256": "f17dab08d1e63823a9f723a7ad5d868979002e0ce418e4b97a7bd09c06457d3b",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "broadleaf",
@@ -148,7 +190,14 @@
       "source_drive_id": "130aSKx9rabeodcFCCMWSJayVsjmCg-Kx",
       "size_bytes": 24183,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/broadleaf/broadleaf_v004_128_lab64.png",
+      "sha256": "33e3dca441a61f3ca88e54a170becdc7a44e33db94c3f69b31795fefd3b930b6",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "broadleaf",
@@ -156,7 +205,14 @@
       "source_drive_id": "1X7j6dotnv-nSP-N6od9NNC42UIVlkcsi",
       "size_bytes": 17181,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/broadleaf/broadleaf_v005_128_lab64.png",
+      "sha256": "0b10bf74273803211603f040f2bf55146687171b900cc677ae52db36b89cf9eb",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "broadleaf",
@@ -164,7 +220,14 @@
       "source_drive_id": "16DpJZg6NXlmRItoZHWM-5zG9cwcRq8cv",
       "size_bytes": 21790,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/broadleaf/broadleaf_v006_128_lab64.png",
+      "sha256": "8d3b768f9a1c09f404e6aba476176a9c9747ef85192e6b4746642c0e686382e0",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "broadleaf",
@@ -172,7 +235,14 @@
       "source_drive_id": "1aFxoyeLrb8HQ08eGRydmryBIsnUDxoAV",
       "size_bytes": 19179,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/broadleaf/broadleaf_v007_128_lab64.png",
+      "sha256": "7330078e519944b3b489a21928a1018227ea6c9130e204710e540e6704489afc",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "broadleaf",
@@ -180,7 +250,14 @@
       "source_drive_id": "1Y3V6VJPmsfWGx-Q-AP1GD5Botg5cBR6K",
       "size_bytes": 22619,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/broadleaf/broadleaf_v008_128_lab64.png",
+      "sha256": "75ac9f89ffbb7f9bdd429599745790aba6f71ed29ff4b9f9a925f16ef31de2dc",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "broadleaf",
@@ -188,7 +265,14 @@
       "source_drive_id": "1NDrzHDXR4-JEZ6J16-DZkU3UmE18I4uQ",
       "size_bytes": 22685,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/broadleaf/broadleaf_v009_128_lab64.png",
+      "sha256": "e016db9c331e9e4ed0ff4fa39ca76505d94733ad9cbfdbf817ffad13947413b8",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "broadleaf",
@@ -196,7 +280,14 @@
       "source_drive_id": "1lnSPYZ40qoGyg0VmQ53XwIQz17pmybUS",
       "size_bytes": 26289,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/broadleaf/broadleaf_v010_128_lab64.png",
+      "sha256": "34eab0f1d9564ff8def3359122b5161f04873946cfde2a49e75e113159a3257b",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "conifer",
@@ -210,8 +301,11 @@
       "width": 128,
       "height": 128,
       "alpha_mode": "transparent",
-      "license_status": "user_declared_ai_generated",
-      "packed_atlas_page": "atlas_00.png"
+      "license_status": "user_declared_creator",
+      "packed_atlas_page": "atlas_00.png",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/conifer/conifer_v001_128_lab64.png",
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28"
     },
     {
       "family": "conifer",
@@ -225,8 +319,11 @@
       "width": 128,
       "height": 128,
       "alpha_mode": "transparent",
-      "license_status": "user_declared_ai_generated",
-      "packed_atlas_page": "atlas_00.png"
+      "license_status": "user_declared_creator",
+      "packed_atlas_page": "atlas_00.png",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/conifer/conifer_v002_128_lab64.png",
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28"
     },
     {
       "family": "conifer",
@@ -234,7 +331,14 @@
       "source_drive_id": "1fLF5tw8jBYqEFAlrgTvh8QuCpvON9YDJ",
       "size_bytes": 18555,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/conifer/conifer_v003_128_lab64.png",
+      "sha256": "ba1098fe458d27e7dff82b88703e9c96677bbba82d5fe3826d2c2e599aef1f7c",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "conifer",
@@ -242,7 +346,14 @@
       "source_drive_id": "1yQSvRvEXFznjPoKJPvSlL2CeDbGFei7k",
       "size_bytes": 16537,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/conifer/conifer_v004_128_lab64.png",
+      "sha256": "2956a117c15f7a4af7884e4b63acdb94b12d3ce8c076c951514d602fafca26a2",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "conifer",
@@ -250,7 +361,14 @@
       "source_drive_id": "16GC01Pp1nPMziO51yg1f_rw7kgpjAPwW",
       "size_bytes": 15084,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/conifer/conifer_v005_128_lab64.png",
+      "sha256": "87510714a6725930898bea687b3cc01c7d0e948926338a281c923dfa2ff2a2ba",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "conifer",
@@ -258,11 +376,15 @@
       "source_drive_id": "19jDdh9UuTMcNMNXq0eG_UNJ1jvK1aQfX",
       "size_bytes": 16840,
       "kind": "object",
-      "review_status": "binary_verified_license_pending",
+      "review_status": "source_binary_verified",
       "sha256": "f9e41f70020b420b1b49366a732ee7ba7c430423df9fac09d42c064481ea1b07",
       "width": 128,
       "height": 128,
-      "alpha_mode": "transparent"
+      "alpha_mode": "transparent",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/conifer/conifer_v006_128_lab64.png",
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dead_tree",
@@ -270,7 +392,14 @@
       "source_drive_id": "1qiCRYrRIlagZVCaKQO-PEI88tCWpBUNF",
       "size_bytes": 14562,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dead_tree/dead_tree_v001_128_lab64.png",
+      "sha256": "780399fff989277bf8c8d0d98e4fe70b5e18c79884b463b6fa4cca34fa7880cb",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dead_tree",
@@ -278,7 +407,14 @@
       "source_drive_id": "1g9QyDL7hSb9sMuieMLCZ9nTu2gvlk5QJ",
       "size_bytes": 15901,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dead_tree/dead_tree_v002_128_lab64.png",
+      "sha256": "0051dad3e80ef7ee8db699f50dab2b97c41250001227db3d29851c4c5b10987d",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dead_tree",
@@ -286,7 +422,14 @@
       "source_drive_id": "1fzQg1yuZu62ZjkD1nfDNSCRL6O4GPK6k",
       "size_bytes": 15843,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dead_tree/dead_tree_v003_128_lab64.png",
+      "sha256": "993b69e7754c114275242cbcd790ba41ba8637ec3aff16afea6de144a97544cc",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -300,8 +443,11 @@
       "width": 128,
       "height": 128,
       "alpha_mode": "opaque",
-      "license_status": "user_declared_ai_generated",
-      "packed_atlas_page": "atlas_00.png"
+      "license_status": "user_declared_creator",
+      "packed_atlas_page": "atlas_00.png",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtA_01.png",
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28"
     },
     {
       "family": "dirt",
@@ -315,8 +461,11 @@
       "width": 128,
       "height": 128,
       "alpha_mode": "opaque",
-      "license_status": "user_declared_ai_generated",
-      "packed_atlas_page": "atlas_00.png"
+      "license_status": "user_declared_creator",
+      "packed_atlas_page": "atlas_00.png",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtA_02.png",
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28"
     },
     {
       "family": "dirt",
@@ -324,7 +473,14 @@
       "source_drive_id": "1BHkfw0IXpIpOIgRBi4XTmEwM_NLd2bZa",
       "size_bytes": 12951,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtA_03.png",
+      "sha256": "f7f6f158ccf33b50a5efb2b29a191f6d77d59b67475a129da175d9e81ff64d31",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -332,7 +488,14 @@
       "source_drive_id": "1Ocn9R3B8s-HLHl_SRdxaLN--sG0428J1",
       "size_bytes": 12932,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtA_04.png",
+      "sha256": "d83089c903428648be2a71abe1eda92d7cd73d2fd4be5fa37f54b4974ae5a1d8",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -340,7 +503,14 @@
       "source_drive_id": "1DVjjt3Gk0uKtA_gfkTy040LCk-xFmarr",
       "size_bytes": 12937,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtA_05.png",
+      "sha256": "23fe6a246a82d072eb3486e0dd48d8960cb7a215cd7e89e646d7fd912f9a81f7",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -348,7 +518,14 @@
       "source_drive_id": "1yRlTYXRGS7eXGZEjBFyn9urxS1B7yExq",
       "size_bytes": 12891,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtA_06.png",
+      "sha256": "e3e3eb7151ea3bbf6ed7ab94c2cbc7c38eafea3a1d1a1ad61e2e0a1cd6686e89",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -356,7 +533,14 @@
       "source_drive_id": "1flJ19Vp3sI545harIBYoTy-4uYMYp62n",
       "size_bytes": 12924,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtA_07.png",
+      "sha256": "bd97723932cde6486f56fd541a79fd82f902c606352ad11a1b18fffd653aae0f",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -364,7 +548,14 @@
       "source_drive_id": "1CGNTtDoPaCqmmDAuFITqE9vJ6yc_EGPE",
       "size_bytes": 12875,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtA_08.png",
+      "sha256": "5b14d6f4ed736646458443c6e062ea7fb314b251fe24f0c671114b977fe91dac",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -372,7 +563,14 @@
       "source_drive_id": "1INFCShj5WJSmRPJm0vDhBb783aFkOiZF",
       "size_bytes": 12915,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtA_10.png",
+      "sha256": "e678b288422418799e4487b514cc9aeba6c3353f0faf696d0ddc524ebe9a68e6",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -380,7 +578,14 @@
       "source_drive_id": "1kfpQ0E_kIyhEDUvpAe06HwPU02wfDhKd",
       "size_bytes": 12910,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtA_11.png",
+      "sha256": "645ee53e15c82841bbb6b9001175b7156887a1cca103b770a00b578609593f0e",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -388,7 +593,14 @@
       "source_drive_id": "1zlCV3df-7CPD29CECLpEttomVxtHH6gk",
       "size_bytes": 12905,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtB_01.png",
+      "sha256": "b54fdfeb25e0e516f3866b5d7869dc7214adf2cf1201dbcf0f2db54e5bf10df3",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -396,7 +608,14 @@
       "source_drive_id": "1xfW2q750EGwb7lBKlUFykkN1EUXrWKK1",
       "size_bytes": 12892,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtB_02.png",
+      "sha256": "ed2002ee41b5581179070ea397cda03c5e902061aaecf002571360b03134c0d5",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -404,7 +623,14 @@
       "source_drive_id": "1uA_oZlLmIG6T4aatXYQpvzfwa08WPdUK",
       "size_bytes": 12943,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtB_03.png",
+      "sha256": "811e3c3ce0fdbb457aad95abd18a2db204a6e5ccd566d8b46786e1d133aa150c",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -412,7 +638,14 @@
       "source_drive_id": "1HGt9huJf9KC0Kwc9g8WQvIFBJ8ipDonE",
       "size_bytes": 12835,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtB_05.png",
+      "sha256": "f0745befee86b2894e20f81dd08a1c0241caeb19cc7fe42470e54d6b159cdb51",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -420,7 +653,14 @@
       "source_drive_id": "1khqVEJij5ty7w9S2GRQyamSIC5Xs2-30",
       "size_bytes": 12867,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtB_06.png",
+      "sha256": "48a65ae54d495623288d18767fa4ce9cd273c7c28b40796773236a4d82e73350",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -428,7 +668,14 @@
       "source_drive_id": "1qQAw8334JqxFzJRQyTDlj1xDiyMxZMRt",
       "size_bytes": 12877,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtB_07.png",
+      "sha256": "e63ada4704f81a44b08c14a9fea4086eaea12df8b222c1d74355c48b3b98f269",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -436,7 +683,14 @@
       "source_drive_id": "1Xn0UF2XkQ_mCwQ1sEa4uHSN9w9r3kYZ_",
       "size_bytes": 12949,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtB_08.png",
+      "sha256": "c84c759991147fd4f07e66b2ae3f4ce5d70001f0f6475e86753cb49148503e80",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -444,7 +698,14 @@
       "source_drive_id": "1rswYhTHKF4vHKw7xvg9iLc29bchGdNUW",
       "size_bytes": 12872,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtB_09.png",
+      "sha256": "20215897bd54fbc4b37b97f017aaa0490f15142ab48041dc4efb24218e170962",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -452,7 +713,14 @@
       "source_drive_id": "1C0rSViuwsRuOi9Zy0I8giNFVSoz1NsH8",
       "size_bytes": 12961,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtB_10.png",
+      "sha256": "1d2825418f1c5ac05f02e9a4d156a2e7b6fcecd94af19dbecf41e1b4f8d23b46",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -460,7 +728,14 @@
       "source_drive_id": "1cC198AoANaIWHRndguc0cR3j3HYpGx3v",
       "size_bytes": 12904,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtB_11.png",
+      "sha256": "5ec9d206fb0b6c3cbf2907807f1e20dee6cdc80be5415651ed868cb9a533e060",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -468,7 +743,14 @@
       "source_drive_id": "1jbBT5wqslBoZzkgrNeMJQRlKRhxENbe4",
       "size_bytes": 12954,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtC_01.png",
+      "sha256": "ebbe21e315dc73098edc5adce8cca738af93b971e83fe6f1b5a8d0b824361a3a",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -476,7 +758,14 @@
       "source_drive_id": "1KhIRwkORcE_9o_mzPRBTKyY5dtERV4ND",
       "size_bytes": 12927,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtC_02.png",
+      "sha256": "2985c58cab8949a7b6d90ab66e1335601a4484761ccc248af16747a8b5abdd90",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -484,7 +773,14 @@
       "source_drive_id": "1bKMeKaK2n0LoUsmqr5I3hinVHHqeJULS",
       "size_bytes": 12912,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtC_03.png",
+      "sha256": "1f6dcae7ac8220b9aac5a4b8fc6231b50093ba317b19a0555e50a9863558d1c2",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -492,7 +788,14 @@
       "source_drive_id": "1nE8s3O23FOqGtEkfEOKkfjTyomqi8GoK",
       "size_bytes": 12899,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtC_04.png",
+      "sha256": "96e73f69f0ef551a547cbdc0dc665ef85d5a303b8c36a2a3b6877e3a5dd87e16",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -500,7 +803,14 @@
       "source_drive_id": "1g_T8TTI_mYDcoBrLA_KDmnMvkh_918SW",
       "size_bytes": 12889,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtC_05.png",
+      "sha256": "c5b1fd6abe87fafbff8a8e0109581ed6e466e1f2bcc3ae13fad61f6886010e48",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -508,7 +818,14 @@
       "source_drive_id": "1ySwC2Ody3CxJFH4z5HgL0wIA3G0sJ2AV",
       "size_bytes": 12911,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtC_07.png",
+      "sha256": "55207ea3478b9fe2ea4549e4f64a61a633c834c13999f51324ff576caa022d9f",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -516,7 +833,14 @@
       "source_drive_id": "1Y7XXEJLRRXzXGye9B3NDyh1HKaYSbPkA",
       "size_bytes": 12917,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtC_08.png",
+      "sha256": "02f28782da827e670ea85a64865d44d6206b3c3c29fde1a29421cd6098f0c0e2",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -524,7 +848,14 @@
       "source_drive_id": "1u_EmdiY0SFhal6yM9HdPY6xvpg-4WHwi",
       "size_bytes": 12917,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtC_09.png",
+      "sha256": "4df27880b3a2d7d8f41b419318930eab0cb7645ef4c7e337963c646cf04634e7",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -532,7 +863,14 @@
       "source_drive_id": "1LI2-DV_0njFpkDZc0t3dhVti3jiDPnZG",
       "size_bytes": 12951,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtC_10.png",
+      "sha256": "7f4ec552d05d1aac800de9bc5dd02ce7ba90f548382818d9ee3bf5c3339a01e7",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -540,7 +878,14 @@
       "source_drive_id": "1RF1nRyy0my6aCO7UFEOSkODb2exH8UU5",
       "size_bytes": 12949,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtC_11.png",
+      "sha256": "c07bd01be5e81b634a3c1136bf49fe600687b17df62ef02a841275deacbbc21e",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "dirt",
@@ -548,11 +893,15 @@
       "source_drive_id": "15lmiHY1havVfMXA6_-9_li0Kp0B9otLc",
       "size_bytes": 12940,
       "kind": "terrain",
-      "review_status": "binary_verified_license_pending",
+      "review_status": "source_binary_verified",
       "sha256": "3fbda325213ee27e72286b9719c3162b9745571fadc220ff8bbf46feda299f55",
       "width": 128,
       "height": 128,
-      "alpha_mode": "opaque"
+      "alpha_mode": "opaque",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/dirt/dirt_path_128_64_dirtC_12.png",
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "fallen_log",
@@ -560,7 +909,14 @@
       "source_drive_id": "1CdkeX5QiQW1k3ssBPxqN0P-bIKaNEjua",
       "size_bytes": 14914,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/fallen_log/fallen_log_v001_128_lab64.png",
+      "sha256": "b3ba3c1b5ad80e8f2f5687359a097eb175448498492d7c68a5a6c837e87a0440",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "fallen_log",
@@ -568,7 +924,14 @@
       "source_drive_id": "1wt3ufp0O41vPX9TQGv90zC0pgPM02BHW",
       "size_bytes": 14905,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/fallen_log/fallen_log_v002_128_lab64.png",
+      "sha256": "ab880d167370e1682818e12d7d3e6e4df5aab6cb6f715d3960ef2779e71d17d7",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "fallen_log",
@@ -576,7 +939,14 @@
       "source_drive_id": "1yzJziyFQyhMFI7ujEiV8gtwg_QvqU_LI",
       "size_bytes": 18657,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/fallen_log/fallen_log_v003_128_lab64.png",
+      "sha256": "d52e998f1bc070ed43d25c5297c57fa3a3deb0af9aaa64462e64f95604df335d",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -590,8 +960,11 @@
       "width": 128,
       "height": 128,
       "alpha_mode": "opaque",
-      "license_status": "user_declared_ai_generated",
-      "packed_atlas_page": "atlas_00.png"
+      "license_status": "user_declared_creator",
+      "packed_atlas_page": "atlas_00.png",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122857_r1c1_01.png",
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28"
     },
     {
       "family": "forest",
@@ -605,8 +978,11 @@
       "width": 128,
       "height": 128,
       "alpha_mode": "opaque",
-      "license_status": "user_declared_ai_generated",
-      "packed_atlas_page": "atlas_00.png"
+      "license_status": "user_declared_creator",
+      "packed_atlas_page": "atlas_00.png",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122857_r1c2_02.png",
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28"
     },
     {
       "family": "forest",
@@ -614,7 +990,14 @@
       "source_drive_id": "1mBoDouJz2KrOZsUrFuzfFNGmw-6eag0t",
       "size_bytes": 12844,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122857_r1c3_03.png",
+      "sha256": "94a891ad09784dc270bfea3492410e76e6aa4b29606516558603bd48328f0215",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -622,7 +1005,14 @@
       "source_drive_id": "10ZmZeWGHoNmQcO7tUwuy1A-UaYLXTklV",
       "size_bytes": 12788,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122857_r1c4_04.png",
+      "sha256": "28b39b110354a32424deb75ddfd1a6599402746bd117c080bcdc4e1771a77542",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -630,7 +1020,14 @@
       "source_drive_id": "1ygJYAZOvrFF7-eE5J4aJxW9hHsljjDH2",
       "size_bytes": 12814,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122857_r2c1_05.png",
+      "sha256": "1e56b29606b21df0d4ae129d140283f215c1f9e2916fb3752edcea29d51d5dbb",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -638,7 +1035,14 @@
       "source_drive_id": "1VBe2cUDvWlsoejvyipIwLkcNb7D2E-h6",
       "size_bytes": 12828,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122857_r2c2_06.png",
+      "sha256": "7d1861ca72f0a34bb44adbbfa2ffdb4cd6c3a8b54cb414b15c3730b6afec2d6f",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -646,7 +1050,14 @@
       "source_drive_id": "1c53RWUbH4Dc9XkC1HsOMacllQiBpy8d7",
       "size_bytes": 12846,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122857_r2c3_07.png",
+      "sha256": "06cce4dda8ab5f15a350a721e60153b9bdde1a617075176f8f25a5fd82cd0217",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -654,7 +1065,14 @@
       "source_drive_id": "1R9Cy6lUOFp5ZSHe3gbgr4KjOFv4QqFFi",
       "size_bytes": 12922,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122857_r2c4_08.png",
+      "sha256": "123d7237f09be5063b1d842fa83d685f26cf54710f6937c584523d0b505f21cb",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -662,7 +1080,14 @@
       "source_drive_id": "1JibRyt98gxJbL3fo0abEuhsKtGOU6yoo",
       "size_bytes": 12769,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122857_r3c1_09.png",
+      "sha256": "b7e8d3f22604006f41eb1bc8860c955ba49f9a3eca2538481c5b7d9ad4090577",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -670,7 +1095,14 @@
       "source_drive_id": "139sP3ekSTxHrLXeNClfb0fhNw4B2ApKM",
       "size_bytes": 12942,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122857_r3c2_10.png",
+      "sha256": "c767bfb9aad2fabb8e5a5560180a74166c3bb89e5ff45e160b2d831edcfd5930",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -678,7 +1110,14 @@
       "source_drive_id": "1KJNGppM47hRyXmC7Id5boAQ6Ir8uYq2n",
       "size_bytes": 12774,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122857_r3c3_11.png",
+      "sha256": "db32ab983f0034ed8ef08004cae7b2f09aa5c13ec706abd21a253e5b233183aa",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -686,7 +1125,14 @@
       "source_drive_id": "1uDFiP_SZFyDrATz1uKQkHZf-s-BqF-XG",
       "size_bytes": 12894,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122857_r3c4_12.png",
+      "sha256": "51e3d4de41dc3357a98a7966af04d6418d019b32321e0cdef78ede0d8af3fb2f",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -694,7 +1140,14 @@
       "source_drive_id": "1hVggbBLgxI0cfbXe9mN0zC44x1FHIA-0",
       "size_bytes": 12703,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122858_r1c1_01.png",
+      "sha256": "012780ed58c5e1001a8002d9d70bc2a2180435318c1eaebcb5075995118f68e2",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -702,7 +1155,14 @@
       "source_drive_id": "1qaWirYf-UElNx2nGCbwzG3RBIxy0ymI9",
       "size_bytes": 12897,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122858_r1c2_02.png",
+      "sha256": "309e56a70e915b37545aff947408a512143aeecac83ed829c10e2e9a9f0d4728",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -710,7 +1170,14 @@
       "source_drive_id": "110PC5FYdgvvtppzMNZ9BzJVzxuVDVwoS",
       "size_bytes": 12969,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122858_r1c3_03.png",
+      "sha256": "8f13a529acacfb07bf1dd1f2a14eebc93aea91d4b1eff685fa08352ac56d835b",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -718,7 +1185,14 @@
       "source_drive_id": "1SxVAtJTZ92QV4ndQWax_wO0lwuVIz2AJ",
       "size_bytes": 12782,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122858_r1c4_04.png",
+      "sha256": "96deeab94f9a267b24e6ce6afd8241c3a4ee0b63da8172e95409e2e36d93d87e",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -726,7 +1200,14 @@
       "source_drive_id": "1GUT0tU5a2JabMWU1y8V8MYd0Z9nlsqOx",
       "size_bytes": 12814,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122858_r2c1_05.png",
+      "sha256": "2134f5ca3d6041199e35b719320fa16039b954cc400d377d83a5313647c2cdcf",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -734,7 +1215,14 @@
       "source_drive_id": "1WhL9xSW_HIGketVPIjJCEnybBONuoi2I",
       "size_bytes": 12920,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122858_r2c2_06.png",
+      "sha256": "a42824e539ebea8a06700567bb8e092da043f27441bd1c72377092857f05c264",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -742,7 +1230,14 @@
       "source_drive_id": "1jg3YGdDzNbzSfXUok2FB7SjoiFgZ13ba",
       "size_bytes": 12811,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122858_r2c3_07.png",
+      "sha256": "fcc7623d83bfb6e65de03329fadf465ec82ebfd2308acb7fbdd1acf4fa87e9ef",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -750,7 +1245,14 @@
       "source_drive_id": "1PhaNZwSkm9oYjrp3H0ldDLJ53BFcdJDw",
       "size_bytes": 12977,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122858_r2c4_08.png",
+      "sha256": "8cdaad9a080b3696a2e7f3726198b543cab49cdd251b36c89337d43fdd30e60c",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -758,7 +1260,14 @@
       "source_drive_id": "12MiZ3jSvd4HEF7Qcv0LmRyNGWgvzBwpP",
       "size_bytes": 12835,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122858_r3c1_09.png",
+      "sha256": "29852893ea1e0d2cbf4029b2a8f2eacae0ccac0c0aad570043c77fff44d00d78",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -766,7 +1275,14 @@
       "source_drive_id": "1FuEBUhLT04tCx8xgbsP88KJddPj15Urp",
       "size_bytes": 12935,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122858_r3c2_10.png",
+      "sha256": "eba024cd261773d4629a47b8181fb4e2809ab59e864935ea54b5dad1d33c5649",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -774,7 +1290,14 @@
       "source_drive_id": "1F7GwwcLfsfTpKsCrvi9Rk89opd8A7Gi8",
       "size_bytes": 12828,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122858_r3c3_11.png",
+      "sha256": "a8a633d953f80313b6a6d1517cc0975a5b6c0c6391e7449cf1d670b6e4871980",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -782,7 +1305,14 @@
       "source_drive_id": "1TrZpRNmgCbGPOJ2Dv0x1kSrZN8s-j1u5",
       "size_bytes": 12971,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122858_r3c4_12.png",
+      "sha256": "008c878aa6bda1fd7645bb57da6543f2e076b1f6a3bb81f71ef3473df01e9483",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -790,7 +1320,14 @@
       "source_drive_id": "1PCBzWI-PAXn8SJt_hjsbY09A1MVjBa5t",
       "size_bytes": 12833,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122859_r1c1_01.png",
+      "sha256": "06710ba75c9f07f1a854728145a5374da83ebc07ee08968507e67b401183e19e",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -798,7 +1335,14 @@
       "source_drive_id": "1z3Z1lMDp7XcrxHMSP2BLR913RKSLStxR",
       "size_bytes": 12925,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122859_r1c2_02.png",
+      "sha256": "58991b88b790cb261f8895a8254d5a665122d786c346e44c48380183e1931cf4",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -806,7 +1350,14 @@
       "source_drive_id": "1DwHU3IcKxmUet0MQiJbgdXSz5N1HwO9s",
       "size_bytes": 12976,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122859_r1c3_03.png",
+      "sha256": "c6d8a03496a59d789c77a74e92d9952f28009ecf582316aef129ba291ed73d9f",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -814,7 +1365,14 @@
       "source_drive_id": "1SefEbEuoaQTPSDy0tcUH-tMrnx8kdVXp",
       "size_bytes": 12883,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122859_r1c4_04.png",
+      "sha256": "ff7f4d455929f6097f7cb9ef5864e96bc47411fa68780d62d66c417fba1a400e",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -822,7 +1380,14 @@
       "source_drive_id": "1MWoIaeJhb8UyqgZcHv3C2cGdQrnUylP_",
       "size_bytes": 12808,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122859_r2c1_05.png",
+      "sha256": "ba771552fbe1b2145febdbb2df5794439716373fed67937e2baa6051b0d5a8fd",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -830,7 +1395,14 @@
       "source_drive_id": "10uHn8MFxOoRbMVFVFCediKXvlJUu4mfR",
       "size_bytes": 12842,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122859_r2c2_06.png",
+      "sha256": "ac99c8b3d2f4a775ca1e9b7546376952e3f8ee2794e9467e189cadda9c3b5f8a",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -838,7 +1410,14 @@
       "source_drive_id": "1oYmqgyGGEMjrF2hnGJ-0HVjEJVZvJXBS",
       "size_bytes": 12929,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122859_r2c3_07.png",
+      "sha256": "055493976174f1782cf8c6aae5a7b83c68d1ee7030afef8af96b022499b49c85",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -846,7 +1425,14 @@
       "source_drive_id": "1d9rxSVMlU-KGi7oFvvNS-mMNU5rji-1x",
       "size_bytes": 12882,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122859_r2c4_08.png",
+      "sha256": "c7b1b03ea9f0b2ead32f8cb31502edc6ef6a2ca368dbe371fc0fe1b5c802deea",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -854,7 +1440,14 @@
       "source_drive_id": "1h0c_7Uyu7rYCHuD2KuWH2O7dhGiCLN81",
       "size_bytes": 12928,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122859_r3c1_09.png",
+      "sha256": "c552c8dac25373d19d5bd1d067a4a92725eda2ae1d7fc5c1ae29e5a20062c1bb",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -862,7 +1455,14 @@
       "source_drive_id": "14PUDQcw2m-3Hp-LV9P0rWe5hqzCJUqqk",
       "size_bytes": 12975,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122859_r3c2_10.png",
+      "sha256": "0bd81ee20276208180699acc96efa1447766c5baf1b0a2c96d389506967d7562",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -870,7 +1470,14 @@
       "source_drive_id": "1hp85ri3eHQcNZ3uWLwqWOmJgUMz3UrqI",
       "size_bytes": 12940,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122859_r3c3_11.png",
+      "sha256": "c124f59410e84de705b5d09417e43188ad8fc49ee71821c5a959c9240d70baa0",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "forest",
@@ -878,11 +1485,15 @@
       "source_drive_id": "17S3g7zJz98t6eJDMytoxODJ3vjRhEwRZ",
       "size_bytes": 12840,
       "kind": "terrain",
-      "review_status": "binary_verified_license_pending",
+      "review_status": "source_binary_verified",
       "sha256": "02683533e983f74af399cc9721a84a264b8bbcdaef210b65b456c4f64143cbe9",
       "width": 128,
       "height": 128,
-      "alpha_mode": "opaque"
+      "alpha_mode": "opaque",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/forest/forest_floor_122859_r3c4_12.png",
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -896,8 +1507,11 @@
       "width": 128,
       "height": 128,
       "alpha_mode": "opaque",
-      "license_status": "user_declared_ai_generated",
-      "packed_atlas_page": "atlas_00.png"
+      "license_status": "user_declared_creator",
+      "packed_atlas_page": "atlas_00.png",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122814_r1c1_01.png",
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28"
     },
     {
       "family": "grass",
@@ -911,8 +1525,11 @@
       "width": 128,
       "height": 128,
       "alpha_mode": "opaque",
-      "license_status": "user_declared_ai_generated",
-      "packed_atlas_page": "atlas_00.png"
+      "license_status": "user_declared_creator",
+      "packed_atlas_page": "atlas_00.png",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122814_r1c2_02.png",
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28"
     },
     {
       "family": "grass",
@@ -920,7 +1537,14 @@
       "source_drive_id": "1SnRuaODH71hb4rmQX-yvvAoH6EZKr-Db",
       "size_bytes": 12867,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122814_r1c3_03.png",
+      "sha256": "b3b9b4fdf3dfe32d631b104604a819f147d129446eaf6b92552c11ee8a980dc2",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -928,7 +1552,14 @@
       "source_drive_id": "18KshlpvRgKkzm9-HnQ0lENury-fXfss8",
       "size_bytes": 12937,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122814_r1c4_04.png",
+      "sha256": "cfd1a3c9f362b96f71572e69bdb66b4bb2bf2aeb3199138ff5d77672b5698337",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -936,7 +1567,14 @@
       "source_drive_id": "1VI6ryUJSzu7BA2-CVwpyFZbf6rVQvyUk",
       "size_bytes": 12799,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122814_r2c1_05.png",
+      "sha256": "452aabcafb2ff3da94b0e411ec792ca765e7be7a1b4d86d26f6334c76d0d7538",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -944,7 +1582,14 @@
       "source_drive_id": "1n3m99_cSx_HYd3Dj7wOci8exlHsX6uoG",
       "size_bytes": 12900,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122814_r2c2_06.png",
+      "sha256": "309266bd469e42e192d6087c590782d79f7b267883929cb58a761f34574b3779",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -952,7 +1597,14 @@
       "source_drive_id": "16SI2hvmTrhZl9xJpH9F3_KI_1qx4dhF4",
       "size_bytes": 12943,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122814_r2c3_07.png",
+      "sha256": "15aad93ebb8f6bfd1612d59140c5c463c07350501804124731b15dac130fcf09",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -960,7 +1612,14 @@
       "source_drive_id": "10Ql--VjMqwOJxZpAusStvm--edutnBYj",
       "size_bytes": 12865,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122814_r2c4_08.png",
+      "sha256": "570287bc74859d3123dc54e9549c0654fae69975db5d768960aa34ba88050dee",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -968,7 +1627,14 @@
       "source_drive_id": "1sQZ_FOmfx96CODgDQ5ejWPCD-lV_DWQW",
       "size_bytes": 12946,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122814_r3c1_09.png",
+      "sha256": "cfd5787c1210a5507ec26a9ec76cc7912fe1ae5694f5ec71af2f327c7c8f3097",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -976,7 +1642,14 @@
       "source_drive_id": "1ykEl08C1y6fFxBgtcaMYq2YKhzJc0Ozf",
       "size_bytes": 12929,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122814_r3c2_10.png",
+      "sha256": "9599b520aaf69af30c2ca77b30409bf3bbbe034818452b107f96013122b268e7",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -984,7 +1657,14 @@
       "source_drive_id": "1ZRQ8YXGegwJgCl9c-E-xTGGBQwtXQSov",
       "size_bytes": 12884,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122814_r3c3_11.png",
+      "sha256": "78411a2fdf780b5570fd6724c04e5482a6fa34d584f7f113dc62b73f714f70be",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -992,7 +1672,14 @@
       "source_drive_id": "1rYvcKSsmTyXHrEL7hC0ZV53QRgj_rYwB",
       "size_bytes": 12921,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122814_r3c4_12.png",
+      "sha256": "8c0ff5803c0d28f626a53d31a677a88d59ba810cf06ae5b352fe0d8fd94e7f49",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -1000,7 +1687,14 @@
       "source_drive_id": "1EgDyZtgoSH04Ummqg7pL8uf0qg0aBLob",
       "size_bytes": 12907,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122815_r1c1_01.png",
+      "sha256": "f9d5d746018fe6979c737cc36177da484ca20a7bef54d457455ff980ccfdfbd2",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -1008,7 +1702,14 @@
       "source_drive_id": "1Kymghv2ErGhbwBpxaDjPkruHcxE4illL",
       "size_bytes": 12830,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122815_r1c2_02.png",
+      "sha256": "854bf20fed880bae0c8393b7df7747c7375ef34839647c92bfe1574d3ae56c0e",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -1016,7 +1717,14 @@
       "source_drive_id": "1CG0G6hUqIxkR_jGAbJAvwpDvyQXwcZ0T",
       "size_bytes": 12926,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122815_r1c3_03.png",
+      "sha256": "94fd97e60d07915934c059a48865dd4a1bc2306e180c6460637abd92d54b1d44",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -1024,7 +1732,14 @@
       "source_drive_id": "18mlVD-dkblCZaVOcyJzLcAN2iOpKVMQj",
       "size_bytes": 12893,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122815_r1c4_04.png",
+      "sha256": "407c1c54f2ad865c35d51a0ad01b849383010ef509c8449b0b6427a977b7769b",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -1032,7 +1747,14 @@
       "source_drive_id": "1gdbV3NusRla9bmy1mbeDLx_o_Fg34MA_",
       "size_bytes": 12841,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122815_r2c1_05.png",
+      "sha256": "9e4a0b4e30ff9aa851ce77595437f310b3d50310a2685c6225713b63a8817eda",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -1040,7 +1762,14 @@
       "source_drive_id": "1LdbnXoCCHYsyKhbdziW5O0C9HgHF44nw",
       "size_bytes": 12778,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122815_r2c2_06.png",
+      "sha256": "fc51171ebb044e00a88b5a0b7e72f22b356c87ef0fc33a0a5c82c876bec24908",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -1048,7 +1777,14 @@
       "source_drive_id": "17iwHmhecPiAF27AoKV3MaKDgcHpSFpyX",
       "size_bytes": 12906,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122815_r2c3_07.png",
+      "sha256": "a903d328b48f58894dbdcea4284b86816e0abc8b86a4c32cf75a1d6b7478d49a",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -1056,7 +1792,14 @@
       "source_drive_id": "1qLgq_6G1a0A2IS0HH8QcSF9n2GGny8vD",
       "size_bytes": 12850,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122815_r2c4_08.png",
+      "sha256": "3ffb66fab0518ef61ad1baa556a17c84909844d4662c5d5b775e7beb4366e59a",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -1064,7 +1807,14 @@
       "source_drive_id": "1iOJFgpeSh9QScIUck4oT01araCw3_JH-",
       "size_bytes": 12848,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122815_r3c1_09.png",
+      "sha256": "fe0140b98958bdce5e06056e301f45da604a52216acbfa2b0906327dd3ae2514",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -1072,7 +1822,14 @@
       "source_drive_id": "14L4nWZBMS8AsC-ew-RK3HvwM1EUJ5OuJ",
       "size_bytes": 12796,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122815_r3c2_10.png",
+      "sha256": "1d8d1494d6e7f51268d225c755540860907b15efb359cdda2471746183724a25",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -1080,7 +1837,14 @@
       "source_drive_id": "1hcNVn9Z964gfJag3rd4Ika6Lr5ayaub0",
       "size_bytes": 12822,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122815_r3c3_11.png",
+      "sha256": "3537145d15ce7169e6ba56b2422202e8a16945f4b587cda5ddb67767706b083f",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -1088,7 +1852,14 @@
       "source_drive_id": "1RF9m_P1e_M5SAvtHeugMVcM1lnZho0ym",
       "size_bytes": 12921,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122815_r3c4_12.png",
+      "sha256": "ec273b6a0b39fd7431e5f32ece837dfb31fcef6debc579b7dc5b4742b8372baf",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -1096,7 +1867,14 @@
       "source_drive_id": "1-1YdqZA_mr70imV86SeCAuPW2VLJ7c1b",
       "size_bytes": 12950,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122816_r1c1_01.png",
+      "sha256": "7b8cc8fd384cb654924535d27e5ce0b3a46027fdc1ba5ba2cbb5dc3e031de9a1",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -1104,7 +1882,14 @@
       "source_drive_id": "1X-0AnmB08tTYwpRNFgO6hEPx6edhhLiG",
       "size_bytes": 12878,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122816_r1c2_02.png",
+      "sha256": "6cf521ba57baac2496a736efb6f800f39139e0b27af2691c5cf3d7aa1b060a84",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -1112,7 +1897,14 @@
       "source_drive_id": "1KNl49YaCY0HbJKtoF1djbMa0ZlqPZpQp",
       "size_bytes": 12875,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122816_r1c3_03.png",
+      "sha256": "175f7e79b79accd1984afb89fa9aea93c1cf20ec077e4cdd46f79a41a972893c",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -1120,7 +1912,14 @@
       "source_drive_id": "1QFCQgARLfHZ_wSYeUZ7AfnQ13yBAgTdB",
       "size_bytes": 12948,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122816_r1c4_04.png",
+      "sha256": "86a41420f58d100f8cbb585c0c6c5f9ec28b879fa1280e19f25c619f221edca0",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -1128,7 +1927,14 @@
       "source_drive_id": "1mdX_6JOCuKNsJA0aLZr0KBM2BFB8r8Hj",
       "size_bytes": 12785,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122816_r2c1_05.png",
+      "sha256": "4f2910da61ea0955261673820a0c4a997aeba042860cc968d07be8c3b9c7e631",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -1136,7 +1942,14 @@
       "source_drive_id": "1fJw1Jx8NseMHIlVJhK8WPcip7EuNiuBj",
       "size_bytes": 12935,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122816_r2c2_06.png",
+      "sha256": "f092504fc0a8ff4e53e48cc8271859b61a1d73cfc92cf7f4ef6120aa110fa396",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -1144,7 +1957,14 @@
       "source_drive_id": "1WaDrbjg6sNoCGWzS1DCgqfmNet_i_f2m",
       "size_bytes": 12851,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122816_r2c3_07.png",
+      "sha256": "da21ffaa394e325fb555b2c3e02e84d31f9b743fa9d21e937570ac18838d7fdd",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -1152,7 +1972,14 @@
       "source_drive_id": "19qH7eTv62-TN05t4Ktz8viBRyCwXuHaq",
       "size_bytes": 12842,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122816_r2c4_08.png",
+      "sha256": "b8c3c197e27c6eb6facf618499241aac32df93fdcd4dbcbe50d5f581fa002498",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -1160,7 +1987,14 @@
       "source_drive_id": "1QJ2n0JyHkDIIt8kk8d2NFxVYXhlpLECR",
       "size_bytes": 12958,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122816_r3c1_09.png",
+      "sha256": "c4ead2f75452f40d0963130369a173dc8f9ac38fd783036b39d9084082b459fb",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -1168,7 +2002,14 @@
       "source_drive_id": "1xGx_xeCZl_0Hv5DFn2UlW6R7qu2eCFzV",
       "size_bytes": 12882,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122816_r3c2_10.png",
+      "sha256": "65efc90945cfdc67a0f647853ec7c0a72033e9a702880caaf0a3d0e77b5cd8b5",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -1176,7 +2017,14 @@
       "source_drive_id": "1A7LBzkJrO-sBkVnSiMlojxYbwBZchNA8",
       "size_bytes": 12855,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122816_r3c3_11.png",
+      "sha256": "924281dc5fb57e975303ef6e871c398409641955381257f9a00694c459b9e499",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "grass",
@@ -1184,11 +2032,15 @@
       "source_drive_id": "11fsftmN06VCmWRjJxP_w5cXyUdN3s4xB",
       "size_bytes": 12955,
       "kind": "terrain",
-      "review_status": "binary_verified_license_pending",
+      "review_status": "source_binary_verified",
       "sha256": "8d0c041ee57cdb2925668798a5b34180f5319eb2301bd93dd6040fea5fad37eb",
       "width": 128,
       "height": 128,
-      "alpha_mode": "opaque"
+      "alpha_mode": "opaque",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/grass/terrain_grass_128_64_122816_r3c4_12.png",
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "oak",
@@ -1202,8 +2054,11 @@
       "width": 128,
       "height": 128,
       "alpha_mode": "transparent",
-      "license_status": "user_declared_ai_generated",
-      "packed_atlas_page": "atlas_00.png"
+      "license_status": "user_declared_creator",
+      "packed_atlas_page": "atlas_00.png",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/oak/oak_v001_128_lab64.png",
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28"
     },
     {
       "family": "oak",
@@ -1217,8 +2072,11 @@
       "width": 128,
       "height": 128,
       "alpha_mode": "transparent",
-      "license_status": "user_declared_ai_generated",
-      "packed_atlas_page": "atlas_00.png"
+      "license_status": "user_declared_creator",
+      "packed_atlas_page": "atlas_00.png",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/oak/oak_v002_128_lab64.png",
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28"
     },
     {
       "family": "oak",
@@ -1226,7 +2084,14 @@
       "source_drive_id": "1cWqpjcrEHT3p_vjVIAbGMSwTaNNPV51U",
       "size_bytes": 30224,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/oak/oak_v003_128_lab64.png",
+      "sha256": "eee6f79190c3d7fcd46bc529cd0687ec67b16d2d52e10d9d30ddac625e429524",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "oak",
@@ -1234,7 +2099,14 @@
       "source_drive_id": "1t7bH1iC8UjZD3ugKJGoFm-kNMJK32UV9",
       "size_bytes": 29316,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/oak/oak_v004_128_lab64.png",
+      "sha256": "ae501b094a77ca89aa0b4b34723b60f6cd99522635611d5c72f3bf80a1bae9d3",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "oak",
@@ -1242,7 +2114,14 @@
       "source_drive_id": "1N8htahfrBqATONqmx7cDrPz4sO7J-8HE",
       "size_bytes": 24615,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/oak/oak_v005_128_lab64.png",
+      "sha256": "82fe8323213982e33a264260e6342fb57e9a4f4ccf7cbdcdadc6ea78a3adcaef",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "oak",
@@ -1250,7 +2129,14 @@
       "source_drive_id": "1snTBNXQt1ri0T5hDMvAdtTz2KI4IScfr",
       "size_bytes": 30080,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/oak/oak_v006_128_lab64.png",
+      "sha256": "57da841a1374b94d7c23c234d2ca912e6a8874252cb1309046b3468ea93158a8",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "oak",
@@ -1258,11 +2144,15 @@
       "source_drive_id": "1WBR5SXEU7jVgWHH5884_KfbciPQdqF2a",
       "size_bytes": 28601,
       "kind": "object",
-      "review_status": "binary_verified_license_pending",
+      "review_status": "source_binary_verified",
       "sha256": "7d0e0840650dbd5f6a37e63ddc469b04b6f7fe7db545ef60d86424ac518d5541",
       "width": 128,
       "height": 128,
-      "alpha_mode": "transparent"
+      "alpha_mode": "transparent",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/oak/oak_v007_128_lab64.png",
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "reeds",
@@ -1276,8 +2166,11 @@
       "width": 128,
       "height": 128,
       "alpha_mode": "transparent",
-      "license_status": "user_declared_ai_generated",
-      "packed_atlas_page": "atlas_00.png"
+      "license_status": "user_declared_creator",
+      "packed_atlas_page": "atlas_00.png",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/reeds/reeds_v001_128_lab64.png",
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28"
     },
     {
       "family": "reeds",
@@ -1291,8 +2184,11 @@
       "width": 128,
       "height": 128,
       "alpha_mode": "transparent",
-      "license_status": "user_declared_ai_generated",
-      "packed_atlas_page": "atlas_00.png"
+      "license_status": "user_declared_creator",
+      "packed_atlas_page": "atlas_00.png",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/reeds/reeds_v002_128_lab64.png",
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28"
     },
     {
       "family": "reeds",
@@ -1300,11 +2196,15 @@
       "source_drive_id": "1QBuDp9wqo1qmDbzC9xYbrlr0Q2pcgOhR",
       "size_bytes": 19630,
       "kind": "object",
-      "review_status": "binary_verified_license_pending",
+      "review_status": "source_binary_verified",
       "sha256": "a233cc5279be944cf4b1faf21128c27ad8bacd250d7b46fc47ddd06955776c11",
       "width": 128,
       "height": 128,
-      "alpha_mode": "transparent"
+      "alpha_mode": "transparent",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/reeds/reeds_v003_128_lab64.png",
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1318,8 +2218,11 @@
       "width": 128,
       "height": 128,
       "alpha_mode": "opaque",
-      "license_status": "user_declared_ai_generated",
-      "packed_atlas_page": "atlas_00.png"
+      "license_status": "user_declared_creator",
+      "packed_atlas_page": "atlas_00.png",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockA_01.png",
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28"
     },
     {
       "family": "rock",
@@ -1333,8 +2236,11 @@
       "width": 128,
       "height": 128,
       "alpha_mode": "opaque",
-      "license_status": "user_declared_ai_generated",
-      "packed_atlas_page": "atlas_00.png"
+      "license_status": "user_declared_creator",
+      "packed_atlas_page": "atlas_00.png",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockA_02.png",
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28"
     },
     {
       "family": "rock",
@@ -1342,7 +2248,14 @@
       "source_drive_id": "1TNh9lGC0wkLcUT-pHZ6Lq4bYo1UybyVE",
       "size_bytes": 12788,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockA_03.png",
+      "sha256": "03e27bf57285643e431a70873fa73dc031c4e011a114a7fe760e19ff98eca7dd",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1350,7 +2263,14 @@
       "source_drive_id": "1QqCzX1oNpQ1eEmPe3_XYsefHyPyWXhj9",
       "size_bytes": 12783,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockA_04.png",
+      "sha256": "b0956dd6720b4be08b1649819b4e7ba94326ff909a3f165b33fd3d1cc8a160cb",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1358,7 +2278,14 @@
       "source_drive_id": "1lBk7jEnzUThFnnAsVXwke__EwJj5Re7F",
       "size_bytes": 12900,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockA_06.png",
+      "sha256": "eec293742a3cdbdb852c0042e6b427910af960c46acc3bb12e207eda52300e32",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1366,7 +2293,14 @@
       "source_drive_id": "1DIU_JxF1gSAhvjl1VfhDw33Z-rBNvI-g",
       "size_bytes": 12884,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockA_07.png",
+      "sha256": "c12360f0c995000d82df8a85138d091472f4063ef9dd6edfae09332eff614485",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1374,7 +2308,14 @@
       "source_drive_id": "1CUcbR_HVpkNFhJsAhzF00AQQKeQvowhm",
       "size_bytes": 12799,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockA_09.png",
+      "sha256": "356955ab549803b429acbce49c1fde7c4e4ba0849010d56b1f1589ab1f766a00",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1382,7 +2323,14 @@
       "source_drive_id": "1BWb32Pd0PRby7I_ivfJoj-UDKTky0pUZ",
       "size_bytes": 12730,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockA_10.png",
+      "sha256": "28bbcf8cf7db3dc7d9202e5e7ccdceb8f4719cfb903f97abfc035cd5197b2d31",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1390,7 +2338,14 @@
       "source_drive_id": "1mwQv1egpkfT2py0t376PEYSvOID2BKmf",
       "size_bytes": 12856,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockA_11.png",
+      "sha256": "ce88a2eb96d5863e8e8d94052e1620f51ea4fdcbbcd4fb34eff644831d87dfd1",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1398,7 +2353,14 @@
       "source_drive_id": "1BHEkjFmrxcA1Ubngcoe10C3f-aehaIAc",
       "size_bytes": 12768,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockB_01.png",
+      "sha256": "fa3dc654ff45b0ec097bde0d0262be0cf23b01b323d80d50ea8575e5a461a146",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1406,7 +2368,14 @@
       "source_drive_id": "1c_Ik16YcfGdNrAX7igwJaq-7LvPTEReD",
       "size_bytes": 12896,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockB_02.png",
+      "sha256": "eab926f65a14c4f650539748811e50bea8b14c0b3307c744ea6cfe4357cf78e9",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1414,7 +2383,14 @@
       "source_drive_id": "1WVL3SGRtq-fmxJ42SkjEFM2YQIkzjuPj",
       "size_bytes": 12811,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockB_03.png",
+      "sha256": "1bf4f9b69d613c844cf06ef151ebe4671940eebcaf5a721fc6dd2311d2fea895",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1422,7 +2398,14 @@
       "source_drive_id": "12uYt_U9iR_Cm9FYT_TjdILC-IYLyCQBi",
       "size_bytes": 12908,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockB_04.png",
+      "sha256": "5a7e3753a6a90fbbb913fef1d48c798f22bc9b519c686f92da7d9e830996fed4",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1430,7 +2413,14 @@
       "source_drive_id": "1PD1CoTEb4y5Dl8UMNNapQS4JyaHHl5q7",
       "size_bytes": 12891,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockB_05.png",
+      "sha256": "daa503ee4d2919ee696fb6487ebe8f3f8294c31b48d95b35ce1d5cabd5b83ca8",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1438,10 +2428,14 @@
       "source_drive_id": "1mWGUSfYLmt0dcVo6ODBAhgFXkPran7WE",
       "size_bytes": 12820,
       "kind": "terrain",
-      "review_status": "binary_duplicate_verified_license_pending",
+      "review_status": "source_binary_verified",
       "sha256": "ab570753957fe9886555a07f9ab1c7c21861c96bf97fe70aa4dbc47b89f73422",
       "width": 128,
-      "height": 128
+      "height": 128,
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockB_06__drive_1mWGUSfYLmt0dcVo6ODBAhgFXkPran7WE.png",
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1449,10 +2443,14 @@
       "source_drive_id": "1Rz7Uwr7IQt0xkDfesjlJ-pSrrLIWG1tu",
       "size_bytes": 12820,
       "kind": "terrain",
-      "review_status": "binary_duplicate_verified_license_pending",
+      "review_status": "source_binary_verified",
       "sha256": "ab570753957fe9886555a07f9ab1c7c21861c96bf97fe70aa4dbc47b89f73422",
       "width": 128,
-      "height": 128
+      "height": 128,
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockB_06__drive_1Rz7Uwr7IQt0xkDfesjlJ-pSrrLIWG1tu.png",
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1460,7 +2458,14 @@
       "source_drive_id": "1tEiqBSY2ht4BAky69ZqI70ou0XhRQz5y",
       "size_bytes": 12878,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockB_07.png",
+      "sha256": "8fccb96754217befc2b54eeeaa99ba3d6c14ebb671c48382871d495c4d4a1e44",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1468,10 +2473,14 @@
       "source_drive_id": "1GRVcef1IB3pWYqpaKw4_WdWqXLGPXg0S",
       "size_bytes": 12843,
       "kind": "terrain",
-      "review_status": "binary_duplicate_verified_license_pending",
+      "review_status": "source_binary_verified",
       "sha256": "0ed539952c290d155e90dd4c4bd6172e92d1f89a753950634e2a46be333cc672",
       "width": 128,
-      "height": 128
+      "height": 128,
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockB_08__drive_1GRVcef1IB3pWYqpaKw4_WdWqXLGPXg0S.png",
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1479,10 +2488,14 @@
       "source_drive_id": "1LB1v5GX1RtIwXBIEewOkkciF6HdpuPNw",
       "size_bytes": 12843,
       "kind": "terrain",
-      "review_status": "binary_duplicate_verified_license_pending",
+      "review_status": "source_binary_verified",
       "sha256": "0ed539952c290d155e90dd4c4bd6172e92d1f89a753950634e2a46be333cc672",
       "width": 128,
-      "height": 128
+      "height": 128,
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockB_08__drive_1LB1v5GX1RtIwXBIEewOkkciF6HdpuPNw.png",
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1490,7 +2503,14 @@
       "source_drive_id": "1j1c_FbeQkIePYK-9d91ZiQJ1gEs9s3H2",
       "size_bytes": 12874,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockB_09.png",
+      "sha256": "d10ee40eebf01bec59e7174f12bbe4ad146a561355686f9f6e3a25b6b8091e1b",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1498,7 +2518,14 @@
       "source_drive_id": "1_qwGpesJxayqTILMSpW49czzo77c7Cb_",
       "size_bytes": 12934,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockB_10.png",
+      "sha256": "6d356b9b288092231a66b534dd5a740696c5ff97f81858c96af1f90d5a22b6cc",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1506,7 +2533,14 @@
       "source_drive_id": "12FYJusHXyTr8N0URZd_Nt3yrjbtFrGa1",
       "size_bytes": 12849,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockB_11.png",
+      "sha256": "7a6ed1096f331b4d18745ddd6cf8ab7d2eab3a9f241f58552dc3094f8b49865b",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1514,7 +2548,14 @@
       "source_drive_id": "1C_VQtDsasLkXwtEEDGGom7oWtk-DsJ81",
       "size_bytes": 12897,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockB_12.png",
+      "sha256": "1b8f51eed38136c8109fb67222893169005e308eafbe604a1eeeea12b7a3051c",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1522,7 +2563,14 @@
       "source_drive_id": "1Ym7c3F_ZQnvB8nmOxfyRvbSfXCQG5AZ3",
       "size_bytes": 12854,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockC_01.png",
+      "sha256": "0653a2d4359c44dfeb8dc330b322a40278fc39d17aeed78f95a3d96bd86a6312",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1530,7 +2578,14 @@
       "source_drive_id": "1rzDUmVsnRuxUND-YsiEumDU8WkNhlz4c",
       "size_bytes": 12899,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockC_02.png",
+      "sha256": "cbd37e60b271b3f8da3ba71248cb4970ff8ad68245965cbb77a5ce8c6e937fb4",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1538,7 +2593,14 @@
       "source_drive_id": "1DXXK8GyB1ep7X2IoZtlpeXkzXQLuosz_",
       "size_bytes": 12773,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockC_03.png",
+      "sha256": "a5074bd1f3ebdc29736ff7a356f3f178e4182ab2f18cafe7aab8e051ecf12c71",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1546,7 +2608,14 @@
       "source_drive_id": "1FGNX50qA_hhzFVon6zwEytlPv1VNDOo5",
       "size_bytes": 12881,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockC_04.png",
+      "sha256": "ecf71fddfb646cc1885966352c21c918c88d63348553ee5e224d91afa048367c",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1554,7 +2623,14 @@
       "source_drive_id": "1F25dlFuWaMjUgL2EvAA1r-v9p7ukrSuJ",
       "size_bytes": 12799,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockC_05.png",
+      "sha256": "68b69b913cae4f2b195a5e5c0cfd4dbc7e4554826d02cfb91328367454ee1139",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1562,7 +2638,14 @@
       "source_drive_id": "1lIVE1lPeipT7tQ4y4utZZOIL-rwOXEVW",
       "size_bytes": 12786,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockC_06.png",
+      "sha256": "aa407de8a7f33bf65bbb4882151283362a64e3bd714de7d200d41d861c46a35f",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1570,7 +2653,14 @@
       "source_drive_id": "1r1NMxlUthq7qFrNElCgKXiPuaDyg3Rxk",
       "size_bytes": 12952,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockC_07.png",
+      "sha256": "c8e2091206f6bfbd2192a9848bd3802a2d6bb9b8f18d77b0af486c2228b7de5b",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1578,7 +2668,14 @@
       "source_drive_id": "1atP-91DaG6P1mAdsWtoegKsplX8Pp3Av",
       "size_bytes": 12612,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockC_08.png",
+      "sha256": "d2eab936cd974bc13570e7e87bb4765f37af8d4a58fe946e921f61b0bab0080c",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1586,11 +2683,15 @@
       "source_drive_id": "1Ab5raHnNwOhBPdmOCYDfPXDjJJI96uS7",
       "size_bytes": 12863,
       "kind": "terrain",
-      "review_status": "binary_verified_license_pending",
+      "review_status": "source_binary_verified",
       "sha256": "f3418d859d5cf585259956b0331912e7537bcfac310d9b4e948264e883731383",
       "width": 128,
       "height": 128,
-      "alpha_mode": "opaque"
+      "alpha_mode": "opaque",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockC_09.png",
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1598,7 +2699,14 @@
       "source_drive_id": "1dk6KAlCzdJJjP0a9fZj7kq9uECjYvdFg",
       "size_bytes": 12791,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockC_10.png",
+      "sha256": "d5c750391aaceaf0e396a2ded8801626c6d383ae2d5fa6264b31453978b1c455",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock",
@@ -1606,7 +2714,14 @@
       "source_drive_id": "18rQSCvgys6d8CvfjZLPAky7Aewk3lZdV",
       "size_bytes": 12767,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock/rockC_11.png",
+      "sha256": "4fcf1ed3c0dfd5cc026aeb5142932c0923cc4445f6d6eb14cca63d686f1b0c86",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock_cluster",
@@ -1614,7 +2729,14 @@
       "source_drive_id": "1iLLoHs2DJSDXRuLs9wQ-V9jhpnW-XBOe",
       "size_bytes": 26411,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock_cluster/rock_cluster_v001_128_lab64.png",
+      "sha256": "9288235d79f234d01555bd781f1248aad4305e00336678e7e0413c6e820ffdaf",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock_cluster",
@@ -1622,7 +2744,14 @@
       "source_drive_id": "1Tj-VglEV4ALKV0kjqs3zVwNh3nw8IF-8",
       "size_bytes": 27000,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock_cluster/rock_cluster_v002_128_lab64.png",
+      "sha256": "60a590399467d4b6abbc1f3031259ea2c53da979d28c3f613b537fb3d4f98287",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock_cluster",
@@ -1630,7 +2759,14 @@
       "source_drive_id": "1ZRgyTvB51VqP9WgM68r0WIBEoo6UF-QC",
       "size_bytes": 19846,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock_cluster/rock_cluster_v003_128_lab64.png",
+      "sha256": "47a39fda090c39458d4c5400a56f1af341b619746e82e6ddd75c401f4ec63223",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock_cluster",
@@ -1638,7 +2774,14 @@
       "source_drive_id": "1XYpmelKd0w-_hLlstgT_8iOJX0jKVorn",
       "size_bytes": 15156,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock_cluster/rock_cluster_v004_128_lab64.png",
+      "sha256": "ab1a9a2e3f481fc13d0365234f4759c55c659f0eb66babb7b87bd3f40ac643ab",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock_cluster",
@@ -1646,7 +2789,14 @@
       "source_drive_id": "1VyFJgEKpgowr5ngGBhurNA9lV-NQIeOa",
       "size_bytes": 23505,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock_cluster/rock_cluster_v005_128_lab64.png",
+      "sha256": "672f1a0861e25fdecc21eee8692c4a0b6600c1764bbd8dc0e33bb2a0000097bf",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock_cluster",
@@ -1654,7 +2804,14 @@
       "source_drive_id": "1txmE_3UVxzPxP5oDQAEhF7Huf5c_XFue",
       "size_bytes": 26013,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock_cluster/rock_cluster_v006_128_lab64.png",
+      "sha256": "a4ba02aefa50a7109e64bb15d8a96e9cd6862e1b427c5bf3f956b597780ff233",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock_cluster",
@@ -1662,7 +2819,14 @@
       "source_drive_id": "12rJY7o5EZ3Wv82YYjCcobSJLNBTZYs3u",
       "size_bytes": 14449,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock_cluster/rock_cluster_v007_128_lab64.png",
+      "sha256": "d5fede7bfefe6c4f87822a62023382f55cbee95099b8ed1e6a9bd07c40fc3a0b",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock_cluster",
@@ -1670,7 +2834,14 @@
       "source_drive_id": "1TuIlgvgtZv3luacwWC8knCCWuAXFJRqO",
       "size_bytes": 26170,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock_cluster/rock_cluster_v008_128_lab64.png",
+      "sha256": "1607ad51686c702a0c373be183d868f675f0a040ccb8350ea0085907ad7daeae",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock_cluster",
@@ -1678,7 +2849,14 @@
       "source_drive_id": "194C3M5VeXt2V0mynZIzs3uw_YdKHzcVO",
       "size_bytes": 17416,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock_cluster/rock_cluster_v009_128_lab64.png",
+      "sha256": "ed4bbc700dbc4e12dcab56e7cf984a077b82d3ba4705eb8f8db79520908a4e06",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock_spire",
@@ -1686,7 +2864,14 @@
       "source_drive_id": "1_txTSFWvw58PrYgRRx4mW8lxENw4xgHF",
       "size_bytes": 20598,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock_spire/rock_spire_v001_128_lab64.png",
+      "sha256": "297d56702b91e6f2816a2ec713877218d0f7f34686cb06c9237d9201abee9583",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock_spire",
@@ -1694,7 +2879,14 @@
       "source_drive_id": "1R5SiUW2j5Y8j35WAXO-hd9chrtJDEstt",
       "size_bytes": 23304,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock_spire/rock_spire_v002_128_lab64.png",
+      "sha256": "8933bcd8ec626acc4755c22e0097e92eb381b629fbb4e43a32176d8a1c7a5804",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock_spire",
@@ -1702,7 +2894,14 @@
       "source_drive_id": "1peTwx_rfd2VHOkGCNVzx6ORdw6MV6-rB",
       "size_bytes": 22221,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock_spire/rock_spire_v003_128_lab64.png",
+      "sha256": "eb5ab79e9bc220aa469aba45fbae71ec4c07b4bd9f31cf0b08ff06227d1ed041",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "rock_spire",
@@ -1710,7 +2909,14 @@
       "source_drive_id": "1XcxYENxi7yIi2XqrkPAiCs9HZ7DuQF0V",
       "size_bytes": 17942,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/rock_spire/rock_spire_v004_128_lab64.png",
+      "sha256": "5620847174c79f9fbc01291fa3fe92d5629439cce48d49f87eea151ffdc1026f",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "shrub",
@@ -1724,8 +2930,11 @@
       "width": 128,
       "height": 128,
       "alpha_mode": "transparent",
-      "license_status": "user_declared_ai_generated",
-      "packed_atlas_page": "atlas_00.png"
+      "license_status": "user_declared_creator",
+      "packed_atlas_page": "atlas_00.png",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/shrub/shrub_v001_128_lab64.png",
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28"
     },
     {
       "family": "shrub",
@@ -1739,8 +2948,11 @@
       "width": 128,
       "height": 128,
       "alpha_mode": "transparent",
-      "license_status": "user_declared_ai_generated",
-      "packed_atlas_page": "atlas_00.png"
+      "license_status": "user_declared_creator",
+      "packed_atlas_page": "atlas_00.png",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/shrub/shrub_v002_128_lab64.png",
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28"
     },
     {
       "family": "shrub",
@@ -1748,7 +2960,14 @@
       "source_drive_id": "1-4w_0Kg09aD7IbQFjttH1KgdH2Wdcs-J",
       "size_bytes": 25434,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/shrub/shrub_v003_128_lab64.png",
+      "sha256": "77e099c9a8ce16c94e49bc0dc39727b3792d46be7497fb6cb5a8595a8caa1bad",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "shrub",
@@ -1756,7 +2975,14 @@
       "source_drive_id": "1fhL7vjmaIU63yk_y3SE2pOhViCw1Ifu-",
       "size_bytes": 24681,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/shrub/shrub_v004_128_lab64.png",
+      "sha256": "5c477d64f73213f225cf62dd2d0ec0a42c5038706abca9af1eaf0520da27b122",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "shrub",
@@ -1764,7 +2990,14 @@
       "source_drive_id": "1CQnIZyhZGFwnaoG3MNei2OVi9MQiYN-U",
       "size_bytes": 24033,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/shrub/shrub_v005_128_lab64.png",
+      "sha256": "35aed14a8703227738d9128d8271859ee385cefc06e43743a22ceeed6533ecb2",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "shrub",
@@ -1772,7 +3005,14 @@
       "source_drive_id": "1lKo1U_FBPG5VF4F27kuCgg6ulJPXC7V7",
       "size_bytes": 19996,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/shrub/shrub_v006_128_lab64.png",
+      "sha256": "3a541c0e5524098dcbc8d840cc088d45fc5b504063c485d55f4f89912a398208",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "shrub",
@@ -1780,7 +3020,14 @@
       "source_drive_id": "1zqsq-yjlmR0XmLn0H9F25HjQ7ixXI52h",
       "size_bytes": 27248,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/shrub/shrub_v007_128_lab64.png",
+      "sha256": "bc34be47a389c231a8ec32ef36a58ff90d0b8d47565737e0df190081dd86776a",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "shrub",
@@ -1788,11 +3035,15 @@
       "source_drive_id": "1_0guU-RSOMs-Yndl84hgatEIooahXN69",
       "size_bytes": 17589,
       "kind": "object",
-      "review_status": "binary_verified_license_pending",
+      "review_status": "source_binary_verified",
       "sha256": "861560c166776e078094ccb54648a8d065cd8e825c0a558740832fca215c5e10",
       "width": 128,
       "height": 128,
-      "alpha_mode": "transparent"
+      "alpha_mode": "transparent",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/shrub/shrub_v008_128_lab64.png",
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "stump",
@@ -1800,7 +3051,14 @@
       "source_drive_id": "1NksegZ-Vo9M-u2NchOLFUHHPrzzlCLyD",
       "size_bytes": 15602,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/stump/stump_v001_128_lab64.png",
+      "sha256": "a5f5de5dc8f536fff5d4e10cfa39bd20dd3375a837993cfe9302eb83726a583e",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "stump",
@@ -1808,7 +3066,14 @@
       "source_drive_id": "1MJcyKhSqzwl-MvP83J7YUfrY9dFY2qF6",
       "size_bytes": 18356,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/stump/stump_v002_128_lab64.png",
+      "sha256": "1c7c5642461c54942422bcc32e2fc6618cf35626c8d6381fce45ac0417dbc89c",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "water_rocks",
@@ -1816,7 +3081,14 @@
       "source_drive_id": "13vfbNUjrnbXH2uuAxY_BIu1E7WV-D-u6",
       "size_bytes": 18165,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/water_rocks/water_rocks_v001_128_lab64.png",
+      "sha256": "9240a106445723b744aeb9b83fea54c391753a104c97e655ccce4d34eb97f829",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 6,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -1830,8 +3102,11 @@
       "width": 128,
       "height": 128,
       "alpha_mode": "opaque",
-      "license_status": "user_declared_ai_generated",
-      "packed_atlas_page": "atlas_00.png"
+      "license_status": "user_declared_creator",
+      "packed_atlas_page": "atlas_00.png",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_A_01_128_64.png",
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28"
     },
     {
       "family": "wetland",
@@ -1845,8 +3120,11 @@
       "width": 128,
       "height": 128,
       "alpha_mode": "opaque",
-      "license_status": "user_declared_ai_generated",
-      "packed_atlas_page": "atlas_00.png"
+      "license_status": "user_declared_creator",
+      "packed_atlas_page": "atlas_00.png",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_A_02_128_64.png",
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28"
     },
     {
       "family": "wetland",
@@ -1854,7 +3132,14 @@
       "source_drive_id": "1K6ih66JkayyvFQfq8lC5AUq1Wndkrylb",
       "size_bytes": 12873,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_A_04_128_64.png",
+      "sha256": "bd4be70531138784745e867b26159c327d5d1517e9c70989a4eeb410148ff693",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -1862,7 +3147,14 @@
       "source_drive_id": "1AVz3g1xVaouPBdppFZ60QrAAm8Gb3eiK",
       "size_bytes": 12674,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_A_05_128_64.png",
+      "sha256": "12f46086aa3cc89894d10e6b2ec6fe48d0f3403cad192a38f460123d8075d99c",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -1870,7 +3162,14 @@
       "source_drive_id": "1uatKGmszn5VITyzpH2nCTepDtPMrOdi1",
       "size_bytes": 12908,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_A_06_128_64.png",
+      "sha256": "ab091ae910079b4cf8bf929126480896ac38c95401c4b994157edbb6c6c0fea6",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -1878,7 +3177,14 @@
       "source_drive_id": "1jSwDCUbGKsJ_4ckXqpCNY75o9C-mWCOd",
       "size_bytes": 12943,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_A_08_128_64.png",
+      "sha256": "a5989b5d8c757a575d81c200f3cd56ccaf51331fccf15c8a8fa362a1d6d8d8f6",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -1886,7 +3192,14 @@
       "source_drive_id": "1MIIpoDXSBWKv7-sZwy9NtmKhzMTAaL2E",
       "size_bytes": 12885,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_A_09_128_64.png",
+      "sha256": "165380e31828e669a3a913c89c3da782c6b9e0dd78724989ef79bc47364a9673",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -1894,7 +3207,14 @@
       "source_drive_id": "1cJ3zSo_JVdrPcPLEnn2C5jwpcRm0kRLQ",
       "size_bytes": 12844,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_A_10_128_64.png",
+      "sha256": "8e1f028482b391b34b028a318ab3d8451c5b6588ac2c796f50afe6f3da21582d",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -1902,7 +3222,14 @@
       "source_drive_id": "15Xt-5gMIR_OXSh1rZcP5LU74Y35ciwXb",
       "size_bytes": 12923,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_A_11_128_64.png",
+      "sha256": "1dcdd94cb01589a23350267def278a7a22f0fc8fb2ce27883eca1d290159d0e0",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -1910,7 +3237,14 @@
       "source_drive_id": "1lYUTq9SgAMovqfr-XGou_46jv5is6ExD",
       "size_bytes": 12817,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_A_12_128_64.png",
+      "sha256": "0128d237b1c6bf253aa0491e9d3972650e93ab00bf296e1cbb8f9523cf06dabf",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -1918,7 +3252,14 @@
       "source_drive_id": "1erIJYWG5IyvO3jVfXLj1c_oEI4pVc0wK",
       "size_bytes": 12792,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_B_01_128_64.png",
+      "sha256": "7502a26a41c8869eaeb451541687c59325e8fa40b513ff285b5ee182d516ecb2",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -1926,7 +3267,14 @@
       "source_drive_id": "1GitAt2Bw2KQqYxAhGxbCMvHqZJy0Tiy0",
       "size_bytes": 12852,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_B_02_128_64.png",
+      "sha256": "1c08b24b150cbdd0aea9da6b20119955e91c3d18883269dfab38fd496b99631c",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -1934,7 +3282,14 @@
       "source_drive_id": "1ejfsZKEW06CSL89Y_SzJhsvTJDajla8N",
       "size_bytes": 12873,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_B_03_128_64.png",
+      "sha256": "0ed691974dace33d0356cb3766b1ea357ae8a513c3b674808c82be654a02028d",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -1942,7 +3297,14 @@
       "source_drive_id": "1wQAFmHezr53oUu_S_qsTxGrkT4O5F6ZZ",
       "size_bytes": 12891,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_B_05_128_64.png",
+      "sha256": "e4d23bb04f8da78b7d43189f75cdd5ed326bc5a5c5e1201ac5f9724ecb0d8cab",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -1950,7 +3312,14 @@
       "source_drive_id": "1ghpLvtLblRUxOu8k_QaUkeI1yXVasAin",
       "size_bytes": 12874,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_B_06_128_64.png",
+      "sha256": "8e82414d2e8d390fd2e4f129669a4278a9dbbb16dde447f3a754cdfbcd921504",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -1958,7 +3327,14 @@
       "source_drive_id": "1k80IJwHIwFTNvgJFr0BXFNi7M0NRbKMG",
       "size_bytes": 12838,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_B_07_128_64.png",
+      "sha256": "2f2e43e3e9d9a4c47ace1f96e8d74606988857934bed72a28644aa1bc58e9855",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -1966,7 +3342,14 @@
       "source_drive_id": "1E8wee6gVkLtB3j2AOuVwzJSbUZmv4Lln",
       "size_bytes": 12860,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_B_08_128_64.png",
+      "sha256": "d8a3ffbd29b694b8537d9cc63b4dfa25fb999e415a0b55959ee6b57db3f02cf7",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -1974,7 +3357,14 @@
       "source_drive_id": "1_OwbvCTrxRQfOSVJ7PoVid2s_F1kWyRb",
       "size_bytes": 12785,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_B_10_128_64.png",
+      "sha256": "150c21ddd1059d80e276d50f8571858189a87f51c12dc2b4cefa8a861df1698b",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -1982,7 +3372,14 @@
       "source_drive_id": "1k8Sr6Lm-lpmMcsUj2nPS95scLJQfn0-E",
       "size_bytes": 12808,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_B_11_128_64.png",
+      "sha256": "587b7576468ff157291087d9d0132306a9caa4d6441cb25ff0c9ab6b1e6be470",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -1990,7 +3387,14 @@
       "source_drive_id": "16bKileOSelUX43W6fAykcYg1S3y8IoLz",
       "size_bytes": 12872,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_B_12_128_64.png",
+      "sha256": "7d5583081c3dd9da14922bfdb74bfb295b0d91b4f6a25dc31d2fca941686fcd1",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -1998,7 +3402,14 @@
       "source_drive_id": "1nvwiPqvHLNjuB2x82fGpmdnxCw-fOVsh",
       "size_bytes": 12880,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_C_01_128_64.png",
+      "sha256": "c21e091f90ca1f887ae9a622ace2a41a1e7e7cd5da91c3ef312896cd99bda1fa",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -2006,7 +3417,14 @@
       "source_drive_id": "1kSFb_-uFYumUDbCDyLdaexZ8TBZTx5R_",
       "size_bytes": 12852,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_C_02_128_64.png",
+      "sha256": "547ec81158eb2356b8474230ce2d3f3fef7dfb23bb2737bfffd728b35051e08c",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -2014,7 +3432,14 @@
       "source_drive_id": "11DYVKCQ6BfpaTRBx9mcHdyOeugZOk-FE",
       "size_bytes": 12903,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_C_03_128_64.png",
+      "sha256": "6f002f9157b663891b6403e470cf60c0a21d82b81221bc56a08aea2ffbfc29b0",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -2022,7 +3447,14 @@
       "source_drive_id": "1X1ZqfM4buLVOt2Gz2BvitUgHHEllyfkc",
       "size_bytes": 12868,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_C_04_128_64.png",
+      "sha256": "f0e3fc02665cae1ebe2ef895ad13c1e689b64c68d64e1e3a181334dc9acc963f",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -2030,7 +3462,14 @@
       "source_drive_id": "1k3QMFFHc6zjadVN9FkvDc-FvCkjTiF9R",
       "size_bytes": 12845,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_C_05_128_64.png",
+      "sha256": "dc9b006a5674061a6b429c0743c34221e58a913fc31ecb08cbbdf43d9bc15de7",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -2038,7 +3477,14 @@
       "source_drive_id": "1Ng5WbfMjpAYM78oR9SUDstMFBdCYI0IE",
       "size_bytes": 12951,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_C_06_128_64.png",
+      "sha256": "6cd4ed2830b89d5b41d1fd9276fe3c09c500e30bb789170dc18713b2b5078a43",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -2046,7 +3492,14 @@
       "source_drive_id": "1QDCb-ElJgEKJ0UUSdp5Uch7d5rEkyfkv",
       "size_bytes": 12840,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_C_07_128_64.png",
+      "sha256": "d340346797e3698eaa961c393e23b25360b04b796df6c315f288bd2f150859a6",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -2054,7 +3507,14 @@
       "source_drive_id": "17wyLvlxdNa8XGJPyOALDDd5lnK1OKem6",
       "size_bytes": 12875,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_C_09_128_64.png",
+      "sha256": "c00460831ae9a49a55bfe566694edfefec0c086d1967203e2b3ace99728d9364",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -2062,7 +3522,14 @@
       "source_drive_id": "1c0xxOeLJZ47UMTuK_wQt2Rjk3gtiI_8y",
       "size_bytes": 12857,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_C_10_128_64.png",
+      "sha256": "3a98fdd6dec5fa0eaccb953bd1ccc631e63041c4aeaf8afa35a73bf60a20fa98",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -2070,7 +3537,14 @@
       "source_drive_id": "1WTrH1uPqYNqW-aZ8KNEI0h6JhURTz-fB",
       "size_bytes": 12882,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "source_binary_verified",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_C_11_128_64.png",
+      "sha256": "467d92c488e2405f76c878bcd4247701064019891e3fb5fdb1106e3dae292625",
+      "width": 128,
+      "height": 128,
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     },
     {
       "family": "wetland",
@@ -2078,11 +3552,23 @@
       "source_drive_id": "1Z6Nj51kX_MCTaG8mQKjJ0HkCBttb-mL_",
       "size_bytes": 12905,
       "kind": "terrain",
-      "review_status": "binary_verified_license_pending",
+      "review_status": "source_binary_verified",
       "sha256": "7321027ee98ae2a2c59dcba545a6b5a1b9604810b5e11405d097cd01c1500ddc",
       "width": 128,
       "height": 128,
-      "alpha_mode": "opaque"
+      "alpha_mode": "opaque",
+      "source_repo_path": "game/love/assets/terrain25d/source_png/wetland/Riverbank_Wetland_C_12_128_64.png",
+      "png_color_type": 3,
+      "ownership_status": "user_declared_creator_2026-10-28",
+      "license_status": "user_declared_creator"
     }
-  ]
+  ],
+  "source_import": {
+    "branch": "experiment/25d-runtime-20261028",
+    "location": "game/love/assets/terrain25d/source_png",
+    "owner_declaration": "The user confirmed on 2026-10-28 that all assets were created by them.",
+    "source_count": 228,
+    "bytes": 3439371,
+    "status": "source_binaries_verified"
+  }
 }
