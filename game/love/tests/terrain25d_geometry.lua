@@ -98,3 +98,14 @@ local wetAfter,signedAfter=world.query:water_mask(704,128)
 assert(wetBefore==wetAfter and signedBefore==signedAfter)
 assert(heightBefore==world.topography:height(704,128))
 print("TERRAIN25D_R2_AUTHORED_OK seam=2 wet=1 physical_unchanged=1")
+
+-- Atlas manifest UV bounds; reject invalid source rect and preserve untextured API.
+local rect={.1268939393939394,.3383838383838384,.12121212121212122,.32323232323232326}
+local mapped=Geo.love_vertices(sa,rect)
+assert(#mapped==#Geo.love_vertices(sa))
+for _,v in ipairs(mapped) do
+ assert(v[3]>=rect[1]-1e-9 and v[3]<=rect[1]+rect[3]+1e-9)
+ assert(v[4]>=rect[2]-1e-9 and v[4]<=rect[2]+rect[4]+1e-9)
+end
+assert(not pcall(Geo.love_vertices,sa,{0.9,0.9,.3,.3}))
+print("TERRAIN25D_ATLAS_RECT_OK")
