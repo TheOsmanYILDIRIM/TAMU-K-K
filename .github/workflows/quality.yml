@@ -202,6 +202,7 @@ jobs:
           end
           local world=Bridge.new(doc("fisilti_ormani.r2.v1.json"),doc("osman_overworld.v2.json"))
           local mesh,times={},{}
+          local waterMesh,objectSprites,wetPoints={}, {}, {}
           local frames=0
           local centerX,centerY,viewScale=0,0,1
           local img
@@ -217,11 +218,25 @@ jobs:
             img:setFilter("nearest","nearest")
             print("TERRAIN25D_REAL_ATLAS_LOADED id="..selected.id)
             love._terrain25d_rect=selected.uv_rect
+            objectSprites={}
+            local atlasW,atlasH=img:getDimensions()
+            for _,entry in ipairs(manifest.assets) do
+              if entry.kind=="object" and entry.uv_rect then
+                local u=entry.uv_rect
+                local q=love.graphics.newQuad(u[1]*atlasW,u[2]*atlasH,
+                  u[3]*atlasW,u[4]*atlasH,atlasW,atlasH)
+                objectSprites[#objectSprites+1]={quad=q,family=entry.family}
+              end
+            end
+            assert(#objectSprites>=2,"real object variants missing")
             local vertices={}
             for j=0,2 do for i=0,2 do
               local chunk=Geo.build_chunk(world.query,world.topography,
                 {size=64,height_scale=.35,uv_scale=128},{x=640+i*64,y=64+j*64},8)
               for _,v in ipairs(Geo.love_vertices(chunk,love._terrain25d_rect)) do vertices[#vertices+1]=v end
+              for _,v in ipairs(chunk.vertices) do
+                if v[13]==1 then wetPoints[#wetPoints+1]={v[1],v[2]} end
+              end
             end end
             assert(#vertices>0)
             local xMin,yMin,xMax,yMax=math.huge,math.huge,-math.huge,-math.huge
@@ -235,7 +250,7 @@ jobs:
               xMin,xMax,yMin,yMax,viewScale))
             mesh=love.graphics.newMesh(vertices,"triangles","static")
             mesh:setTexture(img)
-            print("TERRAIN25D_GPU_MESH_CREATED vertices="..#vertices)
+            print("TERRAIN25D_GPU_MESH_CREATED vertices="..#vertices.." wet_points="..#wetPoints.." objects="..#objectSprites)
           end
           function love.draw()
             local t=love.timer.getTime()
@@ -245,7 +260,29 @@ jobs:
             love.graphics.scale(viewScale,viewScale)
             love.graphics.translate(-centerX,-centerY)
             love.graphics.draw(mesh)
+            -- Authored physical river mask drives only the visual overlay.
+            love.graphics.setColor(.21,.50,.63,.9)
+            for _,point in ipairs(wetPoints) do
+              love.graphics.circle("fill",point[1],point[2],2.8)
+            end
+            love.graphics.setColor(1,1,1,1)
             love.graphics.pop()
+            -- Upright atlas sprites (screen-space height), sorted by foot Y.
+            local anchors={{680,112},{744,176},{790,102},{816,210}}
+            local Iso=require("world.iso")
+            local placed={}
+            for i,xy in ipairs(anchors) do
+              if not world.query:water_mask(xy[1],xy[2]) then
+                local sx,sy=Iso.project(xy[1],xy[2],world.topography:height(xy[1],xy[2])*.35)
+                placed[#placed+1]={x=sx,y=sy,sprite=objectSprites[(i-1)%#objectSprites+1]}
+              end
+            end
+            table.sort(placed,function(a,b) return a.y<b.y end)
+            for _,p in ipairs(placed) do
+              local x=480+(p.x-centerX)*viewScale
+              local y=320+(p.y-centerY)*viewScale
+              love.graphics.draw(img,p.sprite.quad,x,y,0,.65,.65,64,128)
+            end
             times[#times+1]=(love.timer.getTime()-t)*1000
             frames=frames+1
             if frames==180 then
