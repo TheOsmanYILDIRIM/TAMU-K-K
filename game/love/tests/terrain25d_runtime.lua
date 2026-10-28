@@ -155,8 +155,14 @@ local chunk={x=0,y=0,size=256,cx=0,cy=0,
 local stream={visible=function() return {chunk} end}
 local cam={x=0,y=0,zoom=1.2,
  project=function(_,x,y,w,h) return w/2+x,h/2+y end}
-rt:draw(stream,cam,360,780)
-assert(rt.built==1 and uploads>1 and rt.visible==1)
+-- Cooperative cold preparation may span frames; do not assume ready
+-- in one draw when the expensive contour/texture job yields checkpoints.
+for frame=1,80 do
+ rt:draw(stream,cam,360,780)
+ if rt.built==1 then break end
+end
+assert(rt.built==1 and uploads>1 and rt.visible==1,
+  "25D chunk never finished incremental preparation")
 assert(chunk._25d_overlay_order and
   #chunk._25d_overlay_order.path>=1,
   "authored path must create a real dirt-texture atlas mesh")
