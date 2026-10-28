@@ -96,7 +96,12 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_ove
   table.sort(order,Depth.before)
   local g=love.graphics
   g.push("all")
-  if type(object_override)=="table" then object_override:begin_frame() end
+  if type(object_override)=="table" then
+    object_override:begin_frame()
+    -- Render projected source-alpha shadows below ALL Y-sorted sprites and
+    -- the player, so an afternoon shadow never paints over a closer tree.
+    object_override:draw_shadows(g,camera,w,h,all)
+  end
   -- Harvest tools are autonomous plasma-controlled objects, not rigged limbs.
   -- Other game/domain systems remain untouched.
   local visual={}

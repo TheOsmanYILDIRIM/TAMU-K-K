@@ -365,25 +365,34 @@ jobs:
           set -euo pipefail
           cd game/love
           python ../../scripts/terrain25d_color_profiles.py --ci-emit
-          luac5.4 -p world/terrain25d_runtime.lua world/terrain25d_shore.lua world/terrain25d_materials.lua objects/terrain25d_sprites.lua tests/terrain25d_runtime.lua tests/terrain25d_shore.lua
+          luac5.4 -p world/terrain25d_runtime.lua world/terrain25d_shore.lua world/terrain25d_materials.lua world/terrain25d_sun.lua objects/terrain25d_sprites.lua tests/terrain25d_runtime.lua tests/terrain25d_shore.lua
           for interpreter in lua5.4 luajit; do
             "$interpreter" tests/terrain25d_shore.lua
             "$interpreter" tests/terrain25d_runtime.lua
           done
           cd ../..
-          OSMAN_R2_PILOT=1 OSMAN_25D_RUNTIME=1 OSMAN_25D_SMOKE=1 \
+          OSMAN_R2_PILOT=1 OSMAN_25D_RUNTIME=1 OSMAN_25D_SMOKE=1 OSMAN_25D_SHADOW_PREVIEW=1 \
             timeout 180s xvfb-run -a love game/love 2>&1 | tee /tmp/terrain25d-runtime.log
           grep -q 'TERRAIN25D_RUNTIME_LOVE_OK' /tmp/terrain25d-runtime.log
           shot="$(find "$HOME/.local/share/love" -name terrain25d-runtime.png -print -quit)"
           test -n "$shot"
           cp "$shot" /tmp/terrain25d-runtime.png
           file /tmp/terrain25d-runtime.png | grep -q 'PNG image data'
+          grep -q 'TERRAIN25D_SHADOW_PREVIEW_OK hours=08,12,17' /tmp/terrain25d-runtime.log
+          for hour in 08 12 17; do
+            sunshot="$(find "$HOME/.local/share/love" -name "terrain25d-sun-$hour.png" -print -quit)"
+            test -n "$sunshot"
+            cp "$sunshot" "/tmp/terrain25d-sun-$hour.png"
+            file "/tmp/terrain25d-sun-$hour.png" | grep -q 'PNG image data'
+          done
       - name: Upload real 25D game frame
         if: github.ref_name == 'experiment/25d-runtime-20261028'
         uses: actions/upload-artifact@v4
         with:
           name: terrain25d-runtime-real-game
-          path: /tmp/terrain25d-runtime.png
+          path: |
+            /tmp/terrain25d-runtime.png
+            /tmp/terrain25d-sun-*.png
           if-no-files-found: error
       - name: Same-authored R2 legacy vs 25D real full-frame CPU distribution
         if: github.ref_name == 'experiment/25d-runtime-20261028'

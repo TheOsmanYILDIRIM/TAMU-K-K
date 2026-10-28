@@ -1,6 +1,7 @@
 -- Pure Lua regression: all 228 source IDs, lazy multi-page images, GPU eviction.
 package.path="./?.lua;./?/init.lua;"..package.path
 local uploads,draws,pastes,decoded,created=0,0,0,0,0
+local projected_shadow_sprites=0
 local function fakeImage(w,h)
  local v={w=w,h=h,released=false}
  function v:getDimensions() return self.w,self.h end
@@ -44,8 +45,17 @@ local g={
  newSpriteBatch=function(im,max,usage)
    assert(im and max>=200 and usage=="stream")
    local b={count=0}
+   function b:setColor(red,green,blue,alpha)
+     assert(red>=0 and green>=0 and blue>=0 and
+       alpha>=0 and alpha<=1)
+   end
    function b:add(quad,x,y,r,sx,sy,ox,oy)
-     assert(quad and sx>0 and sy>0 and ox==64 and oy==124)
+     assert(quad and sx>0 and sy~=0 and ox==64 and oy==124)
+     if sy<0 then
+       assert(type(r)=="number" and r==r,
+         "sunlight projected rotation is not finite")
+       projected_shadow_sprites=projected_shadow_sprites+1
+     end
      self.count=self.count+1
    end
    function b:clear() self.count=0 end
@@ -232,6 +242,39 @@ assert(reloaded~=img and decoded==old+2,
 rt:prune_pages({resident={}}, {})
 assert(reloaded.released)
 assert(draws>0 and rt.atlas_resident_pages==1)
+local Sun=require("world.terrain25d_sun")
+local dawn,noon,evening,night=Sun.at(8),Sun.at(12),Sun.at(17),Sun.at(23)
+assert(dawn.cast>0 and noon.cast>0 and evening.cast>0 and night.cast==0)
+assert(dawn.length>noon.length and evening.length>noon.length,
+  "morning/evening shadows must lengthen as sun lowers")
+assert(math.abs(dawn.direction_x-evening.direction_x)>.25
+  or math.abs(dawn.direction_y-evening.direction_y)>.25,
+  "sun direction must move across the day")
+assert(noon.tint[1]>night.tint[1] and noon.tint[2]>night.tint[2],
+  "daylight must change static terrain tint")
+local ox,oy="tree:daily-shadow",12
+local shadow_object={id=ox,x=10,y=oy,kind="tree",radius=10}
+rt:set_sun_hour(8)
+local morningHour=rt.sun_hour
+sprites:begin_frame()
+local shadow_calls=sprites:draw_shadows(g,cam,360,780,{shadow_object})
+assert(shadow_calls>=1 and shadow_calls<=4
+  and sprites.shadow_objects==1 and projected_shadow_sprites==2,
+  "visible sprite alpha must cast two batched silhouette layers")
+assert(rt.page_pins and sprites.shadow_calls==shadow_calls)
+rt:set_sun_hour(12)
+sprites:draw_shadows(g,cam,360,780,{shadow_object})
+assert(sprites.shadow_objects==1 and projected_shadow_sprites==4,
+  "shadow batches not reusable with changing sunlight")
+rt:set_sun_hour(23)
+sprites:draw_shadows(g,cam,360,780,{shadow_object})
+assert(sprites.shadow_calls==0 and sprites.shadow_objects==0,
+  "no solar silhouette casts when sun is below horizon")
+rt:set_sun_hour(8)
+rt:advance_sun(10)
+assert(rt.sun_hour>morningHour and rt.sun_hour<morningHour+1,
+  "visual daylight clock failed to advance independently")
+print("TERRAIN25D_SUN_SHADOW_OK morning=8 noon=12 evening=17 night=23")
 print("TERRAIN25D_RUNTIME_OK uploads="..uploads.." released="..released..
   " pages="..rt.catalog_counts.pages.." assets="..rt.catalog_counts.packed..
   " decoded="..decoded.." generated="..created)

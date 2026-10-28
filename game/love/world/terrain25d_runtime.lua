@@ -5,6 +5,7 @@ local Json=require("save.json")
 local Shore=require("world.terrain25d_shore")
 local Materials=require("world.terrain25d_materials")
 local Atlas=require("world.terrain25d_atlas")
+local Sun=require("world.terrain25d_sun")
 local Runtime={}; Runtime.__index=Runtime
 -- 128px source texture spans 64 world units; 32-unit mesh lattice stays
 -- aligned to UV seams. Large grass/stone details no longer rival trees.
@@ -92,7 +93,13 @@ function Runtime.new(pilot)
    end
  end
  assert(profiled==168,"lossy ground color profile")
+ local initial=os.getenv("OSMAN_25D_SUN_HOUR")
+ local initial_hour=initial and tonumber(initial) or Sun.initial_hour
+ assert(initial_hour and initial_hour>=0 and initial_hour<24,
+   "invalid opt-in visual sun hour (0..24)")
  local self=setmetatable({pilot=pilot,manifest=m,families=fam,
+   sun_hour=initial_hour,sun=Sun.at(initial_hour),
+   sun_day_seconds=Sun.day_seconds,sun_locked=initial~=nil,
    color_profiles=profiles.assets,
    family_centres=Materials.centres(fam,profiles.assets),
    authored_boundaries=Materials.boundaries(pilot.query,pilot.authored_map),
@@ -120,6 +127,19 @@ function Runtime:page(name)
    self.page_images[name]=image
  end
  return image
+end
+-- The clock is rendering-only. No source game-world or Stage6 time is changed.
+function Runtime:set_sun_hour(hour)
+ local s=Sun.at(hour)
+ self.sun_hour=s.hour
+ self.sun=s
+end
+function Runtime:advance_sun(dt)
+ assert(type(dt)=="number" and dt==dt and dt>=0 and dt<math.huge,
+   "invalid 25D visual tick")
+ if not self.sun_locked then
+   self:set_sun_hour(self.sun_hour+dt*24/self.sun_day_seconds)
+ end
 end
 function Runtime:pin_page(name)
  self:page(name)
@@ -394,7 +414,11 @@ function Runtime:draw(stream,camera,w,h)
  g.clear(.075,.115,.128,1);g.push("all")
  g.translate(w/2,h/2);g.scale(camera.zoom)
  local x,y=Iso.project(camera.x,camera.y)
- g.translate(-x,-y);g.setColor(1,1,1,1)
+ g.translate(-x,-y)
+ -- Existing baked terrain vertex shading remains intact; apply only an
+ -- inexpensive per-frame sunlight tint (never rebuild all terrain meshes).
+ local tint=self.sun.tint
+ g.setColor(tint[1],tint[2],tint[3],1)
  local calls,visible=0,0
  for _,c in ipairs(chunks) do
    if c._25d_meshes then

@@ -42,7 +42,8 @@ function Sprite.new(provider,manifest)
  assert(fam.oak and fam.conifer and fam.boulder)
  local limit=1024
  return setmetatable({provider=provider,families=fam,
-   batches_by_page={},frame=0,current_page=nil,
+   batches_by_page={},shadow_batches={},shadow_frame=0,
+   frame=0,current_page=nil,shadow_calls=0,shadow_objects=0,
    limit=limit,pending=0,selected=nil,visible=0,culled=0,batches=0},Sprite)
 end
 function Sprite:begin_frame()
@@ -85,7 +86,9 @@ function Sprite:flush(g)
    self.selected=nil
  end
 end
-function Sprite:queue(g,camera,w,h,o,selected)
+-- Identical approved sprite family, variant, scale and culling in the
+-- opaque sprite pass and alpha-silhouette shadow prepass.
+function Sprite:appearance(camera,w,h,o)
  local family
  if o.kind=="tree" then
    local variety=hash(o.id)%12
@@ -98,22 +101,95 @@ function Sprite:queue(g,camera,w,h,o,selected)
  else family=self.families[o.kind] and o.kind or "shrub" end
  local choices=self.families[family] or self.families.oak
  local z=camera.zoom
- -- Far-zoom sprite LOD: retain stable silhouettes but limit GPU page
- -- diversity to two stable approved variants per family.
  local n=z<.8 and math.min(#choices,2) or #choices
  local a=choices[1+hash(o.id)%n]
  local x,y=camera:project(o.x,o.y,w,h)
- -- Proportional 2.5D silhouettes; collision, harvest, foot pivot unchanged.
  local scale=Sprite.scale_for(family,z,o.id)
  if x+64*scale<0 or x-64*scale>w or
-    y+8*scale<0 or y-124*scale>h then
-   self.culled=self.culled+1;return
+    y+8*scale<0 or y-124*scale>h then return nil end
+ return a,x,y,scale,family
+end
+-- Actual sprite RGBA alpha becomes a projected ground silhouette.
+-- Rotation and length are computed from the visual sun, not an image blur.
+function Sprite.shadow_geometry(family,scale,sun)
+ assert(sun and sun.length and sun.rotation and sun.cast)
+ local height=(family=="oak" or family=="conifer"
+   or family=="broadleaf" or family=="dead_tree") and 1 or
+   ((family=="rock_spire" or family=="rock_cluster") and .82 or .65)
+ return sun.rotation,scale*.85,-scale*sun.length*height
+end
+function Sprite:shadow_batch_for(page)
+ local entry=self.shadow_batches[page]
+ if not entry then
+   local image=self.provider:page(page)
+   local batch=love.graphics.newSpriteBatch(image,self.limit*2,"stream")
+   self.provider:pin_page(page)
+   entry={batch=batch,last_seen=self.shadow_frame,count=0}
+   self.shadow_batches[page]=entry
  end
- -- Keep ObjectRenderer Y-depth order when object pages alternate.
+ entry.last_seen=self.shadow_frame
+ return entry
+end
+function Sprite:draw_shadows(g,camera,w,h,objects)
+ self.shadow_frame=self.shadow_frame+1
+ local sun=self.provider.sun
+ -- Keep GPU atlas references alive only while their shadow batches persist.
+ for page,entry in pairs(self.shadow_batches) do
+   entry.batch:clear();entry.count=0
+   if self.shadow_frame-entry.last_seen>2 then
+     entry.batch:release()
+     self.provider:unpin_page(page)
+     self.shadow_batches[page]=nil
+   end
+ end
+ self.shadow_calls,self.shadow_objects=0,0
+ if not sun or sun.cast<=0 then return 0 end
+ local visible={}
+ for _,o in ipairs(objects) do
+   local a,x,y,scale,family=self:appearance(camera,w,h,o)
+   if a then
+     local entry=self:shadow_batch_for(a.page)
+     local batch=entry.batch
+     -- Prevent batch capacity overflow in an unusually dense authored scene.
+     if entry.count+2>self.limit*2 then
+       g.setColor(1,1,1,1);g.draw(batch)
+       self.shadow_calls=self.shadow_calls+1
+       batch:clear();entry.count=0
+     end
+     local angle,sx,sy=Sprite.shadow_geometry(family,scale,sun)
+     -- Feather-like *silhouette layers*: no Gaussian blur and no ground
+     -- texture replacement. Two near-/far-contact opacity scales.
+     batch:setColor(.035,.048,.048,.075*sun.cast)
+     batch:add(a.quad,x,y,angle,sx*1.17,sy*1.12,64,124)
+     batch:setColor(.022,.032,.031,.27*sun.cast)
+     batch:add(a.quad,x,y,angle,sx*.82,sy*.85,64,124)
+     entry.count=entry.count+2
+     visible[a.page]=true
+     self.shadow_objects=self.shadow_objects+1
+   end
+ end
+ local pages={}
+ for page in pairs(visible) do pages[#pages+1]=page end
+ table.sort(pages)
+ g.setColor(1,1,1,1)
+ for _,page in ipairs(pages) do
+   local entry=self.shadow_batches[page]
+   if entry and entry.count>0 then
+     g.draw(entry.batch)
+     self.shadow_calls=self.shadow_calls+1
+   end
+ end
+ return self.shadow_calls
+end
+function Sprite:queue(g,camera,w,h,o,selected)
+ local a,x,y,scale,family=self:appearance(camera,w,h,o)
+ if not a then self.culled=self.culled+1;return end
+ local z=camera.zoom
+ -- Keep draw order as authored by ObjectRenderer's Y-depth sort.
  if self.pending>=self.limit or
    (self.current_page and self.current_page~=a.page) then self:flush(g) end
  local batch=self:batch_for(a.page)
- g.setColor(.06,.09,.08,.26)
+ g.setColor(.06,.09,.08,.20)
  g.ellipse("fill",x,y+2*z,o.radius*z*1.15,o.radius*z*.52)
  batch:add(a.quad,x,y,0,scale,scale,64,124)
  self.current_page=a.page

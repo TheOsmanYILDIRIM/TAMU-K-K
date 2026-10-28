@@ -32,6 +32,8 @@ local r2_pilot_enabled=os.getenv("OSMAN_R2_PILOT")=="1"
 local cache_pilot_enabled=os.getenv("OSMAN_CHUNK_CACHE_PILOT")=="1"
 local terrain25d_enabled=os.getenv("OSMAN_25D_RUNTIME")=="1"
 local terrain25d_smoke=os.getenv("OSMAN_25D_SMOKE")=="1"
+local shadow_preview=terrain25d_smoke and
+  os.getenv("OSMAN_25D_SHADOW_PREVIEW")=="1"
 local terrain25d_compare=os.getenv("OSMAN_25D_COMPARE")=="1"
 assert(not terrain25d_compare or r2_pilot_enabled,
   "25D comparison requires authored R2 pilot")
@@ -84,6 +86,8 @@ local chunk_cache=cache_pilot_enabled and
    stamp=r2_pilot and "r2-fisilti-20261019-pinned" or "v1-generator-20261015",
    size=256,step=r2_pilot and 8 or 32,quality="standard"}) or nil
 local runtime25d,sprite25d_draw
+local shadow_preview_step=0
+local shadow_preview_hours={8,12,17}
 local stream=Stream.new(query,r2_pilot and
   {size=256,step=8,max_loaded=48,build_budget=8,cache=chunk_cache,
    prefetch_options=cache_pilot_enabled and r2_pilot.render_options or nil} or
@@ -416,6 +420,7 @@ local function keyboard()
 end
 function love.update(dt)
   local perf_begin=love.timer.getTime()
+  if runtime25d then runtime25d:advance_sun(dt) end
   if cache_pilot_enabled and not boot_ready then
     stats=stream:update(camera,w,h)
     local ready=stats.pending==0 and stats.loaded>0
@@ -638,10 +643,40 @@ function love.draw()
   end
   if terrain25d_smoke and frames>=90 and stats.loaded>0
      and stats.pending==0 and runtime25d.visible==stats.needed then
-    love.graphics.captureScreenshot("terrain25d-runtime.png")
-    print(string.format("TERRAIN25D_RUNTIME_LOVE_OK frames=%d chunks=%d built=%d calls=%d objects=%d",
-      frames,stats.loaded,runtime25d.built,runtime25d.draw_calls,object_count))
-    io.stdout:flush();love.event.quit();return
+    if shadow_preview then
+      if shadow_preview_step==0 then
+        shadow_preview_step=1
+        runtime25d:set_sun_hour(shadow_preview_hours[1])
+      else
+        -- Capture identical real authored-R2 scenes at three sun positions.
+        -- The hour was selected on the preceding fully rendered frame.
+        local hour=shadow_preview_hours[shadow_preview_step]
+        love.graphics.captureScreenshot(string.format(
+          "terrain25d-sun-%02d.png",hour))
+        if hour==12 then
+          love.graphics.captureScreenshot("terrain25d-runtime.png")
+        end
+        if shadow_preview_step<3 then
+          shadow_preview_step=shadow_preview_step+1
+          runtime25d:set_sun_hour(shadow_preview_hours[shadow_preview_step])
+        else
+          print(string.format(
+            "TERRAIN25D_SHADOW_PREVIEW_OK hours=08,12,17 casts=%d calls=%d",
+            sprite25d_draw.shadow_objects,sprite25d_draw.shadow_calls))
+          print(string.format(
+            "TERRAIN25D_RUNTIME_LOVE_OK frames=%d chunks=%d built=%d calls=%d objects=%d",
+            frames,stats.loaded,runtime25d.built,
+            runtime25d.draw_calls,object_count))
+          io.stdout:flush();love.event.quit();return
+        end
+      end
+    else
+      love.graphics.captureScreenshot("terrain25d-runtime.png")
+      print(string.format(
+        "TERRAIN25D_RUNTIME_LOVE_OK frames=%d chunks=%d built=%d calls=%d objects=%d",
+        frames,stats.loaded,runtime25d.built,runtime25d.draw_calls,object_count))
+      io.stdout:flush();love.event.quit();return
+    end
   end
   if stat_smoke and frames>=25 and stats.loaded>0 and stats.pending==0 then
     assert(progression:stat("etkime")==2 and progression.state.unspent_points==1)
