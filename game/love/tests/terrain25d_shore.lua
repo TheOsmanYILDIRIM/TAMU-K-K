@@ -96,4 +96,43 @@ assert(a.id==b.id and (a.id=="cool" or a.id=="warm" or a.id=="bright"),
   "CIELAB source-ID selection must be deterministic")
 assert(Materials.family(sample,true,x,y)=="wetland")
 assert(Materials.family({biome="rocky",grade=2,feature="meadow"},false,x,y)=="rock")
+-- A broad, categorical forest-to-meadow boundary must contain both
+-- unmodified source families on BOTH sides of the authored polygon.
+-- Source ID islands are sharp, never RGB/alpha blends.
+local query_edge={
+ sample=function(_,gx,gy)
+   return {biome=gx<0 and "forest" or "meadow"}
+ end
+}
+local area={regions={{polygon={
+ {-220,-250},{0,-250},{0,250},{-220,250}
+}}}}
+local edges=Materials.boundaries(query_edge,area)
+assert(#edges>=1,"synthetic authored border missing")
+local left_alt,right_alt,left_total,right_total=0,0,0,0
+for ix=-88,88,8 do
+ for iy=-128,128,8 do
+  local primary=ix<0 and "forest" or "grass"
+  local edge=Materials.nearest_boundary(edges,ix,iy)
+  local chosen,other=Materials.interleaved_family(primary,edge,ix,iy)
+  assert(chosen=="forest" or chosen=="grass","unknown biome source ID")
+  assert(Materials.interleaved_family(primary,edge,ix,iy)==chosen,
+    "cross-chunk categorical biome decision is nondeterministic")
+  if ix<0 then
+    left_total=left_total+1
+    if chosen=="grass" then left_alt=left_alt+1 end
+  else
+    right_total=right_total+1
+    if chosen=="forest" then right_alt=right_alt+1 end
+  end
+ end
+end
+assert(left_alt>4 and right_alt>4,
+  "biome transition band collapses to a hard line")
+for _,ix in ipairs({-150,150}) do
+ local primary=ix<0 and "forest" or "grass"
+ assert(Materials.interleaved_family(primary,
+   Materials.nearest_boundary(edges,ix,0),ix,0)==primary,
+   "transition leaks into unchanged biome interior")
+end
 print("TERRAIN25D_SHORE_OK water=2 banks=2 path=1 seam=2 materials=deterministic")

@@ -113,4 +113,98 @@ function Materials.centres(families,profiles)
  end
  return out
 end
+-- Cross-biome transition uses categorical source texture coverage, NEVER
+-- image-space blur, alpha blending or color-tint interpolation. World Builder's
+-- authored polygon outlines remain unchanged for all gameplay queries.
+local biome_family={meadow="grass",forest="forest",rocky="rock"}
+local TRANSITION_REACH=112
+function Materials.boundaries(query,map)
+ local edges={}
+ if not (map and type(map.regions)=="table") then return edges end
+ assert(query and type(query.sample)=="function")
+ for _,region in ipairs(map.regions) do
+  for i=1,#region.polygon do
+   local a,b=region.polygon[i],region.polygon[i%#region.polygon+1]
+   local dx,dy=b[1]-a[1],b[2]-a[2]
+   local length=math.sqrt(dx*dx+dy*dy)
+   if length>1e-6 then
+    local nx,ny=-dy/length,dx/length
+    -- Determine actual neighbouring biome on each side; two authored
+    -- forest polygons sharing an edge must NOT create a transition.
+    local mx,my=(a[1]+b[1])*.5,(a[2]+b[2])*.5
+    local plus=biome_family[query:sample(mx+nx*7,my+ny*7).biome]
+    local minus=biome_family[query:sample(mx-nx*7,my-ny*7).biome]
+    if plus and minus and plus~=minus then
+     edges[#edges+1]={
+       ax=a[1],ay=a[2],dx=dx,dy=dy,length2=length*length,
+       plus=plus,minus=minus,
+       minx=math.min(a[1],b[1])-TRANSITION_REACH,
+       maxx=math.max(a[1],b[1])+TRANSITION_REACH,
+       miny=math.min(a[2],b[2])-TRANSITION_REACH,
+       maxy=math.max(a[2],b[2])+TRANSITION_REACH
+     }
+    end
+   end
+  end
+ end
+ return edges
+end
+
+-- Evaluated once per 32-unit surface cell, not for every triangle.
+-- No circular patches: the band follows each validated authored edge.
+function Materials.nearest_boundary(edges,x,y)
+ local best,limit=nil,TRANSITION_REACH*TRANSITION_REACH
+ for _,edge in ipairs(edges) do
+  if x>=edge.minx and x<=edge.maxx
+     and y>=edge.miny and y<=edge.maxy then
+   local t=((x-edge.ax)*edge.dx+(y-edge.ay)*edge.dy)/edge.length2
+   t=math.max(0,math.min(1,t))
+   local dx,dy=x-edge.ax-t*edge.dx,y-edge.ay-t*edge.dy
+   local dist2=dx*dx+dy*dy
+   if dist2<limit then limit,best=dist2,edge end
+  end
+ end
+ return best
+end
+
+-- Crisp, spatially coherent interleaving of *whole source material IDs*.
+-- The outer 112-unit band gains small foreign-family islands that grow
+-- in coverage toward the authored boundary, then gradually disappear
+-- on the other side. No wide alpha brush or pseudo-blurred RGB pixels.
+function Materials.interleaved_family(family,edge,x,y)
+ if not edge or (family~=edge.plus and family~=edge.minus) then
+  return family,nil
+ end
+ local alternate=family==edge.plus and edge.minus or edge.plus
+ local t=((x-edge.ax)*edge.dx+(y-edge.ay)*edge.dy)/edge.length2
+ t=math.max(0,math.min(1,t))
+ local ex,ey=edge.ax+t*edge.dx,edge.ay+t*edge.dy
+ local dist=math.sqrt((x-ex)^2+(y-ey)^2)
+ -- Multi-scale boundary irregularity; this moves material decisions only.
+ local drift=14*noise(x,y,52,9247)+5*noise(x,y,21,3141)
+ local width=100+18*noise(x,y,135,6271)
+ local reach=math.max(0,1-math.max(0,dist+drift)/width)
+ local other_coverage=.5*reach^0.8
+ -- Spatially coherent, irregular 22-unit source-ID islands. A Voronoi
+ -- patch carries one crisp material ID and a uniform occupancy threshold.
+ -- It is NOT a color/alpha interpolation or independent-pixel dithering.
+ local gx,gy=math.floor(x/22),math.floor(y/22)
+ local closest,threshold=math.huge,1
+ for oy=-1,1 do for ox=-1,1 do
+   local ix,iy=gx+ox,gy+oy
+   local h=hash(ix,iy,57121)
+   local px=(ix+.16+.68*(h%997)/997)*22
+   local py=(iy+.16+.68*(math.floor(h/997)%991)/991)*22
+   local d=(x-px)^2+(y-py)^2
+   if d<closest then
+     closest=d
+     local q=hash(ix*3+17,iy*7-11,92131)
+     threshold=((q*(q%1031+1))%65521)/65521
+   end
+ end end
+ if threshold<other_coverage then
+  return alternate,family
+ end
+ return family,alternate
+end
 return Materials

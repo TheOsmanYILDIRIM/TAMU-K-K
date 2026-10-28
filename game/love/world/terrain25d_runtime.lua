@@ -95,6 +95,7 @@ function Runtime.new(pilot)
  local self=setmetatable({pilot=pilot,manifest=m,families=fam,
    color_profiles=profiles.assets,
    family_centres=Materials.centres(fam,profiles.assets),
+   authored_boundaries=Materials.boundaries(pilot.query,pilot.authored_map),
    page_metadata=pages,page_images={},page_pins={},
    atlas_resident_pages=0,atlas_estimated_gpu_bytes=0,
    catalog_counts={total=#archive.assets,packed=#m.assets,
@@ -205,25 +206,33 @@ function Runtime:prepare(chunk,checkpoint)
    local delta=Materials.edge_jitter(x,y,1301)
    return self:family(x+delta*.65,y+delta*.37)
  end
- local function choose(x,y)
+ local function choose(x,y,boundary)
    local f=jittered_family(x,y)
    local other
-   -- Only samples render-only families; no gameplay masks are changed.
-   for _,d in ipairs({{14,0},{-14,0},{0,14},{0,-14}}) do
-     local k=jittered_family(x+d[1],y+d[2])
-     if k~=f then other=k;break end
+   -- Authored border has broad, spatially coherent source-ID islands,
+   -- without smoothing a pixel or changing gameplay's biome classification.
+   f,other=Materials.interleaved_family(f,boundary,x,y)
+   if not other then
+     for _,d in ipairs({{14,0},{-14,0},{0,14},{0,-14}}) do
+       local k=jittered_family(x+d[1],y+d[2])
+       if k~=f then other=k;break end
+     end
    end
    return self:material(f,x,y,other)
  end
  for iy=0,n-1 do
    for ix=0,n-1 do
      local x,y=chunk.x+ix*self.step,chunk.y+iy*self.step
+     -- One polygon-edge search per cell. All micro-triangle decisions use
+     -- the same world-space edge, so mesh building stays bounded.
+     local boundary=Materials.nearest_boundary(self.authored_boundaries,
+       x+self.step*.5,y+self.step*.5)
      local i=iy*(n+1)+ix+1
      local a,b,c,d=geo.vertices[i],geo.vertices[i+1],
        geo.vertices[i+n+1],geo.vertices[i+n+2]
      local checks={
-       choose(x+8,y+8),choose(x+24,y+8),
-       choose(x+8,y+24),choose(x+24,y+24)
+       choose(x+8,y+8,boundary),choose(x+24,y+8,boundary),
+       choose(x+8,y+24,boundary),choose(x+24,y+24,boundary)
      }
      local split=false
      local signature=self.color_profiles[checks[1].id]
@@ -237,7 +246,7 @@ function Runtime:prepare(chunk,checkpoint)
        end
      end
      if not split then
-       local asset=choose(x+16,y+16)
+       local asset=choose(x+16,y+16,boundary)
        emit(asset,{a,b,d},groups)
        emit(asset,{a,d,c},groups)
      else
@@ -251,7 +260,7 @@ function Runtime:prepare(chunk,checkpoint)
          local v1,v2=ring[j],ring[j%8+1]
          local wx=(centre[9]+v1[9]+v2[9])/3
          local wy=(centre[10]+v1[10]+v2[10])/3
-         emit(choose(wx,wy),{centre,v1,v2},groups)
+         emit(choose(wx,wy,boundary),{centre,v1,v2},groups)
        end
      end
    end
