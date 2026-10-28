@@ -103,6 +103,9 @@ function Runtime.new(pilot)
    built=0,visible=0,draw_calls=0,uploads_per_frame=0,build_budget=1,step=32},Runtime)
  -- Keep the pilot page for current sprites; all other pages load on demand.
  self.atlas=self:page("atlas_00.png")
+ if os and os.getenv and os.getenv("OSMAN_25D_SMOKE")=="1" then
+   print("TERRAIN25D_AUTHORED_BORDERS="..#self.authored_boundaries)
+ end
  return self
 end
 function Runtime:page(name)
@@ -167,10 +170,12 @@ end
 -- Select real atlas pixels by their measured CIELAB+contrast distance.
 -- Neighbour-family L*a*b* values affect ONLY which source ID is used,
 -- never the RGB output, opacity, or physics world state.
-function Runtime:material(family,x,y,neighbor_family)
+function Runtime:material(family,x,y,neighbor_family,proximity)
  local list=assert(self.families[family],"unknown material family: "..tostring(family))
+ -- Only source-ID selection changes. No RGB interpolation/blur is performed.
+ local weight=proximity and (.28+.64*proximity) or nil
  return Materials.choose(family,x,y,list,self.color_profiles,
-   neighbor_family and self.family_centres[neighbor_family])
+   neighbor_family and self.family_centres[neighbor_family],weight)
 end
 function Runtime:prepare(chunk,checkpoint)
  assert(not chunk._25d_meshes and not chunk._meshes,"chunk already owns GPU meshes")
@@ -208,17 +213,17 @@ function Runtime:prepare(chunk,checkpoint)
  end
  local function choose(x,y,boundary)
    local f=jittered_family(x,y)
-   local other
+   local other,proximity
    -- Authored border has broad, spatially coherent source-ID islands,
    -- without smoothing a pixel or changing gameplay's biome classification.
-   f,other=Materials.interleaved_family(f,boundary,x,y)
+   f,other,proximity=Materials.interleaved_family(f,boundary,x,y)
    if not other then
      for _,d in ipairs({{14,0},{-14,0},{0,14},{0,-14}}) do
        local k=jittered_family(x+d[1],y+d[2])
        if k~=f then other=k;break end
      end
    end
-   return self:material(f,x,y,other)
+   return self:material(f,x,y,other,proximity)
  end
  for iy=0,n-1 do
    for ix=0,n-1 do

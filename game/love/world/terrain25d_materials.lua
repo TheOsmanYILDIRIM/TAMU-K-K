@@ -81,11 +81,15 @@ end
 -- Sorted genuine, source-PNG CIELAB means + L* standard deviation.
 -- Bilinear variation chooses a *single* source ID; it never mixes pixels.
 -- An optional neighboring family centre merely favors compatible edge IDs.
-function Materials.choose(family,x,y,list,profiles,neighbor)
+function Materials.choose(family,x,y,list,profiles,neighbor,neighbor_weight)
  assert(type(list)=="table" and #list>0 and type(profiles)=="table")
  local target=anchors(family,x,y,list,profiles)
  if neighbor then
-  for k=1,4 do target[k]=target[k]*.72+neighbor[k]*.28 end
+  local weight=neighbor_weight or .28
+  assert(weight>=0 and weight<=1,"invalid material-neighbor selection weight")
+  -- The original source PNG is not tinted. Near authored borders, choose
+  -- genuinely closer light-forest/dark-grass source variants instead.
+  for k=1,4 do target[k]=target[k]*(1-weight)+neighbor[k]*weight end
  end
  local best,score
  for i,a in ipairs(list) do
@@ -182,7 +186,7 @@ function Materials.interleaved_family(family,edge,x,y)
  local dist=math.sqrt((x-ex)^2+(y-ey)^2)
  -- Multi-scale boundary irregularity; this moves material decisions only.
  local drift=14*noise(x,y,52,9247)+5*noise(x,y,21,3141)
- local width=100+18*noise(x,y,135,6271)
+ local width=126+20*noise(x,y,135,6271)
  local reach=math.max(0,1-math.max(0,dist+drift)/width)
  local other_coverage=.5*reach^0.8
  -- Spatially coherent, irregular 22-unit source-ID islands. A Voronoi
@@ -203,8 +207,8 @@ function Materials.interleaved_family(family,edge,x,y)
    end
  end end
  if threshold<other_coverage then
-  return alternate,family
+  return alternate,family,reach
  end
- return family,alternate
+ return family,alternate,reach
 end
 return Materials

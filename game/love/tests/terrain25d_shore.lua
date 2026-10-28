@@ -94,6 +94,12 @@ local a=Materials.choose("dirt",112,88,shuffled,profiles)
 local b=Materials.choose("dirt",112,88,shuffled,profiles)
 assert(a.id==b.id and (a.id=="cool" or a.id=="warm" or a.id=="bright"),
   "CIELAB source-ID selection must be deterministic")
+assert(Materials.choose("dirt",112,88,shuffled,profiles,
+  profiles.bright,1).id=="bright",
+  "near-border ID selection should favor color-matching source assets")
+assert(Materials.choose("dirt",112,88,shuffled,profiles,
+  profiles.cool,1).id=="cool",
+  "color-compatible sources must remain distinct, without blending pixels")
 assert(Materials.family(sample,true,x,y)=="wetland")
 assert(Materials.family({biome="rocky",grade=2,feature="meadow"},false,x,y)=="rock")
 -- A broad, categorical forest-to-meadow boundary must contain both
