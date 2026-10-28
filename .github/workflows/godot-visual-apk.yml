@@ -50,15 +50,15 @@ jobs:
           cp game/love/assets/terrain25d/atlas_00.png demos/godot-visual/assets/
           cp game/love/assets/terrain25d/manifest.json demos/godot-visual/assets/
           python - <<'PY'
-                    import json,hashlib,pathlib
-                    d=pathlib.Path("demos/godot-visual/assets")
-                    m=json.loads((d/"manifest.json").read_text())
-                    for page in m["atlas_pages"]:
-                        p=d/page["filename"]
-                        assert p.is_file()
-                        assert hashlib.sha256(p.read_bytes()).hexdigest()==page["sha256"]
-                    print("ATLAS_VERIFIED",len(m["assets"]))
-                    PY
+          import json,hashlib,pathlib
+          d=pathlib.Path("demos/godot-visual/assets")
+          m=json.loads((d/"manifest.json").read_text())
+          for page in m["atlas_pages"]:
+              p=d/page["filename"]
+              assert p.is_file()
+              assert hashlib.sha256(p.read_bytes()).hexdigest()==page["sha256"]
+          print("ATLAS_VERIFIED",len(m["assets"]))
+          PY
       - name: Create debug keystore
         run: |
           mkdir -p "$HOME/.android"
