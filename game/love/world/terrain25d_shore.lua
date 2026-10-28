@@ -74,7 +74,7 @@ function Shore.build(chunk,query,topography,routes,scale)
  end
  local raw_water=(chunk.layers and chunk.layers.water
    and chunk.layers.water.vertices) or {}
- local bank,path={}
+ local bank,path={},{}
  if is_river then
   -- 4-unit edge fidelity; only chunks overlapping an actual authored river.
   local refined=Marching.build(water_sampler,chunk.x,chunk.y,
