@@ -123,6 +123,9 @@ assert(Materials.understory_coverage("forest",409,-76)>.75,
   "previous green clearing was erased rather than transitioned")
 assert(Materials.understory_coverage("forest",650,120)<.2,
   "dark forest interior lost its material identity")
+local _,inner_neighbor=Materials.interior_family("forest",409,-76)
+assert(inner_neighbor==nil,
+  "green clearing centre must not be darkened by forest palette proximity")
 assert(Materials.interior_family("wetland",0,0)=="wetland",
   "authored wetland/path surfaces must never be replaced by undergrowth")
 -- A broad, categorical forest-to-meadow boundary must contain both

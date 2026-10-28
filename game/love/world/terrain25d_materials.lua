@@ -119,9 +119,11 @@ function Materials.interior_family(family,x,y)
   return "dirt",family,proximity
  end
  local foreign="grass"
- local near=proximity>.12 and foreign or nil
+ -- Only shift CIELAB source choice in the true intermediate belt.
+ -- A clearing centre must keep its original bright meadow palette.
+ local near=proximity>.40 and foreign or nil
  if micro_rank(x,y,12,14921)<density then
-  return "grass",proximity>.12 and family or nil,proximity
+  return "grass",proximity>.40 and family or nil,proximity
  end
  return family,near,proximity
 end
