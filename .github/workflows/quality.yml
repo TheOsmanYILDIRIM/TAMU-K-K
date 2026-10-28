@@ -257,15 +257,40 @@ jobs:
               local sx,sy=Iso.project(x,y,world.topography:height(x,y)*.35)
               return {sx,sy,0,0,.18,.47,.58,.92}
             end
-            for y=64,248,4 do for x=640,828,4 do
-              local a=world.query:water_mask(x,y)
-              local b=world.query:water_mask(x+4,y)
-              local c=world.query:water_mask(x+4,y+4)
-              local d=world.query:water_mask(x,y+4)
-              if a and b and c and d then
-                local p,q,r,t=vertex(x,y),vertex(x+4,y),vertex(x+4,y+4),vertex(x,y+4)
-                for _,v in ipairs({p,q,r,p,r,t}) do river[#river+1]=v end
+            -- 2-unit marching triangles: interpolate shoreline rather than require
+            -- all four corners to be wet (which produces staircase banks).
+            local step=2
+            local function signed(x,y)
+              local wet,d=world.query:water_mask(x,y)
+              if type(d)=="number" then return wet and math.max(.001,d) or -math.max(.001,math.abs(d)) end
+              return wet and 1 or -1
+            end
+            local function edge(a,b)
+              local t=a.s/(a.s-b.s)
+              return {x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t,s=0}
+            end
+            local function triangle(a,b,c)
+              local poly={a,b,c}
+              local result={}
+              for i=1,#poly do
+                local p,q=poly[i],poly[i%#poly+1]
+                if p.s>=0 then result[#result+1]=p end
+                if (p.s>=0)~=(q.s>=0) then result[#result+1]=edge(p,q) end
               end
+              if #result>=3 then
+                for i=2,#result-1 do
+                  for _,p in ipairs({result[1],result[i],result[i+1]}) do
+                    river[#river+1]=vertex(p.x,p.y)
+                  end
+                end
+              end
+            end
+            for y=64,248,step do for x=640,828,step do
+              local a={x=x,y=y,s=signed(x,y)}
+              local b={x=x+step,y=y,s=signed(x+step,y)}
+              local c={x=x+step,y=y+step,s=signed(x+step,y+step)}
+              local d={x=x,y=y+step,s=signed(x,y+step)}
+              triangle(a,b,c);triangle(a,c,d)
             end end
             assert(#river>0,"authored water surface unavailable")
             waterMesh=love.graphics.newMesh(river,"triangles","static")
