@@ -16,6 +16,15 @@ jobs:
           python -m unittest discover -s scripts/tests -p 'test_terrain25d_assets.py' -v
       - name: Install Lua and real LÖVE test runtime
         run: sudo apt-get update -qq && sudo apt-get install -y lua5.4 luajit love xvfb
+      - name: 25D geometry and real R2 authored mesh (Lua 5.4 / LuaJIT)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd game/love
+          luac5.4 -p world/terrain25d_geometry.lua world/terrain25d_lighting.lua tests/terrain25d_geometry.lua
+          for interpreter in lua5.4 luajit; do
+            "$interpreter" tests/terrain25d_geometry.lua
+          done
       - name: Stat/skill contract and existing Stage5/Stage6 regression (Lua 5.4 and LuaJIT)
         shell: bash
         run: |
@@ -91,7 +100,7 @@ jobs:
           grep -q 'LOVE_STAGE6_REOPEN_OK' /tmp/stat-stage6-reopen.log
           grep -q 'LOVE_INTEGRATION_SMOKE_OK' /tmp/stat-stage6-reopen.log
       - name: R2 H real A-F combined schema, Node, Lua5.4 and LuaJIT
-        if: github.ref_name == 'main' || github.ref_name == 'experiment/worldbuild-r2-compat-20261019' || github.ref_name == 'experiment/r2-gv-integration-20261020'
+        if: github.ref_name == 'main' || github.ref_name == 'experiment/worldbuild-r2-compat-20261019' || github.ref_name == 'experiment/r2-gv-integration-20261020' || github.ref_name == 'experiment/25d-terrain-20261028'
         shell: bash
         run: |
           set -euo pipefail
@@ -108,7 +117,7 @@ jobs:
             "$interpreter" tests/r2_h_compat.lua
           done
       - name: R2 H real LÖVE/Xvfb authored river + ecology PNG smoke
-        if: github.ref_name == 'main' || github.ref_name == 'experiment/worldbuild-r2-compat-20261019' || github.ref_name == 'experiment/r2-gv-integration-20261020'
+        if: github.ref_name == 'main' || github.ref_name == 'experiment/worldbuild-r2-compat-20261019' || github.ref_name == 'experiment/r2-gv-integration-20261020' || github.ref_name == 'experiment/25d-terrain-20261028'
         shell: bash
         run: |
           set -euo pipefail
@@ -123,7 +132,7 @@ jobs:
             file "/tmp/r2-h-compat-$scene.png" | grep -q 'PNG image data'
           done
       - name: Upload R2 H integrated world preview
-        if: github.ref_name == 'main' || github.ref_name == 'experiment/worldbuild-r2-compat-20261019' || github.ref_name == 'experiment/r2-gv-integration-20261020'
+        if: github.ref_name == 'main' || github.ref_name == 'experiment/worldbuild-r2-compat-20261019' || github.ref_name == 'experiment/r2-gv-integration-20261020' || github.ref_name == 'experiment/25d-terrain-20261028'
         uses: actions/upload-artifact@v4
         with:
           name: r2-h-compat-world-preview
@@ -168,6 +177,186 @@ jobs:
         with:
           name: r2-g-production-pilot-png
           path: /tmp/r2-g-artifacts/r2-pilot-*.png
+          if-no-files-found: error
+      - name: 25D actual GPU mesh render and frame distribution (LÖVE/Xvfb)
+        if: github.ref_name == 'experiment/25d-terrain-20261028'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/osman-25d-gpu
+          git fetch --no-tags origin experiment/25d-assets-20261028
+          test "$(git rev-parse FETCH_HEAD)" = "bed2e28c54ff35122e65b8e5b2add1f987dae941"
+          git show FETCH_HEAD:game/love/assets/terrain25d/atlas_00.png > /tmp/osman-25d-gpu/atlas_00.png
+          git show FETCH_HEAD:game/love/assets/terrain25d/manifest.json > /tmp/osman-25d-gpu/manifest.json
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          p=Path("/tmp/osman-25d-gpu")
+          m=json.loads((p/"manifest.json").read_text())
+          page=m["atlas_pages"][0]
+          assert hashlib.sha256((p/page["filename"]).read_bytes()).hexdigest()==page["sha256"]
+          assert len(m["assets"])==20
+          print("TERRAIN25D_REAL_ATLAS_SHA_OK",page["sha256"])
+          PY
+          cat > /tmp/osman-25d-gpu/main.lua <<'LUA'
+          package.path="./?.lua;./?/init.lua;"..package.path
+          local Geo=require("world.terrain25d_geometry")
+          local Json=require("save.json")
+          local Bridge=require("world.r2_compat_bridge")
+          local function doc(name)
+            local f=assert(io.open("../../data/worldbuild/"..name,"rb"))
+            local s=f:read("*a"); f:close(); return Json.decode(s)
+          end
+          local world=Bridge.new(doc("fisilti_ormani.r2.v1.json"),doc("osman_overworld.v2.json"))
+          local mesh,times={},{}
+          local waterMesh,objectSprites,wetPoints={}, {}, {}
+          local frames=0
+          local centerX,centerY,viewScale=0,0,1
+          local img
+          function love.load()
+            love.window.setMode(960,640,{vsync=0})
+            local manifest=Json.decode(assert(love.filesystem.read("manifest.json")))
+            local selected
+            for _,entry in ipairs(manifest.assets) do
+              if entry.family=="grass" and entry.kind=="terrain" then selected=entry;break end
+            end
+            assert(selected and selected.uv_rect and selected.atlas_page=="atlas_00.png")
+            img=love.graphics.newImage("atlas_00.png")
+            img:setFilter("nearest","nearest")
+            print("TERRAIN25D_REAL_ATLAS_LOADED id="..selected.id)
+            love._terrain25d_rect=selected.uv_rect
+            objectSprites={}
+            local atlasW,atlasH=img:getDimensions()
+            for _,entry in ipairs(manifest.assets) do
+              if entry.kind=="object" and entry.uv_rect then
+                local u=entry.uv_rect
+                local q=love.graphics.newQuad(u[1]*atlasW,u[2]*atlasH,
+                  u[3]*atlasW,u[4]*atlasH,atlasW,atlasH)
+                objectSprites[#objectSprites+1]={quad=q,family=entry.family}
+              end
+            end
+            assert(#objectSprites>=2,"real object variants missing")
+            local vertices={}
+            for j=0,2 do for i=0,2 do
+              local chunk=Geo.build_chunk(world.query,world.topography,
+                {size=64,height_scale=.35,uv_scale=128},{x=640+i*64,y=64+j*64},8)
+              for _,v in ipairs(Geo.love_vertices(chunk,love._terrain25d_rect)) do vertices[#vertices+1]=v end
+              for _,v in ipairs(chunk.vertices) do
+                if v[13]==1 then wetPoints[#wetPoints+1]={v[1],v[2]} end
+              end
+            end end
+            assert(#vertices>0)
+            local xMin,yMin,xMax,yMax=math.huge,math.huge,-math.huge,-math.huge
+            for _,v in ipairs(vertices) do
+              xMin=math.min(xMin,v[1]); xMax=math.max(xMax,v[1])
+              yMin=math.min(yMin,v[2]); yMax=math.max(yMax,v[2])
+            end
+            centerX,centerY=(xMin+xMax)/2,(yMin+yMax)/2
+            viewScale=math.min(880/math.max(1,xMax-xMin),560/math.max(1,yMax-yMin),3)
+            print(string.format("TERRAIN25D_GPU_BOUNDS x=%.2f..%.2f y=%.2f..%.2f scale=%.3f",
+              xMin,xMax,yMin,yMax,viewScale))
+            mesh=love.graphics.newMesh(vertices,"triangles","static")
+            mesh:setTexture(img)
+            -- Water surface: continuous authored R2 hydrology mask, not point markers.
+            local Iso=require("world.iso")
+            local river={}
+            local function vertex(x,y)
+              local sx,sy=Iso.project(x,y,world.topography:height(x,y)*.35)
+              return {sx,sy,0,0,.18,.47,.58,.92}
+            end
+            -- 2-unit marching triangles: interpolate shoreline rather than require
+            -- all four corners to be wet (which produces staircase banks).
+            local step=2
+            local function signed(x,y)
+              local wet,d=world.query:water_mask(x,y)
+              if type(d)=="number" then return wet and math.max(.001,d) or -math.max(.001,math.abs(d)) end
+              return wet and 1 or -1
+            end
+            local function edge(a,b)
+              local t=a.s/(a.s-b.s)
+              return {x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t,s=0}
+            end
+            local function triangle(a,b,c)
+              local poly={a,b,c}
+              local result={}
+              for i=1,#poly do
+                local p,q=poly[i],poly[i%#poly+1]
+                if p.s>=0 then result[#result+1]=p end
+                if (p.s>=0)~=(q.s>=0) then result[#result+1]=edge(p,q) end
+              end
+              if #result>=3 then
+                for i=2,#result-1 do
+                  for _,p in ipairs({result[1],result[i],result[i+1]}) do
+                    river[#river+1]=vertex(p.x,p.y)
+                  end
+                end
+              end
+            end
+            for y=64,248,step do for x=640,828,step do
+              local a={x=x,y=y,s=signed(x,y)}
+              local b={x=x+step,y=y,s=signed(x+step,y)}
+              local c={x=x+step,y=y+step,s=signed(x+step,y+step)}
+              local d={x=x,y=y+step,s=signed(x,y+step)}
+              triangle(a,b,c);triangle(a,c,d)
+            end end
+            assert(#river>0,"authored water surface unavailable")
+            waterMesh=love.graphics.newMesh(river,"triangles","static")
+            print("TERRAIN25D_AUTHORED_RIVER_SURFACE_OK vertices="..#river)
+            print("TERRAIN25D_GPU_MESH_CREATED vertices="..#vertices.." wet_points="..#wetPoints.." objects="..#objectSprites)
+          end
+          function love.draw()
+            local t=love.timer.getTime()
+            love.graphics.clear(.12,.17,.18,1)
+            love.graphics.push()
+            love.graphics.translate(480,320)
+            love.graphics.scale(viewScale,viewScale)
+            love.graphics.translate(-centerX,-centerY)
+            love.graphics.draw(mesh)
+            love.graphics.setColor(1,1,1,1)
+            love.graphics.draw(waterMesh)
+            love.graphics.pop()
+            -- Upright atlas sprites (screen-space height), sorted by foot Y.
+            local anchors={{680,112},{744,176},{790,102},{816,210}}
+            local Iso=require("world.iso")
+            local placed={}
+            for i,xy in ipairs(anchors) do
+              if not world.query:water_mask(xy[1],xy[2]) then
+                local sx,sy=Iso.project(xy[1],xy[2],world.topography:height(xy[1],xy[2])*.35)
+                placed[#placed+1]={x=sx,y=sy,sprite=objectSprites[(i-1)%#objectSprites+1]}
+              end
+            end
+            table.sort(placed,function(a,b) return a.y<b.y end)
+            for _,p in ipairs(placed) do
+              local x=480+(p.x-centerX)*viewScale
+              local y=320+(p.y-centerY)*viewScale
+              love.graphics.draw(img,p.sprite.quad,x,y,0,.65,.65,64,128)
+            end
+            times[#times+1]=(love.timer.getTime()-t)*1000
+            frames=frames+1
+            if frames==180 then
+              table.sort(times)
+              local function quantile(p) return times[math.max(1,math.ceil(#times*p))] end
+              love.graphics.captureScreenshot(function(shot)
+                assert(shot:encode("png","terrain25d-gpu.png"))
+                print(string.format("TERRAIN25D_GPU_OK frames=%d draw_cpu_p50_ms=%.4f draw_cpu_p95_ms=%.4f draw_cpu_p99_ms=%.4f png=%s",
+                  frames,quantile(.5),quantile(.95),quantile(.99),love.filesystem.getSaveDirectory().."/terrain25d-gpu.png"))
+                love.event.quit()
+              end)
+            end
+          end
+          LUA
+          (cd game/love && timeout 120s xvfb-run -a love /tmp/osman-25d-gpu) 2>&1 | tee /tmp/osman-25d-gpu.log
+          grep -q 'TERRAIN25D_GPU_OK' /tmp/osman-25d-gpu.log
+          shot="$(find "$HOME/.local/share/love" -name terrain25d-gpu.png -print -quit)"
+          test -n "$shot"
+          cp "$shot" /tmp/osman-25d-gpu/terrain25d-gpu.png
+          file /tmp/osman-25d-gpu/terrain25d-gpu.png | grep -q 'PNG image data'
+      - name: Upload actual 25D mesh GPU render
+        if: github.ref_name == 'experiment/25d-terrain-20261028'
+        uses: actions/upload-artifact@v4
+        with:
+          name: terrain25d-actual-gpu
+          path: /tmp/osman-25d-gpu/terrain25d-gpu.png
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: success()
