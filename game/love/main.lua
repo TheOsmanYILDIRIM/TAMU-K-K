@@ -30,6 +30,13 @@ local stat_viewport=os.getenv("OSMAN_STAT_DISPLAY")
 local stage6_world_id=os.getenv("OSMAN_STAGE6_WORLD_ID")
 local r2_pilot_enabled=os.getenv("OSMAN_R2_PILOT")=="1"
 local cache_pilot_enabled=os.getenv("OSMAN_CHUNK_CACHE_PILOT")=="1"
+local terrain25d_enabled=os.getenv("OSMAN_25D_RUNTIME")=="1"
+local terrain25d_smoke=os.getenv("OSMAN_25D_SMOKE")=="1"
+assert(not terrain25d_enabled or (r2_pilot_enabled and not cache_pilot_enabled),
+  "25D render requires R2 pilot without legacy geometry cache")
+assert(not terrain25d_smoke or terrain25d_enabled,"25D smoke requires opt-in renderer")
+local Runtime25D=terrain25d_enabled and require("world.terrain25d_runtime") or nil
+local Sprites25D=terrain25d_enabled and require("objects.terrain25d_sprites") or nil
 assert(not (cache_pilot_enabled and stage6_enabled),
  "experimental geometry cache cannot coexist with Stage6 until accepted")
 assert(not (r2_pilot_enabled and (stage6_enabled or stage6_create or stage6_reopen_smoke)),
@@ -73,6 +80,7 @@ local chunk_cache=cache_pilot_enabled and
   require("world.chunk_cache").new({seed=query.seed,
    stamp=r2_pilot and "r2-fisilti-20261019-pinned" or "v1-generator-20261015",
    size=256,step=r2_pilot and 8 or 32,quality="standard"}) or nil
+local runtime25d,sprite25d_draw
 local stream=Stream.new(query,r2_pilot and
   {size=256,step=8,max_loaded=48,build_budget=8,cache=chunk_cache,
    prefetch_options=cache_pilot_enabled and r2_pilot.render_options or nil} or
@@ -234,6 +242,13 @@ local function spawn()
 end
 function love.load()
   boot_started=love.timer.getTime()
+  if terrain25d_enabled then
+    runtime25d=Runtime25D.new(r2_pilot)
+    local sprites=Sprites25D.new(runtime25d.atlas,runtime25d.manifest)
+    sprite25d_draw=function(g,cam,ww,hh,obj,selected)
+      sprites:draw(g,cam,ww,hh,obj,selected)
+    end
+  end
   if os.getenv("OSMAN_CACHE_DISPLAY") then
     local ww,hh=os.getenv("OSMAN_CACHE_DISPLAY"):match("^(%d+)x(%d+)$")
     assert(ww and hh and tonumber(ww)>=320 and tonumber(hh)>=480)
@@ -494,7 +509,8 @@ function love.update(dt)
       stage_hud.open=true
     end
   end
-  if not debug_view then camera.x,camera.y=player.x,player.y end
+  if terrain25d_smoke then camera.x,camera.y=704,128
+  elseif not debug_view then camera.x,camera.y=player.x,player.y end
   stats=stream:update(camera,w,h)
   if long_driver then long_driver:afterUpdate(stats) end
   if os.getenv("OSMAN_CHUNK_CACHE_BASELINE_SMOKE")=="1"
@@ -505,7 +521,8 @@ end
 function love.draw()
   local perf_begin=love.timer.getTime()
   if long_driver and boot_ready and long_driver.frame>0 then long_driver:beforeDraw() end
-  Terrain.draw(stream,camera,w,h,r2_pilot and r2_pilot.render_options)
+  if runtime25d then runtime25d:draw(stream,camera,w,h)
+  else Terrain.draw(stream,camera,w,h,r2_pilot and r2_pilot.render_options) end
   if cache_pilot_enabled and not boot_ready then
     local g=love.graphics
     local ready=0
@@ -524,7 +541,8 @@ function love.draw()
     perf_tick("draw",perf_begin)
     return
   end
-  object_count=ObjectRenderer.draw(objects,stream,camera,w,h,player,selected_target,harvesting)
+  object_count=ObjectRenderer.draw(objects,stream,camera,w,h,player,
+    selected_target,harvesting,sprite25d_draw)
   local ghost
   if not r2_pilot and stage_hud.placing and placement_target then
     local ok=building:preview("core:workbench",placement_target.x,placement_target.y,
@@ -605,6 +623,13 @@ function love.draw()
     io.stdout:flush()
     love.event.quit()
     return
+  end
+  if terrain25d_smoke and frames>=90 and stats.loaded>0
+     and stats.pending==0 and runtime25d.visible>0 then
+    love.graphics.captureScreenshot("terrain25d-runtime.png")
+    print(string.format("TERRAIN25D_RUNTIME_LOVE_OK frames=%d chunks=%d built=%d calls=%d objects=%d",
+      frames,stats.loaded,runtime25d.built,runtime25d.draw_calls,object_count))
+    io.stdout:flush();love.event.quit();return
   end
   if stat_smoke and frames>=25 and stats.loaded>0 and stats.pending==0 then
     assert(progression:stat("etkime")==2 and progression.state.unspent_points==1)

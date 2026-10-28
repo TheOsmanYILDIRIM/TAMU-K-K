@@ -89,7 +89,7 @@ function R.collect(world,stream)
   end
   return list
 end
-function R.draw(world,stream,camera,w,h,player,selected_id,harvesting)
+function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_override)
   local all=R.collect(world,stream)
   local order={{id="!player",depth=Depth.key(player.x,player.y),player=true}}
   for _,o in ipairs(all) do order[#order+1]={id=o.id,depth=Depth.key(o.x,o.y),object=o} end
@@ -108,7 +108,7 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting)
   end
   for _,entry in ipairs(order) do
     if entry.player then player_sprite(g,camera,w,h,player,visual)
-    else object_sprite(g,camera,w,h,entry.object,entry.id==selected_id) end
+    else (object_override or object_sprite)(g,camera,w,h,entry.object,entry.id==selected_id) end
   end
   -- Visual-only strike on actual tree harvest; never changes inventory or collision.
   if harvesting and harvesting.active then

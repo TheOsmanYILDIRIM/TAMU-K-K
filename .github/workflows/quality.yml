@@ -358,6 +358,31 @@ jobs:
           name: terrain25d-actual-gpu
           path: /tmp/osman-25d-gpu/terrain25d-gpu.png
           if-no-files-found: error
+      - name: 25D opt-in authored R2 real game (Lua5.4/LuaJIT + LÖVE/Xvfb)
+        if: github.ref_name == 'experiment/25d-runtime-20261028'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd game/love
+          luac5.4 -p world/terrain25d_runtime.lua objects/terrain25d_sprites.lua tests/terrain25d_runtime.lua
+          for interpreter in lua5.4 luajit; do
+            "$interpreter" tests/terrain25d_runtime.lua
+          done
+          cd ../..
+          OSMAN_R2_PILOT=1 OSMAN_25D_RUNTIME=1 OSMAN_25D_SMOKE=1 \
+            timeout 180s xvfb-run -a love game/love 2>&1 | tee /tmp/terrain25d-runtime.log
+          grep -q 'TERRAIN25D_RUNTIME_LOVE_OK' /tmp/terrain25d-runtime.log
+          shot="$(find "$HOME/.local/share/love" -name terrain25d-runtime.png -print -quit)"
+          test -n "$shot"
+          cp "$shot" /tmp/terrain25d-runtime.png
+          file /tmp/terrain25d-runtime.png | grep -q 'PNG image data'
+      - name: Upload real 25D game frame
+        if: github.ref_name == 'experiment/25d-runtime-20261028'
+        uses: actions/upload-artifact@v4
+        with:
+          name: terrain25d-runtime-real-game
+          path: /tmp/terrain25d-runtime.png
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: success()
         with:
