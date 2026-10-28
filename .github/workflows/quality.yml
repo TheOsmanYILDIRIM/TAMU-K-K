@@ -171,6 +171,82 @@ jobs:
           name: r2-g-production-pilot-png
           path: /tmp/r2-g-artifacts/r2-pilot-*.png
           if-no-files-found: error
+      - name: 25D actual GPU mesh render and frame distribution (LÖVE/Xvfb)
+        if: github.ref_name == 'experiment/25d-terrain-20261028'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/osman-25d-gpu
+          cat > /tmp/osman-25d-gpu/main.lua <<'LUA'
+          package.path="./?.lua;./?/init.lua;"..package.path
+          local Geo=require("world.terrain25d_geometry")
+          local Json=require("save.json")
+          local Bridge=require("world.r2_compat_bridge")
+          local function doc(name)
+            local f=assert(io.open("../../data/worldbuild/"..name,"rb"))
+            local s=f:read("*a"); f:close(); return Json.decode(s)
+          end
+          local world=Bridge.new(doc("fisilti_ormani.r2.v1.json"),doc("osman_overworld.v2.json"))
+          local mesh,times={},{}
+          local frames=0
+          local img
+          function love.load()
+            love.window.setMode(960,640,{vsync=0})
+            local data=love.image.newImageData(128,128)
+            for y=0,127 do for x=0,127 do
+              local n=((x*13+y*17+math.floor(x/8)*7)%31)/255
+              data:setPixel(x,y,.38+n,.52+n,.30+n,1)
+            end end
+            img=love.graphics.newImage(data)
+            img:setWrap("repeat","repeat")
+            local vertices={}
+            for j=0,2 do for i=0,2 do
+              local chunk=Geo.build_chunk(world.query,world.topography,
+                {size=64,height_scale=.35,uv_scale=128},{x=640+i*64,y=64+j*64},8)
+              for _,v in ipairs(Geo.love_vertices(chunk)) do vertices[#vertices+1]=v end
+            end end
+            assert(#vertices>0)
+            mesh=love.graphics.newMesh(vertices,"triangles","static")
+            mesh:setTexture(img)
+            print("TERRAIN25D_GPU_MESH_CREATED vertices="..#vertices)
+          end
+          function love.draw()
+            local t=love.timer.getTime()
+            love.graphics.clear(.12,.17,.18,1)
+            love.graphics.push()
+            love.graphics.translate(480,210)
+            love.graphics.scale(1.4,1.4)
+            love.graphics.translate(-25,-280)
+            love.graphics.draw(mesh)
+            love.graphics.pop()
+            love.graphics.present()
+            times[#times+1]=(love.timer.getTime()-t)*1000
+            frames=frames+1
+            if frames==180 then
+              local shot=love.graphics.newScreenshot()
+              local out=love.filesystem.getSaveDirectory().."/terrain25d-gpu.png"
+              assert(shot:encode("png",out))
+              table.sort(times)
+              local function quantile(p) return times[math.max(1,math.ceil(#times*p))] end
+              print(string.format("TERRAIN25D_GPU_OK frames=%d p50_ms=%.4f p95_ms=%.4f p99_ms=%.4f png=%s",
+                frames,quantile(.5),quantile(.95),quantile(.99),out))
+              love.event.quit()
+            end
+          end
+          LUA
+          (cd game/love && timeout 120s xvfb-run -a love /tmp/osman-25d-gpu) 2>&1 | tee /tmp/osman-25d-gpu.log
+          grep -q 'TERRAIN25D_GPU_OK' /tmp/osman-25d-gpu.log
+          shot="$(find "$HOME/.local/share/love" -name terrain25d-gpu.png -print -quit)"
+          test -n "$shot"
+          cp "$shot" /tmp/osman-25d-gpu/terrain25d-gpu.png
+          file /tmp/osman-25d-gpu/terrain25d-gpu.png | grep -q 'PNG image data'
+      - name: Upload actual 25D mesh GPU render
+        if: github.ref_name == 'experiment/25d-terrain-20261028'
+        uses: actions/upload-artifact@v4
+        with:
+          name: terrain25d-actual-gpu
+          path: /tmp/osman-25d-gpu/terrain25d-gpu.png
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: success()
         with:
