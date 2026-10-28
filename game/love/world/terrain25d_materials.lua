@@ -42,7 +42,7 @@ function Materials.family(sample,near_water,x,y)
   if r<3 and (sample.grade or 0)<.23 then return "grass" end
   return "forest"
  elseif biome=="rocky" then
-  if Materials.region(x,y)%17==0 and (sample.grade or 0)<.19 then
+  if Materials.region(x,y)%5<2 and (sample.grade or 0)<.23 then
    return "grass"
   end
   return "rock"

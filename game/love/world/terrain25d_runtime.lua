@@ -50,13 +50,18 @@ function Runtime:family(x,y)
  local wet,dist=q:water_mask(x,y)
  return Materials.family(s,wet or (type(dist)=="number" and dist>-12),x,y)
 end
-function Runtime:prepare(chunk)
+function Runtime:prepare(chunk,checkpoint)
  assert(not chunk._25d_meshes and not chunk._meshes,"chunk already owns GPU meshes")
  local pilot=self.pilot
  local scale=pilot.render_options.height_scale or .35
  local geo=Geo.build_chunk(pilot.query,pilot.topography,{size=chunk.size,
    height_scale=scale,uv_scale=128,ambient=.49,diffuse=.57},
    {x=chunk.x,y=chunk.y},self.step)
+ -- Complete expensive authored hydrology CPU sampling before ANY GPU
+ -- allocation. A partially resumed coroutine can be dropped on eviction.
+ local shore=Shore.build(chunk,pilot.query,pilot.topography,pilot.routes,scale,
+   checkpoint)
+ if checkpoint then checkpoint() end
  local n=chunk.size/self.step
  local groups={}
  for iy=0,n-1 do for ix=0,n-1 do
@@ -79,9 +84,8 @@ function Runtime:prepare(chunk)
    meshes[id]=gpu;order[#order+1]=id
  end
  table.sort(order)
- local water=Shore.build(chunk,pilot.query,pilot.topography,pilot.routes,scale)
  for _,layer in ipairs({"path","bank","water"}) do
-   local vertices=water[layer]
+   local vertices=shore[layer]
    if #vertices>0 then
      meshes["!"..layer]=love.graphics.newMesh(vertices,"triangles","static")
    end
@@ -95,11 +99,29 @@ function Runtime:draw(stream,camera,w,h)
  local chunks=stream:visible()
  local clock=love.timer and love.timer.getTime
  local deadline=clock and clock()+.003
- local uploads=0
+ local uploads,resumes=0,0
  for _,c in ipairs(chunks) do
    if not c._25d_meshes and uploads<self.build_budget
        and (not deadline or clock()<deadline) then
-     self:prepare(c);uploads=uploads+1
+     local job=c._25d_prepare_job
+     if not job then
+       job=coroutine.create(function()
+         self:prepare(c,function() coroutine.yield() end)
+       end)
+       c._25d_prepare_job=job
+     end
+     -- Cap resumes even if a mock/low-resolution timer never advances.
+     repeat
+       local ok,err=coroutine.resume(job)
+       assert(ok,err)
+       resumes=resumes+1
+       if coroutine.status(job)=="dead" then
+         c._25d_prepare_job=nil
+         uploads=uploads+1
+         break
+       end
+     until resumes>=24 or (deadline and clock()>=deadline)
+     if resumes>=24 then break end
    end
  end
  self.uploads_per_frame=uploads

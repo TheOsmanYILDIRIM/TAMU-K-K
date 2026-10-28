@@ -20,6 +20,20 @@ function features:signed(x,y,kind)
 end
 local route={features=features}
 local left=Shore.build({x=0,y=0,size=64,layers={}},query,topo,route,.35)
+local yields=0
+local co=coroutine.create(function()
+ return Shore.build({x=0,y=0,size=64,layers={}},
+   query,topo,route,.35,function() coroutine.yield("checkpoint") end)
+end)
+while coroutine.status(co)~="dead" do
+ local ok,tag=coroutine.resume(co)
+ assert(ok,tag)
+ if coroutine.status(co)~="dead" then
+   assert(tag=="checkpoint")
+   yields=yields+1
+ end
+end
+assert(yields>0,"authored shoreline must be cooperatively precomputable")
 local right=Shore.build({x=64,y=0,size=64,layers={}},query,topo,route,.35)
 assert(left.refined and right.refined)
 assert(left.authored_path and not right.authored_path)

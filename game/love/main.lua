@@ -637,7 +637,7 @@ function love.draw()
     return
   end
   if terrain25d_smoke and frames>=90 and stats.loaded>0
-     and stats.pending==0 and runtime25d.visible>0 then
+     and stats.pending==0 and runtime25d.visible==stats.needed then
     love.graphics.captureScreenshot("terrain25d-runtime.png")
     print(string.format("TERRAIN25D_RUNTIME_LOVE_OK frames=%d chunks=%d built=%d calls=%d objects=%d",
       frames,stats.loaded,runtime25d.built,runtime25d.draw_calls,object_count))

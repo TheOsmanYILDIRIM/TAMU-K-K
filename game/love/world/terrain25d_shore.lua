@@ -49,18 +49,19 @@ local function vertex(x,y,topography,scale,kind,signed)
  end
 end
 
-local function project(vertices,topography,scale,kind,sampler)
+local function project(vertices,topography,scale,kind,sampler,checkpoint)
  local out={}
  for _,p in ipairs(vertices or {}) do
   local x,y=p[1],p[2]
   local signed=kind=="path" and 0 or sampler(x,y)
   out[#out+1]=vertex(x,y,topography,scale,kind,signed)
+  if checkpoint and #out%256==0 then checkpoint() end
  end
  assert(#out%3==0,"clipped layer is not triangular")
  return out
 end
 
-function Shore.build(chunk,query,topography,routes,scale)
+function Shore.build(chunk,query,topography,routes,scale,checkpoint)
  assert(chunk and chunk.size and query and query.water_mask
    and topography and topography.height,"authored geometry required")
  scale=scale or .35
@@ -80,7 +81,7 @@ function Shore.build(chunk,query,topography,routes,scale)
  if is_river then
   -- 4-unit edge fidelity; only chunks overlapping an actual authored river.
   local refined=Marching.build(water_sampler,chunk.x,chunk.y,
-    chunk.size,4,0)
+    chunk.size,4,0,checkpoint)
   raw_water=refined.vertices
   -- Never threshold the mixed Generator water field at -12:
   -- that scalar is near [-1,1] and paints giant square bank regions.
@@ -89,17 +90,17 @@ function Shore.build(chunk,query,topography,routes,scale)
    return features:signed(x,y,"water")
   end
   local outer=Marching.build(bank_sampler,chunk.x,chunk.y,
-    chunk.size,8,-6)
-  bank=project(outer.vertices,topography,scale,"bank",bank_sampler)
+    chunk.size,8,-6,checkpoint)
+  bank=project(outer.vertices,topography,scale,"bank",bank_sampler,checkpoint)
  end
  if is_path and features and type(features.signed)=="function" then
   local path_sampler=function(x,y) return features:signed(x,y,"path") end
   local out=Marching.build(path_sampler,chunk.x,chunk.y,
-    chunk.size,8,0)
-  path=project(out.vertices,topography,scale,"path",water_sampler)
+    chunk.size,8,0,checkpoint)
+  path=project(out.vertices,topography,scale,"path",water_sampler,checkpoint)
  end
  return {path=path,bank=bank,
-   water=project(raw_water,topography,scale,"water",water_sampler),
+   water=project(raw_water,topography,scale,"water",water_sampler,checkpoint),
    refined=is_river,authored_path=is_path}
 end
 return Shore
