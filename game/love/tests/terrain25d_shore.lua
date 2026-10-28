@@ -12,10 +12,10 @@ local query={
 }
 local features={features={
  {kind="water",width=32,points={{0,32},{128,32}}},
- {kind="path",width=18,points={{48,-32},{48,96}}}
+ {kind="path",width=18,points={{24,-32},{24,96}}}
 }}
 function features:signed(x,y,kind)
- if kind=="path" then return 9-math.abs(x-48) end
+ if kind=="path" then return 9-math.abs(x-24) end
  return 16-math.abs(y-32)
 end
 local route={features=features}

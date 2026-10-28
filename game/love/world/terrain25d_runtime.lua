@@ -61,8 +61,9 @@ function Runtime:prepare(chunk)
  local groups={}
  for iy=0,n-1 do for ix=0,n-1 do
    local x,y=chunk.x+(ix+.5)*self.step,chunk.y+(iy+.5)*self.step
-   local list=self.families[self:family(x,y)]
-   local a=list[Materials.variant(self:family(x,y),x,y,#list)]
+   local family=self:family(x,y)
+   local list=self.families[family]
+   local a=list[Materials.variant(family,x,y,#list)]
    local group=groups[a.id]
    if not group then group={asset=a,indices={}};groups[a.id]=group end
    local i=iy*(n+1)+ix+1
