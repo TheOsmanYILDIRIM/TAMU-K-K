@@ -219,18 +219,17 @@ jobs:
             love.graphics.translate(-25,-280)
             love.graphics.draw(mesh)
             love.graphics.pop()
-            love.graphics.present()
             times[#times+1]=(love.timer.getTime()-t)*1000
             frames=frames+1
             if frames==180 then
-              local shot=love.graphics.newScreenshot()
-              local out=love.filesystem.getSaveDirectory().."/terrain25d-gpu.png"
-              assert(shot:encode("png",out))
               table.sort(times)
               local function quantile(p) return times[math.max(1,math.ceil(#times*p))] end
-              print(string.format("TERRAIN25D_GPU_OK frames=%d p50_ms=%.4f p95_ms=%.4f p99_ms=%.4f png=%s",
-                frames,quantile(.5),quantile(.95),quantile(.99),out))
-              love.event.quit()
+              love.graphics.captureScreenshot(function(shot)
+                assert(shot:encode("png","terrain25d-gpu.png"))
+                print(string.format("TERRAIN25D_GPU_OK frames=%d draw_cpu_p50_ms=%.4f draw_cpu_p95_ms=%.4f draw_cpu_p99_ms=%.4f png=%s",
+                  frames,quantile(.5),quantile(.95),quantile(.99),love.filesystem.getSaveDirectory().."/terrain25d-gpu.png"))
+                love.event.quit()
+              end)
             end
           end
           LUA
