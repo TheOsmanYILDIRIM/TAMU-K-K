@@ -6,6 +6,10 @@ local Shore=require("world.terrain25d_shore")
 local Materials=require("world.terrain25d_materials")
 local Atlas=require("world.terrain25d_atlas")
 local Runtime={}; Runtime.__index=Runtime
+-- 128px source texture spans 64 world units; 32-unit mesh lattice stays
+-- aligned to UV seams. Large grass/stone details no longer rival trees.
+local TERRAIN_UV_SCALE=64
+Runtime.terrain_uv_scale=TERRAIN_UV_SCALE
 function Runtime.new(pilot)
  assert(pilot and pilot.query and pilot.topography and pilot.routes and pilot.render_options,
    "authored R2 pilot required")
@@ -148,7 +152,7 @@ function Runtime:prepare(chunk,checkpoint)
  local pilot=self.pilot
  local scale=pilot.render_options.height_scale or .35
  local geo=Geo.build_chunk(pilot.query,pilot.topography,{size=chunk.size,
-   height_scale=scale,uv_scale=128,ambient=.49,diffuse=.57},
+   height_scale=scale,uv_scale=TERRAIN_UV_SCALE,ambient=.49,diffuse=.57},
    {x=chunk.x,y=chunk.y},self.step)
  -- Complete expensive authored hydrology CPU sampling before ANY GPU
  -- allocation. A partially resumed coroutine can be dropped on eviction.

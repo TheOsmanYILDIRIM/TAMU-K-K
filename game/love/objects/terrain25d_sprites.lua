@@ -6,6 +6,20 @@ local function hash(id)
  for i=1,#id do n=(n*33+id:byte(i))%2147483647 end
  return n
 end
+-- All 128px authored sprites share a foot pivot (64,124). These are
+-- WORLD-scale proportions, not pixel sizes or collision radii.
+-- Tree silhouettes lead, large rocks are smaller, undergrowth stays low.
+local BASE_SCALE={
+ oak=.48,broadleaf=.52,conifer=.55,dead_tree=.43,
+ boulder=.33,rock_cluster=.38,rock_spire=.41,water_rocks=.28,
+ shrub=.24,reeds=.23,stump=.19,fallen_log=.30
+}
+function Sprite.scale_for(family,zoom,id)
+ local base=assert(BASE_SCALE[family],"unknown 25D sprite family: "..tostring(family))
+ assert(type(zoom)=="number" and zoom>0 and type(id)=="string")
+ -- Restrained deterministic variation preserves ecology and instance IDs.
+ return zoom*base*(.96+(hash(id)%9)*.01)
+end
 function Sprite.new(provider,manifest)
  assert(provider and type(provider.page)=="function" and manifest)
  local pages={}
@@ -89,10 +103,8 @@ function Sprite:queue(g,camera,w,h,o,selected)
  local n=z<.8 and math.min(#choices,2) or #choices
  local a=choices[1+hash(o.id)%n]
  local x,y=camera:project(o.x,o.y,w,h)
- -- Render-only size variation; physics radius, harvest and selection unchanged.
- local base=family=="oak" and .50 or
-   (family=="conifer" and .58 or (family=="boulder" and .35 or .34))
- local scale=z*base*(.90+(hash(o.id)%17)/85)
+ -- Proportional 2.5D silhouettes; collision, harvest, foot pivot unchanged.
+ local scale=Sprite.scale_for(family,z,o.id)
  if x+64*scale<0 or x-64*scale>w or
     y+8*scale<0 or y-124*scale>h then
    self.culled=self.culled+1;return

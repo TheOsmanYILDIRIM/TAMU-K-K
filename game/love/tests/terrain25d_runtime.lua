@@ -115,6 +115,20 @@ end
 assert(created==0 and decoded==0,"boot eagerly assembled an atlas")
 local sprites=Sprite.new(rt,rt.manifest)
 assert(created==0,"constructing SpriteBatch metadata eagerly uploaded images")
+-- Terrain motif vs sprite silhouette proportions are render-only.
+assert(rt.terrain_uv_scale==64,"terrain texture detail is at object scale")
+local tree=Sprite.scale_for("oak",1,"tree:ratio")
+local shrub=Sprite.scale_for("shrub",1,"shrub:ratio")
+local conifer=Sprite.scale_for("conifer",1,"conifer:ratio")
+local boulder=Sprite.scale_for("boulder",1,"rock:ratio")
+local spire=Sprite.scale_for("rock_spire",1,"spire:ratio")
+local stump=Sprite.scale_for("stump",1,"stump:ratio")
+assert(tree>shrub*1.7 and conifer>boulder*1.45
+  and spire>stump*1.8,"uneven 25D object family proportions")
+assert(Sprite.scale_for("oak",.5,"tree:ratio")==tree*.5,
+  "zoom must scale every object consistently")
+assert(Sprite.scale_for("oak",1,"tree:ratio")==tree,
+  "scale must not depend on frame ordering")
 assert(rt:family(20,50)~="wetland")
 assert(rt:family(220,220)=="wetland")
 local chunk={x=0,y=0,size=256,cx=0,cy=0,
