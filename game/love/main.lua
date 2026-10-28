@@ -256,9 +256,7 @@ function love.load()
   if terrain25d_enabled then
     runtime25d=Runtime25D.new(r2_pilot)
     local sprites=Sprites25D.new(runtime25d.atlas,runtime25d.manifest)
-    sprite25d_draw=function(g,cam,ww,hh,obj,selected)
-      sprites:draw(g,cam,ww,hh,obj,selected)
-    end
+    sprite25d_draw=sprites
   end
   if os.getenv("OSMAN_CACHE_DISPLAY") then
     local ww,hh=os.getenv("OSMAN_CACHE_DISPLAY"):match("^(%d+)x(%d+)$")

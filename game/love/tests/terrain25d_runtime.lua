@@ -11,6 +11,16 @@ local g={
    assert(x>=0 and y>=0 and w>0 and h>0 and x+w<=aw and y+h<=ah)
    return {x,y,w,h}
  end,
+ newSpriteBatch=function(img,max,usage)
+   assert(img==image and max>=200 and usage=="stream")
+   local batch={count=0}
+   function batch:add(quad,x,y,r,sx,sy,ox,oy)
+     assert(quad and sx>0 and sy>0 and ox==64 and oy==124)
+     self.count=self.count+1
+   end
+   function batch:clear() self.count=0 end
+   return batch
+ end,
  newMesh=function(vertices,mode,usage)
    assert(mode=="triangles" and usage=="static" and #vertices>0
        and #vertices%3==0)
@@ -61,7 +71,12 @@ for _,mesh in pairs(chunk._meshes) do
  mesh:release();assert(mesh.released);released=released+1
 end
 assert(released==before)
-sprites:draw(g,cam,360,780,{x=4,y=9,id="tree:1",kind="tree",radius=12},false)
-sprites:draw(g,cam,360,780,{x=4,y=19,id="rock:1",kind="rock",radius=8},true)
-assert(draws>=2)
+sprites:begin_frame()
+sprites:queue(g,cam,360,780,{x=4,y=9,id="tree:1",kind="tree",radius=12},false)
+sprites:queue(g,cam,360,780,{x=4,y=19,id="rock:1",kind="rock",radius=8},true)
+sprites:queue(g,cam,360,780,{x=10000,y=10000,id="off",kind="tree",radius=12},false)
+assert(sprites.visible==2 and sprites.culled==1 and sprites.pending==2)
+sprites:flush(g)
+assert(sprites.batches==1 and sprites.pending==0)
+assert(draws>=1)
 print("TERRAIN25D_RUNTIME_OK uploads="..uploads.." released="..released)

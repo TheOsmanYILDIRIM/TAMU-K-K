@@ -96,6 +96,7 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_ove
   table.sort(order,Depth.before)
   local g=love.graphics
   g.push("all")
+  if type(object_override)=="table" then object_override:begin_frame() end
   -- Harvest tools are autonomous plasma-controlled objects, not rigged limbs.
   -- Other game/domain systems remain untouched.
   local visual={}
@@ -107,9 +108,16 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_ove
     end
   end
   for _,entry in ipairs(order) do
-    if entry.player then player_sprite(g,camera,w,h,player,visual)
-    else (object_override or object_sprite)(g,camera,w,h,entry.object,entry.id==selected_id) end
+    if entry.player then
+      if type(object_override)=="table" then object_override:flush(g) end
+      player_sprite(g,camera,w,h,player,visual)
+    elseif type(object_override)=="table" then
+      object_override:queue(g,camera,w,h,entry.object,entry.id==selected_id)
+    else
+      (object_override or object_sprite)(g,camera,w,h,entry.object,entry.id==selected_id)
+    end
   end
+  if type(object_override)=="table" then object_override:flush(g) end
   -- Visual-only strike on actual tree harvest; never changes inventory or collision.
   if harvesting and harvesting.active then
     local source=world:get(harvesting.active.object_id)
