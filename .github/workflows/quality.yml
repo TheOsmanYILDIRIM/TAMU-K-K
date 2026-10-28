@@ -250,6 +250,26 @@ jobs:
               xMin,xMax,yMin,yMax,viewScale))
             mesh=love.graphics.newMesh(vertices,"triangles","static")
             mesh:setTexture(img)
+            -- Water surface: continuous authored R2 hydrology mask, not point markers.
+            local Iso=require("world.iso")
+            local river={}
+            local function vertex(x,y)
+              local sx,sy=Iso.project(x,y,world.topography:height(x,y)*.35)
+              return {sx,sy,0,0,.18,.47,.58,.92}
+            end
+            for y=64,248,4 do for x=640,828,4 do
+              local a=world.query:water_mask(x,y)
+              local b=world.query:water_mask(x+4,y)
+              local c=world.query:water_mask(x+4,y+4)
+              local d=world.query:water_mask(x,y+4)
+              if a and b and c and d then
+                local p,q,r,t=vertex(x,y),vertex(x+4,y),vertex(x+4,y+4),vertex(x,y+4)
+                for _,v in ipairs({p,q,r,p,r,t}) do river[#river+1]=v end
+              end
+            end end
+            assert(#river>0,"authored water surface unavailable")
+            waterMesh=love.graphics.newMesh(river,"triangles","static")
+            print("TERRAIN25D_AUTHORED_RIVER_SURFACE_OK vertices="..#river)
             print("TERRAIN25D_GPU_MESH_CREATED vertices="..#vertices.." wet_points="..#wetPoints.." objects="..#objectSprites)
           end
           function love.draw()
@@ -260,12 +280,8 @@ jobs:
             love.graphics.scale(viewScale,viewScale)
             love.graphics.translate(-centerX,-centerY)
             love.graphics.draw(mesh)
-            -- Authored physical river mask drives only the visual overlay.
-            love.graphics.setColor(.21,.50,.63,.9)
-            for _,point in ipairs(wetPoints) do
-              love.graphics.circle("fill",point[1],point[2],2.8)
-            end
             love.graphics.setColor(1,1,1,1)
+            love.graphics.draw(waterMesh)
             love.graphics.pop()
             -- Upright atlas sprites (screen-space height), sorted by foot Y.
             local anchors={{680,112},{744,176},{790,102},{816,210}}
