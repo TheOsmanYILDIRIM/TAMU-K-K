@@ -44,6 +44,25 @@
           "1LB1v5GX1RtIwXBIEewOkkciF6HdpuPNw"
         ]
       }
+    ],
+    "rock_unique_filenames": 32,
+    "known_duplicate_binary_pairs": [
+      {
+        "name": "rockB_06.png",
+        "ids": [
+          "1mWGUSfYLmt0dcVo6ODBAhgFXkPran7WE",
+          "1Rz7Uwr7IQt0xkDfesjlJ-pSrrLIWG1tu"
+        ],
+        "sha256": "ab570753957fe9886555a07f9ab1c7c21861c96bf97fe70aa4dbc47b89f73422"
+      },
+      {
+        "name": "rockB_08.png",
+        "ids": [
+          "1GRVcef1IB3pWYqpaKw4_WdWqXLGPXg0S",
+          "1LB1v5GX1RtIwXBIEewOkkciF6HdpuPNw"
+        ],
+        "sha256": "0ed539952c290d155e90dd4c4bd6172e92d1f89a753950634e2a46be333cc672"
+      }
     ]
   },
   "assets": [
@@ -1389,7 +1408,10 @@
       "source_drive_id": "1mWGUSfYLmt0dcVo6ODBAhgFXkPran7WE",
       "size_bytes": 12820,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "binary_duplicate_verified_license_pending",
+      "sha256": "ab570753957fe9886555a07f9ab1c7c21861c96bf97fe70aa4dbc47b89f73422",
+      "width": 128,
+      "height": 128
     },
     {
       "family": "rock",
@@ -1397,7 +1419,10 @@
       "source_drive_id": "1Rz7Uwr7IQt0xkDfesjlJ-pSrrLIWG1tu",
       "size_bytes": 12820,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "binary_duplicate_verified_license_pending",
+      "sha256": "ab570753957fe9886555a07f9ab1c7c21861c96bf97fe70aa4dbc47b89f73422",
+      "width": 128,
+      "height": 128
     },
     {
       "family": "rock",
@@ -1413,7 +1438,10 @@
       "source_drive_id": "1GRVcef1IB3pWYqpaKw4_WdWqXLGPXg0S",
       "size_bytes": 12843,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "binary_duplicate_verified_license_pending",
+      "sha256": "0ed539952c290d155e90dd4c4bd6172e92d1f89a753950634e2a46be333cc672",
+      "width": 128,
+      "height": 128
     },
     {
       "family": "rock",
@@ -1421,7 +1449,10 @@
       "source_drive_id": "1LB1v5GX1RtIwXBIEewOkkciF6HdpuPNw",
       "size_bytes": 12843,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "binary_duplicate_verified_license_pending",
+      "sha256": "0ed539952c290d155e90dd4c4bd6172e92d1f89a753950634e2a46be333cc672",
+      "width": 128,
+      "height": 128
     },
     {
       "family": "rock",

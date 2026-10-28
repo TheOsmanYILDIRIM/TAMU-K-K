@@ -3,7 +3,13 @@ local Geo=require("world.terrain25d_geometry")
 local Iso=require("world.iso")
 local Json=require("save.json")
 local Runtime={}; Runtime.__index=Runtime
-local function stable(x,y) return (math.floor(x/128)*73856093+math.floor(y/128)*19349663)%2147483647 end
+-- Select broad dominant material regions; avoid alternating 128-unit
+-- two-variant parity checkerboards seen in real LÖVE screenshots.
+local function stable(x,y)
+  local ix,iy=math.floor(x/384),math.floor(y/384)
+  local h=(ix*73856093+iy*19349663+ix*iy*83492791)%2147483647
+  return math.floor(h/8)
+end
 function Runtime.new(pilot)
  assert(pilot and pilot.query and pilot.topography and pilot.routes and pilot.render_options,
    "authored R2 pilot required")
