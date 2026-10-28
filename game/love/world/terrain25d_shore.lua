@@ -2,6 +2,7 @@
 -- Marching samples global coordinates so adjacent chunks share exact edge contours.
 local Marching=require("world.marching")
 local Iso=require("world.iso")
+local Materials=require("world.terrain25d_materials")
 local Shore={}
 
 local function intersects(chunk,features,kind,padding)
@@ -39,16 +40,10 @@ local function vertex(x,y,topography,scale,kind,signed)
    .355+shallow*.17+edge*.08+variation,
    .44+shallow*.13+edge*.065,
    .96}
- elseif kind=="bank" then
-  -- Distances here are AUTHORED river centreline-to-bank world units,
-  -- not the mixed procedural water scalar (typically [-1,1]).
-  local near=clamp((signed+6)/6)
-  -- Narrow, low-opacity sediment rim; no flat gray fill over the forest.
-  local grain=.5+.5*math.sin(x*.083+y*.137)*math.cos(x*.109-y*.071)
-  return {px,py,0,0,.36+grain*.075,.34+grain*.065,
-    .245+grain*.045,(.035+near*.20)*(.80+grain*.20)}
- else
-  return {px,py,0,0,.41,.33,.215,.66}
+ elseif kind=="bank" or kind=="path" then
+  -- Real wetland / dirt atlas pixels, not a flat colored semi-transparent
+  -- polygon. UV remains in absolute world units; no alpha-based blending.
+  return {px,py,x/64,y/64,1,1,1,1}
  end
 end
 
@@ -100,17 +95,22 @@ function Shore.build(chunk,query,topography,routes,scale,checkpoint)
   -- that scalar is near [-1,1] and paints giant square bank regions.
   -- The authored signed river distance is measured in world units.
   local bank_sampler=function(x,y)
-   return features:signed(x,y,"water")
+   -- Narrow, crisp irregular sediment band; collision water is untouched.
+   return features:signed(x,y,"water")+
+     Materials.edge_jitter(x,y,577)*.45
   end
   local outer=Marching.build(bank_sampler,chunk.x,chunk.y,
     chunk.size,8,-6,checkpoint)
   bank=project(outer.vertices,topography,scale,"bank",bank_sampler,checkpoint)
  end
  if is_path and features and type(features.signed)=="function" then
-  local path_sampler=function(x,y) return features:signed(x,y,"path") end
+  local path_sampler=function(x,y)
+   return features:signed(x,y,"path")+
+     Materials.edge_jitter(x,y,433)*.75
+  end
   local out=Marching.build(path_sampler,chunk.x,chunk.y,
     chunk.size,8,0,checkpoint)
-  path=project(out.vertices,topography,scale,"path",water_sampler,checkpoint)
+  path=project(out.vertices,topography,scale,"path",path_sampler,checkpoint)
  end
  return {path=path,bank=bank,
    water=project(raw_water,topography,scale,"water",visual_water_sampler,checkpoint),

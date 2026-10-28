@@ -48,7 +48,12 @@ end
 -- Compare the same world-space sample directly through the public output:
 -- bank remains translucent and never paints a solid gray square.
 for _,v in ipairs(left.bank) do
- assert(v[8]>=0 and v[8]<=.30,"bank overlay too opaque")
+ assert(v[8]==1 and v[3]==v[3] and v[4]==v[4],
+   "authored wetland bank must use sharp, opaque world UVs")
+end
+for _,v in ipairs(left.path) do
+ assert(v[8]==1 and v[3]==v[3] and v[4]==v[4],
+   "authored path must use real dirt atlas UVs, not flat brown paint")
 end
 assert(#left.water%3==0 and #left.bank%3==0)
 -- Both chunks must sample the same interpolated shore at their common seam.
@@ -78,6 +83,17 @@ local x,y=-1000,336
 assert(Materials.region(x,y)==Materials.region(x,y))
 assert(Materials.variant("forest",x,y,2)==Materials.variant("forest",x,y,2))
 assert(Materials.variant("forest",x,y,1)==1)
+assert(Materials.edge_jitter(64,32,433)==Materials.edge_jitter(64,32,433))
+local shuffled={
+ {id="cool"},{id="warm"},{id="bright"}
+}
+local profiles={
+ cool={32,-8,17,9},warm={41,8,22,12},bright={58,1,23,11}
+}
+local a=Materials.choose("dirt",112,88,shuffled,profiles)
+local b=Materials.choose("dirt",112,88,shuffled,profiles)
+assert(a.id==b.id and (a.id=="cool" or a.id=="warm" or a.id=="bright"),
+  "CIELAB source-ID selection must be deterministic")
 assert(Materials.family(sample,true,x,y)=="wetland")
 assert(Materials.family({biome="rocky",grade=2,feature="meadow"},false,x,y)=="rock")
 print("TERRAIN25D_SHORE_OK water=2 banks=2 path=1 seam=2 materials=deterministic")

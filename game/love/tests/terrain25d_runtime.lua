@@ -104,6 +104,16 @@ local pilot={
  routes={},render_options={height_scale=.35}
 }
 local rt=Runtime.new(pilot)
+assert(#rt.manifest.assets==228)
+local colors=rt.color_profiles
+local total=0
+for _,a in ipairs(rt.manifest.assets) do
+ if a.kind=="terrain" then
+   assert(colors[a.id] and #colors[a.id]==4)
+   total=total+1
+ end
+end
+assert(total==168,"real source-CIELAB signatures missing")
 assert(rt.catalog_counts.total==228 and rt.catalog_counts.packed==228
   and rt.catalog_counts.pages==25,"lossy 228-asset manifest")
 assert(#rt.manifest.atlas_pages==25 and #rt.manifest.assets==228)
@@ -131,6 +141,15 @@ assert(Sprite.scale_for("oak",1,"tree:ratio")==tree,
   "scale must not depend on frame ordering")
 assert(rt:family(20,50)~="wetland")
 assert(rt:family(220,220)=="wetland")
+-- Bring in one authored route to exercise textured path coverage in
+-- the actual runtime, without changing the gameplay's water query.
+pilot.routes={features={
+ features={{kind="path",width=18,points={{48,-40},{48,300}}}},
+ signed=function(_,x,y,kind)
+   if kind=="path" then return 9-math.abs(x-48) end
+   return -100
+ end
+}}
 local chunk={x=0,y=0,size=256,cx=0,cy=0,
  layers={water={vertices={{200,200},{232,200},{232,232}}}}}
 local stream={visible=function() return {chunk} end}
@@ -138,6 +157,13 @@ local cam={x=0,y=0,zoom=1.2,
  project=function(_,x,y,w,h) return w/2+x,h/2+y end}
 rt:draw(stream,cam,360,780)
 assert(rt.built==1 and uploads>1 and rt.visible==1)
+assert(chunk._25d_overlay_order and
+  #chunk._25d_overlay_order.path>=1,
+  "authored path must create a real dirt-texture atlas mesh")
+for _,page in ipairs(chunk._25d_overlay_order.path) do
+ assert(chunk._meshes["!path:"..page],
+   "authored path overlay mesh missing sourced page")
+end
 local before=uploads
 rt:draw(stream,cam,360,780)
 assert(uploads==before and rt.uploads_per_frame==0)

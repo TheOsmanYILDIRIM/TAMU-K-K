@@ -62,6 +62,10 @@ function Runtime.new(pilot)
      end
    end
  end
+ local profiles=Json.decode(assert(love.filesystem.read(
+   "assets/terrain25d/color_profiles.json"),"25D CIELAB catalog unavailable"))
+ assert(profiles.version==1 and profiles.space=="CIELAB-D65-mean-L-std"
+   and type(profiles.assets)=="table","invalid material color profile")
  local fam={}
  for _,a in ipairs(m.assets) do
    assert(pages[a.atlas_page] and type(a.uv_rect)=="table"
@@ -78,7 +82,19 @@ function Runtime.new(pilot)
  for _,list in pairs(fam) do
    table.sort(list,function(a,b) return a.id<b.id end)
  end
+ local profiled=0
+ for _,a in ipairs(m.assets) do
+   if a.kind=="terrain" then
+     local color=profiles.assets[a.id]
+     assert(type(color)=="table" and #color==4,
+       "missing authored CIELAB color/contrast signature: "..a.id)
+     profiled=profiled+1
+   end
+ end
+ assert(profiled==168,"lossy ground color profile")
  local self=setmetatable({pilot=pilot,manifest=m,families=fam,
+   color_profiles=profiles.assets,
+   family_centres=Materials.centres(fam,profiles.assets),
    page_metadata=pages,page_images={},page_pins={},
    atlas_resident_pages=0,atlas_estimated_gpu_bytes=0,
    catalog_counts={total=#archive.assets,packed=#m.assets,
@@ -147,6 +163,14 @@ function Runtime:family(x,y)
  local near=wet or (type(bank_distance)=="number" and bank_distance>-8)
  return Materials.family(s,near,x,y)
 end
+-- Select real atlas pixels by their measured CIELAB+contrast distance.
+-- Neighbour-family L*a*b* values affect ONLY which source ID is used,
+-- never the RGB output, opacity, or physics world state.
+function Runtime:material(family,x,y,neighbor_family)
+ local list=assert(self.families[family],"unknown material family: "..tostring(family))
+ return Materials.choose(family,x,y,list,self.color_profiles,
+   neighbor_family and self.family_centres[neighbor_family])
+end
 function Runtime:prepare(chunk,checkpoint)
  assert(not chunk._25d_meshes and not chunk._meshes,"chunk already owns GPU meshes")
  local pilot=self.pilot
@@ -160,34 +184,116 @@ function Runtime:prepare(chunk,checkpoint)
    checkpoint)
  if checkpoint then checkpoint() end
  local n=chunk.size/self.step
- local groups={}
- for iy=0,n-1 do for ix=0,n-1 do
-   local x,y=chunk.x+(ix+.5)*self.step,chunk.y+(iy+.5)*self.step
-   local family=self:family(x,y)
-   local list=self.families[family]
-   local a=list[Materials.variant(family,x,y,#list)]
-   local group=groups[a.id]
-   if not group then group={asset=a,indices={}};groups[a.id]=group end
-   local i=iy*(n+1)+ix+1
-   local out=group.indices
-   for _,v in ipairs({i,i+1,i+n+2,i,i+n+2,i+n+1}) do out[#out+1]=v end
- end end
- local meshes,order,ground_pages={},{},{}
- for id,group in pairs(groups) do
-   local vertices=Geo.love_vertices({format="terrain25d-v1",
-     vertices=geo.vertices,indices=group.indices},group.asset.uv_rect)
-   local page=group.asset.atlas_page
-   local gpu=love.graphics.newMesh(vertices,"triangles","static")
+ local groups,ground_pages={},{}
+
+ local function emit(asset,tri,group_map)
+   local page=asset.atlas_page
+   local group=group_map[page]
+   if not group then group={vertices={}};group_map[page]=group end
+   local verts=Geo.love_vertices({format="terrain25d-v1",
+     vertices=tri,indices={1,2,3}},asset.uv_rect)
+   local out=group.vertices
+   for _,v in ipairs(verts) do out[#out+1]=v end
+   ground_pages[page]=true
+ end
+ local function midpoint(a,b)
+   local v={}
+   for i=1,#a do v[i]=(a[i]+b[i])*.5 end
+   return v
+ end
+ local function jittered_family(x,y)
+   local delta=Materials.edge_jitter(x,y,1301)
+   return self:family(x+delta*.65,y+delta*.37)
+ end
+ local function choose(x,y)
+   local f=jittered_family(x,y)
+   local other
+   -- Only samples render-only families; no gameplay masks are changed.
+   for _,d in ipairs({{14,0},{-14,0},{0,14},{0,-14}}) do
+     local k=jittered_family(x+d[1],y+d[2])
+     if k~=f then other=k;break end
+   end
+   return self:material(f,x,y,other)
+ end
+ for iy=0,n-1 do
+   for ix=0,n-1 do
+     local x,y=chunk.x+ix*self.step,chunk.y+iy*self.step
+     local i=iy*(n+1)+ix+1
+     local a,b,c,d=geo.vertices[i],geo.vertices[i+1],
+       geo.vertices[i+n+1],geo.vertices[i+n+2]
+     local checks={
+       choose(x+8,y+8),choose(x+24,y+8),
+       choose(x+8,y+24),choose(x+24,y+24)
+     }
+     local split=false
+     local signature=self.color_profiles[checks[1].id]
+     for j=2,4 do
+       local other=self.color_profiles[checks[j].id]
+       if checks[j].family~=checks[1].family or
+         (signature and other and
+         (signature[1]-other[1])^2+(signature[2]-other[2])^2+
+          (signature[3]-other[3])^2>36) then
+         split=true;break
+       end
+     end
+     if not split then
+       local asset=choose(x+16,y+16)
+       emit(asset,{a,b,d},groups)
+       emit(asset,{a,d,c},groups)
+     else
+       -- Eight crisp, triangular micro-regions replace square material
+       -- boundaries. Shared 32-unit mesh lattice retains exact seams.
+       local ab,bd,dc,ca=midpoint(a,b),midpoint(b,d),
+         midpoint(d,c),midpoint(c,a)
+       local centre=midpoint(ab,dc)
+       local ring={a,ab,b,bd,d,dc,c,ca}
+       for j=1,8 do
+         local v1,v2=ring[j],ring[j%8+1]
+         local wx=(centre[9]+v1[9]+v2[9])/3
+         local wy=(centre[10]+v1[10]+v2[10])/3
+         emit(choose(wx,wy),{centre,v1,v2},groups)
+       end
+     end
+   end
+   if checkpoint and iy%2==1 then checkpoint() end
+ end
+ local meshes,order={},{}
+ for page,group in pairs(groups) do
+   local gpu=love.graphics.newMesh(group.vertices,"triangles","static")
    gpu:setTexture(self:page(page))
-   meshes[id]=gpu;order[#order+1]=id;ground_pages[page]=true
+   meshes[page]=gpu;order[#order+1]=page
  end
  table.sort(order)
- for _,layer in ipairs({"path","bank","water"}) do
-   local vertices=shore[layer]
-   if #vertices>0 then
-     meshes["!"..layer]=love.graphics.newMesh(vertices,"triangles","static")
+
+ -- Render existing authored 8-unit Marching contours with actual atlas
+ -- dirt/path and wetland source pixels. Every vertex is fully opaque;
+ -- the masks are sharp, and never smear into neighbouring textures.
+ local overlays={path={},bank={}}
+ local overlay_order={path={},bank={}}
+ for _,layer in ipairs({"path","bank"}) do
+   local source=shore[layer]
+   local group=overlays[layer]
+   local family=layer=="path" and "dirt" or "wetland"
+   for k=1,#source,3 do
+     local v1,v2,v3=source[k],source[k+1],source[k+2]
+     local x=(v1[3]+v2[3]+v3[3])*64/3
+     local y=(v1[4]+v2[4]+v3[4])*64/3
+     local asset=self:material(family,x,y)
+     emit(asset,{v1,v2,v3},group)
    end
+   for page,item in pairs(group) do
+     local gpu=love.graphics.newMesh(item.vertices,"triangles","static")
+     gpu:setTexture(self:page(page))
+     meshes["!"..layer..":"..page]=gpu
+     overlay_order[layer][#overlay_order[layer]+1]=page
+   end
+   table.sort(overlay_order[layer])
  end
+ if #shore.water>0 then
+   meshes["!water"]=love.graphics.newMesh(
+     shore.water,"triangles","static")
+ end
+ chunk._25d_overlay_order=overlay_order
  chunk._25d_meshes=meshes;chunk._25d_ground_order=order
  chunk._25d_ground_pages=ground_pages
  chunk._meshes=meshes -- Stream:update already releases this map upon eviction.
@@ -238,11 +344,18 @@ function Runtime:draw(stream,camera,w,h)
      end
    end
  end
- for _,layer in ipairs({"!path","!bank","!water"}) do
+ for _,layer in ipairs({"path","bank"}) do
    for _,c in ipairs(chunks) do
-     if c._25d_meshes and c._25d_meshes[layer] then
-       g.draw(c._25d_meshes[layer]);calls=calls+1
+     if c._25d_meshes and c._25d_overlay_order then
+       for _,page in ipairs(c._25d_overlay_order[layer]) do
+         g.draw(c._25d_meshes["!"..layer..":"..page]);calls=calls+1
+       end
      end
+   end
+ end
+ for _,c in ipairs(chunks) do
+   if c._25d_meshes and c._25d_meshes["!water"] then
+     g.draw(c._25d_meshes["!water"]);calls=calls+1
    end
  end
  g.pop()
