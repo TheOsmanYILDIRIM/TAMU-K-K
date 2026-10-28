@@ -105,19 +105,18 @@ assert(Materials.family({biome="rocky",grade=2,feature="meadow"},false,x,y)=="ro
 -- Render-only forest understory may not turn an entire 384-unit Voronoi
 -- zone into solid meadow. Fine source-ID islands must coexist instead.
 assert(Materials.family({biome="forest",feature="meadow"},false,32,48)=="forest")
-local grasses,forest=0,0
+local grasses,forest,dirt=0,0,0
 for gx=-180,180,8 do
  for gy=-180,180,8 do
   local kind=Materials.interior_family("forest",gx,gy)
-  if kind=="grass" then grasses=grasses+1 else
-   assert(kind=="forest")
-   forest=forest+1
-  end
+  if kind=="grass" then grasses=grasses+1
+  elseif kind=="dirt" then dirt=dirt+1
+  else assert(kind=="forest");forest=forest+1 end
   assert(Materials.interior_family("forest",gx,gy)==kind)
  end
 end
-assert(grasses>12 and forest>100 and grasses<forest,
-  "sparse, stable source-ID understory required")
+assert(grasses>24 and forest>24 and dirt>2,
+  "graded understory must preserve clearing and native forest with earth fragments")
 -- The original bright authored-forest clearing remains bright at its
 -- centre, while its neighbour becomes gradually darker by density.
 assert(Materials.understory_coverage("forest",409,-76)>.75,
