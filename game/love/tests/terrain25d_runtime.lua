@@ -103,7 +103,14 @@ local pilot={
  },
  routes={},render_options={height_scale=.35}
 }
+-- Test real compiled edge tessellation in addition to pure family choice.
+-- The authored polygon is visual metadata only; fake query physics unchanged.
+pilot.authored_map={regions={{polygon={
+ {0,0},{100,0},{100,256},{0,256}
+}}}}
 local rt=Runtime.new(pilot)
+assert(#rt.authored_boundaries>0,
+ "test scene must expose a genuine authored biome edge")
 assert(#rt.manifest.assets==228)
 local colors=rt.color_profiles
 local total=0
@@ -163,6 +170,8 @@ for frame=1,80 do
 end
 assert(rt.built==1 and uploads>1 and rt.visible==1,
   "25D chunk never finished incremental preparation")
+assert(rt.transition_triangles>=32,
+  "authored biome band must use real 8-unit material microtriangles")
 assert(chunk._25d_overlay_order and
   #chunk._25d_overlay_order.path>=1,
   "authored path must create a real dirt-texture atlas mesh")

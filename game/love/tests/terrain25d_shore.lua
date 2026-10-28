@@ -121,20 +121,35 @@ for ix=-88,88,8 do
   local primary=ix<0 and "forest" or "grass"
   local edge=Materials.nearest_boundary(edges,ix,iy)
   local chosen,other=Materials.interleaved_family(primary,edge,ix,iy)
-  assert(chosen=="forest" or chosen=="grass","unknown biome source ID")
+  assert(chosen=="forest" or chosen=="grass" or chosen=="dirt",
+    "unapproved biome transition source family")
   assert(Materials.interleaved_family(primary,edge,ix,iy)==chosen,
     "cross-chunk categorical biome decision is nondeterministic")
   if ix<0 then
     left_total=left_total+1
-    if chosen=="grass" then left_alt=left_alt+1 end
+    if chosen~="forest" then left_alt=left_alt+1 end
   else
     right_total=right_total+1
-    if chosen=="forest" then right_alt=right_alt+1 end
+    if chosen~="grass" then right_alt=right_alt+1 end
   end
  end
 end
-assert(left_alt>4 and right_alt>4,
+assert(left_alt>25 and right_alt>25,
   "biome transition band collapses to a hard line")
+-- The middle of the boundary must contain a genuinely mixed material
+-- mosaic, including earthy bridge sources, not simply a rounded contour.
+local near={forest=0,grass=0,dirt=0}
+for sx=-16,16,4 do
+ for sy=-132,132,4 do
+  local primary=sx<0 and "forest" or "grass"
+  local edge=Materials.nearest_boundary(edges,sx,sy)
+  local family=Materials.interleaved_family(primary,edge,sx,sy)
+  assert(near[family]~=nil,"unexpected transition family")
+  near[family]=near[family]+1
+ end
+end
+assert(near.forest>40 and near.grass>40 and near.dirt>12,
+  "transition must include native forest, meadow and earth sources")
 for _,ix in ipairs({-150,150}) do
  local primary=ix<0 and "forest" or "grass"
  assert(Materials.interleaved_family(primary,

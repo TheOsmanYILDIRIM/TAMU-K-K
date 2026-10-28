@@ -100,7 +100,8 @@ function Runtime.new(pilot)
    atlas_resident_pages=0,atlas_estimated_gpu_bytes=0,
    catalog_counts={total=#archive.assets,packed=#m.assets,
      pages=#m.atlas_pages},
-   built=0,visible=0,draw_calls=0,uploads_per_frame=0,build_budget=1,step=32},Runtime)
+   built=0,visible=0,draw_calls=0,transition_triangles=0,
+   uploads_per_frame=0,build_budget=1,step=32},Runtime)
  -- Keep the pilot page for current sprites; all other pages load on demand.
  self.atlas=self:page("atlas_00.png")
  if os and os.getenv and os.getenv("OSMAN_25D_SMOKE")=="1" then
@@ -207,6 +208,27 @@ function Runtime:prepare(chunk,checkpoint)
    for i=1,#a do v[i]=(a[i]+b[i])*.5 end
    return v
  end
+ -- Bilinear interpolation across the *existing* 32-unit geometry.
+ -- Every 8-unit microcell shares the exact same 3D edge coordinates
+ -- as its neighbour, including across resident chunk boundaries.
+ local function tessellate(a,b,c,d)
+   local vertices={}
+   for iy=0,4 do
+     for ix=0,4 do
+       local u,v=ix/4,iy/4
+       local uv=(1-u)*(1-v)
+       local bv=u*(1-v)
+       local cv=(1-u)*v
+       local dv=u*v
+       local w={}
+       for k=1,#a do
+         w[k]=a[k]*uv+b[k]*bv+c[k]*cv+d[k]*dv
+       end
+       vertices[#vertices+1]=w
+     end
+   end
+   return vertices
+ end
  local function jittered_family(x,y)
    local delta=Materials.edge_jitter(x,y,1301)
    return self:family(x+delta*.65,y+delta*.37)
@@ -230,8 +252,8 @@ function Runtime:prepare(chunk,checkpoint)
      local x,y=chunk.x+ix*self.step,chunk.y+iy*self.step
      -- One polygon-edge search per cell. All micro-triangle decisions use
      -- the same world-space edge, so mesh building stays bounded.
-     local boundary=Materials.nearest_boundary(self.authored_boundaries,
-       x+self.step*.5,y+self.step*.5)
+     local boundary,edge_distance=Materials.nearest_boundary(
+       self.authored_boundaries,x+self.step*.5,y+self.step*.5)
      local i=iy*(n+1)+ix+1
      local a,b,c,d=geo.vertices[i],geo.vertices[i+1],
        geo.vertices[i+n+1],geo.vertices[i+n+2]
@@ -250,13 +272,31 @@ function Runtime:prepare(chunk,checkpoint)
          split=true;break
        end
      end
-     if not split then
+     if boundary and edge_distance<146 then
+       -- Near authored biome edges, use 8-unit source-ID mosaic samples,
+       -- not 32-unit disk-like patches. Each microtriangle is fully opaque
+       -- and carries a single untouched source texture (no pixel blending).
+       local v=tessellate(a,b,c,d)
+       for my=0,3 do
+         for mx=0,3 do
+           local i0=my*5+mx+1
+           local p,q,r,t=v[i0],v[i0+1],v[i0+5],v[i0+6]
+           local ax,ay=(p[9]+q[9]+t[9])/3,
+                       (p[10]+q[10]+t[10])/3
+           local bx,by=(p[9]+t[9]+r[9])/3,
+                       (p[10]+t[10]+r[10])/3
+           emit(choose(ax,ay,boundary),{p,q,t},groups)
+           emit(choose(bx,by,boundary),{p,t,r},groups)
+         end
+       end
+       self.transition_triangles=self.transition_triangles+32
+     elseif not split then
        local asset=choose(x+16,y+16,boundary)
        emit(asset,{a,b,d},groups)
        emit(asset,{a,d,c},groups)
      else
-       -- Eight crisp, triangular micro-regions replace square material
-       -- boundaries. Shared 32-unit mesh lattice retains exact seams.
+       -- Existing sharp boundary triangles for smaller, non-authored
+       -- discontinuities such as forest understory material variations.
        local ab,bd,dc,ca=midpoint(a,b),midpoint(b,d),
          midpoint(d,c),midpoint(c,a)
        local centre=midpoint(ab,dc)

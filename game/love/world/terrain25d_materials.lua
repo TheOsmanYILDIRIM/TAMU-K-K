@@ -121,7 +121,7 @@ end
 -- image-space blur, alpha blending or color-tint interpolation. World Builder's
 -- authored polygon outlines remain unchanged for all gameplay queries.
 local biome_family={meadow="grass",forest="forest",rocky="rock"}
-local TRANSITION_REACH=112
+local TRANSITION_REACH=156
 function Materials.boundaries(query,map)
  local edges={}
  if not (map and type(map.regions)=="table") then return edges end
@@ -168,7 +168,7 @@ function Materials.nearest_boundary(edges,x,y)
    if dist2<limit then limit,best=dist2,edge end
   end
  end
- return best
+ return best,best and math.sqrt(limit) or nil
 end
 
 -- Crisp, spatially coherent interleaving of *whole source material IDs*.
@@ -177,38 +177,40 @@ end
 -- on the other side. No wide alpha brush or pseudo-blurred RGB pixels.
 function Materials.interleaved_family(family,edge,x,y)
  if not edge or (family~=edge.plus and family~=edge.minus) then
-  return family,nil
+  return family,nil,0
  end
  local alternate=family==edge.plus and edge.minus or edge.plus
  local t=((x-edge.ax)*edge.dx+(y-edge.ay)*edge.dy)/edge.length2
  t=math.max(0,math.min(1,t))
  local ex,ey=edge.ax+t*edge.dx,edge.ay+t*edge.dy
  local dist=math.sqrt((x-ex)^2+(y-ey)^2)
- -- Multi-scale boundary irregularity; this moves material decisions only.
+ -- Distance-weighted source-ID coverage; both sides approach the SAME
+ -- distribution at the authored border, without touching the real biome.
  local drift=14*noise(x,y,52,9247)+5*noise(x,y,21,3141)
  local width=126+20*noise(x,y,135,6271)
- local reach=math.max(0,1-math.max(0,dist+drift)/width)
- local other_coverage=.5*reach^0.8
- -- Spatially coherent, irregular 22-unit source-ID islands. A Voronoi
- -- patch carries one crisp material ID and a uniform occupancy threshold.
- -- It is NOT a color/alpha interpolation or independent-pixel dithering.
- local gx,gy=math.floor(x/22),math.floor(y/22)
- local closest,threshold=math.huge,1
+ local reach=math.max(0,math.min(1,1-math.max(0,dist+drift)/width))
+ if reach==0 then return family,alternate,0 end
+ local foreign=.42*reach^0.8
+ local earth=.16*reach^1.25
+ -- 11-unit jittered Voronoi micro-islands: each area has exactly ONE
+ -- original source PNG's pixels. No Gaussian blur, RGB blend or tint.
+ -- Wider biome-scale gradients come from the fraction of source-ID areas.
+ local spacing=11
+ local gx,gy=math.floor(x/spacing),math.floor(y/spacing)
+ local closest,rank=math.huge,1
  for oy=-1,1 do for ox=-1,1 do
-   local ix,iy=gx+ox,gy+oy
-   local h=hash(ix,iy,57121)
-   local px=(ix+.16+.68*(h%997)/997)*22
-   local py=(iy+.16+.68*(math.floor(h/997)%991)/991)*22
-   local d=(x-px)^2+(y-py)^2
-   if d<closest then
-     closest=d
-     local q=hash(ix*3+17,iy*7-11,92131)
-     threshold=((q*(q%1031+1))%65521)/65521
-   end
+  local ix,iy=gx+ox,gy+oy
+  local h=hash(ix,iy,57121)
+  local px=(ix+.16+.68*(h%997)/997)*spacing
+  local py=(iy+.16+.68*(math.floor(h/997)%991)/991)*spacing
+  local d=(x-px)^2+(y-py)^2
+  if d<closest then
+   closest=d
+   rank=hash(ix*3+17,iy*7-11,92131)%65521/65521
+  end
  end end
- if threshold<other_coverage then
-  return alternate,family,reach
- end
+ if rank<earth then return "dirt",alternate,reach end
+ if rank<earth+foreign then return alternate,family,reach end
  return family,alternate,reach
 end
 return Materials
