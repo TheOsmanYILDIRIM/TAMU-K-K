@@ -255,7 +255,7 @@ function love.load()
   end
   if terrain25d_enabled then
     runtime25d=Runtime25D.new(r2_pilot)
-    local sprites=Sprites25D.new(runtime25d.atlas,runtime25d.manifest)
+    local sprites=Sprites25D.new(runtime25d,runtime25d.manifest)
     sprite25d_draw=sprites
   end
   if os.getenv("OSMAN_CACHE_DISPLAY") then

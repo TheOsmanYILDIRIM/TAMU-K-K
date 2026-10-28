@@ -26,23 +26,82 @@ function Runtime.new(pilot)
    assert(source and source.sha256==a.sha256 and source.family==a.family,
      "packed atlas material not approved in archive")
  end
+ local pages={}
+ for _,page in ipairs(m.atlas_pages) do
+   assert(type(page.filename)=="string" and
+     page.filename:match("^atlas_%d+%.png$") and
+     type(page.width)=="number" and page.width>0 and
+     type(page.height)=="number" and page.height>0 and
+     not pages[page.filename],"invalid atlas page metadata")
+   pages[page.filename]=page
+ end
+ assert(pages["atlas_00.png"],"pilot atlas missing")
  local fam={}
  for _,a in ipairs(m.assets) do
-   if a.atlas_page=="atlas_00.png" and a.uv_rect then
-     local f=fam[a.family] or {};f[#f+1]=a;fam[a.family]=f
-   end
+   assert(pages[a.atlas_page] and type(a.uv_rect)=="table"
+     and #a.uv_rect==4,"packed material missing atlas page/UV")
+   local f=fam[a.family] or {};f[#f+1]=a;fam[a.family]=f
  end
  for _,kind in ipairs({"grass","forest","dirt","rock","wetland","oak","conifer","boulder"}) do
    assert(fam[kind] and #fam[kind]>0,"atlas material absent: "..kind)
    table.sort(fam[kind],function(a,b) return a.id<b.id end)
  end
- local image=love.graphics.newImage("assets/terrain25d/atlas_00.png")
- local w,h=image:getDimensions()
- assert(w==m.atlas_pages[1].width and h==m.atlas_pages[1].height,"atlas dimensions mismatch")
- image:setFilter("nearest","nearest");image:setWrap("clamp","clamp")
- return setmetatable({pilot=pilot,manifest=m,atlas=image,families=fam,
+ local self=setmetatable({pilot=pilot,manifest=m,families=fam,
+   page_metadata=pages,page_images={},page_pins={},
+   atlas_resident_pages=0,atlas_estimated_gpu_bytes=0,
    catalog_counts={total=#archive.assets,packed=#m.assets},
    built=0,visible=0,draw_calls=0,uploads_per_frame=0,build_budget=1,step=32},Runtime)
+ -- Keep the pilot page for current sprites; all other pages load on demand.
+ self.atlas=self:page("atlas_00.png")
+ return self
+end
+function Runtime:page(name)
+ local meta=assert(self.page_metadata[name],"atlas page is not packed")
+ local image=self.page_images[name]
+ if not image then
+   image=love.graphics.newImage("assets/terrain25d/"..name)
+   local w,h=image:getDimensions()
+   assert(w==meta.width and h==meta.height,"atlas dimensions mismatch: "..name)
+   image:setFilter("nearest","nearest");image:setWrap("clamp","clamp")
+   self.page_images[name]=image
+ end
+ return image
+end
+function Runtime:pin_page(name)
+ self:page(name)
+ self.page_pins[name]=(self.page_pins[name] or 0)+1
+end
+function Runtime:unpin_page(name)
+ local count=assert(self.page_pins[name],"untracked atlas page pin")
+ assert(count>0,"atlas page pin underflow")
+ self.page_pins[name]=count-1
+end
+-- Stream owns mesh release. Do not evict textures while resident meshes
+-- or sprite batches still reference them.
+function Runtime:prune_pages(stream,chunks)
+ local used={}
+ local function mark(chunk)
+   for name in pairs(chunk._25d_ground_pages or {}) do used[name]=true end
+ end
+ if stream.resident then
+   for _,chunk in pairs(stream.resident) do mark(chunk) end
+ else
+   for _,chunk in ipairs(chunks) do mark(chunk) end
+ end
+ local count,bytes=0,0
+ for name,image in pairs(self.page_images) do
+   if name~="atlas_00.png" and not used[name] and
+     (self.page_pins[name] or 0)==0 then
+     image:release()
+     self.page_images[name]=nil
+   else
+     count=count+1
+     local meta=self.page_metadata[name]
+     bytes=bytes+meta.width*meta.height*4 -- RGBA8 estimate, not GPU telemetry
+   end
+ end
+ self.atlas_resident_pages=count
+ self.atlas_estimated_gpu_bytes=bytes
 end
 function Runtime:family(x,y)
  local q=self.pilot.query
@@ -80,13 +139,14 @@ function Runtime:prepare(chunk,checkpoint)
    local out=group.indices
    for _,v in ipairs({i,i+1,i+n+2,i,i+n+2,i+n+1}) do out[#out+1]=v end
  end end
- local meshes,order={},{}
+ local meshes,order,ground_pages={},{},{}
  for id,group in pairs(groups) do
    local vertices=Geo.love_vertices({format="terrain25d-v1",
      vertices=geo.vertices,indices=group.indices},group.asset.uv_rect)
+   local page=group.asset.atlas_page
    local gpu=love.graphics.newMesh(vertices,"triangles","static")
-   gpu:setTexture(self.atlas)
-   meshes[id]=gpu;order[#order+1]=id
+   gpu:setTexture(self:page(page))
+   meshes[id]=gpu;order[#order+1]=id;ground_pages[page]=true
  end
  table.sort(order)
  for _,layer in ipairs({"path","bank","water"}) do
@@ -96,6 +156,7 @@ function Runtime:prepare(chunk,checkpoint)
    end
  end
  chunk._25d_meshes=meshes;chunk._25d_ground_order=order
+ chunk._25d_ground_pages=ground_pages
  chunk._meshes=meshes -- Stream:update already releases this map upon eviction.
  self.built=self.built+1
 end
@@ -152,6 +213,7 @@ function Runtime:draw(stream,camera,w,h)
    end
  end
  g.pop()
+ self:prune_pages(stream,chunks)
  self.visible,self.draw_calls=visible,calls
  return visible
 end

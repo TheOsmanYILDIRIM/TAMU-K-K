@@ -1,19 +1,24 @@
 -- Mobile opt-in atlas sprite batching; original Y-depth/harvest stays authoritative.
+-- Only packed, reviewed atlas pages are accessed, and only for visible sprites.
 local Sprite={};Sprite.__index=Sprite
 local function hash(id)
  local n=19
  for i=1,#id do n=(n*33+id:byte(i))%2147483647 end
  return n
 end
-function Sprite.new(image,manifest)
- local w,h=image:getDimensions()
+function Sprite.new(provider,manifest)
+ assert(provider and type(provider.page)=="function" and manifest)
+ local pages={}
+ for _,p in ipairs(manifest.atlas_pages) do pages[p.filename]=p end
  local fam={}
  for _,a in ipairs(manifest.assets) do
-   if a.kind=="object" and a.atlas_page=="atlas_00.png" and a.uv_rect then
+   if a.kind=="object" and a.uv_rect then
+     local page=assert(pages[a.atlas_page],"object atlas page is not packed")
      local u=a.uv_rect
      local f=fam[a.family] or {}
-     f[#f+1]={id=a.id,quad=love.graphics.newQuad(
-       u[1]*w,u[2]*h,u[3]*w,u[4]*h,w,h)}
+     f[#f+1]={id=a.id,page=a.atlas_page,quad=love.graphics.newQuad(
+       u[1]*page.width,u[2]*page.height,
+       u[3]*page.width,u[4]*page.height,page.width,page.height)}
      fam[a.family]=f
    end
  end
@@ -22,20 +27,41 @@ function Sprite.new(image,manifest)
  end
  assert(fam.oak and fam.conifer and fam.boulder)
  local limit=1024
- return setmetatable({atlas=image,families=fam,
-   batch=love.graphics.newSpriteBatch(image,limit,"stream"),
+ return setmetatable({provider=provider,families=fam,
+   batches_by_page={},frame=0,current_page=nil,
    limit=limit,pending=0,selected=nil,visible=0,culled=0,batches=0},Sprite)
 end
 function Sprite:begin_frame()
- self.batch:clear()
- self.pending=0;self.selected=nil;self.visible=0;self.culled=0
- self.batches=0
+ self.frame=self.frame+1
+ -- Retain two idle frames for camera jitter; release both batch and pin.
+ for page,entry in pairs(self.batches_by_page) do
+   if self.frame-entry.last_seen>2 then
+     entry.batch:release()
+     self.provider:unpin_page(page)
+     self.batches_by_page[page]=nil
+   end
+ end
+ self.pending=0;self.current_page=nil
+ self.selected=nil;self.visible=0;self.culled=0;self.batches=0
+end
+function Sprite:batch_for(page)
+ local entry=self.batches_by_page[page]
+ if not entry then
+   local image=self.provider:page(page)
+   local batch=love.graphics.newSpriteBatch(image,self.limit,"stream")
+   self.provider:pin_page(page)
+   entry={batch=batch,last_seen=self.frame}
+   self.batches_by_page[page]=entry
+ end
+ entry.last_seen=self.frame
+ return entry.batch
 end
 function Sprite:flush(g)
  if self.pending>0 then
+   local batch=assert(self.batches_by_page[self.current_page]).batch
    g.setColor(1,1,1,1)
-   g.draw(self.batch)
-   self.batch:clear();self.pending=0
+   g.draw(batch)
+   batch:clear();self.pending=0;self.current_page=nil
    self.batches=self.batches+1
  end
  if self.selected then
@@ -63,10 +89,14 @@ function Sprite:queue(g,camera,w,h,o,selected)
     y+8*scale<0 or y-124*scale>h then
    self.culled=self.culled+1;return
  end
- if self.pending>=self.limit then self:flush(g) end
+ -- Keep ObjectRenderer Y-depth order when object pages alternate.
+ if self.pending>=self.limit or
+   (self.current_page and self.current_page~=a.page) then self:flush(g) end
+ local batch=self:batch_for(a.page)
  g.setColor(.06,.09,.08,.26)
  g.ellipse("fill",x,y+2*z,o.radius*z*1.15,o.radius*z*.52)
- self.batch:add(a.quad,x,y,0,scale,scale,64,124)
+ batch:add(a.quad,x,y,0,scale,scale,64,124)
+ self.current_page=a.page
  self.pending=self.pending+1
  self.visible=self.visible+1
  if selected then self.selected={x=x,y=y,radius=o.radius,zoom=z} end
