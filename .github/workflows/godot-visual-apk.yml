@@ -59,6 +59,21 @@ jobs:
               assert hashlib.sha256(p.read_bytes()).hexdigest()==page["sha256"]
           print("ATLAS_VERIFIED",len(m["assets"]))
           PY
+      - name: Render actual Godot scene to PNG under Xvfb
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri
+          timeout 90s xvfb-run -a -s "-screen 0 720x1280x24" godot --path demos/godot-visual --rendering-driver opengl3 --script res://capture.gd 2>&1 | tee /tmp/osman-godot-visual.log
+          grep -q 'OSMAN_VISUAL_CAPTURE_OK' /tmp/osman-godot-visual.log
+          test -s demos/godot-visual/build/osman-visual-render.png
+          file demos/godot-visual/build/osman-visual-render.png | grep -q 'PNG image data'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OSMAN-Godot-Visual-Screenshot
+          path: demos/godot-visual/build/osman-visual-render.png
+          if-no-files-found: error
       - name: Create debug keystore
         run: |
           mkdir -p "$HOME/.android"
