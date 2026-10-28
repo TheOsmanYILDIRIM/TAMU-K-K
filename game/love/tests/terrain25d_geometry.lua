@@ -109,3 +109,19 @@ for _,v in ipairs(mapped) do
 end
 assert(not pcall(Geo.love_vertices,sa,{0.9,0.9,.3,.3}))
 print("TERRAIN25D_ATLAS_RECT_OK")
+
+-- Boundary vertices must use atlas-right edge on the left triangle and
+-- atlas-left edge on the right; not collapse both to the left edge.
+local uvmesh=Geo.build_chunk(nil,flat,{size=256,height_scale=.35,uv_scale=128},{x=0,y=0},8)
+local uvverts=Geo.love_vertices(uvmesh,rect)
+local leftEdge,rightEdge=0,0
+for i=1,#uvmesh.indices do
+ local original=uvmesh.vertices[uvmesh.indices[i]]
+ local projected=uvverts[i]
+ if original[9]==128 and original[10]==64 then
+  if math.abs(projected[3]-(rect[1]+rect[3]))<1e-8 then leftEdge=leftEdge+1 end
+  if math.abs(projected[3]-rect[1])<1e-8 then rightEdge=rightEdge+1 end
+ end
+end
+assert(leftEdge>0 and rightEdge>0,"atlas seam must share two correct edges")
+print("TERRAIN25D_ATLAS_SEAM_OK left="..leftEdge.." right="..rightEdge)
