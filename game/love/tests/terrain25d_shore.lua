@@ -102,6 +102,24 @@ assert(Materials.choose("dirt",112,88,shuffled,profiles,
   "color-compatible sources must remain distinct, without blending pixels")
 assert(Materials.family(sample,true,x,y)=="wetland")
 assert(Materials.family({biome="rocky",grade=2,feature="meadow"},false,x,y)=="rock")
+-- Render-only forest understory may not turn an entire 384-unit Voronoi
+-- zone into solid meadow. Fine source-ID islands must coexist instead.
+assert(Materials.family({biome="forest",feature="meadow"},false,32,48)=="forest")
+local grasses,forest=0,0
+for gx=-180,180,8 do
+ for gy=-180,180,8 do
+  local kind=Materials.interior_family("forest",gx,gy)
+  if kind=="grass" then grasses=grasses+1 else
+   assert(kind=="forest")
+   forest=forest+1
+  end
+  assert(Materials.interior_family("forest",gx,gy)==kind)
+ end
+end
+assert(grasses>12 and forest>100 and grasses<forest,
+  "sparse, stable source-ID understory required")
+assert(Materials.interior_family("wetland",0,0)=="wetland",
+  "authored wetland/path surfaces must never be replaced by undergrowth")
 -- A broad, categorical forest-to-meadow boundary must contain both
 -- unmodified source families on BOTH sides of the authored polygon.
 -- Source ID islands are sharp, never RGB/alpha blends.

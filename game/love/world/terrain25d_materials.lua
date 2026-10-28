@@ -49,16 +49,51 @@ end
 function Materials.family(sample,near_water,x,y)
  if near_water then return "wetland" end
  if sample.feature=="path" then return "dirt" end
- local biome=sample.biome
- if biome=="forest" then
-  -- Preserve sparse native understory, not dominant giant grass mosaics.
-  if Materials.region(x,y)%11==0 and (sample.grade or 0)<.23 then return "grass" end
-  return "forest"
- elseif biome=="rocky" then
-  if Materials.region(x,y)%9==0 and (sample.grade or 0)<.23 then return "grass" end
-  return "rock"
- end
+ -- Keep the authoritative biome as the PRIMARY material everywhere.
+ -- A previous 384-unit Voronoi %11/%9 assigned entire forest/rock patches
+ -- to grass, creating the visible hard-edged circular clearing.
+ if sample.biome=="forest" then return "forest" end
+ if sample.biome=="rocky" then return "rock" end
  return "grass"
+end
+
+local function clamp(v) return math.max(0,math.min(1,v)) end
+
+-- Diffuse visually by original source-ID area coverage, NOT by pixel blur.
+-- Broad fields control the density of numerous tiny islands rather than
+-- assigning an entire 384-unit Voronoi polygon to an unrelated biome.
+function Materials.understory_coverage(family,x,y)
+ if family~="forest" and family~="rock" then return 0 end
+ local field=.62*noise(x,y,210,6301)+.38*noise(x,y,97,4223)
+ local envelope=clamp((field+.17)/.62)
+ local coverage=.035+.55*envelope^1.6
+ if family=="rock" then return coverage*.28 end
+ return coverage
+end
+
+local function micro_rank(x,y,spacing,salt)
+ local gx,gy=math.floor(x/spacing),math.floor(y/spacing)
+ local closest,rank=math.huge,1
+ for oy=-1,1 do for ox=-1,1 do
+  local ix,iy=gx+ox,gy+oy
+  local h=hash(ix,iy,salt)
+  local px=(ix+.16+.68*(h%997)/997)*spacing
+  local py=(iy+.16+.68*(math.floor(h/997)%991)/991)*spacing
+  local d=(x-px)^2+(y-py)^2
+  if d<closest then
+   closest=d
+   rank=hash(ix*3+17,iy*7-11,salt+35010)%65521/65521
+  end
+ end end
+ return rank
+end
+
+function Materials.interior_family(family,x,y)
+ local density=Materials.understory_coverage(family,x,y)
+ if density>0 and micro_rank(x,y,12,14921)<density then
+  return "grass",family,density
+ end
+ return family,nil,0
 end
 local function anchors(family,x,y,list,profiles)
  local spacing=240

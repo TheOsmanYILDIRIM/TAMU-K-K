@@ -239,6 +239,12 @@ function Runtime:prepare(chunk,checkpoint)
    -- Authored border has broad, spatially coherent source-ID islands,
    -- without smoothing a pixel or changing gameplay's biome classification.
    f,other,proximity=Materials.interleaved_family(f,boundary,x,y)
+   -- Inside a biome, replace obsolete 384-unit clearing silhouettes
+   -- with many small source-ID islands whose coverage varies continuously.
+   -- Authored edge bands take precedence over interior undergrowth.
+   if not proximity or proximity==0 then
+     f,other,proximity=Materials.interior_family(f,x,y)
+   end
    if not other then
      for _,d in ipairs({{14,0},{-14,0},{0,14},{0,-14}}) do
        local k=jittered_family(x+d[1],y+d[2])
