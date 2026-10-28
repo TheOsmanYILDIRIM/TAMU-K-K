@@ -177,6 +177,20 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/osman-25d-gpu
+          git fetch --no-tags origin experiment/25d-assets-20261028
+          test "$(git rev-parse FETCH_HEAD)" = "bed2e28c54ff35122e65b8e5b2add1f987dae941"
+          git show FETCH_HEAD:game/love/assets/terrain25d/atlas_00.png > /tmp/osman-25d-gpu/atlas_00.png
+          git show FETCH_HEAD:game/love/assets/terrain25d/manifest.json > /tmp/osman-25d-gpu/manifest.json
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          p=Path("/tmp/osman-25d-gpu")
+          m=json.loads((p/"manifest.json").read_text())
+          page=m["atlas_pages"][0]
+          assert hashlib.sha256((p/page["filename"]).read_bytes()).hexdigest()==page["sha256"]
+          assert len(m["assets"])==20
+          print("TERRAIN25D_REAL_ATLAS_SHA_OK",page["sha256"])
+          PY
           cat > /tmp/osman-25d-gpu/main.lua <<'LUA'
           package.path="./?.lua;./?/init.lua;"..package.path
           local Geo=require("world.terrain25d_geometry")
@@ -193,18 +207,21 @@ jobs:
           local img
           function love.load()
             love.window.setMode(960,640,{vsync=0})
-            local data=love.image.newImageData(128,128)
-            for y=0,127 do for x=0,127 do
-              local n=((x*13+y*17+math.floor(x/8)*7)%31)/255
-              data:setPixel(x,y,.38+n,.52+n,.30+n,1)
-            end end
-            img=love.graphics.newImage(data)
-            img:setWrap("repeat","repeat")
+            local manifest=Json.decode(assert(love.filesystem.read("manifest.json")))
+            local selected
+            for _,entry in ipairs(manifest.assets) do
+              if entry.family=="grass" and entry.kind=="terrain" then selected=entry;break end
+            end
+            assert(selected and selected.uv_rect and selected.atlas_page=="atlas_00.png")
+            img=love.graphics.newImage("atlas_00.png")
+            img:setFilter("nearest","nearest")
+            print("TERRAIN25D_REAL_ATLAS_LOADED id="..selected.id)
+            love._terrain25d_rect=selected.uv_rect
             local vertices={}
             for j=0,2 do for i=0,2 do
               local chunk=Geo.build_chunk(world.query,world.topography,
                 {size=64,height_scale=.35,uv_scale=128},{x=640+i*64,y=64+j*64},8)
-              for _,v in ipairs(Geo.love_vertices(chunk)) do vertices[#vertices+1]=v end
+              for _,v in ipairs(Geo.love_vertices(chunk,love._terrain25d_rect)) do vertices[#vertices+1]=v end
             end end
             assert(#vertices>0)
             local xMin,yMin,xMax,yMax=math.huge,math.huge,-math.huge,-math.huge
