@@ -67,8 +67,19 @@ jobs:
           sudo apt-get install -y xvfb libgl1-mesa-dri
           timeout 90s xvfb-run -a -s "-screen 0 720x1280x24" godot --path demos/godot-visual --rendering-driver opengl3 --script res://capture.gd 2>&1 | tee /tmp/osman-godot-visual.log
           grep -q 'OSMAN_VISUAL_CAPTURE_OK' /tmp/osman-godot-visual.log
+          if grep -Eq 'SCRIPT ERROR:|Failed to load script|Parse Error:' /tmp/osman-godot-visual.log; then echo 'GDSCRIPT_RUNTIME_FAILURE'; exit 1; fi
           test -s demos/godot-visual/build/osman-visual-render.png
           file demos/godot-visual/build/osman-visual-render.png | grep -q 'PNG image data'
+          python -m pip install pillow -q
+          python - <<'PY'
+          from PIL import Image
+          im=Image.open('demos/godot-visual/build/osman-visual-render.png').convert('RGB')
+          assert im.size == (720,1280)
+          colors=im.resize((72,128)).getcolors(72*128)
+          count=len(colors) if colors else 72*128
+          assert count > 20, f'Blank or uniform scene: only {count} colors'
+          print('OSMAN_VISUAL_NONBLANK_OK',count)
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: OSMAN-Godot-Visual-Screenshot
