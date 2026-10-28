@@ -126,7 +126,7 @@ func _build_decorations() -> void:
             var n := world_noise.get_noise_2d(col*0.8,row*0.8)
             var place := sin(float(col*73+row*129+SEED)*0.137)
             if place > 0.48 and n > -0.45:
-                var variant := abs(col*13+row*7+SEED)%objects.size()
+                var variant: int = absi(col*13+row*7+SEED) % objects.size()
                 decorations.append({"p":p,"asset":objects[variant],"s":0.52+0.11*absf(n)})
     decorations.sort_custom(func(a,b): return a["p"].y < b["p"].y)
 
