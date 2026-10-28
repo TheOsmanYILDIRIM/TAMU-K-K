@@ -6,6 +6,10 @@ on:
     paths:
       - 'demos/godot-visual/**'
       - '.github/workflows/godot-visual-apk.yml'
+  pull_request:
+    paths:
+      - 'demos/godot-visual/**'
+      - '.github/workflows/godot-visual-apk.yml'
   workflow_dispatch:
 jobs:
   android:
