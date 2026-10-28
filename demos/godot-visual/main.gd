@@ -75,7 +75,7 @@ func _draw() -> void:
                 var sr := _rect(obj)
                 var scale_obj := 0.8
                 draw_texture_rect_region(atlas,Rect2(p.x-sr.size.x*scale_obj*0.5,p.y-sr.size.y*scale_obj+6,sr.size.x*scale_obj,sr.size.y*scale_obj),sr)
-    draw_set_transform()
+    draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
     draw_string(ThemeDB.fallback_font,Vector2(22,55),"OSMAN  /  GODOT 2.5D",HORIZONTAL_ALIGNMENT_LEFT,-1,27,Color.WHITE)
     draw_string(ThemeDB.fallback_font,Vector2(22,87),"Verified repository atlas | visual demo",HORIZONTAL_ALIGNMENT_LEFT,-1,16,Color("#d3ecdf"))
 
