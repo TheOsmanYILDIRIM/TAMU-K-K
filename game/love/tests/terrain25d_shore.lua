@@ -118,6 +118,12 @@ for gx=-180,180,8 do
 end
 assert(grasses>12 and forest>100 and grasses<forest,
   "sparse, stable source-ID understory required")
+-- The original bright authored-forest clearing remains bright at its
+-- centre, while its neighbour becomes gradually darker by density.
+assert(Materials.understory_coverage("forest",409,-76)>.75,
+  "previous green clearing was erased rather than transitioned")
+assert(Materials.understory_coverage("forest",650,120)<.2,
+  "dark forest interior lost its material identity")
 assert(Materials.interior_family("wetland",0,0)=="wetland",
   "authored wetland/path surfaces must never be replaced by undergrowth")
 -- A broad, categorical forest-to-meadow boundary must contain both

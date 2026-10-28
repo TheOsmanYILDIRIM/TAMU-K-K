@@ -64,13 +64,34 @@ local function clamp(v) return math.max(0,math.min(1,v)) end
 -- assigning an entire 384-unit Voronoi polygon to an unrelated biome.
 function Materials.understory_coverage(family,x,y)
  if family~="forest" and family~="rock" then return 0 end
- local field=.62*noise(x,y,210,6301)+.38*noise(x,y,97,4223)
- local envelope=clamp((field+.17)/.62)
- local coverage=.035+.55*envelope^1.6
- if family=="rock" then return coverage*.28 end
+ -- The old Voronoi *sites* still locate clearings, but their nearest
+ -- meadow/other distances now create a continuous density field. This
+ -- preserves green clearing centres and replaces hard 384-unit outlines.
+ local spacing=384
+ local cx,cy=math.floor(x/spacing),math.floor(y/spacing)
+ local meadow,other
+ local modulo=family=="forest" and 11 or 9
+ for dy=-1,1 do for dx=-1,1 do
+  local gx,gy=cx+dx,cy+dy
+  local seed=hash(gx,gy,17041)
+  local px=(gx+.19+.62*(seed%997)/997)*spacing
+  local py=(gy+.19+.62*(math.floor(seed/997)%991)/991)*spacing
+  local dist=(x-px)^2+(y-py)^2
+  local site={dist=dist}
+  if seed%modulo==0 then
+   if not meadow or dist<meadow.dist then meadow=site end
+  elseif not other or dist<other.dist then other=site end
+ end end
+ if not meadow then return .035 end
+ if not other then return family=="forest" and .96 or .84 end
+ -- A continuous distance-difference signed field, not a polygon mask.
+ local signed=(math.sqrt(other.dist)-math.sqrt(meadow.dist))*.5
+ signed=signed+13*noise(x,y,74,4163)+5*noise(x,y,27,8717)
+ local t=clamp(.5+signed/216)
+ local coverage=.035+.925*smooth(t)
+ if family=="rock" then coverage=.035+(coverage-.035)*.86 end
  return coverage
 end
-
 local function micro_rank(x,y,spacing,salt)
  local gx,gy=math.floor(x/spacing),math.floor(y/spacing)
  local closest,rank=math.huge,1
@@ -90,10 +111,19 @@ end
 
 function Materials.interior_family(family,x,y)
  local density=Materials.understory_coverage(family,x,y)
- if density>0 and micro_rank(x,y,12,14921)<density then
-  return "grass",family,density
+ if density==0 then return family,nil,0 end
+ local proximity=math.max(0,1-2*math.abs(density-.5))
+ -- Sparse true dirt/forest-floor fragments only where both source families
+ -- coexist; no smooth-alpha edge or forced global color equalization.
+ if proximity>.3 and micro_rank(x,y,13,71231)<.11*proximity then
+  return "dirt",family,proximity
  end
- return family,nil,0
+ local foreign="grass"
+ local near=proximity>.12 and foreign or nil
+ if micro_rank(x,y,12,14921)<density then
+  return "grass",proximity>.12 and family or nil,proximity
+ end
+ return family,near,proximity
 end
 local function anchors(family,x,y,list,profiles)
  local spacing=240
