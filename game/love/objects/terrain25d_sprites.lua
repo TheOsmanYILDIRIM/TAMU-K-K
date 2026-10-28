@@ -74,7 +74,11 @@ end
 function Sprite:flush(g)
  if self.pending>0 then
    local batch=assert(self.batches_by_page[self.current_page]).batch
-   g.setColor(1,1,1,1)
+   -- Apply the same time-of-day illumination to source sprite RGB as
+   -- the terrain. The sprite's original alpha, silhouette and scale remain.
+   local tint=self.provider.sun and self.provider.sun.tint
+   if tint then g.setColor(tint[1],tint[2],tint[3],1)
+   else g.setColor(1,1,1,1) end
    g.draw(batch)
    batch:clear();self.pending=0;self.current_page=nil
    self.batches=self.batches+1
