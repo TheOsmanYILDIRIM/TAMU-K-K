@@ -705,34 +705,51 @@ function love.draw()
     perf_tick("draw",perf_begin)
   end
   if terrain25d_compare then
-    -- Compare equal R2 content, same viewport and stationary authored camera.
-    -- Timings are CPU frame sections, not Android GPU or vsync estimates.
+    -- Count only fully resident, complete authored R2 scenes in BOTH modes.
+    -- Earlier 240-frame samples had legacy 11/42 while 25D drew 42/42,
+    -- so they were NOT comparable and must never be used as acceptance.
     local draw_ms=(love.timer.getTime()-perf_begin)*1000
-    if frames>120 then
-      local a=compare_metrics
-      a.update[#a.update+1]=last_update_ms
-      a.draw[#a.draw+1]=draw_ms
-      a.frame[#a.frame+1]=draw_ms+last_update_ms
+    local a=compare_metrics
+    local ready=0
+    for _,chunk in ipairs(stream:visible()) do
+      if (runtime25d and chunk._25d_meshes) or
+         (not runtime25d and chunk._terrain_meshes
+           and not chunk._terrain_job) then ready=ready+1 end
     end
-    if frames>=240 then
+    local complete=stats.pending==0 and stats.loaded==stats.needed
+      and ready==stats.needed and stats.needed>0
+    if complete then
+      if not a.ready_since then a.ready_since=frames end
+      if frames>a.ready_since+15 then
+        a.update[#a.update+1]=last_update_ms
+        a.draw[#a.draw+1]=draw_ms
+        a.frame[#a.frame+1]=draw_ms+last_update_ms
+      end
+    else
+      -- Never mix provisional chunks with complete-scene measurements.
+      a.ready_since=nil
+      a.update={};a.draw={};a.frame={}
+    end
+    if #a.frame>=120 then
       local function quantiles(t)
         table.sort(t)
         local function q(p) return t[math.max(1,math.ceil(#t*p))] end
         return string.format("p50=%.4f,p95=%.4f,p99=%.4f",q(.5),q(.95),q(.99))
       end
-      local ready=0
-      for _,chunk in ipairs(stream:visible()) do
-        if (runtime25d and chunk._25d_meshes) or
-           (not runtime25d and chunk._terrain_meshes) then ready=ready+1 end
-      end
       local mode=runtime25d and "runtime" or "legacy"
-      print(string.format("TERRAIN25D_COMPARE_OK mode=%s frames=%d ready=%d/%d update[%s] draw[%s] frame[%s] luaKiB=%.0f calls=%d",
-        mode,#compare_metrics.frame,ready,stats.needed,
-        quantiles(compare_metrics.update),quantiles(compare_metrics.draw),
-        quantiles(compare_metrics.frame),collectgarbage("count"),
+      print(string.format("TERRAIN25D_COMPARE_COMPLETE mode=%s frames=%d ready=%d/%d update[%s] draw[%s] frame[%s] luaKiB=%.0f calls=%d",
+        mode,#a.frame,ready,stats.needed,
+        quantiles(a.update),quantiles(a.draw),
+        quantiles(a.frame),collectgarbage("count"),
         runtime25d and runtime25d.draw_calls or 0))
       love.graphics.captureScreenshot("terrain25d-compare-"..mode.."-"..w.."x"..h..".png")
       io.stdout:flush();love.event.quit();return
+    end
+    if frames>=2400 then
+      print(string.format("TERRAIN25D_COMPARE_INCOMPLETE mode=%s ready=%d/%d",
+        runtime25d and "runtime" or "legacy",ready,stats.needed))
+      io.stdout:flush()
+      error("comparable benchmark incomplete: not all authored R2 chunks resident")
     end
   end
   if long_driver and boot_ready and long_driver.frame>0 then

@@ -395,7 +395,7 @@ jobs:
               OSMAN_R2_PILOT=1 OSMAN_25D_RUNTIME="$opt" OSMAN_25D_COMPARE=1 \
                 OSMAN_25D_COMPARE_DISPLAY="$size" timeout 180s \
                 xvfb-run -a love game/love 2>&1 | tee "/tmp/terrain25d-$mode-$size.log"
-              grep -q "TERRAIN25D_COMPARE_OK mode=$mode frames=120" "/tmp/terrain25d-$mode-$size.log"
+              grep -q "TERRAIN25D_COMPARE_COMPLETE mode=$mode frames=120" "/tmp/terrain25d-$mode-$size.log"
               shot="$(find "$HOME/.local/share/love" -name "terrain25d-compare-$mode-$size.png" -print -quit)"
               test -n "$shot"
               cp "$shot" "/tmp/terrain25d-compare/terrain25d-$mode-$size.png"
