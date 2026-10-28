@@ -35,7 +35,7 @@ jobs:
           echo "ANDROID_SDK_ROOT=$sdk" >> "$GITHUB_ENV"
           echo "$sdk/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
           yes | "$sdk/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$sdk" --licenses >/dev/null || true
-          "$sdk/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$sdk" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          "$sdk/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$sdk" "platform-tools" "platforms;android-35" "build-tools;35.0.0" "platforms;android-34" "build-tools;34.0.0"
           test -x "$sdk/platform-tools/adb"
       - uses: chickensoft-games/setup-godot@v2
         with:
@@ -86,6 +86,8 @@ jobs:
         run: |
           set -euxo pipefail
           godot --headless --path demos/godot-visual --editor --import
+          echo "GODOT_CONFIG_DIR=$HOME/.config/godot"
+          test -s "$HOME/.config/godot/editor_settings-4.4.tres"
           godot --headless --path demos/godot-visual --export-debug Android build/OSMAN-Godot-Visual.apk
           test -s demos/godot-visual/build/OSMAN-Godot-Visual.apk
           unzip -t demos/godot-visual/build/OSMAN-Godot-Visual.apk | tail -n 2
