@@ -73,12 +73,30 @@ function M.build_chunk(query,topography,options,chunk_origin,step)
 end
 -- Adapt index-buffer meshes into a LÖVE triangle list without constructing GPU objects.
 -- UV and brightness are baked; no topography query during drawing.
-function M.love_vertices(mesh)
+-- Rect is the normalized [x,y,width,height] from the checked-in atlas manifest.
+-- Transform local repeating UVs before passing them to LÖVE's normalized atlas.
+-- Without a rect, legacy world-space UV output is intentionally preserved.
+function M.love_vertices(mesh,uv_rect)
  assert(mesh and mesh.format=="terrain25d-v1","invalid terrain25d mesh")
+ if uv_rect then
+  assert(type(uv_rect)=="table" and #uv_rect==4,"atlas uv_rect required")
+  for i=1,4 do assert(finite(uv_rect[i]),"invalid atlas uv_rect") end
+  assert(uv_rect[1]>=0 and uv_rect[2]>=0 and uv_rect[3]>0 and uv_rect[4]>0
+    and uv_rect[1]+uv_rect[3]<=1 and uv_rect[2]+uv_rect[4]<=1,
+    "atlas uv_rect outside page")
+ end
  local out={}
  for _,index in ipairs(mesh.indices) do
   local v=assert(mesh.vertices[index])
-  out[#out+1]={v[1],v[2],v[3],v[4],v[5],v[5],v[5],1}
+  local u,w=v[3],v[4]
+  if uv_rect then
+   -- Anchor to the atlas subrectangle. To prevent interpolation across a
+   -- wrapping seam callers must split triangles at integer UV boundaries.
+   -- A pilot tile-sized chunk remains in a single UV period.
+   u=uv_rect[1]+(u-math.floor(u))*uv_rect[3]
+   w=uv_rect[2]+(w-math.floor(w))*uv_rect[4]
+  end
+  out[#out+1]={v[1],v[2],u,w,v[5],v[5],v[5],1}
  end
  return out
 end
