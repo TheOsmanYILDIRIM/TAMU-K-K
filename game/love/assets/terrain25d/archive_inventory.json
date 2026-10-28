@@ -1,0 +1,2015 @@
+{
+  "version": 1,
+  "source": "Google Drive Texture_Archive (metadata snapshot 2026-10-28)",
+  "source_folder": "1n3nkFdX3rPluAHU5aS95Ci5nYBp8_CHe",
+  "warning": "Metadata-only catalog. No full binary or license approval of non-pilot entries is claimed. Do not package or render unverified entries. Duplicate names are kept by Drive ID.",
+  "summary": {
+    "total": 228,
+    "terrain": 168,
+    "objects": 60,
+    "pilot_verified": 20,
+    "by_family": {
+      "boulder": 4,
+      "broadleaf": 10,
+      "conifer": 6,
+      "dead_tree": 3,
+      "dirt": 31,
+      "fallen_log": 3,
+      "forest": 36,
+      "grass": 36,
+      "oak": 7,
+      "reeds": 3,
+      "rock": 34,
+      "rock_cluster": 9,
+      "rock_spire": 4,
+      "shrub": 8,
+      "stump": 2,
+      "water_rocks": 1,
+      "wetland": 31
+    },
+    "duplicate_filenames": [
+      {
+        "name": "rock/rockB_06.png",
+        "count": 2,
+        "ids": [
+          "1mWGUSfYLmt0dcVo6ODBAhgFXkPran7WE",
+          "1Rz7Uwr7IQt0xkDfesjlJ-pSrrLIWG1tu"
+        ]
+      },
+      {
+        "name": "rock/rockB_08.png",
+        "count": 2,
+        "ids": [
+          "1GRVcef1IB3pWYqpaKw4_WdWqXLGPXg0S",
+          "1LB1v5GX1RtIwXBIEewOkkciF6HdpuPNw"
+        ]
+      }
+    ]
+  },
+  "assets": [
+    {
+      "family": "boulder",
+      "filename": "boulder_v001_128_lab64.png",
+      "source_drive_id": "11El_0hpNe3lUD81YyXGcJ8qoBGSKCXn3",
+      "size_bytes": 16617,
+      "kind": "object",
+      "review_status": "pilot_binary_verified",
+      "sha256": "3b8c471016ec32c8baf47988d74aeab102907dea0d9209cceaf668d147b21881",
+      "material_or_variant_id": "object_variant_boulder_85746a4d51f27aca",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_ai_generated",
+      "packed_atlas_page": "atlas_00.png"
+    },
+    {
+      "family": "boulder",
+      "filename": "boulder_v002_128_lab64.png",
+      "source_drive_id": "1ItRLPfCtD2XxYFzT7vZD_TzZlB_aAL_q",
+      "size_bytes": 21855,
+      "kind": "object",
+      "review_status": "pilot_binary_verified",
+      "sha256": "2c08fdf3028b0a5604bbd91287647eccea83247dc40262fe2be925c1160ccf18",
+      "material_or_variant_id": "object_variant_boulder_d72156d0d807efcb",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_ai_generated",
+      "packed_atlas_page": "atlas_00.png"
+    },
+    {
+      "family": "boulder",
+      "filename": "boulder_v003_128_lab64.png",
+      "source_drive_id": "17mLqn5_w0zgdWZ-Sk2p2R1T8YBa29Op-",
+      "size_bytes": 19608,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "boulder",
+      "filename": "boulder_v004_128_lab64.png",
+      "source_drive_id": "1hkaHyb5IcqhUmXcPsZo1PNqXzEQt-Q9f",
+      "size_bytes": 20876,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "broadleaf",
+      "filename": "broadleaf_v001_128_lab64.png",
+      "source_drive_id": "1_-Ol-mDrs6QGvNQbTMYOBt0tr8A_85_E",
+      "size_bytes": 23486,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "broadleaf",
+      "filename": "broadleaf_v002_128_lab64.png",
+      "source_drive_id": "1r4mDlFLODrIodcgKdg8AH0LxtqNXUPWM",
+      "size_bytes": 22828,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "broadleaf",
+      "filename": "broadleaf_v003_128_lab64.png",
+      "source_drive_id": "1fTUcS8BzGjmwAN0WLO7UQjo_uXWZ4GDw",
+      "size_bytes": 19086,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "broadleaf",
+      "filename": "broadleaf_v004_128_lab64.png",
+      "source_drive_id": "130aSKx9rabeodcFCCMWSJayVsjmCg-Kx",
+      "size_bytes": 24183,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "broadleaf",
+      "filename": "broadleaf_v005_128_lab64.png",
+      "source_drive_id": "1X7j6dotnv-nSP-N6od9NNC42UIVlkcsi",
+      "size_bytes": 17181,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "broadleaf",
+      "filename": "broadleaf_v006_128_lab64.png",
+      "source_drive_id": "16DpJZg6NXlmRItoZHWM-5zG9cwcRq8cv",
+      "size_bytes": 21790,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "broadleaf",
+      "filename": "broadleaf_v007_128_lab64.png",
+      "source_drive_id": "1aFxoyeLrb8HQ08eGRydmryBIsnUDxoAV",
+      "size_bytes": 19179,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "broadleaf",
+      "filename": "broadleaf_v008_128_lab64.png",
+      "source_drive_id": "1Y3V6VJPmsfWGx-Q-AP1GD5Botg5cBR6K",
+      "size_bytes": 22619,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "broadleaf",
+      "filename": "broadleaf_v009_128_lab64.png",
+      "source_drive_id": "1NDrzHDXR4-JEZ6J16-DZkU3UmE18I4uQ",
+      "size_bytes": 22685,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "broadleaf",
+      "filename": "broadleaf_v010_128_lab64.png",
+      "source_drive_id": "1lnSPYZ40qoGyg0VmQ53XwIQz17pmybUS",
+      "size_bytes": 26289,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "conifer",
+      "filename": "conifer_v001_128_lab64.png",
+      "source_drive_id": "1KLzH2z1_XMPWN_GWC8RnL03OG8WFsNOn",
+      "size_bytes": 17096,
+      "kind": "object",
+      "review_status": "pilot_binary_verified",
+      "sha256": "274a6724480c0a33ea1e263e6d2ebefe7f93b8abf2b34e80f0358b59a115032e",
+      "material_or_variant_id": "object_variant_conifer_b986f228426f8227",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_ai_generated",
+      "packed_atlas_page": "atlas_00.png"
+    },
+    {
+      "family": "conifer",
+      "filename": "conifer_v002_128_lab64.png",
+      "source_drive_id": "1s_7PWMWbFZj-sTLAaQ3R7MglRUhd6ERW",
+      "size_bytes": 17613,
+      "kind": "object",
+      "review_status": "pilot_binary_verified",
+      "sha256": "fe933c0b64b0eac3b37fe206f37b3c633df4d477a5fb91b286226bfe5582478c",
+      "material_or_variant_id": "object_variant_conifer_71a9293e67332e49",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_ai_generated",
+      "packed_atlas_page": "atlas_00.png"
+    },
+    {
+      "family": "conifer",
+      "filename": "conifer_v003_128_lab64.png",
+      "source_drive_id": "1fLF5tw8jBYqEFAlrgTvh8QuCpvON9YDJ",
+      "size_bytes": 18555,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "conifer",
+      "filename": "conifer_v004_128_lab64.png",
+      "source_drive_id": "1yQSvRvEXFznjPoKJPvSlL2CeDbGFei7k",
+      "size_bytes": 16537,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "conifer",
+      "filename": "conifer_v005_128_lab64.png",
+      "source_drive_id": "16GC01Pp1nPMziO51yg1f_rw7kgpjAPwW",
+      "size_bytes": 15084,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "conifer",
+      "filename": "conifer_v006_128_lab64.png",
+      "source_drive_id": "19jDdh9UuTMcNMNXq0eG_UNJ1jvK1aQfX",
+      "size_bytes": 16840,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dead_tree",
+      "filename": "dead_tree_v001_128_lab64.png",
+      "source_drive_id": "1qiCRYrRIlagZVCaKQO-PEI88tCWpBUNF",
+      "size_bytes": 14562,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dead_tree",
+      "filename": "dead_tree_v002_128_lab64.png",
+      "source_drive_id": "1g9QyDL7hSb9sMuieMLCZ9nTu2gvlk5QJ",
+      "size_bytes": 15901,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dead_tree",
+      "filename": "dead_tree_v003_128_lab64.png",
+      "source_drive_id": "1fzQg1yuZu62ZjkD1nfDNSCRL6O4GPK6k",
+      "size_bytes": 15843,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtA_01.png",
+      "source_drive_id": "1894JZKg_lHbqBlnNHil8UbNlw3A_pN-A",
+      "size_bytes": 12952,
+      "kind": "terrain",
+      "review_status": "pilot_binary_verified",
+      "sha256": "a70b94ec38ae293d7a3e8e73ae08407ca4342fabf966d917788743a74e83c8b4",
+      "material_or_variant_id": "material_dirt_157581fb4eee66ff",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_ai_generated",
+      "packed_atlas_page": "atlas_00.png"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtA_02.png",
+      "source_drive_id": "1xF9tBVmnNqthxS1wvDfLI3mpLLNkLRWK",
+      "size_bytes": 12949,
+      "kind": "terrain",
+      "review_status": "pilot_binary_verified",
+      "sha256": "1324c087743ae7f66d657fc2c77f7a9b2ee7e83ac9f653e1323a70c3ffae2cd9",
+      "material_or_variant_id": "material_dirt_61204e05c435243f",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_ai_generated",
+      "packed_atlas_page": "atlas_00.png"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtA_03.png",
+      "source_drive_id": "1BHkfw0IXpIpOIgRBi4XTmEwM_NLd2bZa",
+      "size_bytes": 12951,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtA_04.png",
+      "source_drive_id": "1Ocn9R3B8s-HLHl_SRdxaLN--sG0428J1",
+      "size_bytes": 12932,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtA_05.png",
+      "source_drive_id": "1DVjjt3Gk0uKtA_gfkTy040LCk-xFmarr",
+      "size_bytes": 12937,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtA_06.png",
+      "source_drive_id": "1yRlTYXRGS7eXGZEjBFyn9urxS1B7yExq",
+      "size_bytes": 12891,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtA_07.png",
+      "source_drive_id": "1flJ19Vp3sI545harIBYoTy-4uYMYp62n",
+      "size_bytes": 12924,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtA_08.png",
+      "source_drive_id": "1CGNTtDoPaCqmmDAuFITqE9vJ6yc_EGPE",
+      "size_bytes": 12875,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtA_10.png",
+      "source_drive_id": "1INFCShj5WJSmRPJm0vDhBb783aFkOiZF",
+      "size_bytes": 12915,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtA_11.png",
+      "source_drive_id": "1kfpQ0E_kIyhEDUvpAe06HwPU02wfDhKd",
+      "size_bytes": 12910,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtB_01.png",
+      "source_drive_id": "1zlCV3df-7CPD29CECLpEttomVxtHH6gk",
+      "size_bytes": 12905,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtB_02.png",
+      "source_drive_id": "1xfW2q750EGwb7lBKlUFykkN1EUXrWKK1",
+      "size_bytes": 12892,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtB_03.png",
+      "source_drive_id": "1uA_oZlLmIG6T4aatXYQpvzfwa08WPdUK",
+      "size_bytes": 12943,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtB_05.png",
+      "source_drive_id": "1HGt9huJf9KC0Kwc9g8WQvIFBJ8ipDonE",
+      "size_bytes": 12835,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtB_06.png",
+      "source_drive_id": "1khqVEJij5ty7w9S2GRQyamSIC5Xs2-30",
+      "size_bytes": 12867,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtB_07.png",
+      "source_drive_id": "1qQAw8334JqxFzJRQyTDlj1xDiyMxZMRt",
+      "size_bytes": 12877,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtB_08.png",
+      "source_drive_id": "1Xn0UF2XkQ_mCwQ1sEa4uHSN9w9r3kYZ_",
+      "size_bytes": 12949,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtB_09.png",
+      "source_drive_id": "1rswYhTHKF4vHKw7xvg9iLc29bchGdNUW",
+      "size_bytes": 12872,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtB_10.png",
+      "source_drive_id": "1C0rSViuwsRuOi9Zy0I8giNFVSoz1NsH8",
+      "size_bytes": 12961,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtB_11.png",
+      "source_drive_id": "1cC198AoANaIWHRndguc0cR3j3HYpGx3v",
+      "size_bytes": 12904,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtC_01.png",
+      "source_drive_id": "1jbBT5wqslBoZzkgrNeMJQRlKRhxENbe4",
+      "size_bytes": 12954,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtC_02.png",
+      "source_drive_id": "1KhIRwkORcE_9o_mzPRBTKyY5dtERV4ND",
+      "size_bytes": 12927,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtC_03.png",
+      "source_drive_id": "1bKMeKaK2n0LoUsmqr5I3hinVHHqeJULS",
+      "size_bytes": 12912,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtC_04.png",
+      "source_drive_id": "1nE8s3O23FOqGtEkfEOKkfjTyomqi8GoK",
+      "size_bytes": 12899,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtC_05.png",
+      "source_drive_id": "1g_T8TTI_mYDcoBrLA_KDmnMvkh_918SW",
+      "size_bytes": 12889,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtC_07.png",
+      "source_drive_id": "1ySwC2Ody3CxJFH4z5HgL0wIA3G0sJ2AV",
+      "size_bytes": 12911,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtC_08.png",
+      "source_drive_id": "1Y7XXEJLRRXzXGye9B3NDyh1HKaYSbPkA",
+      "size_bytes": 12917,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtC_09.png",
+      "source_drive_id": "1u_EmdiY0SFhal6yM9HdPY6xvpg-4WHwi",
+      "size_bytes": 12917,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtC_10.png",
+      "source_drive_id": "1LI2-DV_0njFpkDZc0t3dhVti3jiDPnZG",
+      "size_bytes": 12951,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtC_11.png",
+      "source_drive_id": "1RF1nRyy0my6aCO7UFEOSkODb2exH8UU5",
+      "size_bytes": 12949,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "dirt",
+      "filename": "dirt_path_128_64_dirtC_12.png",
+      "source_drive_id": "15lmiHY1havVfMXA6_-9_li0Kp0B9otLc",
+      "size_bytes": 12940,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "fallen_log",
+      "filename": "fallen_log_v001_128_lab64.png",
+      "source_drive_id": "1CdkeX5QiQW1k3ssBPxqN0P-bIKaNEjua",
+      "size_bytes": 14914,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "fallen_log",
+      "filename": "fallen_log_v002_128_lab64.png",
+      "source_drive_id": "1wt3ufp0O41vPX9TQGv90zC0pgPM02BHW",
+      "size_bytes": 14905,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "fallen_log",
+      "filename": "fallen_log_v003_128_lab64.png",
+      "source_drive_id": "1yzJziyFQyhMFI7ujEiV8gtwg_QvqU_LI",
+      "size_bytes": 18657,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122857_r1c1_01.png",
+      "source_drive_id": "1ZT5rH2jdJM8rI3j1wRVvjDtvfExNPxAb",
+      "size_bytes": 12845,
+      "kind": "terrain",
+      "review_status": "pilot_binary_verified",
+      "sha256": "e32323706958da412d174ebb34debfcc631f1c71d1d463732cbc342f972fab43",
+      "material_or_variant_id": "material_forest_4b931593162c3875",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_ai_generated",
+      "packed_atlas_page": "atlas_00.png"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122857_r1c2_02.png",
+      "source_drive_id": "14mIzJaqSMNFO8bK6ve-J9RlIJgr2z-qg",
+      "size_bytes": 12881,
+      "kind": "terrain",
+      "review_status": "pilot_binary_verified",
+      "sha256": "c1287eacf4b3f63e2a33807fef5bda0d1dc32c48d0302eef305d57810d716389",
+      "material_or_variant_id": "material_forest_c378497f039acd7f",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_ai_generated",
+      "packed_atlas_page": "atlas_00.png"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122857_r1c3_03.png",
+      "source_drive_id": "1mBoDouJz2KrOZsUrFuzfFNGmw-6eag0t",
+      "size_bytes": 12844,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122857_r1c4_04.png",
+      "source_drive_id": "10ZmZeWGHoNmQcO7tUwuy1A-UaYLXTklV",
+      "size_bytes": 12788,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122857_r2c1_05.png",
+      "source_drive_id": "1ygJYAZOvrFF7-eE5J4aJxW9hHsljjDH2",
+      "size_bytes": 12814,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122857_r2c2_06.png",
+      "source_drive_id": "1VBe2cUDvWlsoejvyipIwLkcNb7D2E-h6",
+      "size_bytes": 12828,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122857_r2c3_07.png",
+      "source_drive_id": "1c53RWUbH4Dc9XkC1HsOMacllQiBpy8d7",
+      "size_bytes": 12846,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122857_r2c4_08.png",
+      "source_drive_id": "1R9Cy6lUOFp5ZSHe3gbgr4KjOFv4QqFFi",
+      "size_bytes": 12922,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122857_r3c1_09.png",
+      "source_drive_id": "1JibRyt98gxJbL3fo0abEuhsKtGOU6yoo",
+      "size_bytes": 12769,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122857_r3c2_10.png",
+      "source_drive_id": "139sP3ekSTxHrLXeNClfb0fhNw4B2ApKM",
+      "size_bytes": 12942,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122857_r3c3_11.png",
+      "source_drive_id": "1KJNGppM47hRyXmC7Id5boAQ6Ir8uYq2n",
+      "size_bytes": 12774,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122857_r3c4_12.png",
+      "source_drive_id": "1uDFiP_SZFyDrATz1uKQkHZf-s-BqF-XG",
+      "size_bytes": 12894,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122858_r1c1_01.png",
+      "source_drive_id": "1hVggbBLgxI0cfbXe9mN0zC44x1FHIA-0",
+      "size_bytes": 12703,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122858_r1c2_02.png",
+      "source_drive_id": "1qaWirYf-UElNx2nGCbwzG3RBIxy0ymI9",
+      "size_bytes": 12897,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122858_r1c3_03.png",
+      "source_drive_id": "110PC5FYdgvvtppzMNZ9BzJVzxuVDVwoS",
+      "size_bytes": 12969,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122858_r1c4_04.png",
+      "source_drive_id": "1SxVAtJTZ92QV4ndQWax_wO0lwuVIz2AJ",
+      "size_bytes": 12782,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122858_r2c1_05.png",
+      "source_drive_id": "1GUT0tU5a2JabMWU1y8V8MYd0Z9nlsqOx",
+      "size_bytes": 12814,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122858_r2c2_06.png",
+      "source_drive_id": "1WhL9xSW_HIGketVPIjJCEnybBONuoi2I",
+      "size_bytes": 12920,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122858_r2c3_07.png",
+      "source_drive_id": "1jg3YGdDzNbzSfXUok2FB7SjoiFgZ13ba",
+      "size_bytes": 12811,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122858_r2c4_08.png",
+      "source_drive_id": "1PhaNZwSkm9oYjrp3H0ldDLJ53BFcdJDw",
+      "size_bytes": 12977,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122858_r3c1_09.png",
+      "source_drive_id": "12MiZ3jSvd4HEF7Qcv0LmRyNGWgvzBwpP",
+      "size_bytes": 12835,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122858_r3c2_10.png",
+      "source_drive_id": "1FuEBUhLT04tCx8xgbsP88KJddPj15Urp",
+      "size_bytes": 12935,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122858_r3c3_11.png",
+      "source_drive_id": "1F7GwwcLfsfTpKsCrvi9Rk89opd8A7Gi8",
+      "size_bytes": 12828,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122858_r3c4_12.png",
+      "source_drive_id": "1TrZpRNmgCbGPOJ2Dv0x1kSrZN8s-j1u5",
+      "size_bytes": 12971,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122859_r1c1_01.png",
+      "source_drive_id": "1PCBzWI-PAXn8SJt_hjsbY09A1MVjBa5t",
+      "size_bytes": 12833,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122859_r1c2_02.png",
+      "source_drive_id": "1z3Z1lMDp7XcrxHMSP2BLR913RKSLStxR",
+      "size_bytes": 12925,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122859_r1c3_03.png",
+      "source_drive_id": "1DwHU3IcKxmUet0MQiJbgdXSz5N1HwO9s",
+      "size_bytes": 12976,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122859_r1c4_04.png",
+      "source_drive_id": "1SefEbEuoaQTPSDy0tcUH-tMrnx8kdVXp",
+      "size_bytes": 12883,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122859_r2c1_05.png",
+      "source_drive_id": "1MWoIaeJhb8UyqgZcHv3C2cGdQrnUylP_",
+      "size_bytes": 12808,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122859_r2c2_06.png",
+      "source_drive_id": "10uHn8MFxOoRbMVFVFCediKXvlJUu4mfR",
+      "size_bytes": 12842,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122859_r2c3_07.png",
+      "source_drive_id": "1oYmqgyGGEMjrF2hnGJ-0HVjEJVZvJXBS",
+      "size_bytes": 12929,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122859_r2c4_08.png",
+      "source_drive_id": "1d9rxSVMlU-KGi7oFvvNS-mMNU5rji-1x",
+      "size_bytes": 12882,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122859_r3c1_09.png",
+      "source_drive_id": "1h0c_7Uyu7rYCHuD2KuWH2O7dhGiCLN81",
+      "size_bytes": 12928,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122859_r3c2_10.png",
+      "source_drive_id": "14PUDQcw2m-3Hp-LV9P0rWe5hqzCJUqqk",
+      "size_bytes": 12975,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122859_r3c3_11.png",
+      "source_drive_id": "1hp85ri3eHQcNZ3uWLwqWOmJgUMz3UrqI",
+      "size_bytes": 12940,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "forest",
+      "filename": "forest_floor_122859_r3c4_12.png",
+      "source_drive_id": "17S3g7zJz98t6eJDMytoxODJ3vjRhEwRZ",
+      "size_bytes": 12840,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122814_r1c1_01.png",
+      "source_drive_id": "1RYqmrBiP9Om1NjE9Wh5gDsXqmY0-w-LK",
+      "size_bytes": 12924,
+      "kind": "terrain",
+      "review_status": "pilot_binary_verified",
+      "sha256": "c0a74394bff94c81123ef7819f592fde0c4857db6d09102b0a6f5d896914f202",
+      "material_or_variant_id": "material_grass_58e3f09cb6f73c3e",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_ai_generated",
+      "packed_atlas_page": "atlas_00.png"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122814_r1c2_02.png",
+      "source_drive_id": "1uPIWglHUZH6gF1JQpPHDGSk3LLO9OzKo",
+      "size_bytes": 12923,
+      "kind": "terrain",
+      "review_status": "pilot_binary_verified",
+      "sha256": "e502f42ddb772cfc818a7288e07ae064dc3509ef757913c1aba041ad512d1bc0",
+      "material_or_variant_id": "material_grass_1e6735d0d85193cd",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_ai_generated",
+      "packed_atlas_page": "atlas_00.png"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122814_r1c3_03.png",
+      "source_drive_id": "1SnRuaODH71hb4rmQX-yvvAoH6EZKr-Db",
+      "size_bytes": 12867,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122814_r1c4_04.png",
+      "source_drive_id": "18KshlpvRgKkzm9-HnQ0lENury-fXfss8",
+      "size_bytes": 12937,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122814_r2c1_05.png",
+      "source_drive_id": "1VI6ryUJSzu7BA2-CVwpyFZbf6rVQvyUk",
+      "size_bytes": 12799,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122814_r2c2_06.png",
+      "source_drive_id": "1n3m99_cSx_HYd3Dj7wOci8exlHsX6uoG",
+      "size_bytes": 12900,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122814_r2c3_07.png",
+      "source_drive_id": "16SI2hvmTrhZl9xJpH9F3_KI_1qx4dhF4",
+      "size_bytes": 12943,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122814_r2c4_08.png",
+      "source_drive_id": "10Ql--VjMqwOJxZpAusStvm--edutnBYj",
+      "size_bytes": 12865,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122814_r3c1_09.png",
+      "source_drive_id": "1sQZ_FOmfx96CODgDQ5ejWPCD-lV_DWQW",
+      "size_bytes": 12946,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122814_r3c2_10.png",
+      "source_drive_id": "1ykEl08C1y6fFxBgtcaMYq2YKhzJc0Ozf",
+      "size_bytes": 12929,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122814_r3c3_11.png",
+      "source_drive_id": "1ZRQ8YXGegwJgCl9c-E-xTGGBQwtXQSov",
+      "size_bytes": 12884,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122814_r3c4_12.png",
+      "source_drive_id": "1rYvcKSsmTyXHrEL7hC0ZV53QRgj_rYwB",
+      "size_bytes": 12921,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122815_r1c1_01.png",
+      "source_drive_id": "1EgDyZtgoSH04Ummqg7pL8uf0qg0aBLob",
+      "size_bytes": 12907,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122815_r1c2_02.png",
+      "source_drive_id": "1Kymghv2ErGhbwBpxaDjPkruHcxE4illL",
+      "size_bytes": 12830,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122815_r1c3_03.png",
+      "source_drive_id": "1CG0G6hUqIxkR_jGAbJAvwpDvyQXwcZ0T",
+      "size_bytes": 12926,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122815_r1c4_04.png",
+      "source_drive_id": "18mlVD-dkblCZaVOcyJzLcAN2iOpKVMQj",
+      "size_bytes": 12893,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122815_r2c1_05.png",
+      "source_drive_id": "1gdbV3NusRla9bmy1mbeDLx_o_Fg34MA_",
+      "size_bytes": 12841,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122815_r2c2_06.png",
+      "source_drive_id": "1LdbnXoCCHYsyKhbdziW5O0C9HgHF44nw",
+      "size_bytes": 12778,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122815_r2c3_07.png",
+      "source_drive_id": "17iwHmhecPiAF27AoKV3MaKDgcHpSFpyX",
+      "size_bytes": 12906,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122815_r2c4_08.png",
+      "source_drive_id": "1qLgq_6G1a0A2IS0HH8QcSF9n2GGny8vD",
+      "size_bytes": 12850,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122815_r3c1_09.png",
+      "source_drive_id": "1iOJFgpeSh9QScIUck4oT01araCw3_JH-",
+      "size_bytes": 12848,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122815_r3c2_10.png",
+      "source_drive_id": "14L4nWZBMS8AsC-ew-RK3HvwM1EUJ5OuJ",
+      "size_bytes": 12796,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122815_r3c3_11.png",
+      "source_drive_id": "1hcNVn9Z964gfJag3rd4Ika6Lr5ayaub0",
+      "size_bytes": 12822,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122815_r3c4_12.png",
+      "source_drive_id": "1RF9m_P1e_M5SAvtHeugMVcM1lnZho0ym",
+      "size_bytes": 12921,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122816_r1c1_01.png",
+      "source_drive_id": "1-1YdqZA_mr70imV86SeCAuPW2VLJ7c1b",
+      "size_bytes": 12950,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122816_r1c2_02.png",
+      "source_drive_id": "1X-0AnmB08tTYwpRNFgO6hEPx6edhhLiG",
+      "size_bytes": 12878,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122816_r1c3_03.png",
+      "source_drive_id": "1KNl49YaCY0HbJKtoF1djbMa0ZlqPZpQp",
+      "size_bytes": 12875,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122816_r1c4_04.png",
+      "source_drive_id": "1QFCQgARLfHZ_wSYeUZ7AfnQ13yBAgTdB",
+      "size_bytes": 12948,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122816_r2c1_05.png",
+      "source_drive_id": "1mdX_6JOCuKNsJA0aLZr0KBM2BFB8r8Hj",
+      "size_bytes": 12785,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122816_r2c2_06.png",
+      "source_drive_id": "1fJw1Jx8NseMHIlVJhK8WPcip7EuNiuBj",
+      "size_bytes": 12935,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122816_r2c3_07.png",
+      "source_drive_id": "1WaDrbjg6sNoCGWzS1DCgqfmNet_i_f2m",
+      "size_bytes": 12851,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122816_r2c4_08.png",
+      "source_drive_id": "19qH7eTv62-TN05t4Ktz8viBRyCwXuHaq",
+      "size_bytes": 12842,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122816_r3c1_09.png",
+      "source_drive_id": "1QJ2n0JyHkDIIt8kk8d2NFxVYXhlpLECR",
+      "size_bytes": 12958,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122816_r3c2_10.png",
+      "source_drive_id": "1xGx_xeCZl_0Hv5DFn2UlW6R7qu2eCFzV",
+      "size_bytes": 12882,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122816_r3c3_11.png",
+      "source_drive_id": "1A7LBzkJrO-sBkVnSiMlojxYbwBZchNA8",
+      "size_bytes": 12855,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "grass",
+      "filename": "terrain_grass_128_64_122816_r3c4_12.png",
+      "source_drive_id": "11fsftmN06VCmWRjJxP_w5cXyUdN3s4xB",
+      "size_bytes": 12955,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "oak",
+      "filename": "oak_v001_128_lab64.png",
+      "source_drive_id": "1E6OdAQTNknEL7Weukm7yofEhAdEBxand",
+      "size_bytes": 27556,
+      "kind": "object",
+      "review_status": "pilot_binary_verified",
+      "sha256": "b76b1cccd432b149214295e46b4bb66023d57aa1b50ec57c93bb0c7251392101",
+      "material_or_variant_id": "object_variant_oak_0aae44af7025fa7a",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_ai_generated",
+      "packed_atlas_page": "atlas_00.png"
+    },
+    {
+      "family": "oak",
+      "filename": "oak_v002_128_lab64.png",
+      "source_drive_id": "1-85KvRBK1So4tgt0u-2-5NH0N35_aiWV",
+      "size_bytes": 28344,
+      "kind": "object",
+      "review_status": "pilot_binary_verified",
+      "sha256": "44b09352240df7cfac4522c8ca0b78e4145042113c2fe746639f95562bb38782",
+      "material_or_variant_id": "object_variant_oak_a25b91ec4eaad3a0",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_ai_generated",
+      "packed_atlas_page": "atlas_00.png"
+    },
+    {
+      "family": "oak",
+      "filename": "oak_v003_128_lab64.png",
+      "source_drive_id": "1cWqpjcrEHT3p_vjVIAbGMSwTaNNPV51U",
+      "size_bytes": 30224,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "oak",
+      "filename": "oak_v004_128_lab64.png",
+      "source_drive_id": "1t7bH1iC8UjZD3ugKJGoFm-kNMJK32UV9",
+      "size_bytes": 29316,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "oak",
+      "filename": "oak_v005_128_lab64.png",
+      "source_drive_id": "1N8htahfrBqATONqmx7cDrPz4sO7J-8HE",
+      "size_bytes": 24615,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "oak",
+      "filename": "oak_v006_128_lab64.png",
+      "source_drive_id": "1snTBNXQt1ri0T5hDMvAdtTz2KI4IScfr",
+      "size_bytes": 30080,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "oak",
+      "filename": "oak_v007_128_lab64.png",
+      "source_drive_id": "1WBR5SXEU7jVgWHH5884_KfbciPQdqF2a",
+      "size_bytes": 28601,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "reeds",
+      "filename": "reeds_v001_128_lab64.png",
+      "source_drive_id": "16w4fgwuopBf136xG2Lp0EhmqN6V7bSL-",
+      "size_bytes": 19766,
+      "kind": "object",
+      "review_status": "pilot_binary_verified",
+      "sha256": "9d83112ac2cdd11ab5d945298ed7520812a52272598296ea1b0e045b3f03f91f",
+      "material_or_variant_id": "object_variant_reeds_9f09c8ec827e270e",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_ai_generated",
+      "packed_atlas_page": "atlas_00.png"
+    },
+    {
+      "family": "reeds",
+      "filename": "reeds_v002_128_lab64.png",
+      "source_drive_id": "1kV5ICw5UwF-P9bk2aH2HfgLK-PxRZKvZ",
+      "size_bytes": 21427,
+      "kind": "object",
+      "review_status": "pilot_binary_verified",
+      "sha256": "420dc468bdad68d2798b47a2757e7cf5148546e0aa3fb3d49b4887c2cb7d9c0f",
+      "material_or_variant_id": "object_variant_reeds_55af1cc64e068861",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_ai_generated",
+      "packed_atlas_page": "atlas_00.png"
+    },
+    {
+      "family": "reeds",
+      "filename": "reeds_v003_128_lab64.png",
+      "source_drive_id": "1QBuDp9wqo1qmDbzC9xYbrlr0Q2pcgOhR",
+      "size_bytes": 19630,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockA_01.png",
+      "source_drive_id": "1wNJhW7qgmFGBoQF00UTzCO0X5t2YIldj",
+      "size_bytes": 12771,
+      "kind": "terrain",
+      "review_status": "pilot_binary_verified",
+      "sha256": "51e9d36375740f2d200932be0f9d9acbf718d4dc76c8e291dc6fd7ca8a62dee8",
+      "material_or_variant_id": "material_rock_cc442570f3c98781",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_ai_generated",
+      "packed_atlas_page": "atlas_00.png"
+    },
+    {
+      "family": "rock",
+      "filename": "rockA_02.png",
+      "source_drive_id": "1oVi76eicZabgot68lt_RraM1GYgbB7bz",
+      "size_bytes": 12868,
+      "kind": "terrain",
+      "review_status": "pilot_binary_verified",
+      "sha256": "3414ca9ffaa2a7f18f876a818cc1ea22bf6cd2129ea0f312d13a0465d23d91d3",
+      "material_or_variant_id": "material_rock_7c662f0703045241",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_ai_generated",
+      "packed_atlas_page": "atlas_00.png"
+    },
+    {
+      "family": "rock",
+      "filename": "rockA_03.png",
+      "source_drive_id": "1TNh9lGC0wkLcUT-pHZ6Lq4bYo1UybyVE",
+      "size_bytes": 12788,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockA_04.png",
+      "source_drive_id": "1QqCzX1oNpQ1eEmPe3_XYsefHyPyWXhj9",
+      "size_bytes": 12783,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockA_06.png",
+      "source_drive_id": "1lBk7jEnzUThFnnAsVXwke__EwJj5Re7F",
+      "size_bytes": 12900,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockA_07.png",
+      "source_drive_id": "1DIU_JxF1gSAhvjl1VfhDw33Z-rBNvI-g",
+      "size_bytes": 12884,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockA_09.png",
+      "source_drive_id": "1CUcbR_HVpkNFhJsAhzF00AQQKeQvowhm",
+      "size_bytes": 12799,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockA_10.png",
+      "source_drive_id": "1BWb32Pd0PRby7I_ivfJoj-UDKTky0pUZ",
+      "size_bytes": 12730,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockA_11.png",
+      "source_drive_id": "1mwQv1egpkfT2py0t376PEYSvOID2BKmf",
+      "size_bytes": 12856,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockB_01.png",
+      "source_drive_id": "1BHEkjFmrxcA1Ubngcoe10C3f-aehaIAc",
+      "size_bytes": 12768,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockB_02.png",
+      "source_drive_id": "1c_Ik16YcfGdNrAX7igwJaq-7LvPTEReD",
+      "size_bytes": 12896,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockB_03.png",
+      "source_drive_id": "1WVL3SGRtq-fmxJ42SkjEFM2YQIkzjuPj",
+      "size_bytes": 12811,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockB_04.png",
+      "source_drive_id": "12uYt_U9iR_Cm9FYT_TjdILC-IYLyCQBi",
+      "size_bytes": 12908,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockB_05.png",
+      "source_drive_id": "1PD1CoTEb4y5Dl8UMNNapQS4JyaHHl5q7",
+      "size_bytes": 12891,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockB_06.png",
+      "source_drive_id": "1mWGUSfYLmt0dcVo6ODBAhgFXkPran7WE",
+      "size_bytes": 12820,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockB_06.png",
+      "source_drive_id": "1Rz7Uwr7IQt0xkDfesjlJ-pSrrLIWG1tu",
+      "size_bytes": 12820,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockB_07.png",
+      "source_drive_id": "1tEiqBSY2ht4BAky69ZqI70ou0XhRQz5y",
+      "size_bytes": 12878,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockB_08.png",
+      "source_drive_id": "1GRVcef1IB3pWYqpaKw4_WdWqXLGPXg0S",
+      "size_bytes": 12843,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockB_08.png",
+      "source_drive_id": "1LB1v5GX1RtIwXBIEewOkkciF6HdpuPNw",
+      "size_bytes": 12843,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockB_09.png",
+      "source_drive_id": "1j1c_FbeQkIePYK-9d91ZiQJ1gEs9s3H2",
+      "size_bytes": 12874,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockB_10.png",
+      "source_drive_id": "1_qwGpesJxayqTILMSpW49czzo77c7Cb_",
+      "size_bytes": 12934,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockB_11.png",
+      "source_drive_id": "12FYJusHXyTr8N0URZd_Nt3yrjbtFrGa1",
+      "size_bytes": 12849,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockB_12.png",
+      "source_drive_id": "1C_VQtDsasLkXwtEEDGGom7oWtk-DsJ81",
+      "size_bytes": 12897,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockC_01.png",
+      "source_drive_id": "1Ym7c3F_ZQnvB8nmOxfyRvbSfXCQG5AZ3",
+      "size_bytes": 12854,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockC_02.png",
+      "source_drive_id": "1rzDUmVsnRuxUND-YsiEumDU8WkNhlz4c",
+      "size_bytes": 12899,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockC_03.png",
+      "source_drive_id": "1DXXK8GyB1ep7X2IoZtlpeXkzXQLuosz_",
+      "size_bytes": 12773,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockC_04.png",
+      "source_drive_id": "1FGNX50qA_hhzFVon6zwEytlPv1VNDOo5",
+      "size_bytes": 12881,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockC_05.png",
+      "source_drive_id": "1F25dlFuWaMjUgL2EvAA1r-v9p7ukrSuJ",
+      "size_bytes": 12799,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockC_06.png",
+      "source_drive_id": "1lIVE1lPeipT7tQ4y4utZZOIL-rwOXEVW",
+      "size_bytes": 12786,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockC_07.png",
+      "source_drive_id": "1r1NMxlUthq7qFrNElCgKXiPuaDyg3Rxk",
+      "size_bytes": 12952,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockC_08.png",
+      "source_drive_id": "1atP-91DaG6P1mAdsWtoegKsplX8Pp3Av",
+      "size_bytes": 12612,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockC_09.png",
+      "source_drive_id": "1Ab5raHnNwOhBPdmOCYDfPXDjJJI96uS7",
+      "size_bytes": 12863,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockC_10.png",
+      "source_drive_id": "1dk6KAlCzdJJjP0a9fZj7kq9uECjYvdFg",
+      "size_bytes": 12791,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock",
+      "filename": "rockC_11.png",
+      "source_drive_id": "18rQSCvgys6d8CvfjZLPAky7Aewk3lZdV",
+      "size_bytes": 12767,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock_cluster",
+      "filename": "rock_cluster_v001_128_lab64.png",
+      "source_drive_id": "1iLLoHs2DJSDXRuLs9wQ-V9jhpnW-XBOe",
+      "size_bytes": 26411,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock_cluster",
+      "filename": "rock_cluster_v002_128_lab64.png",
+      "source_drive_id": "1Tj-VglEV4ALKV0kjqs3zVwNh3nw8IF-8",
+      "size_bytes": 27000,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock_cluster",
+      "filename": "rock_cluster_v003_128_lab64.png",
+      "source_drive_id": "1ZRgyTvB51VqP9WgM68r0WIBEoo6UF-QC",
+      "size_bytes": 19846,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock_cluster",
+      "filename": "rock_cluster_v004_128_lab64.png",
+      "source_drive_id": "1XYpmelKd0w-_hLlstgT_8iOJX0jKVorn",
+      "size_bytes": 15156,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock_cluster",
+      "filename": "rock_cluster_v005_128_lab64.png",
+      "source_drive_id": "1VyFJgEKpgowr5ngGBhurNA9lV-NQIeOa",
+      "size_bytes": 23505,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock_cluster",
+      "filename": "rock_cluster_v006_128_lab64.png",
+      "source_drive_id": "1txmE_3UVxzPxP5oDQAEhF7Huf5c_XFue",
+      "size_bytes": 26013,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock_cluster",
+      "filename": "rock_cluster_v007_128_lab64.png",
+      "source_drive_id": "12rJY7o5EZ3Wv82YYjCcobSJLNBTZYs3u",
+      "size_bytes": 14449,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock_cluster",
+      "filename": "rock_cluster_v008_128_lab64.png",
+      "source_drive_id": "1TuIlgvgtZv3luacwWC8knCCWuAXFJRqO",
+      "size_bytes": 26170,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock_cluster",
+      "filename": "rock_cluster_v009_128_lab64.png",
+      "source_drive_id": "194C3M5VeXt2V0mynZIzs3uw_YdKHzcVO",
+      "size_bytes": 17416,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock_spire",
+      "filename": "rock_spire_v001_128_lab64.png",
+      "source_drive_id": "1_txTSFWvw58PrYgRRx4mW8lxENw4xgHF",
+      "size_bytes": 20598,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock_spire",
+      "filename": "rock_spire_v002_128_lab64.png",
+      "source_drive_id": "1R5SiUW2j5Y8j35WAXO-hd9chrtJDEstt",
+      "size_bytes": 23304,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock_spire",
+      "filename": "rock_spire_v003_128_lab64.png",
+      "source_drive_id": "1peTwx_rfd2VHOkGCNVzx6ORdw6MV6-rB",
+      "size_bytes": 22221,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "rock_spire",
+      "filename": "rock_spire_v004_128_lab64.png",
+      "source_drive_id": "1XcxYENxi7yIi2XqrkPAiCs9HZ7DuQF0V",
+      "size_bytes": 17942,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "shrub",
+      "filename": "shrub_v001_128_lab64.png",
+      "source_drive_id": "1pYwRI9odCdfCpiMwypxIVR9Irui1ex4H",
+      "size_bytes": 26314,
+      "kind": "object",
+      "review_status": "pilot_binary_verified",
+      "sha256": "cefba22b24ff923fac982e78c43b0cf515819ae1ed101142890fc5d8fde22088",
+      "material_or_variant_id": "object_variant_shrub_0176d4f8f55b79ea",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_ai_generated",
+      "packed_atlas_page": "atlas_00.png"
+    },
+    {
+      "family": "shrub",
+      "filename": "shrub_v002_128_lab64.png",
+      "source_drive_id": "1VKUeBLNd-d2ZtR1vQNa4qbn-whfLp6ag",
+      "size_bytes": 24817,
+      "kind": "object",
+      "review_status": "pilot_binary_verified",
+      "sha256": "0aaf29fa60b345befc1dad88c941d8a15eae462f195067999af48d056906d586",
+      "material_or_variant_id": "object_variant_shrub_2339993f483fa822",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_ai_generated",
+      "packed_atlas_page": "atlas_00.png"
+    },
+    {
+      "family": "shrub",
+      "filename": "shrub_v003_128_lab64.png",
+      "source_drive_id": "1-4w_0Kg09aD7IbQFjttH1KgdH2Wdcs-J",
+      "size_bytes": 25434,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "shrub",
+      "filename": "shrub_v004_128_lab64.png",
+      "source_drive_id": "1fhL7vjmaIU63yk_y3SE2pOhViCw1Ifu-",
+      "size_bytes": 24681,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "shrub",
+      "filename": "shrub_v005_128_lab64.png",
+      "source_drive_id": "1CQnIZyhZGFwnaoG3MNei2OVi9MQiYN-U",
+      "size_bytes": 24033,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "shrub",
+      "filename": "shrub_v006_128_lab64.png",
+      "source_drive_id": "1lKo1U_FBPG5VF4F27kuCgg6ulJPXC7V7",
+      "size_bytes": 19996,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "shrub",
+      "filename": "shrub_v007_128_lab64.png",
+      "source_drive_id": "1zqsq-yjlmR0XmLn0H9F25HjQ7ixXI52h",
+      "size_bytes": 27248,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "shrub",
+      "filename": "shrub_v008_128_lab64.png",
+      "source_drive_id": "1_0guU-RSOMs-Yndl84hgatEIooahXN69",
+      "size_bytes": 17589,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "stump",
+      "filename": "stump_v001_128_lab64.png",
+      "source_drive_id": "1NksegZ-Vo9M-u2NchOLFUHHPrzzlCLyD",
+      "size_bytes": 15602,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "stump",
+      "filename": "stump_v002_128_lab64.png",
+      "source_drive_id": "1MJcyKhSqzwl-MvP83J7YUfrY9dFY2qF6",
+      "size_bytes": 18356,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "water_rocks",
+      "filename": "water_rocks_v001_128_lab64.png",
+      "source_drive_id": "13vfbNUjrnbXH2uuAxY_BIu1E7WV-D-u6",
+      "size_bytes": 18165,
+      "kind": "object",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_A_01_128_64.png",
+      "source_drive_id": "1VaJf3TNn41nnxCY27qbTy-v-nvUycD7r",
+      "size_bytes": 12905,
+      "kind": "terrain",
+      "review_status": "pilot_binary_verified",
+      "sha256": "6ac1390e4ffc9058c2536edbe4dc280b336d25f9ab950c170f389ee9462c6d93",
+      "material_or_variant_id": "material_wetland_24b6e60a38fa0d2d",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_ai_generated",
+      "packed_atlas_page": "atlas_00.png"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_A_02_128_64.png",
+      "source_drive_id": "1wyXFv3DQOi6Am8hBn5v11_OI1f8D3mV4",
+      "size_bytes": 12867,
+      "kind": "terrain",
+      "review_status": "pilot_binary_verified",
+      "sha256": "14ed69961b3cdf0c892f63cfb9c78c5b9e7751edfb2385044a62528071b6f1eb",
+      "material_or_variant_id": "material_wetland_a8aea03ab3be1b91",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_ai_generated",
+      "packed_atlas_page": "atlas_00.png"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_A_04_128_64.png",
+      "source_drive_id": "1K6ih66JkayyvFQfq8lC5AUq1Wndkrylb",
+      "size_bytes": 12873,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_A_05_128_64.png",
+      "source_drive_id": "1AVz3g1xVaouPBdppFZ60QrAAm8Gb3eiK",
+      "size_bytes": 12674,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_A_06_128_64.png",
+      "source_drive_id": "1uatKGmszn5VITyzpH2nCTepDtPMrOdi1",
+      "size_bytes": 12908,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_A_08_128_64.png",
+      "source_drive_id": "1jSwDCUbGKsJ_4ckXqpCNY75o9C-mWCOd",
+      "size_bytes": 12943,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_A_09_128_64.png",
+      "source_drive_id": "1MIIpoDXSBWKv7-sZwy9NtmKhzMTAaL2E",
+      "size_bytes": 12885,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_A_10_128_64.png",
+      "source_drive_id": "1cJ3zSo_JVdrPcPLEnn2C5jwpcRm0kRLQ",
+      "size_bytes": 12844,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_A_11_128_64.png",
+      "source_drive_id": "15Xt-5gMIR_OXSh1rZcP5LU74Y35ciwXb",
+      "size_bytes": 12923,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_A_12_128_64.png",
+      "source_drive_id": "1lYUTq9SgAMovqfr-XGou_46jv5is6ExD",
+      "size_bytes": 12817,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_B_01_128_64.png",
+      "source_drive_id": "1erIJYWG5IyvO3jVfXLj1c_oEI4pVc0wK",
+      "size_bytes": 12792,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_B_02_128_64.png",
+      "source_drive_id": "1GitAt2Bw2KQqYxAhGxbCMvHqZJy0Tiy0",
+      "size_bytes": 12852,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_B_03_128_64.png",
+      "source_drive_id": "1ejfsZKEW06CSL89Y_SzJhsvTJDajla8N",
+      "size_bytes": 12873,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_B_05_128_64.png",
+      "source_drive_id": "1wQAFmHezr53oUu_S_qsTxGrkT4O5F6ZZ",
+      "size_bytes": 12891,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_B_06_128_64.png",
+      "source_drive_id": "1ghpLvtLblRUxOu8k_QaUkeI1yXVasAin",
+      "size_bytes": 12874,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_B_07_128_64.png",
+      "source_drive_id": "1k80IJwHIwFTNvgJFr0BXFNi7M0NRbKMG",
+      "size_bytes": 12838,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_B_08_128_64.png",
+      "source_drive_id": "1E8wee6gVkLtB3j2AOuVwzJSbUZmv4Lln",
+      "size_bytes": 12860,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_B_10_128_64.png",
+      "source_drive_id": "1_OwbvCTrxRQfOSVJ7PoVid2s_F1kWyRb",
+      "size_bytes": 12785,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_B_11_128_64.png",
+      "source_drive_id": "1k8Sr6Lm-lpmMcsUj2nPS95scLJQfn0-E",
+      "size_bytes": 12808,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_B_12_128_64.png",
+      "source_drive_id": "16bKileOSelUX43W6fAykcYg1S3y8IoLz",
+      "size_bytes": 12872,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_C_01_128_64.png",
+      "source_drive_id": "1nvwiPqvHLNjuB2x82fGpmdnxCw-fOVsh",
+      "size_bytes": 12880,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_C_02_128_64.png",
+      "source_drive_id": "1kSFb_-uFYumUDbCDyLdaexZ8TBZTx5R_",
+      "size_bytes": 12852,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_C_03_128_64.png",
+      "source_drive_id": "11DYVKCQ6BfpaTRBx9mcHdyOeugZOk-FE",
+      "size_bytes": 12903,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_C_04_128_64.png",
+      "source_drive_id": "1X1ZqfM4buLVOt2Gz2BvitUgHHEllyfkc",
+      "size_bytes": 12868,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_C_05_128_64.png",
+      "source_drive_id": "1k3QMFFHc6zjadVN9FkvDc-FvCkjTiF9R",
+      "size_bytes": 12845,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_C_06_128_64.png",
+      "source_drive_id": "1Ng5WbfMjpAYM78oR9SUDstMFBdCYI0IE",
+      "size_bytes": 12951,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_C_07_128_64.png",
+      "source_drive_id": "1QDCb-ElJgEKJ0UUSdp5Uch7d5rEkyfkv",
+      "size_bytes": 12840,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_C_09_128_64.png",
+      "source_drive_id": "17wyLvlxdNa8XGJPyOALDDd5lnK1OKem6",
+      "size_bytes": 12875,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_C_10_128_64.png",
+      "source_drive_id": "1c0xxOeLJZ47UMTuK_wQt2Rjk3gtiI_8y",
+      "size_bytes": 12857,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_C_11_128_64.png",
+      "source_drive_id": "1WTrH1uPqYNqW-aZ8KNEI0h6JhURTz-fB",
+      "size_bytes": 12882,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    },
+    {
+      "family": "wetland",
+      "filename": "Riverbank_Wetland_C_12_128_64.png",
+      "source_drive_id": "1Z6Nj51kX_MCTaG8mQKjJ0HkCBttb-mL_",
+      "size_bytes": 12905,
+      "kind": "terrain",
+      "review_status": "pending_binary_license_review"
+    }
+  ]
+}

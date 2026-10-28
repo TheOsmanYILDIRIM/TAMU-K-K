@@ -383,6 +383,31 @@ jobs:
           name: terrain25d-runtime-real-game
           path: /tmp/terrain25d-runtime.png
           if-no-files-found: error
+      - name: Same-authored R2 legacy vs 25D real full-frame CPU distribution
+        if: github.ref_name == 'experiment/25d-runtime-20261028'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/terrain25d-compare
+          for size in 360x780 720x1100; do
+            for mode in legacy runtime; do
+              if [ "$mode" = runtime ]; then opt=1; else opt=0; fi
+              OSMAN_R2_PILOT=1 OSMAN_25D_RUNTIME="$opt" OSMAN_25D_COMPARE=1 \
+                OSMAN_25D_COMPARE_DISPLAY="$size" timeout 180s \
+                xvfb-run -a love game/love 2>&1 | tee "/tmp/terrain25d-$mode-$size.log"
+              grep -q "TERRAIN25D_COMPARE_OK mode=$mode frames=120" "/tmp/terrain25d-$mode-$size.log"
+              shot="$(find "$HOME/.local/share/love" -name "terrain25d-compare-$mode-$size.png" -print -quit)"
+              test -n "$shot"
+              cp "$shot" "/tmp/terrain25d-compare/terrain25d-$mode-$size.png"
+            done
+          done
+      - name: Upload comparable 25D frames
+        if: github.ref_name == 'experiment/25d-runtime-20261028'
+        uses: actions/upload-artifact@v4
+        with:
+          name: terrain25d-comparable-r2
+          path: /tmp/terrain25d-compare/*.png
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: success()
         with:

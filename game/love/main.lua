@@ -32,6 +32,9 @@ local r2_pilot_enabled=os.getenv("OSMAN_R2_PILOT")=="1"
 local cache_pilot_enabled=os.getenv("OSMAN_CHUNK_CACHE_PILOT")=="1"
 local terrain25d_enabled=os.getenv("OSMAN_25D_RUNTIME")=="1"
 local terrain25d_smoke=os.getenv("OSMAN_25D_SMOKE")=="1"
+local terrain25d_compare=os.getenv("OSMAN_25D_COMPARE")=="1"
+assert(not terrain25d_compare or r2_pilot_enabled,
+  "25D comparison requires authored R2 pilot")
 assert(not terrain25d_enabled or (r2_pilot_enabled and not cache_pilot_enabled),
   "25D render requires R2 pilot without legacy geometry cache")
 assert(not terrain25d_smoke or terrain25d_enabled,"25D smoke requires opt-in renderer")
@@ -109,6 +112,8 @@ local liquid_smoke=os.getenv("OSMAN_LOVE_LIQUID_SMOKE")=="1"
 local smoke=stage4_smoke or liquid_smoke or os.getenv("OSMAN_LOVE_SMOKE")=="1" or os.getenv("OSMAN_LOVE_INTEGRATION_SMOKE")=="1"
 local frames=0
 local perf_sample={update={},draw={},peakKiB=0}
+local compare_metrics={update={},draw={},frame={}}
+local last_update_ms=0
 local function perf_tick(name,started)
  local a=perf_sample[name]
  a[#a+1]=(love.timer.getTime()-started)*1000
@@ -242,6 +247,12 @@ local function spawn()
 end
 function love.load()
   boot_started=love.timer.getTime()
+  if terrain25d_compare then
+    local v=os.getenv("OSMAN_25D_COMPARE_DISPLAY") or "360x780"
+    local ww,hh=v:match("^(%d+)x(%d+)$")
+    assert(ww and hh,"invalid comparable viewport")
+    assert(love.window.setMode(tonumber(ww),tonumber(hh),{vsync=0,resizable=false}))
+  end
   if terrain25d_enabled then
     runtime25d=Runtime25D.new(r2_pilot)
     local sprites=Sprites25D.new(runtime25d.atlas,runtime25d.manifest)
@@ -509,9 +520,12 @@ function love.update(dt)
       stage_hud.open=true
     end
   end
-  if terrain25d_smoke then camera.x,camera.y=704,128
+  if terrain25d_smoke or terrain25d_compare then camera.x,camera.y=704,128
   elseif not debug_view then camera.x,camera.y=player.x,player.y end
   stats=stream:update(camera,w,h)
+  if terrain25d_compare then
+    last_update_ms=(love.timer.getTime()-perf_begin)*1000
+  end
   if long_driver then long_driver:afterUpdate(stats) end
   if os.getenv("OSMAN_CHUNK_CACHE_BASELINE_SMOKE")=="1"
    or os.getenv("OSMAN_CHUNK_CACHE_SMOKE")=="1" then
@@ -689,6 +703,37 @@ function love.draw()
   if os.getenv("OSMAN_CHUNK_CACHE_BASELINE_SMOKE")=="1"
    or os.getenv("OSMAN_CHUNK_CACHE_SMOKE")=="1" then
     perf_tick("draw",perf_begin)
+  end
+  if terrain25d_compare then
+    -- Compare equal R2 content, same viewport and stationary authored camera.
+    -- Timings are CPU frame sections, not Android GPU or vsync estimates.
+    local draw_ms=(love.timer.getTime()-perf_begin)*1000
+    if frames>120 then
+      local a=compare_metrics
+      a.update[#a.update+1]=last_update_ms
+      a.draw[#a.draw+1]=draw_ms
+      a.frame[#a.frame+1]=draw_ms+last_update_ms
+    end
+    if frames>=240 then
+      local function quantiles(t)
+        table.sort(t)
+        local function q(p) return t[math.max(1,math.ceil(#t*p))] end
+        return string.format("p50=%.4f,p95=%.4f,p99=%.4f",q(.5),q(.95),q(.99))
+      end
+      local ready=0
+      for _,chunk in ipairs(stream:visible()) do
+        if (runtime25d and chunk._25d_meshes) or
+           (not runtime25d and chunk._terrain_meshes) then ready=ready+1 end
+      end
+      local mode=runtime25d and "runtime" or "legacy"
+      print(string.format("TERRAIN25D_COMPARE_OK mode=%s frames=%d ready=%d/%d update[%s] draw[%s] frame[%s] luaKiB=%.0f calls=%d",
+        mode,#compare_metrics.frame,ready,stats.needed,
+        quantiles(compare_metrics.update),quantiles(compare_metrics.draw),
+        quantiles(compare_metrics.frame),collectgarbage("count"),
+        runtime25d and runtime25d.draw_calls or 0))
+      love.graphics.captureScreenshot("terrain25d-compare-"..mode.."-"..w.."x"..h..".png")
+      io.stdout:flush();love.event.quit();return
+    end
   end
   if long_driver and boot_ready and long_driver.frame>0 then
     long_driver:afterDraw(object_count)
