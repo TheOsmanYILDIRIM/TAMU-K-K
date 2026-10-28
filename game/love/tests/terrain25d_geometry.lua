@@ -55,3 +55,19 @@ local wet=Geo.build_chunk(query,flat,opts,{x=0,y=0},8)
 assert(wet.vertices[4*9+9][13]==1 and wet.vertices[1][13]==0)
 assert(not pcall(Geo.build_chunk,nil,flat,opts,{x=1,y=0},8))
 print("TERRAIN25D_GEOMETRY_OK seams=2 determinism=1 negative=1 far=1 flat=1 cliffs=1 water=1")
+
+-- Vertical shared edge must preserve world UV, normals and baked brightness.
+local north=Geo.build_chunk(nil,slope,opts,{x=-128,y=0},8)
+for ix=0,8 do eq(sa.vertices[8*9+ix+1],north.vertices[ix+1]) end
+-- LÖVE vertex RGB multiplies material texture RGB; it is not the base material.
+local verts=Geo.love_vertices(sa)
+assert(#verts==#sa.indices)
+for i=1,#verts do
+ local v=verts[i]
+ assert(v[5]==v[6] and v[6]==v[7] and v[8]==1)
+end
+-- Existing R2 water-mask return contract includes a signed second value.
+local r2like={water_mask=function(_,x,y) return math.abs(x-704)<11 and math.abs(y-128)<11,11-math.abs(x-704) end}
+local river=Geo.build_chunk(r2like,slope,{size=64,height_scale=.35},{x=672,y=96},8)
+assert(river.vertices[5*9+5][13]==1 and river.vertices[1][13]==0)
+print('TERRAIN25D_EXTENDED_OK vertical_seam=1 texture_tint=1 river_contract=1')
