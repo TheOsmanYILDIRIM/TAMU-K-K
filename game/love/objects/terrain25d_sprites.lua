@@ -48,16 +48,17 @@ end
 function Sprite:queue(g,camera,w,h,o,selected)
  local family
  if o.kind=="tree" then
-   family=(math.floor(o.x/256)+math.floor(o.y/256))%3==0
-     and "conifer" or "oak"
+   family=hash(o.id)%5==0 and "conifer" or "oak"
  elseif o.kind=="rock" then family="boulder"
  else family=self.families[o.kind] and o.kind or "shrub" end
  local choices=self.families[family] or self.families.oak
  local a=choices[1+hash(o.id)%#choices]
  local x,y=camera:project(o.x,o.y,w,h)
  local z=camera.zoom
- local scale=z*(family=="oak" and .78 or
-   (family=="conifer" and .82 or (family=="boulder" and .50 or .40)))
+ -- Render-only size variation; physics radius, harvest and selection unchanged.
+ local base=family=="oak" and .50 or
+   (family=="conifer" and .58 or (family=="boulder" and .35 or .34))
+ local scale=z*base*(.90+(hash(o.id)%17)/85)
  if x+64*scale<0 or x-64*scale>w or
     y+8*scale<0 or y-124*scale>h then
    self.culled=self.culled+1;return

@@ -2,19 +2,30 @@
 local Geo=require("world.terrain25d_geometry")
 local Iso=require("world.iso")
 local Json=require("save.json")
+local Shore=require("world.terrain25d_shore")
+local Materials=require("world.terrain25d_materials")
 local Runtime={}; Runtime.__index=Runtime
--- Select broad dominant material regions; avoid alternating 128-unit
--- two-variant parity checkerboards seen in real LÖVE screenshots.
-local function stable(x,y)
-  local ix,iy=math.floor(x/384),math.floor(y/384)
-  local h=(ix*73856093+iy*19349663+ix*iy*83492791)%2147483647
-  return math.floor(h/8)
-end
 function Runtime.new(pilot)
  assert(pilot and pilot.query and pilot.topography and pilot.routes and pilot.render_options,
    "authored R2 pilot required")
  local m=Json.decode(assert(love.filesystem.read("assets/terrain25d/manifest.json")))
  assert(m.version==1 and #m.assets>=20 and m.atlas_pages[1],"25D manifest invalid")
+ -- Keep all Drive IDs in the archive, but accept GPU assets ONLY if reviewed
+ -- and physically packed. Metadata-only assets must never be fake-loaded.
+ local archive=Json.decode(assert(love.filesystem.read(
+   "assets/terrain25d/archive_inventory.json"),"25D source catalog unavailable"))
+ assert(archive.version==1 and #archive.assets>=#m.assets,"asset archive invalid")
+ local available={}
+ for _,a in ipairs(archive.assets) do
+   if a.review_status=="pilot_binary_verified" then
+     available[a.source_drive_id]=a
+   end
+ end
+ for _,a in ipairs(m.assets) do
+   local source=available[a.source_drive_id]
+   assert(source and source.sha256==a.sha256 and source.family==a.family,
+     "packed atlas material not approved in archive")
+ end
  local fam={}
  for _,a in ipairs(m.assets) do
    if a.atlas_page=="atlas_00.png" and a.uv_rect then
@@ -30,30 +41,28 @@ function Runtime.new(pilot)
  assert(w==m.atlas_pages[1].width and h==m.atlas_pages[1].height,"atlas dimensions mismatch")
  image:setFilter("nearest","nearest");image:setWrap("clamp","clamp")
  return setmetatable({pilot=pilot,manifest=m,atlas=image,families=fam,
+   catalog_counts={total=#archive.assets,packed=#m.assets},
    built=0,visible=0,draw_calls=0,uploads_per_frame=0,build_budget=1,step=32},Runtime)
 end
 function Runtime:family(x,y)
  local q=self.pilot.query
  local s=q:sample(x,y)
  local wet,dist=q:water_mask(x,y)
- if wet or (type(dist)=="number" and dist>-18) then return "wetland" end
- if s.feature=="path" then return "dirt" end
- if s.biome=="forest" then return "forest" end
- if s.biome=="rocky" then return "rock" end
- return "grass"
+ return Materials.family(s,wet or (type(dist)=="number" and dist>-12),x,y)
 end
 function Runtime:prepare(chunk)
  assert(not chunk._25d_meshes and not chunk._meshes,"chunk already owns GPU meshes")
  local pilot=self.pilot
  local scale=pilot.render_options.height_scale or .35
  local geo=Geo.build_chunk(pilot.query,pilot.topography,{size=chunk.size,
-   height_scale=scale,uv_scale=128},{x=chunk.x,y=chunk.y},self.step)
+   height_scale=scale,uv_scale=128,ambient=.49,diffuse=.57},
+   {x=chunk.x,y=chunk.y},self.step)
  local n=chunk.size/self.step
  local groups={}
  for iy=0,n-1 do for ix=0,n-1 do
    local x,y=chunk.x+(ix+.5)*self.step,chunk.y+(iy+.5)*self.step
    local list=self.families[self:family(x,y)]
-   local a=list[1+stable(x,y)%#list]
+   local a=list[Materials.variant(self:family(x,y),x,y,#list)]
    local group=groups[a.id]
    if not group then group={asset=a,indices={}};groups[a.id]=group end
    local i=iy*(n+1)+ix+1
@@ -69,14 +78,12 @@ function Runtime:prepare(chunk)
    meshes[id]=gpu;order[#order+1]=id
  end
  table.sort(order)
- local water=chunk.layers and chunk.layers.water
- if water and water.vertices and #water.vertices>0 then
-   local vertices={}
-   for _,p in ipairs(water.vertices) do
-     local sx,sy=Iso.project(p[1],p[2],pilot.topography:height(p[1],p[2])*scale)
-     vertices[#vertices+1]={sx,sy,0,0,.18,.52,.63,.88}
+ local water=Shore.build(chunk,pilot.query,pilot.topography,pilot.routes,scale)
+ for _,layer in ipairs({"path","bank","water"}) do
+   local vertices=water[layer]
+   if #vertices>0 then
+     meshes["!"..layer]=love.graphics.newMesh(vertices,"triangles","static")
    end
-   meshes["!water"]=love.graphics.newMesh(vertices,"triangles","static")
  end
  chunk._25d_meshes=meshes;chunk._25d_ground_order=order
  chunk._meshes=meshes -- Stream:update already releases this map upon eviction.
@@ -109,9 +116,11 @@ function Runtime:draw(stream,camera,w,h)
      end
    end
  end
- for _,c in ipairs(chunks) do
-   if c._25d_meshes and c._25d_meshes["!water"] then
-     g.draw(c._25d_meshes["!water"]);calls=calls+1
+ for _,layer in ipairs({"!path","!bank","!water"}) do
+   for _,c in ipairs(chunks) do
+     if c._25d_meshes and c._25d_meshes[layer] then
+       g.draw(c._25d_meshes[layer]);calls=calls+1
+     end
    end
  end
  g.pop()

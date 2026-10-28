@@ -54,6 +54,7 @@ local pilot={
  routes={},render_options={height_scale=.35}
 }
 local runtime=Runtime.new(pilot)
+assert(runtime.catalog_counts.total==228 and runtime.catalog_counts.packed==20)
 local sprites=Sprite.new(runtime.atlas,runtime.manifest)
 local chunk={x=0,y=0,size=256,cx=0,cy=0,
  layers={water={vertices={{200,200},{232,200},{232,232}}}}}
