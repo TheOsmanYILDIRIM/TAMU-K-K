@@ -56,6 +56,10 @@ local pilot={
 local runtime=Runtime.new(pilot)
 assert(runtime.catalog_counts.total==228 and runtime.catalog_counts.packed==20)
 local sprites=Sprite.new(runtime.atlas,runtime.manifest)
+assert(runtime:family(20,50)~="wetland",
+  "Generator scalar values are not authored bank distances")
+assert(runtime:family(220,220)=="wetland",
+  "physical water must retain wetland material")
 local chunk={x=0,y=0,size=256,cx=0,cy=0,
  layers={water={vertices={{200,200},{232,200},{232,232}}}}}
 local stream={visible=function() return {chunk} end}

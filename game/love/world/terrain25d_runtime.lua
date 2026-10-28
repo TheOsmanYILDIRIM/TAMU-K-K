@@ -47,8 +47,13 @@ end
 function Runtime:family(x,y)
  local q=self.pilot.query
  local s=q:sample(x,y)
- local wet,dist=q:water_mask(x,y)
- return Materials.family(s,wet or (type(dist)=="number" and dist>-12),x,y)
+ local wet=q:water_mask(x,y)
+ -- The mixed Generator water scalar is not a metric distance (near [-1,1]).
+ -- Only the authored river feature signed distance is in world units.
+ local features=self.pilot.routes and self.pilot.routes.features
+ local bank_distance=features and features:signed(x,y,"water")
+ local near=wet or (type(bank_distance)=="number" and bank_distance>-8)
+ return Materials.family(s,near,x,y)
 end
 function Runtime:prepare(chunk,checkpoint)
  assert(not chunk._25d_meshes and not chunk._meshes,"chunk already owns GPU meshes")
