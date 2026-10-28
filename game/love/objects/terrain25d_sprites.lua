@@ -159,9 +159,9 @@ function Sprite:draw_shadows(g,camera,w,h,objects)
      local angle,sx,sy=Sprite.shadow_geometry(family,scale,sun)
      -- Feather-like *silhouette layers*: no Gaussian blur and no ground
      -- texture replacement. Two near-/far-contact opacity scales.
-     batch:setColor(.035,.048,.048,.075*sun.cast)
+     batch:setColor(.035,.048,.048,.13*sun.cast)
      batch:add(a.quad,x,y,angle,sx*1.17,sy*1.12,64,124)
-     batch:setColor(.022,.032,.031,.27*sun.cast)
+     batch:setColor(.022,.032,.031,.42*sun.cast)
      batch:add(a.quad,x,y,angle,sx*.82,sy*.85,64,124)
      entry.count=entry.count+2
      visible[a.page]=true

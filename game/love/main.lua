@@ -87,7 +87,7 @@ local chunk_cache=cache_pilot_enabled and
    size=256,step=r2_pilot and 8 or 32,quality="standard"}) or nil
 local runtime25d,sprite25d_draw
 local shadow_preview_step=0
-local shadow_preview_hours={8,12,17}
+local shadow_preview_hours={8,12,17,23}
 local stream=Stream.new(query,r2_pilot and
   {size=256,step=8,max_loaded=48,build_budget=8,cache=chunk_cache,
    prefetch_options=cache_pilot_enabled and r2_pilot.render_options or nil} or
@@ -656,12 +656,12 @@ function love.draw()
         if hour==12 then
           love.graphics.captureScreenshot("terrain25d-runtime.png")
         end
-        if shadow_preview_step<3 then
+        if shadow_preview_step<4 then
           shadow_preview_step=shadow_preview_step+1
           runtime25d:set_sun_hour(shadow_preview_hours[shadow_preview_step])
         else
           print(string.format(
-            "TERRAIN25D_SHADOW_PREVIEW_OK hours=08,12,17 casts=%d calls=%d",
+            "TERRAIN25D_SHADOW_PREVIEW_OK hours=08,12,17,23 casts=%d calls=%d",
             sprite25d_draw.shadow_objects,sprite25d_draw.shadow_calls))
           print(string.format(
             "TERRAIN25D_RUNTIME_LOVE_OK frames=%d chunks=%d built=%d calls=%d objects=%d",

@@ -378,8 +378,8 @@ jobs:
           test -n "$shot"
           cp "$shot" /tmp/terrain25d-runtime.png
           file /tmp/terrain25d-runtime.png | grep -q 'PNG image data'
-          grep -q 'TERRAIN25D_SHADOW_PREVIEW_OK hours=08,12,17' /tmp/terrain25d-runtime.log
-          for hour in 08 12 17; do
+          grep -q 'TERRAIN25D_SHADOW_PREVIEW_OK hours=08,12,17,23' /tmp/terrain25d-runtime.log
+          for hour in 08 12 17 23; do
             sunshot="$(find "$HOME/.local/share/love" -name "terrain25d-sun-$hour.png" -print -quit)"
             test -n "$sunshot"
             cp "$sunshot" "/tmp/terrain25d-sun-$hour.png"
