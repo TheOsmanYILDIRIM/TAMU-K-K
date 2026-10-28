@@ -40,8 +40,10 @@ local function vertex(x,y,topography,scale,kind,signed)
    .44+shallow*.13+edge*.065,
    .96}
  elseif kind=="bank" then
-  local near=clamp((signed+12)/14)
-  return {px,py,0,0,.38,.405,.31,.12+near*.52}
+  -- Distances here are AUTHORED river centreline-to-bank world units,
+  -- not the mixed procedural water scalar (typically [-1,1]).
+  local near=clamp((signed+6)/6)
+  return {px,py,0,0,.43,.43,.315,.08+near*.34}
  else
   return {px,py,0,0,.41,.33,.215,.66}
  end
@@ -80,9 +82,15 @@ function Shore.build(chunk,query,topography,routes,scale)
   local refined=Marching.build(water_sampler,chunk.x,chunk.y,
     chunk.size,4,0)
   raw_water=refined.vertices
-  local outer=Marching.build(water_sampler,chunk.x,chunk.y,
-    chunk.size,8,-12)
-  bank=project(outer.vertices,topography,scale,"bank",water_sampler)
+  -- Never threshold the mixed Generator water field at -12:
+  -- that scalar is near [-1,1] and paints giant square bank regions.
+  -- The authored signed river distance is measured in world units.
+  local bank_sampler=function(x,y)
+   return features:signed(x,y,"water")
+  end
+  local outer=Marching.build(bank_sampler,chunk.x,chunk.y,
+    chunk.size,8,-6)
+  bank=project(outer.vertices,topography,scale,"bank",bank_sampler)
  end
  if is_path and features and type(features.signed)=="function" then
   local path_sampler=function(x,y) return features:signed(x,y,"path") end

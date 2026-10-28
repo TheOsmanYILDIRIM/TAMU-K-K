@@ -38,8 +38,8 @@ function Materials.family(sample,near_water,x,y)
  -- Visual-only grassy understory patches in forests and rock clearings.
  -- Does not alter biome, collision, ecology or authored World Builder rules.
  if biome=="forest" then
-  local r=Materials.region(x,y)%13
-  if r==0 and (sample.grade or 0)<.23 then return "grass" end
+  local r=Materials.region(x,y)%7
+  if r<3 and (sample.grade or 0)<.23 then return "grass" end
   return "forest"
  elseif biome=="rocky" then
   if Materials.region(x,y)%17==0 and (sample.grade or 0)<.19 then

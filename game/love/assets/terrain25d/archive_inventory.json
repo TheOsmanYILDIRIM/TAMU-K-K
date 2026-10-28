@@ -2,7 +2,7 @@
   "version": 1,
   "source": "Google Drive Texture_Archive (metadata snapshot 2026-10-28)",
   "source_folder": "1n3nkFdX3rPluAHU5aS95Ci5nYBp8_CHe",
-  "warning": "Metadata-only catalog. No full binary or license approval of non-pilot entries is claimed. Do not package or render unverified entries. Duplicate names are kept by Drive ID.",
+  "warning": "Metadata-only catalog. No full binary or license approval of non-pilot entries is claimed. Do not package or render unverified entries. Duplicate names are kept by Drive ID. Ten additional original Drive files independently re-downloaded and SHA256/128px/alpha checked; licensing remains pending, no files packed.",
   "summary": {
     "total": 228,
     "terrain": 168,
@@ -63,7 +63,9 @@
         ],
         "sha256": "0ed539952c290d155e90dd4c4bd6172e92d1f89a753950634e2a46be333cc672"
       }
-    ]
+    ],
+    "verified_nonpilot_binaries": 10,
+    "pending_binary_or_license": 194
   },
   "assets": [
     {
@@ -110,7 +112,11 @@
       "source_drive_id": "1hkaHyb5IcqhUmXcPsZo1PNqXzEQt-Q9f",
       "size_bytes": 20876,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "binary_verified_license_pending",
+      "sha256": "a0aa9e2d94453d04ee5400ccb3f285f594ebb153ea6ecf4fe76d57808f059d78",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent"
     },
     {
       "family": "broadleaf",
@@ -252,7 +258,11 @@
       "source_drive_id": "19jDdh9UuTMcNMNXq0eG_UNJ1jvK1aQfX",
       "size_bytes": 16840,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "binary_verified_license_pending",
+      "sha256": "f9e41f70020b420b1b49366a732ee7ba7c430423df9fac09d42c064481ea1b07",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent"
     },
     {
       "family": "dead_tree",
@@ -538,7 +548,11 @@
       "source_drive_id": "15lmiHY1havVfMXA6_-9_li0Kp0B9otLc",
       "size_bytes": 12940,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "binary_verified_license_pending",
+      "sha256": "3fbda325213ee27e72286b9719c3162b9745571fadc220ff8bbf46feda299f55",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque"
     },
     {
       "family": "fallen_log",
@@ -864,7 +878,11 @@
       "source_drive_id": "17S3g7zJz98t6eJDMytoxODJ3vjRhEwRZ",
       "size_bytes": 12840,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "binary_verified_license_pending",
+      "sha256": "02683533e983f74af399cc9721a84a264b8bbcdaef210b65b456c4f64143cbe9",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque"
     },
     {
       "family": "grass",
@@ -1166,7 +1184,11 @@
       "source_drive_id": "11fsftmN06VCmWRjJxP_w5cXyUdN3s4xB",
       "size_bytes": 12955,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "binary_verified_license_pending",
+      "sha256": "8d0c041ee57cdb2925668798a5b34180f5319eb2301bd93dd6040fea5fad37eb",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque"
     },
     {
       "family": "oak",
@@ -1236,7 +1258,11 @@
       "source_drive_id": "1WBR5SXEU7jVgWHH5884_KfbciPQdqF2a",
       "size_bytes": 28601,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "binary_verified_license_pending",
+      "sha256": "7d0e0840650dbd5f6a37e63ddc469b04b6f7fe7db545ef60d86424ac518d5541",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent"
     },
     {
       "family": "reeds",
@@ -1274,7 +1300,11 @@
       "source_drive_id": "1QBuDp9wqo1qmDbzC9xYbrlr0Q2pcgOhR",
       "size_bytes": 19630,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "binary_verified_license_pending",
+      "sha256": "a233cc5279be944cf4b1faf21128c27ad8bacd250d7b46fc47ddd06955776c11",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent"
     },
     {
       "family": "rock",
@@ -1556,7 +1586,11 @@
       "source_drive_id": "1Ab5raHnNwOhBPdmOCYDfPXDjJJI96uS7",
       "size_bytes": 12863,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "binary_verified_license_pending",
+      "sha256": "f3418d859d5cf585259956b0331912e7537bcfac310d9b4e948264e883731383",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque"
     },
     {
       "family": "rock",
@@ -1754,7 +1788,11 @@
       "source_drive_id": "1_0guU-RSOMs-Yndl84hgatEIooahXN69",
       "size_bytes": 17589,
       "kind": "object",
-      "review_status": "pending_binary_license_review"
+      "review_status": "binary_verified_license_pending",
+      "sha256": "861560c166776e078094ccb54648a8d065cd8e825c0a558740832fca215c5e10",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent"
     },
     {
       "family": "stump",
@@ -2040,7 +2078,11 @@
       "source_drive_id": "1Z6Nj51kX_MCTaG8mQKjJ0HkCBttb-mL_",
       "size_bytes": 12905,
       "kind": "terrain",
-      "review_status": "pending_binary_license_review"
+      "review_status": "binary_verified_license_pending",
+      "sha256": "7321027ee98ae2a2c59dcba545a6b5a1b9604810b5e11405d097cd01c1500ddc",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque"
     }
   ]
 }
