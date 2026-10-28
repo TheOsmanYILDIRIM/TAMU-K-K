@@ -86,17 +86,28 @@ function M.love_vertices(mesh,uv_rect)
     "atlas uv_rect outside page")
  end
  local out={}
- for _,index in ipairs(mesh.indices) do
-  local v=assert(mesh.vertices[index])
-  local u,w=v[3],v[4]
+ assert(#mesh.indices%3==0,"triangle indices required")
+ for i=1,#mesh.indices,3 do
+  local tri={}
+  for j=0,2 do tri[j+1]=assert(mesh.vertices[mesh.indices[i+j]]) end
+  local originU,originV=0,0
   if uv_rect then
-   -- Anchor to the atlas subrectangle. To prevent interpolation across a
-   -- wrapping seam callers must split triangles at integer UV boundaries.
-   -- A pilot tile-sized chunk remains in a single UV period.
-   u=uv_rect[1]+(u-math.floor(u))*uv_rect[3]
-   w=uv_rect[2]+(w-math.floor(w))*uv_rect[4]
+   originU=math.floor(math.min(tri[1][3],tri[2][3],tri[3][3]))
+   originV=math.floor(math.min(tri[1][4],tri[2][4],tri[3][4]))
+   -- A triangle may meet a tile seam, but cannot straddle one.
+   for _,v in ipairs(tri) do
+    assert(v[3]-originU<=1+1e-9 and v[4]-originV<=1+1e-9,
+      "atlas triangle crosses tile period: subdivide mesh at texture seam")
+   end
   end
-  out[#out+1]={v[1],v[2],u,w,v[5],v[5],v[5],1}
+  for _,v in ipairs(tri) do
+   local u,w=v[3],v[4]
+   if uv_rect then
+    u=uv_rect[1]+math.max(0,math.min(1,u-originU))*uv_rect[3]
+    w=uv_rect[2]+math.max(0,math.min(1,w-originV))*uv_rect[4]
+   end
+   out[#out+1]={v[1],v[2],u,w,v[5],v[5],v[5],1}
+  end
  end
  return out
 end
