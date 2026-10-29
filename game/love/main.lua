@@ -576,8 +576,24 @@ function love.update(dt)
     perf_tick("update",perf_begin)
   end
 end
+local binary_benchmark={frames={},ready_at=nil,start_at=nil}
+local function binary_benchmark_report()
+  local a=binary_benchmark.frames
+  table.sort(a)
+  local function percentile(p)
+    return a[math.max(1,math.ceil(#a*p))] or 0
+  end
+  print(string.format("TAMU_25D_27_FRAME_STATS count=%d p50=%.3f p95=%.3f p99=%.3f max=%.3f",
+    #a,percentile(.5),percentile(.95),percentile(.99),percentile(1)))
+end
 local function draw_postchecks(perf_begin)
   frames=frames+1
+  if os.getenv("TAMU_25D_27_COMPARE")=="1" and
+     os.getenv("OSMAN_25D_BAKE_VERIFY")=="1" then
+    local now=love.timer.getTime()
+    binary_benchmark.start_at=binary_benchmark.start_at or perf_begin
+    binary_benchmark.frames[#binary_benchmark.frames+1]=(now-perf_begin)*1000
+  end
   -- CI-only authored mesh compilation/verification; never alters player save.
   if runtime25d and
      (os.getenv("OSMAN_25D_BAKE")=="1" or
@@ -587,7 +603,15 @@ local function draw_postchecks(perf_begin)
     local baked=os.getenv("OSMAN_25D_BAKE")=="1"
     local count=baked and runtime25d.baked_written or runtime25d.baked_loaded
     if count>=requested then
-      if not baked then
+      if not baked and os.getenv("TAMU_25D_27_COMPARE")=="1" then
+        binary_benchmark.ready_at=binary_benchmark.ready_at or love.timer.getTime()
+        if love.timer.getTime()-binary_benchmark.ready_at < 1.3 then return end
+        local mode=os.getenv("TAMU_25D_FORCE_JSON")=="1" and "json" or "binary"
+        love.graphics.captureScreenshot("tamu-27-"..mode..".png")
+        binary_benchmark_report()
+        print(string.format("TAMU_25D_27_COMPLETE mode=%s chunks=%d wall_ms=%.3f frames=%d",
+          mode,count,(love.timer.getTime()-binary_benchmark.start_at)*1000,frames))
+      elseif not baked then
         love.graphics.captureScreenshot("tamu-prebaked-startup.png")
       end
       print(string.format("TAMU_25D_BAKE_%s_OK count=%d frames=%d visible=%d",
