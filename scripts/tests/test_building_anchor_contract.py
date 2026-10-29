@@ -39,6 +39,17 @@ class AnchorContractTest(unittest.TestCase):
         two=Edge('r',one.a,one.b,'ridge')
         self.assertEqual(endpoints_match(one,two)[1],'incompatible_kind')
 
+    def test_roof_slope_does_not_fake_a_gable_wall(self):
+        from building_anchor_demo import render_shape
+        from building_anchor_contract import screen
+        roof=render_shape('roof_slope',0)
+        # The roof side must remain transparent below its slope;
+        # separate gable pieces own this vertical triangular infill.
+        x,y=screen(Point(16,0,3))
+        self.assertEqual(roof.getpixel((round(x),round(y)))[3],0)
+        x,y=screen(Point(0,0,6))
+        self.assertGreater(roof.getpixel((round(x),round(y)))[3],0)
+
     def test_house_render_and_anchor_overlay(self):
         from building_anchor_demo import make_review
         with tempfile.TemporaryDirectory() as folder:

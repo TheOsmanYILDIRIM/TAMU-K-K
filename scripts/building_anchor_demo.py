@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from PIL import Image, ImageDraw
 from building_anchor_contract import house_2x2_plan, to_manifest, screen, Point
-from building_default_assets import render as render_default, Painter, WOOD, PIVOT, SIZE
+from building_default_assets import render as render_default, Painter, WOOD, ROOF, PIVOT, SIZE
 
 def render_shape(kind, rotation):
     if kind in ('gable_up','gable_down'):
@@ -14,6 +14,18 @@ def render_shape(kind, rotation):
              else [(0,-16,0),(0,16,0),(0,-16,12)])
         p.polygon(tri,WOOD['face_y'],WOOD['line'],0.65)
         p.line([tri[0],tri[1]],WOOD['light'],0.7)
+        return p.finish()
+    if kind=='roof_slope':
+        # A roof tile is a covering surface, NOT a solid triangular wall.
+        # The gable_up/gable_down pieces own the vertical triangular infill.
+        p=Painter(rotation)
+        p.polygon([(-16,-16,12),(16,-16,12),(16,16,0),(-16,16,0)],
+                  ROOF['top'],ROOF['line'],0.6)
+        for y in range(-12,16,4):
+            z=12*(16-y)/32
+            p.line([(-16,y,z+0.04),(16,y,z+0.04)],ROOF['line'],0.65)
+        for x in (-8,0,8):
+            p.line([(x,-16,12.02),(x,16,0.02)],ROOF['face_y'],0.4)
         return p.finish()
     return render_default({'visual':{'shape':kind,'material':'wood'}},rotation)
 
