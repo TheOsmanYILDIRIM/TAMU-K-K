@@ -132,38 +132,17 @@ Ana klasör: [OSMAN OYUN / Texture_Archive](https://drive.google.com/drive/folde
 
 ---
 
-## 9. TAMU KÖK modüler yapı parçaları — görsel ve birleşme sözleşmesi V1 (2026-10-29)
+## 9. TAMU KÖK — Kodla üretilen varsayılan inşaat parçaları (2026-10-29)
 
-**Durum:** Kodla tanımlanmış geometri ve prompt standardı. **Henüz hiçbir yeni bina PNG'si, atlası veya oyun içi bina render'ı üretilmiş değildir.**
-Kaynak ilkeler: Bu rehber + TAMU Object Studio promptları + Mineclonia Texture Studio PROMPT_AUTHORING_GUIDE.md.
-Uygulama: game/love/systems/building_parts.lua, building_visual_contract.lua ve building_visual_prompts.lua; kabul testi game/love/tests/building_piece_catalog.lua.
+**Geçerli V1:** 19 mevcut parça tanımı × 4 izometrik yön = 76 bağımsız **128×128 RGBA**, her birinde **en fazla 64 görünür RGB renk**. Kaynak: `game/love/systems/building_parts.lua`; bu katalog ayrıca kopyalanmaz. Üretim tamamen Python/Pillow çokgen çizimleriyle yapılır; GPT Image, prompt, geçmiş PNG crop veya üçüncü taraf doku yoktur.
 
-### A. Dünya ve bağlantı (otoriter)
+- `scripts/export_building_parts.lua` mevcut Lua tanımlarını JSON'a aktarır; `scripts/building_default_assets.py` bu veriden sprite, atlas, manifest, 2×2/L doğrulama ve 76 görsellik inceleme levhası üretir.
+- **Dünya ölçüsü** 32×32 birim; tam 45°/2:1 izometrik izdüşüm `world.iso.project`. 128×128 görsel pivotu **(64,92)**, izometrik çizim ölçeği 2 px/birim, runtime draw scale=0,5 × kamera zoom.
+- **Dönüşler:** rotation 0/1/2/3 = güney/batı/kuzey/doğu; her yüz gerçek dünya koordinatları üzerinden ayrı rasterize edilir, ekran üzerinde döndürülmez. Parçalar birbirine soketlerden oturur; 8 yön hâlen ileri aşamadır.
+- **Parça grupları:** ahşap/taş temel, zemin, düz/pencereli/kapı açıklıklı duvar, yarım duvar, korkuluk, taşıyıcı direk, düz/eğimli çatı, merdiven, ahşap/taş çit ve çit kapısı. Pencere ve kapı boşlukları **gerçek alfa**, fakat in-game geçiş collider'ı hâlâ ayrı açık iştir.
+- **Birleşim:** tekrarlanan iç ahşap/taş bordür kullanılmaz. Test kompozitleri ayrı PNG'leri `(0,0), (32,0), (0,32), (32,32)` konumlarında birleştirir; tek PNG esnetilip “dört parça” diye sunulmaz. İç malzeme desenleri izometrik düzlemde hizalanır. Nihai artistik seam kabulü yalnız görsel incelemeyle olur.
+- **Atlas:** 1024×1280 (76 yuva), yaklaşık 5 MiB açılmış RGBA8 verisi; gerçek cihaz belleği ölçülmedi. `game/love/systems/building_default_atlas.lua` atlası ve Quad'ları isteğe bağlı tek kez yükleyen, görünür parçaları sıralı tek SpriteBatch ile çizen bağımsız adaptördür. Aktif oyun döngüsüne bağlanmadı.
+- **Çalıştırma:** `lua5.4 scripts/export_building_parts.lua > /tmp/tamu-parts.json`, ardından `python scripts/building_default_assets.py --catalog /tmp/tamu-parts.json --output /tmp/tamu-assets`; Python için Pillow gerekir.
+- **Kabul:** `python -m unittest discover -s scripts/tests -p 'test_building_default_assets.py' -v`, `game/love/tests/building_default_assets.lua`, Lua5.4/LuaJIT ve GitHub Quality hedefli CI. Gerçek PNG'ler, atlas ve per-file SHA-256 manifesti CI artefaktında veya yerel paketle verilir.
 
-- Nominal modül **32×32 dünya birimi**; dünya (x,y,z) ekran pikselinden, chunk'tan ve R2'den bağımsızdır. Standart 45° kamera izdüşümü sx=(x-y)/sqrt(2), sy=(x+y)/(2sqrt(2))-z. Düz 32 kare, zoom=1'de **45,254834 ekran px geniş / 22,627417 px yüksek** 2:1 elmas olarak görünür.
-- Dünya yönleri N=-Y, E=+X, S=+Y, W=-X. Rotasyon 0/1/2/3 sırasıyla güney/batı/kuzey/doğuya bakar. **Her yön bağımsız çizilir**; izometrik bir PNG'yi ekranda 90° döndürmek geometrik olarak yanlıştır.
-- Yatay socket yönleri 0=Doğu, 2=Güney, 4=Batı, 6=Kuzey; bağlanmada yüz normal farkı 4 olmalıdır. Dikey socketler up/down eşleşir. Görünür dikiş ve fiziksel soket koordinatları aynı nominal dünya noktasına oturur.
-- Temel: 32×32×4; ince zemin/çatı: **32 görsel, 30 fiziksel** kenar × 2 kalınlık; duvar: **32 görsel, 30 fiziksel** uzunluk × 2 kalınlık × 24 yükseklik; yarım duvar/korkuluk/çit yüksekliği 12; eğimli çatı en fazla 12, merdiven yükseltisi 24 dünya birimidir.
-- Fiziksel 30 birimlik kutular 32 aralıklı yerleştirilmiş komşu panel/zeminler için duvar kalınlığına pay bırakır. **Bu bir görsel kırpma değildir**: görünür zeminler 32 birimlik kenarda birleşmelidir. Daraltılmış fiziksel kutu geçici, ihtiyatlı AABB yaklaşımıdır; gerçek geçilebilir kapı, pencere, merdiven ve eğimli çatı collider'ları ayrıca geliştirilecektir.
-- Taban, duvar, üst kat, çatı ve çit socketleri aynı dünya uzayına bağlıdır. Kapı/pencere açıklıkları malzeme görselinde GERÇEK RGBA alfa boşluğu olmalıdır; ancak mevcut erken çekirdeğin full-box collider'ı bu açıklıkları **henüz geçilebilir yapmaz**.
-
-### B. Görsel üretim kontratı (MTS + TAMU)
-
-- Her yön için **ayrı tek 1024×1024 düz RGBA kaynak PNG**. Kaynak alt pivotu (512,768), izin verilen dış güvenlik payı 64 px. Alttaki 32 kare görsel elmasının kaynak köşeleri: üst (512,640), sağ (768,768), alt (512,896), sol (256,768).
-- Kaynak dönüşüm ölçeği 8sqrt(2) kaynak px / izometrik oyun ekran birimi; 256×256 işlenmiş adayda zoom=1 runtime sprite ölçeği **1/sqrt(8) ≈ 0,353553**. Nihai kamera ölçeği ayrıca uygulanır. Sprite pivotu elle göz kararı yeniden ortalanmaz; geometri kodundan üretilen kaynak noktası esastır.
-- Ahşapta tahta uzunluğu/damar yönü ve uç-kesit çizgileri; taşta yatay taş sıra ve derz yükseklikleri; duvarlarda üst/alt sınır; çatıda mahya/eğim; çitte ray ve direk bağlanma yüksekliği aynı ailede **kardeş parçaların ortak referansıdır**. Köşe/post dekoru panellerin uçlarına iki kez basılmaz; bütün dekor nominal modül sınırı içinde kalır.
-- Köşe ve kenar bantları dikiş kilitli tutulur; rastgele aşınma varyasyonu önce panelin merkezine uygulanır. Oyunun gün/gece gölgesini PNG'ye pişirme: nötr, yumuşak dağınık malzeme ışığı yeterlidir. Taş/ahşap yüzeyler MTS Grounded Dark Fantasy: yıpranmış, düşük/orta kontrast, bastırılmış doygunluk, gerçekçi mineral/ahşap ölçeği.
-- Üretim (1) **malzeme/stil referansı**, (2) **Image A = kodla hesaplanmış gerçek 2,5D geometri/pivot/soket/kenar maskesi**, **Image B = onaylı materyal/stil referansı** ile tekil üretim, (3) gerekirse deterministik alfa/mask/kenar düzeltmesi. B'nin geometriyi veya A'nın malzeme kimliğini değiştirmesine izin verilmez.
-- İstenen: sahnesiz tek yalıtılmış parça, gerçek alfa, tam 45° ortografik izometrik perspektif. İstenmeyen: kolaj, atlas, poster, metin, UI, checkerboard, blok/piksel-art, sert baked gölge, zemine gömülü dekor. Modelden doğrudan 256px, 64 renk veya low-resolution sprite isteme; yüksek çözünürlük üret, mevcut Python işleme hattında ayrı adımla küçült.
-- Her şekil için elle yazılmış özel talimat kullan; **tanımsız tür/malzeme için generic prompt yok**. Prompt API: building_visual_prompts.make(def, rotation, reference|production|correction). 13 özgün şekil dili vardır.
-
-### C. Kabul kapıları
-
-1. 4 yönün her biri için socket/world koordinatı ve görünür geometrinin kodla hesaplanan referansla eşleşmesi.
-2. 2×2 zemin, dört yönde duvar köşeleri, 3 bağlı çit, alt/üst kat ve çatı için bitişik alfa/kenar testi. Gerçek işlenmiş PNG köşe/pivot noktalarında hedefe göre **en fazla 1 işlenmiş piksel** fark; daha büyük kayma ve karanlık alfa halosu reddedilir.
-3. Kaynak PNG ve 256px adayın SHA-256/alpha/palette/ölçü/versiyon kaydı, kaynak-işlenmiş-görsel kontrol ayrımı; ilgili malzeme/siluetler gerçek oyun ölçeğinde gözle incelenir.
-4. Atlas/SpriteBatch/LOD belleği ve gerçek mobil FPS ayrıca test edilir. **Şu anda görsel üretimi yapılmadığı için bu görsel kabul kapıları açık kalır.**
-
-**Katalog kapsamı:** 19 yapı tanımı × 4 yön = **76 gelecekte üretilecek bağımsız sprite**: ahşap/taş temel ve zemin; düz/pencereli/kapı açıklıklı duvar; yarım duvar, korkuluk, post; düz/eğimli çatı, merdiven; ahşap/taş çit ve çit kapısı. Katalog yalnız erken inşaat çekirdeğine aittir; Stage5 JSON kataloglarına, save_v2'ye, kullanıcı verisine veya World Builder'a dokunmaz.
-
-**Gelecek:** 8 yönlü görseller, gerçek açıklık collider'ları, taşıma/yükseltme/tamir, gelişmiş destek, save migration ve yeni dünyanın entegrasyonu ayrı geliştirme kabulüdür.
+Önceki 1024×1024/256×256 taslak **güncel standart değildir**. `building_visual_prompts.lua` tarihsel taslaktır; bu turda çalıştırılmaz ve yeni prompt üretilmez. R2, 25D, Stage5/6, kayıtlar ve kullanıcı texture'ları korunur.

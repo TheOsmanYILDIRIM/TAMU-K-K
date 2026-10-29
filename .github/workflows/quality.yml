@@ -364,3 +364,19 @@ jobs:
           name: core-stat-progression-smoke
           path: /tmp/core-stat-progression-smoke-*.png
           if-no-files-found: error
+      - name: TAMU procedural default construction atlas (19 x 4, 128 RGBA, max 64 colors)
+        if: github.ref_name == 'experiment/modular-building-core-20261029'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install pillow
+          lua5.4 scripts/export_building_parts.lua > "$RUNNER_TEMP/tamu-parts.json"
+          python scripts/building_default_assets.py --catalog "$RUNNER_TEMP/tamu-parts.json" --output "$RUNNER_TEMP/tamu-default-kit"
+          python -m unittest discover -s scripts/tests -p 'test_building_default_assets.py' -v
+      - name: Upload code-generated TAMU building sprites
+        if: github.ref_name == 'experiment/modular-building-core-20261029'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tamu-default-building-76-views
+          path: ${{ runner.temp }}/tamu-default-kit/
+          if-no-files-found: error

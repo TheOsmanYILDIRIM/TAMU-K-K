@@ -3,7 +3,6 @@
 package.path="./?.lua;./?/init.lua;"..package.path
 local Parts=require("systems.building_parts")
 local Visual=require("systems.building_visual_contract")
-local Prompts=require("systems.building_visual_prompts")
 local Kit=require("systems.building_kit")
 local Iso=require("world.iso")
 local defs=Parts.all()
@@ -69,12 +68,12 @@ for _,id in ipairs(ids) do
   local def=assert(Parts.get(id))
   assert(def.id==id and defs[id]==def)
   assert(def.rotation_steps==4 and #def.size==3)
-  assert(def.visual.status=="unproduced")
+  assert(def.visual.status=="procedural_default")
   for rot=0,3 do
     local layout=Visual.layout(def,rot)
     assert(Visual.check_canvas(layout))
-    assert(layout.source.anchor_x==512 and layout.source.anchor_y==768)
-    assert(near(layout.output.runtime_scale,1/math.sqrt(8)))
+    assert(layout.source.anchor_x==64 and layout.source.anchor_y==92)
+    assert(near(layout.output.runtime_scale,0.5))
     assert(not assets[layout.asset_id],"duplicate view identity")
     assets[layout.asset_id]=true
     local used={}
@@ -83,18 +82,7 @@ for _,id in ipairs(ids) do
       used[s.id]=true
       assert(layout.sockets[s.id],"missing projected socket marker")
     end
-    for _,stage in ipairs({"reference","production","correction"}) do
-      local prompt,reason=Prompts.make(def,rot,stage)
-      assert(type(prompt)=="string",tostring(reason))
-      assert(prompt:find(def.id,1,true))
-      assert(prompt:find(layout.direction,1,true))
-      assert(prompt:find("dark-fantasy",1,true))
-      if stage~="reference" then
-        assert(prompt:find("1024x1024",1,true))
-        assert(prompt:find("Image A",1,true) and prompt:find("Image B",1,true))
-        assert(prompt:find("transparent",1,true))
-      end
-    end
+
   end
 end
 local cached=Visual.precompute(defs)
@@ -110,15 +98,11 @@ assert(near(slope.top.nw.z,12) and near(slope.top.ne.z,12))
 assert(near(slope.top.sw.z,0) and near(slope.top.se.z,0))
 local stairs_visual=Visual.layout(defs["tamu:stairs_wood"],0)
 assert(near(stairs_visual.top.nw.z,24) and near(stairs_visual.top.se.z,0))
-assert(#Prompts.authored_shapes()==13)
-assert(Prompts.make(defs["tamu:foundation_wood"],0,"missing")==nil)
-assert(Prompts.make({visual={shape="missing",material="wood"},size={32,32,2},
-  sockets={},rotation_steps=4},0,"production")==nil)
-assert(near(Visual.source_ppu*32*math.sqrt(.5),256))
--- A 32-world-unit diamond: 512px wide, 256px high at 1024px source size.
+assert(near(Visual.source_ppu*32*math.sqrt(.5),32*math.sqrt(2)))
+-- A 32-unit square is ~90.51x45.25px at 128px source size.
 local l=Visual.layout(defs["tamu:floor_wood"],0)
-assert(near(l.bottom.ne.px-l.bottom.sw.px,512))
-assert(near(l.bottom.se.py-l.bottom.nw.py,256))
+assert(near(l.bottom.ne.px-l.bottom.sw.px,64*math.sqrt(2)))
+assert(near(l.bottom.se.py-l.bottom.nw.py,32*math.sqrt(2)))
 assert(defs["tamu:floor_wood"].size[1]==30 and
   defs["tamu:floor_wood"].visual.module_size[1]==32)
 -- Two adjacent modules share IDENTICAL projected world-edge landmarks.

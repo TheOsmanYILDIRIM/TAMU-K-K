@@ -13,3 +13,4 @@ print("biome tests OK")
 -- New kernel acceptance is separate from legacy Stage5 workbench integration.
 dofile("tests/building_kit.lua")
 dofile("tests/building_piece_catalog.lua")
+dofile("tests/building_default_assets.lua")

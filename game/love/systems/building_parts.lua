@@ -13,7 +13,7 @@ local function add(id,mode,shape,material,size,cost,sockets,flags)
   assert(not defs[id],"duplicate construction definition")
   defs[id]={id=id,mode=mode,rotation_steps=4,size=size,cost=cost,
     sockets=sockets,visual={shape=shape,material=material,
-      status="unproduced",four_views=true,
+      status="procedural_default",four_views=true,
       module_size=flags and flags.module_size or size},flags=flags or {}}
 end
 local function foundation()

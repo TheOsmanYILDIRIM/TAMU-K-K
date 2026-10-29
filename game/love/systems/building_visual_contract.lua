@@ -1,14 +1,14 @@
--- Canonical pixel/world alignment for prospective modular 2.5D sprite assets.
--- Pure metadata, no PNGs or GPU allocations. A single 1024px geometry reference
+-- Canonical pixel/world alignment for code-generated 128x128 sprites.
+-- Pure metadata, no PNGs or GPU allocations. One 128px geometry reference
 -- is used for EVERY direction; visual art cannot redefine a piece's socket geometry.
 local Iso=require("world.iso")
 local V={}
 V.schema_version=1
-V.source_px=1024
-V.processed_px=256
-V.source_ppu=8*math.sqrt(2) -- 32x32 world floor => 512x256 source diamond
-V.pivot_x,V.pivot_y=512,768
-V.safe_margin=64
+V.source_px=128
+V.processed_px=128
+V.source_ppu=2 -- 32x32 world floor => 90.51x45.25 source diamond
+V.pivot_x,V.pivot_y=64,92
+V.safe_margin=4
 V.direction_names={"south","west","north","east"}
 V.required_alpha="RGBA8_straight"
 V.lighting="neutral_diffuse_no_baked_ground_shadow"
