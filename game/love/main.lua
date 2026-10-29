@@ -544,7 +544,9 @@ function love.update(dt)
     end
   end
   if terrain25d_smoke or terrain25d_compare then camera.x,camera.y=704,128
-  elseif not debug_view then camera.x,camera.y=player.x,player.y end
+  elseif not debug_view and not creative.active then
+    camera.x,camera.y=player.x,player.y
+  end
   stats=stream:update(camera,w,h)
   if terrain25d_compare then
     last_update_ms=(love.timer.getTime()-perf_begin)*1000
@@ -946,6 +948,9 @@ local function move(id,x,y)
     end
   end
   if (x-p.origin_x)^2+(y-p.origin_y)^2>100 then p.move=true end
+  -- Creative one-finger drag pans the camera over the world without
+  -- moving placed structures or committing accidental tap placement.
+  if creative.active and not p.multi then camera:pan(x-p.x,y-p.y) end
   p.x,p.y=x,y
 end
 local function release(id,x,y)
