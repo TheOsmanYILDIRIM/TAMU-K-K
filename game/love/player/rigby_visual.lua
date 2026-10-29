@@ -7,10 +7,18 @@ local source,directions,display
 local textures={}
 local instances=setmetatable({},{__mode='k'})
 local loop_actions={idle=true,walk=true,run=true,mine=true,chop=true}
+local trace=os.getenv('TAMU_BOOT_TRACE')=='1'
+local traced_first=false
+local function measure(name,fn)
+ if not trace then return fn() end
+ local t=love.timer.getTime();local value=fn()
+ print(string.format('TAMU_RIGBY_PHASE %s=%.3fms',name,(love.timer.getTime()-t)*1000))
+ io.stdout:flush();return value
+end
 local function load_data()
   if source then return end
   local function read(name) return Json.decode(assert(love.filesystem.read(base..name))) end
-  source=read('rig.json');directions=read('directions.json').directions;display=read('display.json')
+  measure('load_json',function() source=read('rig.json');directions=read('directions.json').directions;display=read('display.json') end)
 end
 function V.direction(face,previous)
   if face=='SE' or face=='SW' or face=='NE' or face=='NW' then return face end
@@ -28,16 +36,17 @@ end
 local Instance={};Instance.__index=Instance
 function V.new_instance()
   load_data()
-  local instance=setmetatable({rig=Rig.new(source),meshes={},active={},time=0,last_clock=nil,
+  local rig=measure('rig_new',function() return Rig.new(source) end)
+  local instance=setmetatable({rig=rig,meshes={},active={},time=0,last_clock=nil,
     direction='SE',action='idle',clip=nil,transition=nil,transition_time=0},Instance)
-  instance.rig:evaluate(directions.SE.animations.idle,0,false)
+  measure('initial_evaluate',function() instance.rig:evaluate(directions.SE.animations.idle,0,false) end)
   return instance
 end
 local function texture(name)
   if not textures[name] then
     local path=base..'images/'..name..'.png'
     assert(love.filesystem.getInfo(path),'Missing original rig part '..path)
-    local image=love.graphics.newImage(path)
+    local image=measure('newImage:'..name,function() return love.graphics.newImage(path) end)
     image:setFilter('linear','linear');textures[name]=image
   end
   return textures[name]
@@ -50,12 +59,13 @@ function Instance:sample(direction,action,time,looped,offsets)
   return self
 end
 function Instance:prepare()
-  self.active=self.rig:quads()
+  self.active=measure('quads',function() return self.rig:quads() end)
   for _,q in ipairs(self.active) do
     local key=q.slot..'/'..q.attachment;local mesh=self.meshes[key]
     if not mesh then
-      mesh=love.graphics.newMesh(q.vertices,'triangles','stream')
-      mesh:setVertexMap(q.triangles);mesh:setTexture(texture(q.image))
+      mesh=measure('newMesh:'..key,function() return love.graphics.newMesh(q.vertices,'triangles','stream') end)
+      measure('setVertexMap:'..key,function() mesh:setVertexMap(q.triangles) end)
+      measure('setTexture:'..key,function() mesh:setTexture(texture(q.image)) end)
       self.meshes[key]=mesh
     else mesh:setVertices(q.vertices) end
     q.gpu_mesh=mesh
@@ -121,14 +131,18 @@ function V.update_pose(player,ctx)
     else i.time=0 end
   end
   if forced_time~=nil then i.time=forced_time else i.time=i.time+dt end
-  i:sample(direction,action,i.time,looped,ctx.bone_offsets)
+  if not traced_first then
+    measure('first_sample',function() i:sample(direction,action,i.time,looped,ctx.bone_offsets) end)
+  else i:sample(direction,action,i.time,looped,ctx.bone_offsets) end
   if i.transition then
     i.transition_time=i.transition_time+dt
     local a=math.min(1,i.transition_time/display.blend_seconds)
     i.rig:blend_from(i.transition,a*a*(3-2*a))
     if a>=1 then i.transition=nil end
   end
-  i:prepare()
+  if not traced_first then measure('first_prepare',function() i:prepare() end)
+  else i:prepare() end
+  traced_first=true
   return i
 end
 function V.draw(g,camera,width,height,player,ctx)
