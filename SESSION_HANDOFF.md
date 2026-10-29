@@ -1,5 +1,7 @@
 # TAMU KÖK — modüler inşaat kod varsayılanları (2026-10-29)
 
+**Yeni bağımsız bağlantı prototipi:** 2×2 ev, duvar/çatı köşe yerleri tüm görüntüye bakılarak değil, 3D dünya konumunda isimli `AnchorPoint` ve `AnchorLine` ile hesaplanır. `game/love/systems/building_anchors.lua` / `scripts/building_anchor_contract.py`, `building_anchor_demo.py` ve hedefli Lua/Python testleri eklendi. 14 çizgi çifti (saçak, mahya, alınlık) örnek testte 0 dünya birimi hata verdi; yanlış kot, eksen, uzunluk ve tür reddediliyor. **Artistik piksel dikiş kabulü veya oyun içi renderer entegrasyonu değil.** GitHub Quality CI sonucu commit sonrasında ayrıca kontrol edilir; `main` değişmedi.
+
 **Kaynak dal:** `TheOsmanYILDIRIM/TAMU-K-K`, `experiment/modular-building-core-20261029`; doğrulanan son içerik commit'i `f7626df03e19fdf0ba0275eae50ba9a06c3d5f59`. `main` üzerinde inşaat entegrasyonu yapılmadı; güncel HEAD çalışmaya başlarken tekrar okunur.
 
 - 19 mevcut `building_parts.lua` tanımı, 4 dünya yönü, 76 ayrı gerçek 128×128 RGBA kod varsayılanı; görüntü başına en fazla 64 görünür RGB renk. Pillow çokgen üretimi `scripts/building_default_assets.py`; Lua katalog export `scripts/export_building_parts.lua`; opt-in LÖVE SpriteBatch adaptörü `game/love/systems/building_default_atlas.lua`.

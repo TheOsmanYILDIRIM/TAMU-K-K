@@ -373,6 +373,8 @@ jobs:
           lua5.4 scripts/export_building_parts.lua > "$RUNNER_TEMP/tamu-parts.json"
           python scripts/building_default_assets.py --catalog "$RUNNER_TEMP/tamu-parts.json" --output "$RUNNER_TEMP/tamu-default-kit"
           python -m unittest discover -s scripts/tests -p 'test_building_default_assets.py' -v
+          python -m unittest discover -s scripts/tests -p 'test_building_anchor_contract.py' -v
+          python scripts/building_anchor_demo.py --output "$RUNNER_TEMP/tamu-default-kit/anchor_assembly"
       - name: Upload code-generated TAMU building sprites
         if: github.ref_name == 'experiment/modular-building-core-20261029'
         uses: actions/upload-artifact@v4
