@@ -1,4 +1,12 @@
 -- Integrated procedural world and playable placeholder player.
+-- Temporary CI-only diagnostic; production behavior unchanged.
+_G.TAMU_BOOT_TRACE=os.getenv('TAMU_BOOT_TRACE')=='1'
+_G.tamu_boot_ticks=0
+_G.tamu_boot_mark=function(msg)
+ if not _G.TAMU_BOOT_TRACE then return end
+ print(string.format('TAMU_BOOT_TRACE cpu=%.4f %s',os.clock(),msg));io.stdout:flush()
+end
+_G.tamu_boot_mark('main:top-before-requires')
 local Query=require("world.world_query")
 local Stream=require("world.stream")
 local Terrain=require("world.terrain_renderer")
@@ -65,7 +73,9 @@ assert(not (cache_pilot_enabled and stage6_enabled),
  "experimental geometry cache cannot coexist with Stage6 until accepted")
 assert(not (r2_pilot_enabled and (stage6_enabled or stage6_create or stage6_reopen_smoke)),
   "R2 pilot is session-only; Stage6 save/create/reopen flags are forbidden")
+_G.tamu_boot_mark('main:before-r2-new')
 local r2_pilot=r2_pilot_enabled and require("world.r2_playable").new() or nil
+_G.tamu_boot_mark('main:after-r2-new')
 local r2_pilot_smoke=r2_pilot and os.getenv("OSMAN_R2_G_SMOKE")=="1"
   and require("tests.r2_pilot_smoke") or nil
 local stage6_session,stage6_bridge,stage6_domain
@@ -97,12 +107,14 @@ crafting=Craft.new(inventory)
 harvesting=Harvest.new(objects,38,inventory)
 local stage_hud=StageHUD.new()
 local stat_hud=StatHud.new()
+_G.tamu_boot_mark('main:before-creative-new')
 local creative=Creative.new({
  sample=function(_,x,y)return query:sample(x,y) end,
  height=function(_,x,y)if r2_pilot then
     return r2_pilot.topography:height(x,y)*.35 end return 0 end,
  obstacles=function(_,x1,y1,x2,y2)return solid:obstacles(x1,y1,x2,y2) end
 })
+_G.tamu_boot_mark('main:after-creative-new')
 local creative_hud=CreativeHUD.new()
 local creative_renderer
 local creative_smoke=os.getenv("TAMU_CREATIVE_SMOKE")=="1"
@@ -285,6 +297,7 @@ local function spawn()
   error("No safe player spawn found within 512 world units")
 end
 function love.load()
+  _G.tamu_boot_mark('load:start')
   boot_started=love.timer.getTime()
   creative_renderer=CreativeRenderer.new()
   if terrain25d_compare then
@@ -294,7 +307,9 @@ function love.load()
     assert(love.window.setMode(tonumber(ww),tonumber(hh),{vsync=0,resizable=false}))
   end
   if terrain25d_enabled then
+    _G.tamu_boot_mark('load:before-runtime25d-new')
     runtime25d=Runtime25D.new(r2_pilot)
+    _G.tamu_boot_mark('load:after-runtime25d-new')
     local sprites=Sprites25D.new(runtime25d,runtime25d.manifest)
     sprite25d_draw=sprites
   end
@@ -346,7 +361,9 @@ function love.load()
       publish_stage6(stage6_domain)
     end)
   end
+  _G.tamu_boot_mark('load:before-player-spawn')
   player=spawn()
+  _G.tamu_boot_mark('load:after-player-spawn')
   if long_mode then
     long_driver=require("tests.r2_long_traversal").new(long_mode,stream,chunk_cache)
   end
@@ -442,6 +459,7 @@ function love.load()
     print("LOVE_STAGE6_REOPEN_OK revision="..stage6_session.revision)
     io.stdout:flush()
   end
+  _G.tamu_boot_mark('load:end')
 end
 function love.resize(width,height) w,h=width,height end
 local function keyboard()
@@ -455,6 +473,8 @@ local function keyboard()
   return wx,wy
 end
 function love.update(dt)
+  _G.tamu_boot_ticks=_G.tamu_boot_ticks+1
+  if _G.tamu_boot_ticks<=3 then _G.tamu_boot_mark('update:'.._G.tamu_boot_ticks..':start') end
   local perf_begin=love.timer.getTime()
   if runtime25d then runtime25d:advance_sun(dt) end
   if cache_pilot_enabled and not boot_ready then
@@ -561,7 +581,9 @@ function love.update(dt)
   end
   if terrain25d_smoke or terrain25d_compare then camera.x,camera.y=704,128
   elseif not debug_view and not creative.active then camera.x,camera.y=player.x,player.y end
+  if _G.tamu_boot_ticks<=3 then _G.tamu_boot_mark('update:before-stream') end
   stats=stream:update(camera,w,h)
+  if _G.tamu_boot_ticks<=3 then _G.tamu_boot_mark('update:after-stream loaded='..stats.loaded..' pending='..stats.pending) end
   -- Mobile object candidates must be prepared outside love.draw. R2's
   -- ecology wrapper exposes generator_version via world.query.
   if runtime25d then
@@ -848,10 +870,13 @@ local function draw_postchecks(perf_begin)
   end
 end
 function love.draw()
+  if _G.tamu_boot_ticks<=3 then _G.tamu_boot_mark('draw:start') end
   local perf_begin=love.timer.getTime()
   if long_driver and boot_ready and long_driver.frame>0 then long_driver:beforeDraw() end
+  if _G.tamu_boot_ticks<=3 then _G.tamu_boot_mark('draw:before-terrain') end
   if runtime25d then runtime25d:draw(stream,camera,w,h)
   else Terrain.draw(stream,camera,w,h,r2_pilot and r2_pilot.render_options) end
+  if _G.tamu_boot_ticks<=3 then _G.tamu_boot_mark('draw:after-terrain') end
   if cache_pilot_enabled and not boot_ready then
     local g=love.graphics
     local ready=0
@@ -880,8 +905,10 @@ function love.draw()
       24,math.floor(h*.44)+34)
     g.setColor(1,1,1,1)
   end
+  if _G.tamu_boot_ticks<=3 then _G.tamu_boot_mark('draw:before-objects') end
   object_count=ObjectRenderer.draw(objects,stream,camera,w,h,player,
     selected_target,harvesting,sprite25d_draw)
+  if _G.tamu_boot_ticks<=3 then _G.tamu_boot_mark('draw:after-objects count='..object_count) end
   local ghost
   if not r2_pilot and stage_hud.placing and placement_target then
     local ok=building:preview("core:workbench",placement_target.x,placement_target.y,
