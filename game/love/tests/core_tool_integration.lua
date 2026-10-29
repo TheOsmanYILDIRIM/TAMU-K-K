@@ -27,7 +27,12 @@ for _,method in ipairs({"push","pop","setColor","ellipse","rectangle","polygon",
 end
 g.newImage=function(path) assert(path=="assets/axe_121227.png");images=images+1;return {} end
 love={graphics=g}
+-- This contract exercises the retained plasma renderer explicitly.
+-- Live-rig coverage is separate in rigby_runtime/rigby_visual and engine smoke.
+local getenv=os.getenv
+os.getenv=function(key) if key=="TAMU_USE_PLASMA" then return "1" end;return getenv(key) end
 local R=require("objects.renderer")
+os.getenv=getenv
 local fixtures={
   tree={id="tree",kind="tree",def_id="tree",x=2,y=2,radius=10,cx=0,cy=0},
   rock={id="rock",kind="rock",def_id="rock",x=20,y=20,radius=10,cx=0,cy=0},

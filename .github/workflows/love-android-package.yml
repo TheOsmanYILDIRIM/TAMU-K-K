@@ -1,7 +1,7 @@
 name: Build Android-testable LOVE package
 on:
   push:
-    branches: [main, experiment/osman-rigby-4dir-20261029]
+    branches: [main]
     paths:
       - '.github/workflows/love-android-package.yml'
       - 'game/love/**'
@@ -9,27 +9,7 @@ on:
 permissions:
   contents: read
 jobs:
-  rigby-review-engine:
-    if: github.ref_name == 'experiment/osman-rigby-4dir-20261029'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Obtain official LÖVE 11.5 for isolated local runtime verification
-        run: |
-          set -euo pipefail
-          curl --fail --location --proto '=https' --tlsv1.2 --retry 2 https://github.com/love2d/love/releases/download/11.5/love-11.5-x86_64.AppImage -o love-11.5-x86_64.AppImage
-          sha256sum love-11.5-x86_64.AppImage > love-11.5-x86_64.AppImage.sha256
-          test "$(stat -c %s love-11.5-x86_64.AppImage)" -gt 1000000
-      - uses: actions/upload-artifact@v4
-        with:
-          name: official-love-review-engine
-          path: |
-            love-11.5-x86_64.AppImage
-            love-11.5-x86_64.AppImage.sha256
-          if-no-files-found: error
-          retention-days: 1
   package-love:
-    if: github.ref_name == 'main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -57,6 +37,7 @@ jobs:
               assert hashlib.sha256(blob).hexdigest()==sha,f'{name} SHA mismatch'
               assert blob[:8]==bytes((137,80,78,71,13,10,26,10)),f'{name} PNG invalid'
               assert struct.unpack('>II',blob[16:24])==(1254,1254),f'{name} resolution invalid'
+          # Package entire running game tree, not test-only dummy main.lua.
           files=sorted(p for p in root.rglob('*') if p.is_file() and
               not any(part.startswith('.') for part in p.relative_to(root).parts) and
               '__pycache__' not in p.parts)
