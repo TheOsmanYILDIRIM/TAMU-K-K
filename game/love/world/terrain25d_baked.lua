@@ -61,11 +61,17 @@ end
 function M.load(runtime,chunk)
  local path=M.source_path(chunk)
  if not love.filesystem.getInfo(path,'file') then return false end
+ local trace=os.getenv('TAMU_BOOT_TRACE')=='1'
+ local clock=love.timer.getTime
+ local stats={}
+ local function timed(name,fn)
+  local t=clock();local result=fn();stats[name]=(stats[name] or 0)+(clock()-t)*1000;return result
+ end
  local ok,doc=pcall(function()
-  local packed=assert(love.filesystem.read(path))
-  local plain=love.data.decompress('string','zlib',packed)
+  local packed=timed('read',function() return assert(love.filesystem.read(path)) end)
+  local plain=timed('zlib',function() return love.data.decompress('string','zlib',packed) end)
   assert(#plain<8*1024*1024,'oversized baked chunk')
-  return Json.decode(plain)
+  return timed('json',function() return Json.decode(plain) end)
  end)
  if not ok then
   print('TAMU_25D_BAKED_REJECT '..path..' '..tostring(doc))
@@ -106,10 +112,11 @@ function M.load(runtime,chunk)
  local gpu={}
  local built,why=pcall(function()
   for _,item in ipairs(keys) do
-   local mesh=love.graphics.newMesh(item.vertices,'triangles','static')
+   local mesh=timed('newMesh',function() return love.graphics.newMesh(item.vertices,'triangles','static') end)
    if item.key~='!water' then
     local page=item.key:match('^!%a+:(atlas_%d+%.png)$') or item.key
-    mesh:setTexture(runtime:page(page))
+    local texture=timed('page',function() return runtime:page(page) end)
+    timed('setTexture',function() mesh:setTexture(texture) end)
    end
    gpu[item.key]=mesh
   end
@@ -128,6 +135,10 @@ function M.load(runtime,chunk)
  chunk._25d_bounds=doc.bounds
  chunk._25d_reveal_start=love.timer and love.timer.getTime() or 0
  runtime.baked_loaded=(runtime.baked_loaded or 0)+1
+ if trace then
+  print(string.format('TAMU_BAKED_PHASE cx=%d cy=%d read=%.3f zlib=%.3f json=%.3f newMesh=%.3f page=%.3f setTexture=%.3f meshes=%d',chunk.cx,chunk.cy,stats.read or 0,stats.zlib or 0,stats.json or 0,stats.newMesh or 0,stats.page or 0,stats.setTexture or 0,#keys))
+  io.stdout:flush()
+ end
  return true
 end
 return M
