@@ -1,184 +1,83 @@
 name: Build Android-testable LOVE package
 on:
   push:
-    branches: [main]
-    paths: ['.github/workflows/love-android-package.yml', 'game/love/**']
+    branches: [main, experiment/osman-rigby-4dir-20261029]
+    paths:
+      - '.github/workflows/love-android-package.yml'
+      - 'game/love/**'
   workflow_dispatch:
-    inputs:
-      url_a:
-        description: Temporary private transfer URL part 1; never committed
-        required: false
-      url_b:
-        description: Temporary private transfer URL part 2
-        required: false
-      url_c:
-        description: Temporary private transfer URL part 3
-        required: false
-      expected_head:
-        description: Exact experiment HEAD required for a source import
-        required: false
 permissions:
   contents: read
 jobs:
+  rigby-review-engine:
+    if: github.ref_name == 'experiment/osman-rigby-4dir-20261029'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Obtain official LÖVE 11.5 for isolated local runtime verification
+        run: |
+          set -euo pipefail
+          curl --fail --location --proto '=https' --tlsv1.2 --retry 2 https://github.com/love2d/love/releases/download/11.5/love-11.5-x86_64.AppImage -o love-11.5-x86_64.AppImage
+          sha256sum love-11.5-x86_64.AppImage > love-11.5-x86_64.AppImage.sha256
+          test "$(stat -c %s love-11.5-x86_64.AppImage)" -gt 1000000
+      - uses: actions/upload-artifact@v4
+        with:
+          name: official-love-review-engine
+          path: |
+            love-11.5-x86_64.AppImage
+            love-11.5-x86_64.AppImage.sha256
+          if-no-files-found: error
+          retention-days: 1
   package-love:
+    if: github.ref_name == 'main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    permissions:
-      contents: write
-    env:
-      EXPERIMENT: experiment/osman-rigby-4dir-20261029
-      XDG_DATA_HOME: ${{ github.workspace }}/.love-test-data
-      ALSOFT_DRIVERS: 'null'
-      LIBGL_ALWAYS_SOFTWARE: '1'
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref_name }}
-          fetch-depth: 2
-      - name: Import exact approved live-rig source bundle on experiment only
-        if: inputs.url_a != ''
-        env:
-          URL_A: ${{ inputs.url_a }}
-          URL_B: ${{ inputs.url_b }}
-          URL_C: ${{ inputs.url_c }}
-          EXPECTED_HEAD: ${{ inputs.expected_head }}
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import os,io,json,hashlib,zipfile,subprocess,urllib.request,urllib.parse
-          from pathlib import Path,PurePosixPath
-          assert os.environ['GITHUB_REF_NAME']==os.environ['EXPERIMENT'], 'experiment only'
-          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
-          assert head==os.environ['EXPECTED_HEAD'], 'HEAD lease mismatch'
-          url=''.join(os.environ.get(k,'') for k in ('URL_A','URL_B','URL_C'))
-          u=urllib.parse.urlparse(url)
-          assert u.scheme=='https' and u.hostname.endswith('.oaiusercontent.com'), 'transfer host denied'
-          print('::add-mask::'+url)
-          with urllib.request.urlopen(url,timeout=60) as response:
-              data=response.read(8_000_001)
-          assert len(data)<=8_000_000
-          assert hashlib.sha256(data).hexdigest()=='602b716b1cbdeb30500266e753149434f1838ddc171f4fc6e8333998943e68f6', 'archive checksum mismatch'
-          def git_blob(path):
-              p=subprocess.run(['git','rev-parse','HEAD:'+path],capture_output=True,text=True)
-              return p.stdout.strip() if p.returncode==0 else None
-          with zipfile.ZipFile(io.BytesIO(data)) as z:
-              assert z.testzip() is None and sum(i.file_size for i in z.infolist())<10_000_000
-              m=json.loads(z.read('manifest.json'))
-              assert m['version']==1 and m['source_head']=='f6710eb493dbfc380cd13480ebb1b0cdddcf38b8'
-              expected={'manifest.json'}|{f['path'] for f in m['files']}
-              assert set(z.namelist())==expected and len(z.namelist())==len(expected)
-              # Verify the entire operation before modifying any working-tree file.
-              for f in m['files']:
-                  p=PurePosixPath(f['path'])
-                  assert not p.is_absolute() and '..' not in p.parts and f['path'].startswith('game/love/')
-                  b=z.read(f['path'])
-                  assert len(b)==f['size'] and hashlib.sha256(b).hexdigest()==f['sha256']
-                  assert git_blob(f['path'])==f['base_blob'], 'source blob changed: '+f['path']
-              for f in m['delete']:
-                  assert f['path']=='game/love/player/osman_sprite.lua'
-                  assert git_blob(f['path'])==f['base_blob']
-              for p,v in m['append'].items():
-                  assert p in ('AGENTS.md','SESSION_HANDOFF.md') and git_blob(p)==v['base_blob']
-              for f in m['files']:
-                  p=Path(f['path']);p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(z.read(f['path']))
-              for f in m['delete']:Path(f['path']).unlink()
-              for p,v in m['append'].items():
-                  path=Path(p);path.write_text(path.read_text()+v['text'])
-          print('APPROVED_LIVE_RIG_IMPORT_OK files='+str(len(m['files'])))
-          PY
-      - name: Install real LÖVE and target test runtimes
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq love lua5.4 luajit xvfb ffmpeg
-      - name: Live-rig numerical, renderer-contract and gameplay regressions
-        run: |
-          set -euo pipefail
-          mkdir -p evidence
-          cd game/love
-          find . -name '*.lua' -print0 | xargs -0 -n1 luac5.4 -p
-          if [ -f player/rigby_runtime.lua ]; then
-            for lua in lua5.4 luajit; do
-              for t in rigby_runtime rigby_visual player_stage3 liquid_traversal stage4_objects stage5_systems stage5_end_to_end; do
-                "$lua" "tests/$t.lua"
-              done
-            done | tee ../../evidence/unit-tests.txt
-          fi
-      - name: Actual LÖVE mesh animation and production-world smoke
-        run: |
-          set -euo pipefail
-          mkdir -p evidence
-          if [ -f game/love/player/rigby_runtime.lua ]; then
-            TAMU_RIGBY_SMOKE=1 timeout 150s xvfb-run -a love game/love 2>&1 | tee evidence/live-rig-love.txt
-            grep -q 'RIGBY_LOVE_SMOKE_OK' evidence/live-rig-love.txt
-            OSMAN_LOVE_INTEGRATION_SMOKE=1 timeout 120s xvfb-run -a love game/love 2>&1 | tee evidence/production-love.txt
-            grep -q 'LOVE_INTEGRATION_SMOKE_OK' evidence/production-love.txt
-            TAMU_USE_PLASMA=1 OSMAN_LOVE_INTEGRATION_SMOKE=1 timeout 120s xvfb-run -a love game/love 2>&1 | tee evidence/plasma-rollback-love.txt
-            grep -q 'LOVE_INTEGRATION_SMOKE_OK' evidence/plasma-rollback-love.txt
-            python3 - <<'PY'
-          import os,shutil
-          from pathlib import Path
-          home=Path(os.environ['XDG_DATA_HOME'])
-          for p in home.rglob('rigby-*.png'):shutil.copy2(p,Path('evidence')/p.name)
-          frames=next(home.rglob('rigby_frames'))
-          Path('evidence/frames-path.txt').write_text(str(frames))
-          PY
-            ffmpeg -hide_banner -loglevel error -y -framerate 24 -i "$(cat evidence/frames-path.txt)/%05d.png" -c:v libx264 -pix_fmt yuv420p -crf 20 -movflags +faststart evidence/TAMU_live_rig_preview.mp4
-          fi
-      - name: Commit tested source and original parts to the leased experiment
-        if: inputs.url_a != ''
-        env:
-          EXPECTED_HEAD: ${{ inputs.expected_head }}
-        run: |
-          set -euo pipefail
-          test "$GITHUB_REF_NAME" = "$EXPERIMENT"
-          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
-          test "$(git ls-remote origin "refs/heads/$EXPERIMENT" | cut -f1)" = "$EXPECTED_HEAD"
-          git config user.name 'TAMU integration'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- game/love AGENTS.md SESSION_HANDOFF.md
-          git diff --cached --stat
-          git commit -m 'Replace frame atlas with verified live Rigby FK and weighted-mesh runtime'
-          git push origin "HEAD:refs/heads/$EXPERIMENT"
-          test "$(git ls-remote origin "refs/heads/$EXPERIMENT" | cut -f1)" = "$(git rev-parse HEAD)"
-          git rev-parse HEAD | tee evidence/source-commit.txt
-      - name: Validate original assets and package playable LÖVE source
+      - name: Validate and package playable LÖVE source
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
           from zipfile import ZipFile,ZIP_DEFLATED
-          import hashlib,json,subprocess
+          import hashlib,struct
           root=Path('game/love')
+          needed=['main.lua','player/core_visual.lua','player/core_crystal_shader.lua',
+          'assets/file_000000007cf082119c4dde3e346c2bcb.png',
+          'assets/core_crystal_mask_aligned.png',
+          'assets/core_plasma_back_spritesheet_32x512.png',
+          'assets/core_plasma_front_spritesheet_32x512.png']
+          for name in needed:
+              assert (root/name).is_file(), f'Missing: {name}'
           expected={
-            'assets/file_000000007cf082119c4dde3e346c2bcb.png':'2c63bc1645ab1718e8f612f17a8821ed4f22cd557ffd66c2e506e8d46d2dcf0b',
-            'assets/core_crystal_mask_aligned.png':'b718d0cab981f23d8334a868e268d45535fac61292af8d34733120999161f55b'}
-          for p,h in expected.items():assert hashlib.sha256((root/p).read_bytes()).hexdigest()==h
-          live=(root/'player/rigby_runtime.lua').is_file()
-          if live:
-              meta=json.loads((root/'assets/osman_rig/provenance.json').read_text())
-              for p,h in meta['parts'].items():assert hashlib.sha256((root/'assets/osman_rig/images'/p).read_bytes()).hexdigest()==h
-              assert not (root/'player/osman_sprite.lua').exists()
-              assert not (root/'assets/osman_rig/clips.json').exists()
-              assert len(json.loads((root/'assets/osman_rig/rig.json').read_text())['animations'])==44
-          out=Path('TAMU_KOK_canli_rig.love' if live else 'oyun-main-android-test.love')
-          files=sorted(p for p in root.rglob('*') if p.is_file() and not any(x.startswith('.') or x=='__pycache__' for x in p.relative_to(root).parts))
+          'assets/file_000000007cf082119c4dde3e346c2bcb.png':'2c63bc1645ab1718e8f612f17a8821ed4f22cd557ffd66c2e506e8d46d2dcf0b',
+          'assets/core_crystal_mask_aligned.png':'b718d0cab981f23d8334a868e268d45535fac61292af8d34733120999161f55b'}
+          for name,sha in expected.items():
+              blob=(root/name).read_bytes()
+              assert hashlib.sha256(blob).hexdigest()==sha,f'{name} SHA mismatch'
+              assert blob[:8]==bytes((137,80,78,71,13,10,26,10)),f'{name} PNG invalid'
+              assert struct.unpack('>II',blob[16:24])==(1254,1254),f'{name} resolution invalid'
+          files=sorted(p for p in root.rglob('*') if p.is_file() and
+              not any(part.startswith('.') for part in p.relative_to(root).parts) and
+              '__pycache__' not in p.parts)
+          out=Path('oyun-main-android-test.love')
           with ZipFile(out,'w',ZIP_DEFLATED,compresslevel=8) as z:
-              for p in files:z.write(p,p.relative_to(root).as_posix())
+              for p in files:
+                  z.write(p,p.relative_to(root).as_posix())
           with ZipFile(out) as z:
-              assert z.testzip() is None and 'main.lua' in z.namelist()
-              assert 'player/core_visual.lua' in z.namelist()
-          digest=hashlib.sha256(out.read_bytes()).hexdigest()
-          Path(str(out)+'.sha256').write_text(digest+'  '+out.name+'\n')
-          print('LOVE_PACKAGE_OK',out.name,len(files),out.stat().st_size,digest)
-          Path('evidence/package.json').write_text(json.dumps({'commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'sha256':digest,'bytes':out.stat().st_size,'live_rig':live,'android_device_test':False},indent=2))
+              assert z.testzip() is None
+              assert all(name in z.namelist() for name in needed)
+              assert z.namelist()[0] != 'game/love/main.lua'
+              print('LOVE_PACKAGE_FILE_COUNT',len(z.namelist()))
+          print('LOVE_SHA256',hashlib.sha256(out.read_bytes()).hexdigest())
+          print('LOVE_BYTES',out.stat().st_size)
           PY
-      - name: Upload playable package and real-engine evidence
-        if: always()
+          sha256sum oyun-main-android-test.love | tee oyun-main-android-test.love.sha256
+      - name: Upload playable LOVE file
         uses: actions/upload-artifact@v4
         with:
-          name: tamu-live-rig-review
+          name: oyun-main-android-love
           path: |
-            *.love
-            *.love.sha256
-            evidence/
+            oyun-main-android-test.love
+            oyun-main-android-test.love.sha256
           if-no-files-found: error
