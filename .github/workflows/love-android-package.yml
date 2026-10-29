@@ -1,7 +1,7 @@
 name: Build Android-testable LOVE package
 on:
   push:
-    branches: [main]
+    branches: [main, experiment/25d-blackboot-diagnosis-20261029]
     paths:
       - '.github/workflows/love-android-package.yml'
       - 'game/love/**'
@@ -91,6 +91,17 @@ jobs:
           print('LOVE_BYTES',out.stat().st_size)
           PY
           sha256sum oyun-main-android-test.love | tee oyun-main-android-test.love.sha256
+      - name: Trace packaged Android startup Rigby versus plasma (diagnostic branch only)
+        if: github.ref_name == 'experiment/25d-blackboot-diagnosis-20261029'
+        run: |
+          set +e
+          SDL_AUDIODRIVER=dummy TAMU_BOOT_TRACE=1 OSMAN_LOVE_INTEGRATION_SMOKE=1 timeout 55s xvfb-run -a love oyun-main-android-test.love 2>&1 | tee /tmp/rigby-package-startup.log
+          rigby_status=${PIPESTATUS[0]}
+          echo "TAMU_DIAG_RIGBY_STATUS=$rigby_status"
+          SDL_AUDIODRIVER=dummy TAMU_USE_PLASMA=1 TAMU_BOOT_TRACE=1 OSMAN_LOVE_INTEGRATION_SMOKE=1 timeout 55s xvfb-run -a love oyun-main-android-test.love 2>&1 | tee /tmp/plasma-package-startup.log
+          plasma_status=${PIPESTATUS[0]}
+          echo "TAMU_DIAG_PLASMA_STATUS=$plasma_status"
+          exit 0
       - name: Test packaged R2 + 25D in real LÖVE, and preserve explicit legacy mode
         run: |
           set -euo pipefail
@@ -101,7 +112,7 @@ jobs:
             for name in ('assets/worldbuild/fisilti_ormani.r2.v1.json','assets/worldbuild/osman_overworld.v2.json'):
               assert name in z.namelist()
           PY
-          SDL_AUDIODRIVER=dummy OSMAN_LOVE_INTEGRATION_SMOKE=1 timeout 180s xvfb-run -a love oyun-main-android-test.love 2>&1 | tee r2-25d-package-smoke.log
+          SDL_AUDIODRIVER=dummy OSMAN_LOVE_INTEGRATION_SMOKE=1 timeout 60s xvfb-run -a love oyun-main-android-test.love 2>&1 | tee r2-25d-package-smoke.log
           grep -q LOVE_INTEGRATION_SMOKE_OK r2-25d-package-smoke.log
           SDL_AUDIODRIVER=dummy OSMAN_R2_PILOT=0 OSMAN_25D_RUNTIME=0 OSMAN_LOVE_INTEGRATION_SMOKE=1 timeout 120s xvfb-run -a love oyun-main-android-test.love 2>&1 | tee legacy-smoke.log
           grep -q LOVE_INTEGRATION_SMOKE_OK legacy-smoke.log
