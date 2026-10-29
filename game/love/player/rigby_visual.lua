@@ -10,7 +10,7 @@ local loop_actions={idle=true,walk=true,run=true,mine=true,chop=true}
 local trace=os.getenv('TAMU_BOOT_TRACE')=='1'
 local traced_first=false
 local function measure(name,fn)
- if not trace then return fn() end
+ if not trace or traced_first then return fn() end
  local t=love.timer.getTime();local value=fn()
  print(string.format('TAMU_RIGBY_PHASE %s=%.3fms',name,(love.timer.getTime()-t)*1000))
  io.stdout:flush();return value
