@@ -579,6 +579,16 @@ function love.draw()
     perf_tick("draw",perf_begin)
     return
   end
+  -- Present useful loading feedback instead of a blank default screen.
+  if runtime25d and runtime25d.visible==0 then
+    local g=love.graphics
+    g.setColor(.75,.92,.91,1)
+    g.print("TAMU - Dunya hazirlaniyor",24,math.floor(h*.44))
+    g.print(string.format("Arazi: %d / %d   Chunk: %d",
+      runtime25d.built or 0,stats.needed or 0,stats.loaded or 0),
+      24,math.floor(h*.44)+34)
+    g.setColor(1,1,1,1)
+  end
   object_count=ObjectRenderer.draw(objects,stream,camera,w,h,player,
     selected_target,harvesting,sprite25d_draw)
   local ghost
@@ -628,6 +638,23 @@ function love.draw()
   g.circle("fill",bx+joystick.dx*55,by+joystick.dy*55,22)
   g.setColor(1,1,1)
   frames=frames+1
+  -- This probe checks actual terrain meshes, not merely 20 update frames.
+  -- It is used by the packaged default-world CI visual acceptance.
+  if os.getenv("OSMAN_25D_VISUAL_PROBE")=="1" then
+    local visible=runtime25d and runtime25d.visible or 0
+    if visible>=2 then
+      love.graphics.captureScreenshot("tamu-default-world-visible.png")
+      print(string.format("TAMU_25D_VISIBLE_OK frames=%d meshes=%d calls=%d",
+        frames,visible,runtime25d.draw_calls))
+      io.stdout:flush()
+      love.event.quit()
+      return
+    end
+    if frames>=900 then
+      error(string.format("25D visual boot timeout: frames=%d chunks=%d pending=%d meshes=%d",
+        frames,stats.loaded,stats.pending,visible))
+    end
+  end
   if cache_pilot_enabled and os.getenv("OSMAN_CHUNK_CACHE_PREFETCH_SMOKE")=="1"
     and boot_ready and (chunk_cache.metrics.prefetch_writes or 0)>=1 then
     print(string.format("CHUNK_CACHE_PREFETCH_OK prepared=%d bytes=%d",

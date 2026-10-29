@@ -109,6 +109,7 @@ function Runtime.new(pilot)
  local compact=m.compact_mobile_atlas==true
  local self=setmetatable({pilot=pilot,manifest=m,families=fam,
    compact=compact,compact_pending={},compact_ready=not compact,
+   compact_started_at=love.timer and love.timer.getTime and love.timer.getTime() or 0,
    creation_enabled=compact,
    sun_hour=initial_hour,sun=Sun.at(initial_hour),
    sun_day_seconds=Sun.day_seconds,sun_locked=initial~=nil,
@@ -158,10 +159,21 @@ function Runtime:poll_compact_images()
      local image
      if self.decode_thread then
        local data=love.thread.getChannel('osman25d:decode:'..name):pop()
-       if data then
-         assert(type(data)~='string',data)
+       if type(data)=='string' then
+         print('OSMAN_25D_ATLAS_WORKER_ERROR '..data)
+       elseif data then
          image=love.graphics.newImage(data)
          if data.release then data:release() end
+       end
+       -- On Android a thread can terminate or its ImageData message may
+       -- never arrive. Never leave the default world blank indefinitely.
+       local now=love.timer and love.timer.getTime and love.timer.getTime() or 0
+       local thread_error=self.decode_thread.getError and self.decode_thread:getError()
+       local expired=now-self.compact_started_at>3
+       if not image and (thread_error or expired or type(data)=='string') then
+         if thread_error then print('OSMAN_25D_ATLAS_THREAD_ERROR '..thread_error) end
+         image=Atlas.load(meta)
+         print('OSMAN_25D_ATLAS_MAIN_FALLBACK '..name)
        end
      else
        image=Atlas.load(meta)
