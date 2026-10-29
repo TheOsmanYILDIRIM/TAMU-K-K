@@ -31,6 +31,7 @@ jobs:
           luac5.4 -p world/terrain25d_geometry.lua world/terrain25d_lighting.lua tests/terrain25d_geometry.lua
           for interpreter in lua5.4 luajit; do
             "$interpreter" tests/terrain25d_geometry.lua
+            "$interpreter" tests/terrain25d_atlas_fast_append.lua
             "$interpreter" tests/terrain25d_object_population.lua
           done
       - name: Stat/skill contract and existing Stage5/Stage6 regression (Lua 5.4 and LuaJIT)
