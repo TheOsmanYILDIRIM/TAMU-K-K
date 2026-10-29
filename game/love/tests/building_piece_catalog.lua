@@ -236,5 +236,5 @@ assert(invalid==false)
 local sample=k:snapshot()
 assert(sample.version==1 and #sample.parts>=17)
 assert(#k:obstacles({x=-18,y=15,w=36,h=3,z=7,d=10})>=1)
-print(("BUILDING_PIECES_OK variants=%d views=%d prompts=%d directional_walls=4 "..
-  "multi_floor=1 visual_seams=locked"):format(#ids,#ids*4,#ids*4*3))
+print(("BUILDING_PIECES_OK variants=%d views=%d sockets=checked directional_walls=4 "..
+  "multi_floor=1 authored_art_seams=pending"):format(#ids,#ids*4))

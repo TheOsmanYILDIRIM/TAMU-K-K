@@ -1,3 +1,15 @@
+# TAMU KÖK — modüler inşaat kod varsayılanları (2026-10-29)
+
+**Kaynak dal:** `TheOsmanYILDIRIM/TAMU-K-K`, `experiment/modular-building-core-20261029`; doğrulanan son içerik commit'i `f7626df03e19fdf0ba0275eae50ba9a06c3d5f59`. `main` üzerinde inşaat entegrasyonu yapılmadı; güncel HEAD çalışmaya başlarken tekrar okunur.
+
+- 19 mevcut `building_parts.lua` tanımı, 4 dünya yönü, 76 ayrı gerçek 128×128 RGBA kod varsayılanı; görüntü başına en fazla 64 görünür RGB renk. Pillow çokgen üretimi `scripts/building_default_assets.py`; Lua katalog export `scripts/export_building_parts.lua`; opt-in LÖVE SpriteBatch adaptörü `game/love/systems/building_default_atlas.lua`.
+- 1024/256 eski görsel standardı yerine 128px kanonik `building_visual_contract.lua` geçerli. Prompt denemeleri bu kod işi için pasif; onaylı MTS stil/artistik PNG yeniden üretimi yapılmadı.
+- GitHub Quality run #40897874133 `success`: Lua5.4/LuaJIT ve mevcut regresyonlar; Python 4 hedefli test başarılı (76 RGBA/<=64 renk, atlas SHA ve kadraj, 4 ayrı instance ile 2×2/L yerleştirme, pencere/kapı gerçek alfa, deterministik tekrar). Artifact `tamu-default-building-76-views` GitHub Actions'ta mevcut; atlas SHA-256 `255fd799adcad43a8565b29594970a37c132a93e6dc4bdf3b4e850fdd14dcb67`.
+- Görseller bilerek **minimal prosedürel placeholder**; gerçek PNG sanat onayı, oyun içi opt-in renderer bağlantısı, kapı/merdiven özel çarpışması, save_v2 migration ve Android FPS **açık**. Yeni dünya motoru/25D/R2/Stage5/6, atlas arşivleri ve kullanıcı verileri korunur.
+- Sonraki çalışma: önce yeni HEAD/CI ve kanonik açık görev kontrolü; kullanıcının isteğine göre bağımsız yeni dünya adaptörüne entegrasyon veya kod varsayılanlarının görsel iterasyonu. Kabul olmadan `main` merge veya done ilanı yok.
+
+---
+
 # SESSION_HANDOFF — güncel LÖVE2D oyunu (2026-10-18)
 
 ## Son doğrulanmış entegrasyon
