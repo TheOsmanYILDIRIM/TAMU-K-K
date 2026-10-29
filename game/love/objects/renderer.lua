@@ -3,7 +3,9 @@ local Depth=require("player.depth")
 local R={metrics={collect_calls=0,cold_queries=0,cold_query_ms=0,
  cold_query_max_ms=0,collect_last_ms=0,collect_max_ms=0,
  prepared_chunks=0,prepare_last_ms=0,prepare_max_ms=0}}
-local CoreVisual=require("player.core_visual")
+-- Keep plasma intact as rollback; alternate character on by default.
+local CoreVisual=(os.getenv("TAMU_USE_PLASMA")=="1")
+  and require("player.core_visual") or require("player.osman_sprite")
 local AxeStrike=require("player.axe_strike")
 local axe_image=nil
 local function player_sprite(g,camera,w,h,player,visual_context)
