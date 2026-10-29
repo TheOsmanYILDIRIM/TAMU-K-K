@@ -12,15 +12,14 @@ local files={
  ["osman_overworld.v2.json"]="ac5903fd22cd466cfc1786cbeef44f2679be87317c6bfd757a05a282172f78dc"
 }
 local function source_read(name)
-  assert(love and love.filesystem and type(love.filesystem.getSource)=="function",
-    "R2 pilot needs the real LÖVE source")
-  local source=love.filesystem.getSource():gsub("[/\\]+$","")
-  assert(source:match("[/\\]game[/\\]love$"),
-    "R2 pilot requires an unpacked repository source; no bundled map or silent fallback")
-  local path=source.."/../../data/worldbuild/"..name
-  local f,err=io.open(path,"rb")
-  assert(f,"R2 pilot source unavailable ("..name.."): "..tostring(err))
-  local bytes=f:read("*a");f:close()
+  -- Read the exact reviewed authored maps from either .love ZIP or project.
+  -- read_doc checks canonical SHA256. Never silently generate a substitute.
+  assert(files[name],"unknown R2 map requested")
+  assert(love and love.filesystem and type(love.filesystem.read)=="function",
+    "R2 requires LOVE filesystem")
+  local path="assets/worldbuild/"..name
+  local bytes,error_message=love.filesystem.read(path)
+  assert(bytes,"R2 authored map missing ("..path.."): "..tostring(error_message))
   return bytes
 end
 local function read_doc(name,reader)

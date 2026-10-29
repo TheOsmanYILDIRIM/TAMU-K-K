@@ -28,9 +28,25 @@ local stage6_reopen_smoke=os.getenv("OSMAN_STAGE6_REOPEN_SMOKE")=="1"
 local stat_smoke=os.getenv("OSMAN_LOVE_STAT_SMOKE")=="1"
 local stat_viewport=os.getenv("OSMAN_STAT_DISPLAY")
 local stage6_world_id=os.getenv("OSMAN_STAGE6_WORLD_ID")
-local r2_pilot_enabled=os.getenv("OSMAN_R2_PILOT")=="1"
+-- The reviewed R2 + compact-atlas 25D scene is the standard visual.
+-- Legacy world is still available explicitly (including opt-in Stage6 saves),
+-- without inventing save support for the session-only R2 scene.
+local r2_setting=os.getenv("OSMAN_R2_PILOT")
+local terrain25d_setting=os.getenv("OSMAN_25D_RUNTIME")
 local cache_pilot_enabled=os.getenv("OSMAN_CHUNK_CACHE_PILOT")=="1"
-local terrain25d_enabled=os.getenv("OSMAN_25D_RUNTIME")=="1"
+local stage6_requested=stage6_enabled or stage6_create or stage6_reopen_smoke
+-- Legacy regression fixtures explicitly require the original seeded world.
+-- Ordinary play and production-world smoke still use standard R2 + 25D.
+local legacy_fixture_requested=
+  os.getenv("OSMAN_LOVE_STAGE5_RUNTIME_SMOKE")=="1" or
+  os.getenv("OSMAN_LOVE_STAGE4_SMOKE")=="1" or
+  os.getenv("OSMAN_LOVE_LIQUID_SMOKE")=="1" or
+  os.getenv("OSMAN_LOVE_STAT_SMOKE")=="1"
+local r2_pilot_enabled=(r2_setting=="1") or
+  (r2_setting==nil and not stage6_requested and
+   not legacy_fixture_requested and not cache_pilot_enabled)
+local terrain25d_enabled=(terrain25d_setting=="1") or
+  (terrain25d_setting==nil and r2_pilot_enabled and not cache_pilot_enabled)
 local terrain25d_smoke=os.getenv("OSMAN_25D_SMOKE")=="1"
 local shadow_preview=terrain25d_smoke and
   os.getenv("OSMAN_25D_SHADOW_PREVIEW")=="1"

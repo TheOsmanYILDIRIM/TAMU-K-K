@@ -1,3 +1,9 @@
+## 2026-10-29 — R2 + kompakt atlas 2.5D normal açılış
+- Son doğrulanan main tabanı `497b98e1a361e4468994626cf82a2d3ff83cc2d2`; R2/25D default değişikliği `experiment/tamu-25d-standard-packaged-20261029` dalında test edildi: `4fa69d320a6631500dc162c511a86ac5293b8e22`.
+- Derlenmiş .love içinde iki authored JSON `assets/worldbuild` altında, SHA256 doğrulanıyor; paketlenen dosya gerçek LÖVE smoke ile açılıyor. Paket workflow run 40922389453 ve quality 40922389592 başarılı. Eski Stage5/stat fixture'ları kendi legacy modunda tutuldu. R2 session-only; Stage6 kayıt moduna otomatik taşıma yok.
+- Eski dünyayı **varsayılan olmaktan çıkar**; eski dosyaları, ana plazma ve SaveV2'yi silme. Yeni canlı rig karakteri bağımsız deneyde durur; main'e varlıkları henüz tam aktarılmadı. Birleşik yerel .love önizlemesi R2+25D+rig gösterir; Android cihaz doğrulanmadı.
+- Devirden sonra güncel main HEAD, yeni main workflow/quality CI sonuçları ve paket SHA tekrar kontrol edilir.
+
 # SESSION_HANDOFF — güncel LÖVE2D oyunu (2026-10-18)
 
 ## Son doğrulanmış entegrasyon
