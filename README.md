@@ -1,4 +1,6 @@
-# oyun — 45° izometrik 2D hayatta kalma / crafting oyunu
+# TAMU KÖK — 45° izometrik 2D hayatta kalma / crafting oyunu
+
+**Proje kod adı:** TAMU KÖK (`tamu-kok`). Bu ad geliştirme projesinin kimliğidir; oyunun nihai yayın adı henüz belirlenmemiştir. GitHub depo yolu `TheOsmanYILDIRIM/oyun` ve çalışma dizinleri uyumluluk için korunur.
 
 **Güncel yön (16 Ekim 2026): LÖVE2D, 45° izometrik 2D, dikey mobil ekran ve görünür karo ızgarası bulunmayan prosedürel dünya.** Godot 4.6.3 3D yeniden başlangıç planı artık aktif oyun mimarisi değildir; ancak tarihsel iskelet ve eski kaynaklar korunmaktadır.
 
