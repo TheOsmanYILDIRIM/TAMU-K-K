@@ -85,6 +85,13 @@ function Shore.build(chunk,query,topography,routes,scale,checkpoint)
  end
  local raw_water=(chunk.layers and chunk.layers.water
    and chunk.layers.water.vertices) or {}
+ -- Lightweight R2 render-only chunks omit obsolete legacy Marching geometry.
+ -- Build the one water layer we actually render, with the SAME 8-unit
+ -- sampling as the old stream outside authored refined river segments.
+ if chunk._25d_lite and not is_river then
+   raw_water=Marching.build(water_sampler,chunk.x,chunk.y,
+     chunk.size,8,0,checkpoint).vertices
+ end
  local bank,path={},{}
  if is_river then
   -- 4-unit edge fidelity; only chunks overlapping an actual authored river.

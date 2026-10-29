@@ -1,7 +1,8 @@
 -- Sorted 45-degree world-foot sprites; GPU-independent placement and mutable state.
 local Depth=require("player.depth")
 local R={metrics={collect_calls=0,cold_queries=0,cold_query_ms=0,
- cold_query_max_ms=0,collect_last_ms=0,collect_max_ms=0}}
+ cold_query_max_ms=0,collect_last_ms=0,collect_max_ms=0,
+ prepared_chunks=0,prepare_last_ms=0,prepare_max_ms=0}}
 local CoreVisual=require("player.core_visual")
 local AxeStrike=require("player.axe_strike")
 local axe_image=nil
@@ -40,14 +41,78 @@ end
 -- generator v1. Cache only candidate membership on resident chunks; depletion
 -- and R2 day-based regrowth MUST be read live every draw/pick. Chunk eviction
 -- bounds lifetime; different world identities (Stage6 publish) rebuild it.
-function R.collect(world,stream)
+-- Opt-in mobile: prepare each authored population chunk in four small
+-- independent queries while the main loop still updates player/UI input.
+-- Immutable candidate membership is cached; depletion is always read live.
+function R.prepare_visible(world,stream,budget_ms,camera,w,h)
+ if world.generator_version~=1 or type(world.is_depleted)~='function' then return 0 end
+ local clock=love and love.timer and love.timer.getTime
+ if type(clock)~='function' then return 0 end
+ local start=clock()
+ local deadline=start+(budget_ms or 1.2)/1000
+ local resumes=0
+ local candidates=stream.render_visible and camera and
+   stream:render_visible(camera,w,h,80*camera.zoom+16) or stream:visible()
+ for _,chunk in ipairs(candidates) do
+  if chunk._25d_meshes and
+    (chunk._object_render_world~=world or not chunk._object_render_candidates) then
+   local job=chunk._object_render_job
+   if not job then
+    job=coroutine.create(function()
+      local results,seen={},{}
+      local half=chunk.size/2
+      for y=0,1 do for x=0,1 do
+       local x0,y0=chunk.x+x*half,chunk.y+y*half
+       local candidates=world:objects_in({min_x=x0,min_y=y0,
+         max_x=x0+half,max_y=y0+half},true)
+       for _,o in ipairs(candidates) do
+        if o.cx==chunk.cx and o.cy==chunk.cy and not seen[o.id] then
+         seen[o.id]=true
+         results[#results+1]=o
+        end
+       end
+       coroutine.yield()
+      end end
+      chunk._object_render_candidates=results
+      chunk._object_render_world=world
+    end)
+    chunk._object_render_job=job
+   end
+   local ok,err=coroutine.resume(job)
+   assert(ok,err)
+   resumes=resumes+1
+   if coroutine.status(job)=='dead' then
+     chunk._object_render_job=nil
+     R.metrics.prepared_chunks=R.metrics.prepared_chunks+1
+   end
+   if resumes>=4 or clock()>=deadline then break end
+  end
+ end
+ local elapsed=(clock()-start)*1000
+ R.metrics.prepare_last_ms=elapsed
+ R.metrics.prepare_max_ms=math.max(R.metrics.prepare_max_ms,elapsed)
+ return resumes
+end
+function R.collect(world,stream,object_override)
   local clock=love and love.timer and love.timer.getTime
   local started=clock and clock()
   R.metrics.collect_calls=R.metrics.collect_calls+1
   local list,seen={},{}
   local immutable=world.generator_version==1 and
     type(world.is_depleted)=="function"
-  for _,chunk in ipairs(stream:visible()) do
+  local onscreen=type(object_override)=="table" and
+    object_override.provider and (object_override.provider.object_chunks or
+      object_override.provider.rendered_chunks)
+  for _,chunk in ipairs(onscreen or stream:visible()) do
+    -- Only the opt-in 25D renderer gates visual population by GPU-ready
+    -- terrain. Gameplay, harvest state and legacy renderer are unchanged.
+    if not (type(object_override)=="table" and not chunk._25d_meshes) then
+    -- Portable build never performs a cold ecology query inside love.draw:
+    -- a small budgeted coroutine in love.update publishes the candidates.
+    local mobile=type(object_override)=="table" and
+      object_override.provider and object_override.provider.compact
+    if not mobile or (chunk._object_render_world==world and
+       chunk._object_render_candidates) then
     local items
     if immutable then
       if chunk._object_render_world~=world or
@@ -81,6 +146,8 @@ function R.collect(world,stream)
         list[#list+1]=o;seen[o.id]=true
       end
     end
+    end -- mobile object candidates prepared
+    end -- 25D visible/ready gate
   end
   if started then
     local ms=(clock()-started)*1000
@@ -90,7 +157,7 @@ function R.collect(world,stream)
   return list
 end
 function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_override)
-  local all=R.collect(world,stream)
+  local all=R.collect(world,stream,object_override)
   local order={{id="!player",depth=Depth.key(player.x,player.y),player=true}}
   for _,o in ipairs(all) do order[#order+1]={id=o.id,depth=Depth.key(o.x,o.y),object=o} end
   table.sort(order,Depth.before)

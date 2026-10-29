@@ -54,6 +54,7 @@ function M.build(sampler, origin_x, origin_y, size, step, threshold, checkpoint)
       assert(type(v) == "number" and v == v and math.abs(v) < math.huge,
              "invalid sampled scalar field")
       row[ix+1] = {x = x, y = y, value = v}
+      if checkpoint and ix % 16 == 15 then checkpoint() end
     end
     rows[iy+1] = row
     if checkpoint then checkpoint() end
@@ -93,6 +94,7 @@ function M.build(sampler, origin_x, origin_y, size, step, threshold, checkpoint)
           }
         end
       end
+      if checkpoint and ix % 16 == 0 then checkpoint() end
     end
     if checkpoint then checkpoint() end
   end

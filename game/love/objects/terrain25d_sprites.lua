@@ -59,7 +59,7 @@ function Sprite:begin_frame()
      self.batches_by_page[page]=nil
    end
  end
- self.pending=0;self.current_page=nil
+ self.pending=0;self.current_page=nil;self.pending_reveal=false
  self.selected=nil;self.visible=0;self.culled=0;self.batches=0
 end
 function Sprite:batch_for(page)
@@ -82,8 +82,15 @@ function Sprite:flush(g)
    local tint=self.provider.sun and self.provider.sun.tint
    if tint then g.setColor(tint[1],tint[2],tint[3],1)
    else g.setColor(1,1,1,1) end
+   local shader=self.provider.reveal_shader
+   if self.pending_reveal and shader then
+     shader:send('radial',0)
+     g.setShader(shader)
+   end
    g.draw(batch)
+   if self.pending_reveal and shader then g.setShader() end
    batch:clear();self.pending=0;self.current_page=nil
+   self.pending_reveal=false
    self.batches=self.batches+1
  end
  if self.selected then
@@ -96,6 +103,11 @@ end
 -- Identical approved sprite family, variant, scale and culling in the
 -- opaque sprite pass and alpha-silhouette shadow prepass.
 function Sprite:appearance(camera,w,h,o)
+ -- The compact object atlas is decoded off-thread; never trigger a
+ -- synchronous newImage fallback while the worker is still loading it.
+ if self.provider.compact and not self.provider.compact_ready then return nil end
+ if self.provider.object_reveal and
+   self.provider:object_reveal(o.x,o.y)<=0 then return nil end
  local family
  if o.kind=="tree" then
    local variety=hash(o.id)%12
@@ -167,7 +179,10 @@ function Sprite:draw_contacts(g,camera,w,h,objects)
    self.contact_cache=nil
    return
  end
- if self.contact_batch and same_scene(self.contact_cache,camera,w,h,objects) then
+ local stable=not self.provider.objects_fully_revealed
+   or self.provider:objects_fully_revealed(objects)
+ if stable and self.contact_batch and
+    same_scene(self.contact_cache,camera,w,h,objects) then
    self.contact_reuses=self.contact_reuses+1
    if self.contact_objects>0 then
      g.setColor(1,1,1,1)
@@ -198,7 +213,10 @@ function Sprite:draw_contacts(g,camera,w,h,objects)
  batch:setColor(.06,.09,.08,.20)
  local count,total,overflow=0,0,false
  for _,o in ipairs(objects) do
-   local a,x,y=self:appearance(camera,w,h,o)
+   local ready=not self.provider.object_reveal or
+     self.provider:object_reveal(o.x,o.y)>=.999
+   local a,x,y
+   if ready then a,x,y=self:appearance(camera,w,h,o) end
    if a then
      if count>=self.limit*2 then
        g.setColor(1,1,1,1);g.draw(batch)
@@ -219,7 +237,8 @@ function Sprite:draw_contacts(g,camera,w,h,objects)
    self.contact_calls=self.contact_calls+1
  end
  -- An overflow flushes partial contents; it is intentionally not cacheable.
- self.contact_cache=not overflow and scene_snapshot(camera,w,h,objects) or nil
+ self.contact_cache=stable and not overflow and
+   scene_snapshot(camera,w,h,objects) or nil
 end
 -- Reuse immutable GPU shadow batches while a fixed view's moving sun
 -- changes by less than a third of a screen pixel. A changed camera, object
@@ -240,8 +259,10 @@ function Sprite:draw_shadows(g,camera,w,h,objects)
    self:draw_contacts(g,camera,w,h,objects)
    return 0
  end
+ local stable=not self.provider.objects_fully_revealed
+   or self.provider:objects_fully_revealed(objects)
  local cache=self.shadow_cache
- local reuse=same_scene(cache,camera,w,h,objects)
+ local reuse=stable and same_scene(cache,camera,w,h,objects)
  if reuse then
    local turn=math.abs(sun.rotation-cache.rotation)
    turn=math.min(turn,2*math.pi-turn)
@@ -275,7 +296,10 @@ function Sprite:draw_shadows(g,camera,w,h,objects)
  end
  local visible,overflowed,max_extent={},false,1
  for _,o in ipairs(objects) do
-   local a,x,y,scale,family=self:appearance(camera,w,h,o)
+   local ready=not self.provider.object_reveal or
+     self.provider:object_reveal(o.x,o.y)>=.999
+   local a,x,y,scale,family
+   if ready then a,x,y,scale,family=self:appearance(camera,w,h,o) end
    if a then
      local entry=self:shadow_batch_for(a.page)
      local batch=entry.batch
@@ -310,7 +334,7 @@ function Sprite:draw_shadows(g,camera,w,h,objects)
      self.shadow_calls=self.shadow_calls+1
    end
  end
- if overflowed then
+ if overflowed or not stable then
    self.shadow_cache=nil
  else
    self.shadow_cache=scene_snapshot(camera,w,h,objects)
@@ -331,7 +355,11 @@ function Sprite:queue(g,camera,w,h,o,selected)
  -- Keep draw order as authored by ObjectRenderer's Y-depth sort.
  if self.pending>=self.limit or
    (self.current_page and self.current_page~=a.page) then self:flush(g) end
+ local progress=self.provider.object_reveal and
+   self.provider:object_reveal(o.x,o.y) or 1
  local batch=self:batch_for(a.page)
+ batch:setColor(1,1,1,progress)
+ self.pending_reveal=self.pending_reveal or progress<.999
  batch:add(a.quad,x,y,0,scale,scale,64,124)
  self.current_page=a.page
  self.pending=self.pending+1

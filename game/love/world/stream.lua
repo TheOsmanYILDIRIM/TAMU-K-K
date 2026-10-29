@@ -25,6 +25,7 @@ function Stream.new(query, opts)
   return setmetatable({
     query=query,chunker=chunker,
     max_loaded=max_loaded,build_budget=build_budget,
+    render_only_25d=opts.render_only_25d==true,
     generation_ms=generation_ms,jobs={},cache=opts.cache,
     prefetch_options=opts.prefetch_options,
     prefetch_done={},prefetch_job=nil,previous_camera=nil,
@@ -73,6 +74,20 @@ function Stream:needed(camera,width,height)
     }
   end end
   table.sort(candidates,less)
+  if self.render_only_25d then
+    -- The inverse-isometric screen rectangle includes many chunks that
+    -- cannot intersect the actual diamond. Keep only candidates inside
+    -- a modest prefetch halo, ordered by distance to the camera.
+    local required={}
+    local pad=72*camera.zoom+16
+    for _,c in ipairs(candidates) do
+      if overlaps_view(c.cx,c.cy,size,camera,width,height,pad) then
+        required[#required+1]=c
+      end
+    end
+    while #required>self.max_loaded do required[#required]=nil end
+    return required
+  end
   if self.viewport_cover then
     -- Render-only R2 opt-in: no foreground-screen chunk may be sacrificed
     -- to the historical 48-nearest-centres cap. Noncritical halo is capped.
@@ -112,6 +127,14 @@ function Stream:update(camera,width,height,budget)
           if mesh and mesh.release then mesh:release() end
         end
       end
+      -- The opt-in 25D upload may be yielded mid-batch; do not leak its
+      -- uncommitted meshes when the camera leaves the chunk.
+      if chunk._25d_staging_meshes then
+        for _,mesh in pairs(chunk._25d_staging_meshes) do
+          if mesh and mesh.release then mesh:release() end
+        end
+        chunk._25d_staging_meshes=nil
+      end
       -- A partially prepared terrain job can already own GPU meshes.
       if chunk._terrain_stage then
         for _,mesh in pairs(chunk._terrain_stage) do
@@ -145,6 +168,13 @@ function Stream:update(camera,width,height,budget)
                   _cache_vertices=vertices}
               end
             end
+            if self.render_only_25d then
+              -- The 25D renderer constructs its own authored terrain, water,
+              -- path and bank. Avoid the three discarded legacy Marching passes.
+              return {key=c.key,cx=c.cx,cy=c.cy,
+                x=c.cx*self.chunker.size,y=c.cy*self.chunker.size,
+                size=self.chunker.size,layers={},_25d_lite=true}
+            end
             return self.chunker:build(c.cx,c.cy,checkpoint)
           end)
           self.jobs[c.key]=job
@@ -166,6 +196,10 @@ function Stream:update(camera,width,height,budget)
           self.resident[c.key]={key=c.key,cx=c.cx,cy=c.cy,
             x=c.cx*self.chunker.size,y=c.cy*self.chunker.size,
             size=self.chunker.size,layers={},_cache_vertices=v}
+        elseif self.render_only_25d then
+          self.resident[c.key]={key=c.key,cx=c.cx,cy=c.cy,
+            x=c.cx*self.chunker.size,y=c.cy*self.chunker.size,
+            size=self.chunker.size,layers={},_25d_lite=true}
         else
           self.resident[c.key]=self.chunker:build(c.cx,c.cy)
         end
@@ -280,6 +314,33 @@ end
 
 function Stream:visible()
   return self.ordered
+end
+
+-- Render culling does not evict the prefetch halo. Actual GPU vertex bounds
+-- include authored height, path, banks and water. The source R2 physics is
+-- unchanged, and no per-frame mesh rebuilding is needed.
+function Stream:render_visible(camera,width,height,padding)
+  if not self.render_only_25d then return self.ordered end
+  local result={}
+  local z=camera.zoom
+  local ox,oy=Iso.project(camera.x,camera.y)
+  padding=padding or 12
+  for _,c in ipairs(self.ordered) do
+    local bounds=c._25d_bounds
+    local hit
+    if bounds then
+      local minx=width*.5+(bounds[1]-ox)*z
+      local miny=height*.5+(bounds[2]-oy)*z
+      local maxx=width*.5+(bounds[3]-ox)*z
+      local maxy=height*.5+(bounds[4]-oy)*z
+      hit=maxx>=-padding and minx<=width+padding and
+          maxy>=-padding and miny<=height+padding
+    else
+      hit=overlaps_view(c.cx,c.cy,c.size,camera,width,height,padding+100*z)
+    end
+    if hit then result[#result+1]=c end
+  end
+  return result
 end
 
 function Stream:get_loaded(cx,cy)

@@ -6,11 +6,20 @@ local Shore=require("world.terrain25d_shore")
 local Materials=require("world.terrain25d_materials")
 local Atlas=require("world.terrain25d_atlas")
 local Sun=require("world.terrain25d_sun")
+local Reveal=require("world.terrain25d_reveal")
 local Runtime={}; Runtime.__index=Runtime
 -- 128px source texture spans 64 world units; 32-unit mesh lattice stays
 -- aligned to UV seams. Large grass/stone details no longer rival trees.
 local TERRAIN_UV_SCALE=64
 Runtime.terrain_uv_scale=TERRAIN_UV_SCALE
+
+local function clamp01(x)
+ return x<0 and 0 or (x>1 and 1 or x)
+end
+local function ease_out_cubic(t)
+ t=clamp01(t)
+ return 1-(1-t)^3
+end
 function Runtime.new(pilot)
  assert(pilot and pilot.query and pilot.topography and pilot.routes and pilot.render_options,
    "authored R2 pilot required")
@@ -97,7 +106,10 @@ function Runtime.new(pilot)
  local initial_hour=initial and tonumber(initial) or Sun.initial_hour
  assert(initial_hour and initial_hour>=0 and initial_hour<24,
    "invalid opt-in visual sun hour (0..24)")
+ local compact=m.compact_mobile_atlas==true
  local self=setmetatable({pilot=pilot,manifest=m,families=fam,
+   compact=compact,compact_pending={},compact_ready=not compact,
+   creation_enabled=compact,
    sun_hour=initial_hour,sun=Sun.at(initial_hour),
    sun_day_seconds=Sun.day_seconds,sun_locked=initial~=nil,
    color_profiles=profiles.assets,
@@ -108,13 +120,110 @@ function Runtime.new(pilot)
    catalog_counts={total=#archive.assets,packed=#m.assets,
      pages=#m.atlas_pages},
    built=0,visible=0,draw_calls=0,transition_triangles=0,
-   uploads_per_frame=0,build_budget=1,step=32},Runtime)
- -- Keep the pilot page for current sprites; all other pages load on demand.
- self.atlas=self:page("atlas_00.png")
+   uploads_per_frame=0,build_budget=1,step=32,
+   build_time_budget=.0012,build_time_budget_idle=.0028,
+   moving_resume_cap=5,idle_resume_cap=14,
+   reveal_seconds=.85,last_camera_x=nil,last_camera_y=nil,
+   frame_now=0,reveal_shader=compact and Reveal.new() or nil},Runtime)
+ -- Compact mobile atlas: decoded in a real LÖVE worker thread. Main only
+ -- performs one bounded GPU upload per frame, with no 228 source PNG paste.
+ if compact then
+   if love.thread and love.thread.newThread then
+     self.decode_thread=love.thread.newThread('world/terrain25d_decode_worker.lua')
+     self.decode_thread:start()
+     local req=love.thread.getChannel('osman25d:decode:req')
+     for _,p in ipairs(m.atlas_pages) do
+       self.compact_pending[p.filename]=true
+       req:push(p.filename)
+     end
+     req:push('!stop')
+   else
+     -- Headless tests: exact same baked PNGs, no thread API available.
+     for _,p in ipairs(m.atlas_pages) do self.compact_pending[p.filename]=true end
+   end
+ else
+   self.atlas=self:page('atlas_00.png')
+ end
  if os and os.getenv and os.getenv("OSMAN_25D_SMOKE")=="1" then
    print("TERRAIN25D_AUTHORED_BORDERS="..#self.authored_boundaries)
  end
  return self
+end
+function Runtime:poll_compact_images()
+ if not self.compact or self.compact_ready then return true end
+ local uploaded=0
+ for _,meta in ipairs(self.manifest.atlas_pages) do
+   local name=meta.filename
+   if self.compact_pending[name] then
+     local image
+     if self.decode_thread then
+       local data=love.thread.getChannel('osman25d:decode:'..name):pop()
+       if data then
+         assert(type(data)~='string',data)
+         image=love.graphics.newImage(data)
+         if data.release then data:release() end
+       end
+     else
+       image=Atlas.load(meta)
+     end
+     if image then
+       local w,h=image:getDimensions()
+       assert(w==meta.width and h==meta.height,'compact atlas dimension mismatch')
+       image:setFilter('nearest','nearest')
+       image:setWrap('clamp','clamp')
+       self.page_images[name]=image
+       if name=='atlas_01.png' then
+         self.object_atlas_ready_time=love.timer and love.timer.getTime() or 0
+       end
+       -- Both images are shared by all resident chunks/sprites; stay pinned
+       -- for the duration of the portable scene (15.5 MiB RGBA8 ceiling).
+       self.page_pins[name]=(self.page_pins[name] or 0)+1
+       self.compact_pending[name]=nil
+       uploaded=uploaded+1
+       if uploaded>=1 then break end
+     end
+   end
+ end
+ self.compact_ready=next(self.compact_pending)==nil
+ -- All 168 ground sources are already baked into atlas_00. Begin terrain
+ -- preparation as soon as THIS page is decoded. Atlas_01 objects finish
+ -- asynchronously; don't hold the first playable terrain frame for them.
+ return self.page_images['atlas_00.png']~=nil
+end
+function Runtime:chunk_reveal(chunk,now)
+ if not self.creation_enabled then return 1 end
+ local started=chunk and chunk._25d_reveal_start
+ if not started then return 1 end
+ return clamp01((now-started)/self.reveal_seconds)
+end
+-- These values are used by the ground shader and per-object vertex reveal.
+-- The visual timer never touches generator, game calendar or save state.
+function Runtime:object_reveal(x,y)
+ if not self.creation_enabled or
+    not (self.stream and self.current_camera) then return 1 end
+ local cx,cy=math.floor(x/256),math.floor(y/256)
+ local chunk=self.stream:get_loaded(cx,cy)
+ if not chunk or not chunk._25d_meshes then return 0 end
+ local started=chunk._25d_reveal_start
+ if not started then return 1 end
+ local effective_start=math.max(started,self.object_atlas_ready_time or started)
+ local elapsed=math.max(0,self.frame_now-effective_start)
+ -- Same pixel-wave radius as the terrain shader, centred on the
+ -- corresponding chunk rather than its corner or the camera origin.
+ local zoom=self.current_camera.zoom
+ local ox,oy=(cx+.5)*chunk.size,(cy+.5)*chunk.size
+ local dx,dy=Iso.project(x-ox,y-oy)
+ local distance=math.sqrt(dx*dx+dy*dy)*zoom
+ local radius=chunk.size*.707106781186548*zoom+32*zoom
+ local front=clamp01(elapsed/self.reveal_seconds)*radius
+ local feather=math.max(12,18*zoom)
+ return clamp01((front-distance+feather)/feather)
+end
+function Runtime:objects_fully_revealed(objects)
+ for _,o in ipairs(objects) do
+   if self:object_reveal(o.x,o.y)<.999 then return false end
+ end
+ return true
 end
 function Runtime:page(name)
  local meta=assert(self.page_metadata[name],"atlas page is not packed")
@@ -212,6 +321,14 @@ function Runtime:prepare(chunk,checkpoint)
  if checkpoint then checkpoint() end
  local n=chunk.size/self.step
  local groups,ground_pages={},{}
+ local minx,miny,maxx,maxy=math.huge,math.huge,-math.huge,-math.huge
+ local function capture(v)
+   local x,y=v[1],v[2]
+   if x<minx then minx=x end
+   if x>maxx then maxx=x end
+   if y<miny then miny=y end
+   if y>maxy then maxy=y end
+ end
 
  local function emit(asset,tri,group_map)
    local page=asset.atlas_page
@@ -220,7 +337,10 @@ function Runtime:prepare(chunk,checkpoint)
    local verts=Geo.love_vertices({format="terrain25d-v1",
      vertices=tri,indices={1,2,3}},asset.uv_rect)
    local out=group.vertices
-   for _,v in ipairs(verts) do out[#out+1]=v end
+   for _,v in ipairs(verts) do
+     out[#out+1]=v
+     capture(v)
+   end
    ground_pages[page]=true
  end
  local function midpoint(a,b)
@@ -314,6 +434,7 @@ function Runtime:prepare(chunk,checkpoint)
            emit(choose(ax,ay,boundary),{p,q,t},groups)
            emit(choose(bx,by,boundary),{p,t,r},groups)
          end
+         if checkpoint then checkpoint() end
        end
        self.transition_triangles=self.transition_triangles+32
      elseif not split then
@@ -332,16 +453,20 @@ function Runtime:prepare(chunk,checkpoint)
          local wx=(centre[9]+v1[9]+v2[9])/3
          local wy=(centre[10]+v1[10]+v2[10])/3
          emit(choose(wx,wy,boundary),{centre,v1,v2},groups)
+         if checkpoint and j%4==0 then checkpoint() end
        end
      end
+     if checkpoint then checkpoint() end
    end
-   if checkpoint and iy%2==1 then checkpoint() end
+   if checkpoint then checkpoint() end
  end
  local meshes,order={},{}
+ chunk._25d_staging_meshes=meshes
  for page,group in pairs(groups) do
    local gpu=love.graphics.newMesh(group.vertices,"triangles","static")
    gpu:setTexture(self:page(page))
    meshes[page]=gpu;order[#order+1]=page
+   if checkpoint then checkpoint() end
  end
  table.sort(order)
 
@@ -360,33 +485,54 @@ function Runtime:prepare(chunk,checkpoint)
      local y=(v1[4]+v2[4]+v3[4])*64/3
      local asset=self:material(family,x,y)
      emit(asset,{v1,v2,v3},group)
+     if checkpoint and k%24==1 then checkpoint() end
    end
    for page,item in pairs(group) do
      local gpu=love.graphics.newMesh(item.vertices,"triangles","static")
      gpu:setTexture(self:page(page))
      meshes["!"..layer..":"..page]=gpu
      overlay_order[layer][#overlay_order[layer]+1]=page
+     if checkpoint then checkpoint() end
    end
    table.sort(overlay_order[layer])
  end
  if #shore.water>0 then
+   for _,v in ipairs(shore.water) do capture(v) end
    meshes["!water"]=love.graphics.newMesh(
      shore.water,"triangles","static")
+   if checkpoint then checkpoint() end
  end
+ assert(minx<=maxx and miny<=maxy,"empty 25D render bounds")
+ chunk._25d_bounds={minx,miny,maxx,maxy}
  chunk._25d_overlay_order=overlay_order
  chunk._25d_meshes=meshes;chunk._25d_ground_order=order
  chunk._25d_ground_pages=ground_pages
  chunk._meshes=meshes -- Stream:update already releases this map upon eviction.
+ chunk._25d_staging_meshes=nil
+ chunk._25d_reveal_start=love.timer and love.timer.getTime() or 0
  self.built=self.built+1
 end
 function Runtime:draw(stream,camera,w,h)
  assert(stream and stream.visible and camera and camera.zoom>0)
  local chunks=stream:visible()
+ self.stream=stream
+ self.current_camera=camera
+ local image_ready=self:poll_compact_images()
  local clock=love.timer and love.timer.getTime
- local deadline=clock and clock()+.003
+ local now=clock and clock() or 0
+ self.frame_now=now
+ local motion=0
+ if self.last_camera_x then
+   motion=math.abs(camera.x-self.last_camera_x)+math.abs(camera.y-self.last_camera_y)
+ end
+ self.last_camera_x,self.last_camera_y=camera.x,camera.y
+ local moving=motion>1.5
+ local deadline=clock and now+(moving and self.build_time_budget or
+   self.build_time_budget_idle)
  local uploads,resumes=0,0
+ local resume_cap=moving and self.moving_resume_cap or self.idle_resume_cap
  for _,c in ipairs(chunks) do
-   if not c._25d_meshes and uploads<self.build_budget
+   if image_ready and not c._25d_meshes and uploads<self.build_budget
        and (not deadline or clock()<deadline) then
      local job=c._25d_prepare_job
      if not job then
@@ -395,7 +541,6 @@ function Runtime:draw(stream,camera,w,h)
        end)
        c._25d_prepare_job=job
      end
-     -- Cap resumes even if a mock/low-resolution timer never advances.
      repeat
        local ok,err=coroutine.resume(job)
        assert(ok,err)
@@ -405,43 +550,74 @@ function Runtime:draw(stream,camera,w,h)
          uploads=uploads+1
          break
        end
-     until resumes>=24 or (deadline and clock()>=deadline)
-     if resumes>=24 then break end
+     until resumes>=resume_cap or (deadline and clock()>=deadline)
+     if resumes>=resume_cap then break end
    end
  end
  self.uploads_per_frame=uploads
+ local draw_chunks=stream.render_visible and stream:render_visible(camera,w,h)
+   or chunks
+ self.rendered_chunks=draw_chunks
+ -- Tall sprites near the screen edge may overlap the viewport even when
+ -- their source terrain chunk is just outside it. Keep object culling
+ -- slightly more generous than the exact terrain mesh frustum.
+ self.object_chunks=stream.render_visible and
+   stream:render_visible(camera,w,h,80*camera.zoom+16) or chunks
+ self.culled_chunks=#chunks-#draw_chunks
  local g=love.graphics
  g.clear(.075,.115,.128,1);g.push("all")
  g.translate(w/2,h/2);g.scale(camera.zoom)
  local x,y=Iso.project(camera.x,camera.y)
  g.translate(-x,-y)
- -- Existing baked terrain vertex shading remains intact; apply only an
- -- inexpensive per-frame sunlight tint (never rebuild all terrain meshes).
  local tint=self.sun.tint
- g.setColor(tint[1],tint[2],tint[3],1)
  local calls,visible=0,0
- for _,c in ipairs(chunks) do
+ local shader=self.reveal_shader
+ local function prepare_style(chunk)
+   local progress=self:chunk_reveal(chunk,now)
+   if shader and progress<.999 then
+     local cx,cy=chunk.x+chunk.size*.5,chunk.y+chunk.size*.5
+     local sx,sy=camera:project(cx,cy,w,h)
+     local radius=(chunk.size*.707106781186548+32)*camera.zoom
+     local front=progress*radius
+     shader:send('radial',1)
+     shader:send('waveOrigin',{sx,sy})
+     shader:send('waveFront',front)
+     g.setShader(shader)
+     g.setColor(tint[1],tint[2],tint[3],1)
+   else
+     if shader then g.setShader() end
+     -- A headless test without shader only gets fully opaque completed mesh;
+     -- the real LÖVE/GLES path uses 3px creation pixels, never alpha fade.
+     g.setColor(tint[1],tint[2],tint[3],1)
+   end
+ end
+ for _,c in ipairs(draw_chunks) do
    if c._25d_meshes then
      visible=visible+1
+     prepare_style(c)
      for _,id in ipairs(c._25d_ground_order) do
        g.draw(c._25d_meshes[id]);calls=calls+1
      end
    end
  end
- for _,layer in ipairs({"path","bank"}) do
-   for _,c in ipairs(chunks) do
+ for _,layer in ipairs({'path','bank'}) do
+   for _,c in ipairs(draw_chunks) do
      if c._25d_meshes and c._25d_overlay_order then
+       prepare_style(c)
        for _,page in ipairs(c._25d_overlay_order[layer]) do
-         g.draw(c._25d_meshes["!"..layer..":"..page]);calls=calls+1
+         g.draw(c._25d_meshes['!'..layer..':'..page]);calls=calls+1
        end
      end
    end
  end
- for _,c in ipairs(chunks) do
-   if c._25d_meshes and c._25d_meshes["!water"] then
-     g.draw(c._25d_meshes["!water"]);calls=calls+1
+ for _,c in ipairs(draw_chunks) do
+   if c._25d_meshes and c._25d_meshes['!water'] then
+     prepare_style(c)
+     g.draw(c._25d_meshes['!water']);calls=calls+1
    end
  end
+ if shader then g.setShader() end
+ g.setColor(1,1,1,1)
  g.pop()
  self:prune_pages(stream,chunks)
  self.visible,self.draw_calls=visible,calls
