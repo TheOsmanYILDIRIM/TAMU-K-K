@@ -573,6 +573,8 @@ function Runtime:draw(stream,camera,w,h)
            uploads=uploads+1
            if self.bake_mode then
              local bytes=Baked.save(self,c)
+             local binary_bytes=Baked.save_binary(self,c)
+             print(string.format('TAMU_25D_BINARY_WRITE cx=%d cy=%d bytes=%d',c.cx,c.cy,binary_bytes))
              self.baked_written=self.baked_written+1
              print(string.format("TAMU_25D_BAKED_WRITE cx=%d cy=%d bytes=%d",c.cx,c.cy,bytes))
              io.stdout:flush()
