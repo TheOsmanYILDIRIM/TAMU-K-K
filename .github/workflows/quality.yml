@@ -31,6 +31,11 @@ jobs:
           SDL_AUDIODRIVER=dummy OSMAN_25D_BAKE_VERIFY=1 OSMAN_25D_BAKE_LIMIT=4 timeout 180s xvfb-run -a love game/love 2>&1 | tee /tmp/tamu-bake-replay.log
           grep -q 'TAMU_25D_BAKE_VERIFY_OK count=4' /tmp/tamu-bake-replay.log
           rm -rf game/love/assets/terrain25d/baked
+      - name: Diagnose default startup
+        if: github.ref_name == 'experiment/25d-blackboot-diagnosis-20261029'
+        shell: bash
+        run: |
+          TAMU_BOOT_TRACE=1 OSMAN_LOVE_INTEGRATION_SMOKE=1 timeout 60s xvfb-run -a love game/love
       - name: 25D geometry and real R2 authored mesh (Lua 5.4 / LuaJIT)
         shell: bash
         run: |
