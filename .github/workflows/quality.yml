@@ -510,7 +510,7 @@ jobs:
           name: core-stat-progression-smoke
           path: /tmp/core-stat-progression-smoke-*.png
           if-no-files-found: error
-- name: TAMU Creative 25D Lua and generated visual tests
+      - name: TAMU Creative 25D Lua and generated visual tests
         if: github.ref_name == 'experiment/tamu-creative-25d-20261029' || github.ref_name == 'main'
         shell: bash
         run: |
