@@ -1,3 +1,11 @@
+# TAMU KOK — Creative 25D packaged integration candidate (2026-10-29)
+
+- User requested `main` integration and a real `.love` with tap-to-build Creative mode. This branch adds 13 canonical geometry types, a 34-view code-generated atlas (fixed stair variants), sparse spatial index, Touch/keyboard creative controls, terrain-height placement, undo and a packaged hashed R2 map. Content remains session-only; Stage6 unchanged.
+- New integration HEAD and Quality/Xvfb evidence must be verified after commit; only merge main with accepted real packaged smoke and PNG inspection. Packaging excludes secrets/saves and preserves original textures.
+- Open: runtime pathfinding collisions, door traversal, crafted survival building resources, durable creative placements, Android FPS. `.love` package runtime is desktop LÖVE 11.5, not APK.
+
+---
+
 # SESSION_HANDOFF — güncel LÖVE2D oyunu (2026-10-18)
 
 ## Son doğrulanmış entegrasyon

@@ -100,3 +100,7 @@ player collision, Android hardware FPS, or GPU execution timestamps.
 The expensive GitHub cache workflow is explicitly `workflow_dispatch`-only;
 the long-run test can be run manually with the script above when needed. Do not
 treat an unexecuted or skipped long-run test as passing.
+
+## TAMU KOK Creative building (25D packaged preview)
+
+In the downloadable `.love` package, the verified R2 geography and 25D renderer are enabled by a package marker without altering Stage6 save behavior. Tap `CREATIVE` (or press C), choose one of 13 modular shapes, tap a safe site to preview, adjust orientation with TURN (Q) and floor level with FLOOR +/- ([/]), then tap PLACE / BUILD (Enter). UNDO/Backspace removes the most recent piece. Placement is a temporary creative session and does not charge items or persist to disk. Screen-space placement is converted through the 25D topography sampler; world-space sparse spatial hashing limits nearby collision scans. Existing workbench/inventory and R2 objects remain unchanged. Roof, window and stairs are code-generated placeholder sprites; gameplay collision/traversal and durable saves remain future work. Build the package with `python scripts/package_tamu_love.py --repo . --output /tmp/TAMU_KOK_Creative_25D.love` (requires Lua5.4 and Pillow).

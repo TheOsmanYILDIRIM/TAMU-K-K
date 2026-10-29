@@ -510,3 +510,38 @@ jobs:
           name: core-stat-progression-smoke
           path: /tmp/core-stat-progression-smoke-*.png
           if-no-files-found: error
+- name: TAMU Creative 25D Lua and generated visual tests
+        if: github.ref_name == 'experiment/tamu-creative-25d-20261029' || github.ref_name == 'main'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install pillow
+          cd game/love
+          luac5.4 -p systems/creative_build.lua core/creative_build_hud.lua systems/creative_build_renderer.lua
+          for interpreter in lua5.4 luajit; do
+            "$interpreter" tests/creative_build.lua
+          done
+          cd "$GITHUB_WORKSPACE"
+          python -m unittest discover -s scripts -p 'test_creative_assets.py' -v
+          python scripts/package_tamu_love.py --repo . --output "$RUNNER_TEMP/TAMU_KOK_Creative_25D.love"
+          test -s "$RUNNER_TEMP/TAMU_KOK_Creative_25D.love"
+      - name: TAMU packaged 25D Creative real LÖVE/Xvfb touch/placement
+        if: github.ref_name == 'experiment/tamu-creative-25d-20261029' || github.ref_name == 'main'
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAMU_CREATIVE_SMOKE=1 timeout 180s xvfb-run -a love "$RUNNER_TEMP/TAMU_KOK_Creative_25D.love" 2>&1 | tee "$RUNNER_TEMP/tamu-creative-25d.log"
+          grep -q TAMU_CREATIVE_25D_SMOKE_OK "$RUNNER_TEMP/tamu-creative-25d.log"
+          shot="$(find "$HOME/.local/share/love" -name tamu-creative-25d.png -print -quit)"
+          test -n "$shot"
+          cp "$shot" "$RUNNER_TEMP/tamu-creative-25d.png"
+          file "$RUNNER_TEMP/tamu-creative-25d.png" | grep -q 'PNG image data'
+      - name: TAMU creative 25D runnable LOVE artifact
+        if: (github.ref_name == 'experiment/tamu-creative-25d-20261029' || github.ref_name == 'main') && success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TAMU_KOK_Creative_25D_Love
+          path: |
+            ${{ runner.temp }}/TAMU_KOK_Creative_25D.love
+            ${{ runner.temp }}/tamu-creative-25d.png
+          if-no-files-found: error

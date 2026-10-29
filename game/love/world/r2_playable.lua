@@ -14,6 +14,12 @@ local files={
 local function source_read(name)
   assert(love and love.filesystem and type(love.filesystem.getSource)=="function",
     "R2 pilot needs the real LÖVE source")
+  -- Packaged .love uses a separately hashed, deliberately bundled R2 map.
+  -- Only the signed marker enables this path; raw repo still reads its source.
+  if love.filesystem.getInfo("assets/tamu_creative_25d.flag") then
+    return assert(love.filesystem.read("assets/worldbuild/"..name),
+      "packaged R2 world map unavailable: "..name)
+  end
   local source=love.filesystem.getSource():gsub("[/\\]+$","")
   assert(source:match("[/\\]game[/\\]love$"),
     "R2 pilot requires an unpacked repository source; no bundled map or silent fallback")
