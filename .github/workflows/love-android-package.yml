@@ -89,6 +89,23 @@ jobs:
           grep -q LOVE_INTEGRATION_SMOKE_OK r2-25d-package-smoke.log
           SDL_AUDIODRIVER=dummy OSMAN_R2_PILOT=0 OSMAN_25D_RUNTIME=0 OSMAN_LOVE_INTEGRATION_SMOKE=1 timeout 120s xvfb-run -a love oyun-main-android-test.love 2>&1 | tee legacy-smoke.log
           grep -q LOVE_INTEGRATION_SMOKE_OK legacy-smoke.log
+      - name: Verify default R2 terrain actually becomes visible in the packaged game
+        run: |
+          set -euo pipefail
+          SDL_AUDIODRIVER=dummy OSMAN_25D_VISUAL_PROBE=1 timeout 240s xvfb-run -a love oyun-main-android-test.love 2>&1 | tee default-world-visual.log
+          grep -q 'TAMU_25D_VISIBLE_OK' default-world-visual.log
+          shot="$(find "$HOME/.local/share/love" -name 'tamu-default-world-visible.png' -print -quit)"
+          test -n "$shot" && test -s "$shot"
+          cp "$shot" tamu-default-world-visible.png
+          python3 - <<'PY'
+          import struct
+          from pathlib import Path
+          b=Path('tamu-default-world-visible.png').read_bytes()
+          assert b[:8]==bytes((137,80,78,71,13,10,26,10))
+          w,h=struct.unpack('>II',b[16:24])
+          assert w>=320 and h>=480,(w,h)
+          print('TAMU_DEFAULT_SCREENSHOT_OK',w,h,len(b))
+          PY
       - name: Upload playable LOVE file
         uses: actions/upload-artifact@v4
         with:
@@ -98,4 +115,6 @@ jobs:
             oyun-main-android-test.love.sha256
             r2-25d-package-smoke.log
             legacy-smoke.log
+            default-world-visual.log
+            tamu-default-world-visible.png
           if-no-files-found: error
