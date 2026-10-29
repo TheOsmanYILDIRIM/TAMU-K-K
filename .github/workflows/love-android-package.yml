@@ -1,7 +1,7 @@
 name: Build Android-testable LOVE package
 on:
   push:
-    branches: [main]
+    branches: [main, experiment/tamu-25d-standard-packaged-20261029]
     paths:
       - '.github/workflows/love-android-package.yml'
       - 'game/love/**'
@@ -14,6 +14,27 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - name: Verify packaged R2 maps and Lua contracts
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          r=Path('game/love/assets/worldbuild')
+          for name,h in {
+            'fisilti_ormani.r2.v1.json':'df5d0eeca59030e6585558c15d8f1e7bf049638ea8032dc17c1b80c74106f598',
+            'osman_overworld.v2.json':'ac5903fd22cd466cfc1786cbeef44f2679be87317c6bfd757a05a282172f78dc'
+          }.items(): assert hashlib.sha256((r/name).read_bytes()).hexdigest()==h,name
+          print('R2_PACKAGED_SOURCE_OK')
+          PY
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lua5.4 love xvfb
+          cd game/love
+          luac5.4 -p main.lua world/r2_playable.lua
+          lua5.4 tests/r2_pilot_contract.lua
+          lua5.4 tests/terrain25d_runtime.lua
+          cd ../..
+
       - name: Validate and package playable LÖVE source
         run: |
           set -euo pipefail
@@ -54,6 +75,20 @@ jobs:
           print('LOVE_BYTES',out.stat().st_size)
           PY
           sha256sum oyun-main-android-test.love | tee oyun-main-android-test.love.sha256
+      - name: Test packaged R2 + 25D in real LÖVE, and preserve explicit legacy mode
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          with ZipFile('oyun-main-android-test.love') as z:
+            assert z.testzip() is None
+            for name in ('assets/worldbuild/fisilti_ormani.r2.v1.json','assets/worldbuild/osman_overworld.v2.json'):
+              assert name in z.namelist()
+          PY
+          SDL_AUDIODRIVER=dummy OSMAN_LOVE_INTEGRATION_SMOKE=1 timeout 180s xvfb-run -a love oyun-main-android-test.love 2>&1 | tee r2-25d-package-smoke.log
+          grep -q LOVE_INTEGRATION_SMOKE_OK r2-25d-package-smoke.log
+          SDL_AUDIODRIVER=dummy OSMAN_R2_PILOT=0 OSMAN_25D_RUNTIME=0 OSMAN_LOVE_INTEGRATION_SMOKE=1 timeout 120s xvfb-run -a love oyun-main-android-test.love 2>&1 | tee legacy-smoke.log
+          grep -q LOVE_INTEGRATION_SMOKE_OK legacy-smoke.log
       - name: Upload playable LOVE file
         uses: actions/upload-artifact@v4
         with:
@@ -61,4 +96,6 @@ jobs:
           path: |
             oyun-main-android-test.love
             oyun-main-android-test.love.sha256
+            r2-25d-package-smoke.log
+            legacy-smoke.log
           if-no-files-found: error
