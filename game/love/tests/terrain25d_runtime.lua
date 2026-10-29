@@ -128,7 +128,46 @@ local pilot={
 pilot.authored_map={regions={{polygon={
  {0,0},{100,0},{100,256},{0,256}
 }}}}
--- The legacy test below deliberately exercises lazy 25-page assembly. Compact\n-- mobile atlases use pre-baked pages, so test their distinct contract without\n-- asserting that source PNGs are decoded and pasted at runtime. CI separately\n-- launches the real 25D LÖVE renderer for GPU/shader integration.\nlocal manifest=require("save.json").decode(love.filesystem.read("assets/terrain25d/manifest.json"))\nif manifest.compact_mobile_atlas then\n assert(#manifest.assets==228 and #manifest.atlas_pages==2,\n   "compact atlas must preserve all 228 source variants")\n local pages={}\n for _,p in ipairs(manifest.atlas_pages) do pages[p.filename]=p end\n assert(pages["atlas_00.png"] and pages["atlas_00.png"].width==1848\n   and pages["atlas_00.png"].height==1584\n   and pages["atlas_00.png"].generated_from_sources==false)\n assert(pages["atlas_01.png"] and pages["atlas_01.png"].width==1056\n   and pages["atlas_01.png"].height==1056\n   and pages["atlas_01.png"].generated_from_sources==false)\n local counts={terrain=0,object=0}; local seen={}\n for _,a in ipairs(manifest.assets) do\n   local kind=a.kind\n   assert(counts[kind] and a.source_drive_id and not seen[a.source_drive_id],\n     "invalid or duplicate compact atlas source")\n   seen[a.source_drive_id]=true\n   local p=pages[assert(a.atlas_page)]\n   assert(p and #a.uv_rect==4, "asset outside compact pages")\n   local i=counts[kind];counts[kind]=i+1\n   local columns=p.width/132\n   local ex=(i%columns*132+2)/p.width\n   local ey=(math.floor(i/columns)*132+2)/p.height\n   local uv=a.uv_rect\n   assert(math.abs(uv[1]-ex)<1e-10 and math.abs(uv[2]-ey)<1e-10\n     and math.abs(uv[3]-128/p.width)<1e-10\n     and math.abs(uv[4]-128/p.height)<1e-10,\n     "compact atlas UV mismatch: "..tostring(a.id))\n end\n assert(counts.terrain==168 and counts.object==60,\n   "compact atlas source coverage is incomplete")\n print("TERRAIN25D_COMPACT_ATLAS_OK pages=2 assets=228 terrain=168 objects=60")\n return\nend\nlocal rt=Runtime.new(pilot)
+-- The legacy test below deliberately exercises lazy 25-page assembly. Compact
+-- mobile atlases use pre-baked pages, so test their distinct contract without
+-- asserting that source PNGs are decoded and pasted at runtime. CI separately
+-- launches the real 25D LÖVE renderer for GPU/shader integration.
+local manifest=require("save.json").decode(love.filesystem.read("assets/terrain25d/manifest.json"))
+if manifest.compact_mobile_atlas then
+ assert(#manifest.assets==228 and #manifest.atlas_pages==2,
+   "compact atlas must preserve all 228 source variants")
+ local pages={}
+ for _,p in ipairs(manifest.atlas_pages) do pages[p.filename]=p end
+ assert(pages["atlas_00.png"] and pages["atlas_00.png"].width==1848
+   and pages["atlas_00.png"].height==1584
+   and pages["atlas_00.png"].generated_from_sources==false)
+ assert(pages["atlas_01.png"] and pages["atlas_01.png"].width==1056
+   and pages["atlas_01.png"].height==1056
+   and pages["atlas_01.png"].generated_from_sources==false)
+ local counts={terrain=0,object=0}; local seen={}
+ for _,a in ipairs(manifest.assets) do
+   local kind=a.kind
+   assert(counts[kind] and a.source_drive_id and not seen[a.source_drive_id],
+     "invalid or duplicate compact atlas source")
+   seen[a.source_drive_id]=true
+   local p=pages[assert(a.atlas_page)]
+   assert(p and #a.uv_rect==4, "asset outside compact pages")
+   local i=counts[kind];counts[kind]=i+1
+   local columns=p.width/132
+   local ex=(i%columns*132+2)/p.width
+   local ey=(math.floor(i/columns)*132+2)/p.height
+   local uv=a.uv_rect
+   assert(math.abs(uv[1]-ex)<1e-10 and math.abs(uv[2]-ey)<1e-10
+     and math.abs(uv[3]-128/p.width)<1e-10
+     and math.abs(uv[4]-128/p.height)<1e-10,
+     "compact atlas UV mismatch: "..tostring(a.id))
+ end
+ assert(counts.terrain==168 and counts.object==60,
+   "compact atlas source coverage is incomplete")
+ print("TERRAIN25D_COMPACT_ATLAS_OK pages=2 assets=228 terrain=168 objects=60")
+ return
+end
+local rt=Runtime.new(pilot)
 assert(#rt.authored_boundaries>0,
  "test scene must expose a genuine authored biome edge")
 assert(#rt.manifest.assets==228)
