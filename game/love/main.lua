@@ -30,6 +30,18 @@ local stat_viewport=os.getenv("OSMAN_STAT_DISPLAY")
 local stage6_world_id=os.getenv("OSMAN_STAGE6_WORLD_ID")
 local r2_pilot_enabled=os.getenv("OSMAN_R2_PILOT")=="1"
 local cache_pilot_enabled=os.getenv("OSMAN_CHUNK_CACHE_PILOT")=="1"
+local terrain25d_enabled=os.getenv("OSMAN_25D_RUNTIME")=="1"
+local terrain25d_smoke=os.getenv("OSMAN_25D_SMOKE")=="1"
+local shadow_preview=terrain25d_smoke and
+  os.getenv("OSMAN_25D_SHADOW_PREVIEW")=="1"
+local terrain25d_compare=os.getenv("OSMAN_25D_COMPARE")=="1"
+assert(not terrain25d_compare or r2_pilot_enabled,
+  "25D comparison requires authored R2 pilot")
+assert(not terrain25d_enabled or (r2_pilot_enabled and not cache_pilot_enabled),
+  "25D render requires R2 pilot without legacy geometry cache")
+assert(not terrain25d_smoke or terrain25d_enabled,"25D smoke requires opt-in renderer")
+local Runtime25D=terrain25d_enabled and require("world.terrain25d_runtime") or nil
+local Sprites25D=terrain25d_enabled and require("objects.terrain25d_sprites") or nil
 assert(not (cache_pilot_enabled and stage6_enabled),
  "experimental geometry cache cannot coexist with Stage6 until accepted")
 assert(not (r2_pilot_enabled and (stage6_enabled or stage6_create or stage6_reopen_smoke)),
@@ -73,6 +85,9 @@ local chunk_cache=cache_pilot_enabled and
   require("world.chunk_cache").new({seed=query.seed,
    stamp=r2_pilot and "r2-fisilti-20261019-pinned" or "v1-generator-20261015",
    size=256,step=r2_pilot and 8 or 32,quality="standard"}) or nil
+local runtime25d,sprite25d_draw
+local shadow_preview_step=0
+local shadow_preview_hours={8,12,17,23}
 local stream=Stream.new(query,r2_pilot and
   {size=256,step=8,max_loaded=48,build_budget=8,cache=chunk_cache,
    prefetch_options=cache_pilot_enabled and r2_pilot.render_options or nil} or
@@ -101,6 +116,8 @@ local liquid_smoke=os.getenv("OSMAN_LOVE_LIQUID_SMOKE")=="1"
 local smoke=stage4_smoke or liquid_smoke or os.getenv("OSMAN_LOVE_SMOKE")=="1" or os.getenv("OSMAN_LOVE_INTEGRATION_SMOKE")=="1"
 local frames=0
 local perf_sample={update={},draw={},peakKiB=0}
+local compare_metrics={update={},draw={},frame={}}
+local last_update_ms=0
 local function perf_tick(name,started)
  local a=perf_sample[name]
  a[#a+1]=(love.timer.getTime()-started)*1000
@@ -234,6 +251,17 @@ local function spawn()
 end
 function love.load()
   boot_started=love.timer.getTime()
+  if terrain25d_compare then
+    local v=os.getenv("OSMAN_25D_COMPARE_DISPLAY") or "360x780"
+    local ww,hh=v:match("^(%d+)x(%d+)$")
+    assert(ww and hh,"invalid comparable viewport")
+    assert(love.window.setMode(tonumber(ww),tonumber(hh),{vsync=0,resizable=false}))
+  end
+  if terrain25d_enabled then
+    runtime25d=Runtime25D.new(r2_pilot)
+    local sprites=Sprites25D.new(runtime25d,runtime25d.manifest)
+    sprite25d_draw=sprites
+  end
   if os.getenv("OSMAN_CACHE_DISPLAY") then
     local ww,hh=os.getenv("OSMAN_CACHE_DISPLAY"):match("^(%d+)x(%d+)$")
     assert(ww and hh and tonumber(ww)>=320 and tonumber(hh)>=480)
@@ -392,6 +420,7 @@ local function keyboard()
 end
 function love.update(dt)
   local perf_begin=love.timer.getTime()
+  if runtime25d then runtime25d:advance_sun(dt) end
   if cache_pilot_enabled and not boot_ready then
     stats=stream:update(camera,w,h)
     local ready=stats.pending==0 and stats.loaded>0
@@ -494,8 +523,12 @@ function love.update(dt)
       stage_hud.open=true
     end
   end
-  if not debug_view then camera.x,camera.y=player.x,player.y end
+  if terrain25d_smoke or terrain25d_compare then camera.x,camera.y=704,128
+  elseif not debug_view then camera.x,camera.y=player.x,player.y end
   stats=stream:update(camera,w,h)
+  if terrain25d_compare then
+    last_update_ms=(love.timer.getTime()-perf_begin)*1000
+  end
   if long_driver then long_driver:afterUpdate(stats) end
   if os.getenv("OSMAN_CHUNK_CACHE_BASELINE_SMOKE")=="1"
    or os.getenv("OSMAN_CHUNK_CACHE_SMOKE")=="1" then
@@ -505,7 +538,8 @@ end
 function love.draw()
   local perf_begin=love.timer.getTime()
   if long_driver and boot_ready and long_driver.frame>0 then long_driver:beforeDraw() end
-  Terrain.draw(stream,camera,w,h,r2_pilot and r2_pilot.render_options)
+  if runtime25d then runtime25d:draw(stream,camera,w,h)
+  else Terrain.draw(stream,camera,w,h,r2_pilot and r2_pilot.render_options) end
   if cache_pilot_enabled and not boot_ready then
     local g=love.graphics
     local ready=0
@@ -524,7 +558,8 @@ function love.draw()
     perf_tick("draw",perf_begin)
     return
   end
-  object_count=ObjectRenderer.draw(objects,stream,camera,w,h,player,selected_target,harvesting)
+  object_count=ObjectRenderer.draw(objects,stream,camera,w,h,player,
+    selected_target,harvesting,sprite25d_draw)
   local ghost
   if not r2_pilot and stage_hud.placing and placement_target then
     local ok=building:preview("core:workbench",placement_target.x,placement_target.y,
@@ -606,6 +641,43 @@ function love.draw()
     love.event.quit()
     return
   end
+  if terrain25d_smoke and frames>=90 and stats.loaded>0
+     and stats.pending==0 and runtime25d.visible==stats.needed then
+    if shadow_preview then
+      if shadow_preview_step==0 then
+        shadow_preview_step=1
+        runtime25d:set_sun_hour(shadow_preview_hours[1])
+      else
+        -- Capture identical real authored-R2 scenes at three sun positions.
+        -- The hour was selected on the preceding fully rendered frame.
+        local hour=shadow_preview_hours[shadow_preview_step]
+        love.graphics.captureScreenshot(string.format(
+          "terrain25d-sun-%02d.png",hour))
+        if hour==12 then
+          love.graphics.captureScreenshot("terrain25d-runtime.png")
+        end
+        if shadow_preview_step<4 then
+          shadow_preview_step=shadow_preview_step+1
+          runtime25d:set_sun_hour(shadow_preview_hours[shadow_preview_step])
+        else
+          print(string.format(
+            "TERRAIN25D_SHADOW_PREVIEW_OK hours=08,12,17,23 casts=%d calls=%d",
+            sprite25d_draw.shadow_objects,sprite25d_draw.shadow_calls))
+          print(string.format(
+            "TERRAIN25D_RUNTIME_LOVE_OK frames=%d chunks=%d built=%d calls=%d objects=%d",
+            frames,stats.loaded,runtime25d.built,
+            runtime25d.draw_calls,object_count))
+          io.stdout:flush();love.event.quit();return
+        end
+      end
+    else
+      love.graphics.captureScreenshot("terrain25d-runtime.png")
+      print(string.format(
+        "TERRAIN25D_RUNTIME_LOVE_OK frames=%d chunks=%d built=%d calls=%d objects=%d",
+        frames,stats.loaded,runtime25d.built,runtime25d.draw_calls,object_count))
+      io.stdout:flush();love.event.quit();return
+    end
+  end
   if stat_smoke and frames>=25 and stats.loaded>0 and stats.pending==0 then
     assert(progression:stat("etkime")==2 and progression.state.unspent_points==1)
     love.graphics.captureScreenshot("core-stat-progression-smoke"
@@ -664,6 +736,54 @@ function love.draw()
   if os.getenv("OSMAN_CHUNK_CACHE_BASELINE_SMOKE")=="1"
    or os.getenv("OSMAN_CHUNK_CACHE_SMOKE")=="1" then
     perf_tick("draw",perf_begin)
+  end
+  if terrain25d_compare then
+    -- Count only fully resident, complete authored R2 scenes in BOTH modes.
+    -- Earlier 240-frame samples had legacy 11/42 while 25D drew 42/42,
+    -- so they were NOT comparable and must never be used as acceptance.
+    local draw_ms=(love.timer.getTime()-perf_begin)*1000
+    local a=compare_metrics
+    local ready=0
+    for _,chunk in ipairs(stream:visible()) do
+      if (runtime25d and chunk._25d_meshes) or
+         (not runtime25d and chunk._terrain_meshes
+           and not chunk._terrain_job) then ready=ready+1 end
+    end
+    local complete=stats.pending==0 and stats.loaded==stats.needed
+      and ready==stats.needed and stats.needed>0
+    if complete then
+      if not a.ready_since then a.ready_since=frames end
+      if frames>a.ready_since+15 then
+        a.update[#a.update+1]=last_update_ms
+        a.draw[#a.draw+1]=draw_ms
+        a.frame[#a.frame+1]=draw_ms+last_update_ms
+      end
+    else
+      -- Never mix provisional chunks with complete-scene measurements.
+      a.ready_since=nil
+      a.update={};a.draw={};a.frame={}
+    end
+    if #a.frame>=120 then
+      local function quantiles(t)
+        table.sort(t)
+        local function q(p) return t[math.max(1,math.ceil(#t*p))] end
+        return string.format("p50=%.4f,p95=%.4f,p99=%.4f",q(.5),q(.95),q(.99))
+      end
+      local mode=runtime25d and "runtime" or "legacy"
+      print(string.format("TERRAIN25D_COMPARE_COMPLETE mode=%s frames=%d ready=%d/%d update[%s] draw[%s] frame[%s] luaKiB=%.0f calls=%d",
+        mode,#a.frame,ready,stats.needed,
+        quantiles(a.update),quantiles(a.draw),
+        quantiles(a.frame),collectgarbage("count"),
+        runtime25d and runtime25d.draw_calls or 0))
+      love.graphics.captureScreenshot("terrain25d-compare-"..mode.."-"..w.."x"..h..".png")
+      io.stdout:flush();love.event.quit();return
+    end
+    if frames>=2400 then
+      print(string.format("TERRAIN25D_COMPARE_INCOMPLETE mode=%s ready=%d/%d",
+        runtime25d and "runtime" or "legacy",ready,stats.needed))
+      io.stdout:flush()
+      error("comparable benchmark incomplete: not all authored R2 chunks resident")
+    end
   end
   if long_driver and boot_ready and long_driver.frame>0 then
     long_driver:afterDraw(object_count)

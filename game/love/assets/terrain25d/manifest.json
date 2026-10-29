@@ -2,7 +2,7 @@
   "assets": [
     {
       "alpha_mode": "transparent",
-      "atlas_page": "atlas_00.png",
+      "atlas_page": "atlas_01.png",
       "family": "boulder",
       "height": 128,
       "id": "object_variant_boulder_85746a4d51f27aca",
@@ -15,15 +15,15 @@
       "source_drive_id": "11El_0hpNe3lUD81YyXGcJ8qoBGSKCXn3",
       "uv_rect": [
         0.001893939393939394,
-        0.005050505050505051,
+        0.001893939393939394,
         0.12121212121212122,
-        0.32323232323232326
+        0.12121212121212122
       ],
       "width": 128
     },
     {
       "alpha_mode": "transparent",
-      "atlas_page": "atlas_00.png",
+      "atlas_page": "atlas_01.png",
       "family": "boulder",
       "height": 128,
       "id": "object_variant_boulder_d72156d0d807efcb",
@@ -36,15 +36,15 @@
       "source_drive_id": "1ItRLPfCtD2XxYFzT7vZD_TzZlB_aAL_q",
       "uv_rect": [
         0.1268939393939394,
-        0.005050505050505051,
+        0.001893939393939394,
         0.12121212121212122,
-        0.32323232323232326
+        0.12121212121212122
       ],
       "width": 128
     },
     {
       "alpha_mode": "transparent",
-      "atlas_page": "atlas_00.png",
+      "atlas_page": "atlas_01.png",
       "family": "conifer",
       "height": 128,
       "id": "object_variant_conifer_b986f228426f8227",
@@ -56,16 +56,16 @@
       "sha256": "274a6724480c0a33ea1e263e6d2ebefe7f93b8abf2b34e80f0358b59a115032e",
       "source_drive_id": "1KLzH2z1_XMPWN_GWC8RnL03OG8WFsNOn",
       "uv_rect": [
-        0.3768939393939394,
-        0.005050505050505051,
+        0.2518939393939394,
+        0.001893939393939394,
         0.12121212121212122,
-        0.32323232323232326
+        0.12121212121212122
       ],
       "width": 128
     },
     {
       "alpha_mode": "transparent",
-      "atlas_page": "atlas_00.png",
+      "atlas_page": "atlas_01.png",
       "family": "conifer",
       "height": 128,
       "id": "object_variant_conifer_71a9293e67332e49",
@@ -77,10 +77,10 @@
       "sha256": "fe933c0b64b0eac3b37fe206f37b3c633df4d477a5fb91b286226bfe5582478c",
       "source_drive_id": "1s_7PWMWbFZj-sTLAaQ3R7MglRUhd6ERW",
       "uv_rect": [
-        0.2518939393939394,
-        0.005050505050505051,
+        0.3768939393939394,
+        0.001893939393939394,
         0.12121212121212122,
-        0.32323232323232326
+        0.12121212121212122
       ],
       "width": 128
     },
@@ -98,10 +98,10 @@
       "sha256": "a70b94ec38ae293d7a3e8e73ae08407ca4342fabf966d917788743a74e83c8b4",
       "source_drive_id": "1894JZKg_lHbqBlnNHil8UbNlw3A_pN-A",
       "uv_rect": [
-        0.5018939393939394,
-        0.005050505050505051,
-        0.12121212121212122,
-        0.32323232323232326
+        0.0010822510822510823,
+        0.0012626262626262627,
+        0.06926406926406926,
+        0.08080808080808081
       ],
       "width": 128
     },
@@ -119,10 +119,10 @@
       "sha256": "1324c087743ae7f66d657fc2c77f7a9b2ee7e83ac9f653e1323a70c3ffae2cd9",
       "source_drive_id": "1xF9tBVmnNqthxS1wvDfLI3mpLLNkLRWK",
       "uv_rect": [
-        0.6268939393939394,
-        0.005050505050505051,
-        0.12121212121212122,
-        0.32323232323232326
+        0.07251082251082251,
+        0.0012626262626262627,
+        0.06926406926406926,
+        0.08080808080808081
       ],
       "width": 128
     },
@@ -140,10 +140,10 @@
       "sha256": "e32323706958da412d174ebb34debfcc631f1c71d1d463732cbc342f972fab43",
       "source_drive_id": "1ZT5rH2jdJM8rI3j1wRVvjDtvfExNPxAb",
       "uv_rect": [
-        0.7518939393939394,
-        0.005050505050505051,
-        0.12121212121212122,
-        0.32323232323232326
+        0.14393939393939395,
+        0.0012626262626262627,
+        0.06926406926406926,
+        0.08080808080808081
       ],
       "width": 128
     },
@@ -161,10 +161,10 @@
       "sha256": "c1287eacf4b3f63e2a33807fef5bda0d1dc32c48d0302eef305d57810d716389",
       "source_drive_id": "14mIzJaqSMNFO8bK6ve-J9RlIJgr2z-qg",
       "uv_rect": [
-        0.8768939393939394,
-        0.005050505050505051,
-        0.12121212121212122,
-        0.32323232323232326
+        0.21536796536796537,
+        0.0012626262626262627,
+        0.06926406926406926,
+        0.08080808080808081
       ],
       "width": 128
     },
@@ -182,10 +182,10 @@
       "sha256": "c0a74394bff94c81123ef7819f592fde0c4857db6d09102b0a6f5d896914f202",
       "source_drive_id": "1RYqmrBiP9Om1NjE9Wh5gDsXqmY0-w-LK",
       "uv_rect": [
-        0.1268939393939394,
-        0.3383838383838384,
-        0.12121212121212122,
-        0.32323232323232326
+        0.28679653679653677,
+        0.0012626262626262627,
+        0.06926406926406926,
+        0.08080808080808081
       ],
       "width": 128
     },
@@ -203,16 +203,16 @@
       "sha256": "e502f42ddb772cfc818a7288e07ae064dc3509ef757913c1aba041ad512d1bc0",
       "source_drive_id": "1uPIWglHUZH6gF1JQpPHDGSk3LLO9OzKo",
       "uv_rect": [
-        0.001893939393939394,
-        0.3383838383838384,
-        0.12121212121212122,
-        0.32323232323232326
+        0.3582251082251082,
+        0.0012626262626262627,
+        0.06926406926406926,
+        0.08080808080808081
       ],
       "width": 128
     },
     {
       "alpha_mode": "transparent",
-      "atlas_page": "atlas_00.png",
+      "atlas_page": "atlas_01.png",
       "family": "oak",
       "height": 128,
       "id": "object_variant_oak_0aae44af7025fa7a",
@@ -224,16 +224,16 @@
       "sha256": "b76b1cccd432b149214295e46b4bb66023d57aa1b50ec57c93bb0c7251392101",
       "source_drive_id": "1E6OdAQTNknEL7Weukm7yofEhAdEBxand",
       "uv_rect": [
-        0.2518939393939394,
-        0.3383838383838384,
+        0.5018939393939394,
+        0.001893939393939394,
         0.12121212121212122,
-        0.32323232323232326
+        0.12121212121212122
       ],
       "width": 128
     },
     {
       "alpha_mode": "transparent",
-      "atlas_page": "atlas_00.png",
+      "atlas_page": "atlas_01.png",
       "family": "oak",
       "height": 128,
       "id": "object_variant_oak_a25b91ec4eaad3a0",
@@ -245,16 +245,16 @@
       "sha256": "44b09352240df7cfac4522c8ca0b78e4145042113c2fe746639f95562bb38782",
       "source_drive_id": "1-85KvRBK1So4tgt0u-2-5NH0N35_aiWV",
       "uv_rect": [
-        0.3768939393939394,
-        0.3383838383838384,
+        0.6268939393939394,
+        0.001893939393939394,
         0.12121212121212122,
-        0.32323232323232326
+        0.12121212121212122
       ],
       "width": 128
     },
     {
       "alpha_mode": "transparent",
-      "atlas_page": "atlas_00.png",
+      "atlas_page": "atlas_01.png",
       "family": "reeds",
       "height": 128,
       "id": "object_variant_reeds_9f09c8ec827e270e",
@@ -266,16 +266,16 @@
       "sha256": "9d83112ac2cdd11ab5d945298ed7520812a52272598296ea1b0e045b3f03f91f",
       "source_drive_id": "16w4fgwuopBf136xG2Lp0EhmqN6V7bSL-",
       "uv_rect": [
-        0.6268939393939394,
-        0.3383838383838384,
+        0.7518939393939394,
+        0.001893939393939394,
         0.12121212121212122,
-        0.32323232323232326
+        0.12121212121212122
       ],
       "width": 128
     },
     {
       "alpha_mode": "transparent",
-      "atlas_page": "atlas_00.png",
+      "atlas_page": "atlas_01.png",
       "family": "reeds",
       "height": 128,
       "id": "object_variant_reeds_55af1cc64e068861",
@@ -287,10 +287,10 @@
       "sha256": "420dc468bdad68d2798b47a2757e7cf5148546e0aa3fb3d49b4887c2cb7d9c0f",
       "source_drive_id": "1kV5ICw5UwF-P9bk2aH2HfgLK-PxRZKvZ",
       "uv_rect": [
-        0.5018939393939394,
-        0.3383838383838384,
+        0.8768939393939394,
+        0.001893939393939394,
         0.12121212121212122,
-        0.32323232323232326
+        0.12121212121212122
       ],
       "width": 128
     },
@@ -308,10 +308,10 @@
       "sha256": "51e9d36375740f2d200932be0f9d9acbf718d4dc76c8e291dc6fd7ca8a62dee8",
       "source_drive_id": "1wNJhW7qgmFGBoQF00UTzCO0X5t2YIldj",
       "uv_rect": [
-        0.8768939393939394,
-        0.3383838383838384,
-        0.12121212121212122,
-        0.32323232323232326
+        0.4296536796536797,
+        0.0012626262626262627,
+        0.06926406926406926,
+        0.08080808080808081
       ],
       "width": 128
     },
@@ -329,16 +329,16 @@
       "sha256": "3414ca9ffaa2a7f18f876a818cc1ea22bf6cd2129ea0f312d13a0465d23d91d3",
       "source_drive_id": "1oVi76eicZabgot68lt_RraM1GYgbB7bz",
       "uv_rect": [
-        0.7518939393939394,
-        0.3383838383838384,
-        0.12121212121212122,
-        0.32323232323232326
+        0.5010822510822511,
+        0.0012626262626262627,
+        0.06926406926406926,
+        0.08080808080808081
       ],
       "width": 128
     },
     {
       "alpha_mode": "transparent",
-      "atlas_page": "atlas_00.png",
+      "atlas_page": "atlas_01.png",
       "family": "shrub",
       "height": 128,
       "id": "object_variant_shrub_0176d4f8f55b79ea",
@@ -351,15 +351,15 @@
       "source_drive_id": "1pYwRI9odCdfCpiMwypxIVR9Irui1ex4H",
       "uv_rect": [
         0.001893939393939394,
-        0.6717171717171717,
+        0.1268939393939394,
         0.12121212121212122,
-        0.32323232323232326
+        0.12121212121212122
       ],
       "width": 128
     },
     {
       "alpha_mode": "transparent",
-      "atlas_page": "atlas_00.png",
+      "atlas_page": "atlas_01.png",
       "family": "shrub",
       "height": 128,
       "id": "object_variant_shrub_2339993f483fa822",
@@ -372,9 +372,9 @@
       "source_drive_id": "1VKUeBLNd-d2ZtR1vQNa4qbn-whfLp6ag",
       "uv_rect": [
         0.1268939393939394,
-        0.6717171717171717,
+        0.1268939393939394,
         0.12121212121212122,
-        0.32323232323232326
+        0.12121212121212122
       ],
       "width": 128
     },
@@ -392,10 +392,10 @@
       "sha256": "6ac1390e4ffc9058c2536edbe4dc280b336d25f9ab950c170f389ee9462c6d93",
       "source_drive_id": "1VaJf3TNn41nnxCY27qbTy-v-nvUycD7r",
       "uv_rect": [
-        0.2518939393939394,
-        0.6717171717171717,
-        0.12121212121212122,
-        0.32323232323232326
+        0.5725108225108225,
+        0.0012626262626262627,
+        0.06926406926406926,
+        0.08080808080808081
       ],
       "width": 128
     },
@@ -413,23 +413,4400 @@
       "sha256": "14ed69961b3cdf0c892f63cfb9c78c5b9e7751edfb2385044a62528071b6f1eb",
       "source_drive_id": "1wyXFv3DQOi6Am8hBn5v11_OI1f8D3mV4",
       "uv_rect": [
-        0.3768939393939394,
-        0.6717171717171717,
-        0.12121212121212122,
-        0.32323232323232326
+        0.6439393939393939,
+        0.0012626262626262627,
+        0.06926406926406926,
+        0.08080808080808081
       ],
       "width": 128
+    },
+    {
+      "id": "object_variant_boulder_17mLqn5_w0zgdWZ_Sk2p2R1T8YBa29Op_",
+      "kind": "object",
+      "family": "boulder",
+      "original_filename": "boulder_v003_128_lab64.png",
+      "source_drive_id": "17mLqn5_w0zgdWZ-Sk2p2R1T8YBa29Op-",
+      "sha256": "39b55e855b5baf89f9f9c6a1a9dd50e0d4552c940c67d30891afc838b451615f",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.2518939393939394,
+        0.1268939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_boulder_17mLqn5_w0zgdWZ_Sk2p2R1T8YBa29Op_"
+    },
+    {
+      "id": "object_variant_boulder_1hkaHyb5IcqhUmXcPsZo1PNqXzEQt_Q9f",
+      "kind": "object",
+      "family": "boulder",
+      "original_filename": "boulder_v004_128_lab64.png",
+      "source_drive_id": "1hkaHyb5IcqhUmXcPsZo1PNqXzEQt-Q9f",
+      "sha256": "a0aa9e2d94453d04ee5400ccb3f285f594ebb153ea6ecf4fe76d57808f059d78",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.3768939393939394,
+        0.1268939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_boulder_1hkaHyb5IcqhUmXcPsZo1PNqXzEQt_Q9f"
+    },
+    {
+      "id": "object_variant_broadleaf_1__Ol_mDrs6QGvNQbTMYOBt0tr8A_85_E",
+      "kind": "object",
+      "family": "broadleaf",
+      "original_filename": "broadleaf_v001_128_lab64.png",
+      "source_drive_id": "1_-Ol-mDrs6QGvNQbTMYOBt0tr8A_85_E",
+      "sha256": "774c40d20dc23b2167d4b054d387a69060d1af510373530b808fcc6217d4b91b",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.5018939393939394,
+        0.1268939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_broadleaf_1__Ol_mDrs6QGvNQbTMYOBt0tr8A_85_E"
+    },
+    {
+      "id": "object_variant_broadleaf_1r4mDlFLODrIodcgKdg8AH0LxtqNXUPWM",
+      "kind": "object",
+      "family": "broadleaf",
+      "original_filename": "broadleaf_v002_128_lab64.png",
+      "source_drive_id": "1r4mDlFLODrIodcgKdg8AH0LxtqNXUPWM",
+      "sha256": "ffe21901d70ca70e13b8e1b315c55d902b93ba96a830f8229ff8912002c0518e",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.6268939393939394,
+        0.1268939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_broadleaf_1r4mDlFLODrIodcgKdg8AH0LxtqNXUPWM"
+    },
+    {
+      "id": "object_variant_broadleaf_1fTUcS8BzGjmwAN0WLO7UQjo_uXWZ4GDw",
+      "kind": "object",
+      "family": "broadleaf",
+      "original_filename": "broadleaf_v003_128_lab64.png",
+      "source_drive_id": "1fTUcS8BzGjmwAN0WLO7UQjo_uXWZ4GDw",
+      "sha256": "f17dab08d1e63823a9f723a7ad5d868979002e0ce418e4b97a7bd09c06457d3b",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.7518939393939394,
+        0.1268939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_broadleaf_1fTUcS8BzGjmwAN0WLO7UQjo_uXWZ4GDw"
+    },
+    {
+      "id": "object_variant_broadleaf_130aSKx9rabeodcFCCMWSJayVsjmCg_Kx",
+      "kind": "object",
+      "family": "broadleaf",
+      "original_filename": "broadleaf_v004_128_lab64.png",
+      "source_drive_id": "130aSKx9rabeodcFCCMWSJayVsjmCg-Kx",
+      "sha256": "33e3dca441a61f3ca88e54a170becdc7a44e33db94c3f69b31795fefd3b930b6",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.8768939393939394,
+        0.1268939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_broadleaf_130aSKx9rabeodcFCCMWSJayVsjmCg_Kx"
+    },
+    {
+      "id": "object_variant_broadleaf_1X7j6dotnv_nSP_N6od9NNC42UIVlkcsi",
+      "kind": "object",
+      "family": "broadleaf",
+      "original_filename": "broadleaf_v005_128_lab64.png",
+      "source_drive_id": "1X7j6dotnv-nSP-N6od9NNC42UIVlkcsi",
+      "sha256": "0b10bf74273803211603f040f2bf55146687171b900cc677ae52db36b89cf9eb",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.001893939393939394,
+        0.2518939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_broadleaf_1X7j6dotnv_nSP_N6od9NNC42UIVlkcsi"
+    },
+    {
+      "id": "object_variant_broadleaf_16DpJZg6NXlmRItoZHWM_5zG9cwcRq8cv",
+      "kind": "object",
+      "family": "broadleaf",
+      "original_filename": "broadleaf_v006_128_lab64.png",
+      "source_drive_id": "16DpJZg6NXlmRItoZHWM-5zG9cwcRq8cv",
+      "sha256": "8d3b768f9a1c09f404e6aba476176a9c9747ef85192e6b4746642c0e686382e0",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.1268939393939394,
+        0.2518939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_broadleaf_16DpJZg6NXlmRItoZHWM_5zG9cwcRq8cv"
+    },
+    {
+      "id": "object_variant_broadleaf_1aFxoyeLrb8HQ08eGRydmryBIsnUDxoAV",
+      "kind": "object",
+      "family": "broadleaf",
+      "original_filename": "broadleaf_v007_128_lab64.png",
+      "source_drive_id": "1aFxoyeLrb8HQ08eGRydmryBIsnUDxoAV",
+      "sha256": "7330078e519944b3b489a21928a1018227ea6c9130e204710e540e6704489afc",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.2518939393939394,
+        0.2518939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_broadleaf_1aFxoyeLrb8HQ08eGRydmryBIsnUDxoAV"
+    },
+    {
+      "id": "object_variant_broadleaf_1Y3V6VJPmsfWGx_Q_AP1GD5Botg5cBR6K",
+      "kind": "object",
+      "family": "broadleaf",
+      "original_filename": "broadleaf_v008_128_lab64.png",
+      "source_drive_id": "1Y3V6VJPmsfWGx-Q-AP1GD5Botg5cBR6K",
+      "sha256": "75ac9f89ffbb7f9bdd429599745790aba6f71ed29ff4b9f9a925f16ef31de2dc",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.3768939393939394,
+        0.2518939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_broadleaf_1Y3V6VJPmsfWGx_Q_AP1GD5Botg5cBR6K"
+    },
+    {
+      "id": "object_variant_broadleaf_1NDrzHDXR4_JEZ6J16_DZkU3UmE18I4uQ",
+      "kind": "object",
+      "family": "broadleaf",
+      "original_filename": "broadleaf_v009_128_lab64.png",
+      "source_drive_id": "1NDrzHDXR4-JEZ6J16-DZkU3UmE18I4uQ",
+      "sha256": "e016db9c331e9e4ed0ff4fa39ca76505d94733ad9cbfdbf817ffad13947413b8",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.5018939393939394,
+        0.2518939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_broadleaf_1NDrzHDXR4_JEZ6J16_DZkU3UmE18I4uQ"
+    },
+    {
+      "id": "object_variant_broadleaf_1lnSPYZ40qoGyg0VmQ53XwIQz17pmybUS",
+      "kind": "object",
+      "family": "broadleaf",
+      "original_filename": "broadleaf_v010_128_lab64.png",
+      "source_drive_id": "1lnSPYZ40qoGyg0VmQ53XwIQz17pmybUS",
+      "sha256": "34eab0f1d9564ff8def3359122b5161f04873946cfde2a49e75e113159a3257b",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.6268939393939394,
+        0.2518939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_broadleaf_1lnSPYZ40qoGyg0VmQ53XwIQz17pmybUS"
+    },
+    {
+      "id": "object_variant_conifer_1fLF5tw8jBYqEFAlrgTvh8QuCpvON9YDJ",
+      "kind": "object",
+      "family": "conifer",
+      "original_filename": "conifer_v003_128_lab64.png",
+      "source_drive_id": "1fLF5tw8jBYqEFAlrgTvh8QuCpvON9YDJ",
+      "sha256": "ba1098fe458d27e7dff82b88703e9c96677bbba82d5fe3826d2c2e599aef1f7c",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.7518939393939394,
+        0.2518939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_conifer_1fLF5tw8jBYqEFAlrgTvh8QuCpvON9YDJ"
+    },
+    {
+      "id": "object_variant_conifer_1yQSvRvEXFznjPoKJPvSlL2CeDbGFei7k",
+      "kind": "object",
+      "family": "conifer",
+      "original_filename": "conifer_v004_128_lab64.png",
+      "source_drive_id": "1yQSvRvEXFznjPoKJPvSlL2CeDbGFei7k",
+      "sha256": "2956a117c15f7a4af7884e4b63acdb94b12d3ce8c076c951514d602fafca26a2",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.8768939393939394,
+        0.2518939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_conifer_1yQSvRvEXFznjPoKJPvSlL2CeDbGFei7k"
+    },
+    {
+      "id": "object_variant_conifer_16GC01Pp1nPMziO51yg1f_rw7kgpjAPwW",
+      "kind": "object",
+      "family": "conifer",
+      "original_filename": "conifer_v005_128_lab64.png",
+      "source_drive_id": "16GC01Pp1nPMziO51yg1f_rw7kgpjAPwW",
+      "sha256": "87510714a6725930898bea687b3cc01c7d0e948926338a281c923dfa2ff2a2ba",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.001893939393939394,
+        0.3768939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_conifer_16GC01Pp1nPMziO51yg1f_rw7kgpjAPwW"
+    },
+    {
+      "id": "object_variant_conifer_19jDdh9UuTMcNMNXq0eG_UNJ1jvK1aQfX",
+      "kind": "object",
+      "family": "conifer",
+      "original_filename": "conifer_v006_128_lab64.png",
+      "source_drive_id": "19jDdh9UuTMcNMNXq0eG_UNJ1jvK1aQfX",
+      "sha256": "f9e41f70020b420b1b49366a732ee7ba7c430423df9fac09d42c064481ea1b07",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.1268939393939394,
+        0.3768939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_conifer_19jDdh9UuTMcNMNXq0eG_UNJ1jvK1aQfX"
+    },
+    {
+      "id": "object_variant_dead_tree_1qiCRYrRIlagZVCaKQO_PEI88tCWpBUNF",
+      "kind": "object",
+      "family": "dead_tree",
+      "original_filename": "dead_tree_v001_128_lab64.png",
+      "source_drive_id": "1qiCRYrRIlagZVCaKQO-PEI88tCWpBUNF",
+      "sha256": "780399fff989277bf8c8d0d98e4fe70b5e18c79884b463b6fa4cca34fa7880cb",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.2518939393939394,
+        0.3768939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_dead_tree_1qiCRYrRIlagZVCaKQO_PEI88tCWpBUNF"
+    },
+    {
+      "id": "object_variant_dead_tree_1g9QyDL7hSb9sMuieMLCZ9nTu2gvlk5QJ",
+      "kind": "object",
+      "family": "dead_tree",
+      "original_filename": "dead_tree_v002_128_lab64.png",
+      "source_drive_id": "1g9QyDL7hSb9sMuieMLCZ9nTu2gvlk5QJ",
+      "sha256": "0051dad3e80ef7ee8db699f50dab2b97c41250001227db3d29851c4c5b10987d",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.3768939393939394,
+        0.3768939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_dead_tree_1g9QyDL7hSb9sMuieMLCZ9nTu2gvlk5QJ"
+    },
+    {
+      "id": "object_variant_dead_tree_1fzQg1yuZu62ZjkD1nfDNSCRL6O4GPK6k",
+      "kind": "object",
+      "family": "dead_tree",
+      "original_filename": "dead_tree_v003_128_lab64.png",
+      "source_drive_id": "1fzQg1yuZu62ZjkD1nfDNSCRL6O4GPK6k",
+      "sha256": "993b69e7754c114275242cbcd790ba41ba8637ec3aff16afea6de144a97544cc",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.5018939393939394,
+        0.3768939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_dead_tree_1fzQg1yuZu62ZjkD1nfDNSCRL6O4GPK6k"
+    },
+    {
+      "id": "material_dirt_1BHkfw0IXpIpOIgRBi4XTmEwM_NLd2bZa",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtA_03.png",
+      "source_drive_id": "1BHkfw0IXpIpOIgRBi4XTmEwM_NLd2bZa",
+      "sha256": "f7f6f158ccf33b50a5efb2b29a191f6d77d59b67475a129da175d9e81ff64d31",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.7153679653679653,
+        0.0012626262626262627,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1BHkfw0IXpIpOIgRBi4XTmEwM_NLd2bZa"
+    },
+    {
+      "id": "material_dirt_1Ocn9R3B8s_HLHl_SRdxaLN__sG0428J1",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtA_04.png",
+      "source_drive_id": "1Ocn9R3B8s-HLHl_SRdxaLN--sG0428J1",
+      "sha256": "d83089c903428648be2a71abe1eda92d7cd73d2fd4be5fa37f54b4974ae5a1d8",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.7867965367965368,
+        0.0012626262626262627,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1Ocn9R3B8s_HLHl_SRdxaLN__sG0428J1"
+    },
+    {
+      "id": "material_dirt_1DVjjt3Gk0uKtA_gfkTy040LCk_xFmarr",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtA_05.png",
+      "source_drive_id": "1DVjjt3Gk0uKtA_gfkTy040LCk-xFmarr",
+      "sha256": "23fe6a246a82d072eb3486e0dd48d8960cb7a215cd7e89e646d7fd912f9a81f7",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.8582251082251082,
+        0.0012626262626262627,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1DVjjt3Gk0uKtA_gfkTy040LCk_xFmarr"
+    },
+    {
+      "id": "material_dirt_1yRlTYXRGS7eXGZEjBFyn9urxS1B7yExq",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtA_06.png",
+      "source_drive_id": "1yRlTYXRGS7eXGZEjBFyn9urxS1B7yExq",
+      "sha256": "e3e3eb7151ea3bbf6ed7ab94c2cbc7c38eafea3a1d1a1ad61e2e0a1cd6686e89",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.9296536796536796,
+        0.0012626262626262627,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1yRlTYXRGS7eXGZEjBFyn9urxS1B7yExq"
+    },
+    {
+      "id": "material_dirt_1flJ19Vp3sI545harIBYoTy_4uYMYp62n",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtA_07.png",
+      "source_drive_id": "1flJ19Vp3sI545harIBYoTy-4uYMYp62n",
+      "sha256": "bd97723932cde6486f56fd541a79fd82f902c606352ad11a1b18fffd653aae0f",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.0010822510822510823,
+        0.0845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1flJ19Vp3sI545harIBYoTy_4uYMYp62n"
+    },
+    {
+      "id": "material_dirt_1CGNTtDoPaCqmmDAuFITqE9vJ6yc_EGPE",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtA_08.png",
+      "source_drive_id": "1CGNTtDoPaCqmmDAuFITqE9vJ6yc_EGPE",
+      "sha256": "5b14d6f4ed736646458443c6e062ea7fb314b251fe24f0c671114b977fe91dac",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.07251082251082251,
+        0.0845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1CGNTtDoPaCqmmDAuFITqE9vJ6yc_EGPE"
+    },
+    {
+      "id": "material_dirt_1INFCShj5WJSmRPJm0vDhBb783aFkOiZF",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtA_10.png",
+      "source_drive_id": "1INFCShj5WJSmRPJm0vDhBb783aFkOiZF",
+      "sha256": "e678b288422418799e4487b514cc9aeba6c3353f0faf696d0ddc524ebe9a68e6",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.14393939393939395,
+        0.0845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1INFCShj5WJSmRPJm0vDhBb783aFkOiZF"
+    },
+    {
+      "id": "material_dirt_1kfpQ0E_kIyhEDUvpAe06HwPU02wfDhKd",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtA_11.png",
+      "source_drive_id": "1kfpQ0E_kIyhEDUvpAe06HwPU02wfDhKd",
+      "sha256": "645ee53e15c82841bbb6b9001175b7156887a1cca103b770a00b578609593f0e",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.21536796536796537,
+        0.0845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1kfpQ0E_kIyhEDUvpAe06HwPU02wfDhKd"
+    },
+    {
+      "id": "material_dirt_1zlCV3df_7CPD29CECLpEttomVxtHH6gk",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtB_01.png",
+      "source_drive_id": "1zlCV3df-7CPD29CECLpEttomVxtHH6gk",
+      "sha256": "b54fdfeb25e0e516f3866b5d7869dc7214adf2cf1201dbcf0f2db54e5bf10df3",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.28679653679653677,
+        0.0845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1zlCV3df_7CPD29CECLpEttomVxtHH6gk"
+    },
+    {
+      "id": "material_dirt_1xfW2q750EGwb7lBKlUFykkN1EUXrWKK1",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtB_02.png",
+      "source_drive_id": "1xfW2q750EGwb7lBKlUFykkN1EUXrWKK1",
+      "sha256": "ed2002ee41b5581179070ea397cda03c5e902061aaecf002571360b03134c0d5",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.3582251082251082,
+        0.0845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1xfW2q750EGwb7lBKlUFykkN1EUXrWKK1"
+    },
+    {
+      "id": "material_dirt_1uA_oZlLmIG6T4aatXYQpvzfwa08WPdUK",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtB_03.png",
+      "source_drive_id": "1uA_oZlLmIG6T4aatXYQpvzfwa08WPdUK",
+      "sha256": "811e3c3ce0fdbb457aad95abd18a2db204a6e5ccd566d8b46786e1d133aa150c",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.4296536796536797,
+        0.0845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1uA_oZlLmIG6T4aatXYQpvzfwa08WPdUK"
+    },
+    {
+      "id": "material_dirt_1HGt9huJf9KC0Kwc9g8WQvIFBJ8ipDonE",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtB_05.png",
+      "source_drive_id": "1HGt9huJf9KC0Kwc9g8WQvIFBJ8ipDonE",
+      "sha256": "f0745befee86b2894e20f81dd08a1c0241caeb19cc7fe42470e54d6b159cdb51",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.5010822510822511,
+        0.0845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1HGt9huJf9KC0Kwc9g8WQvIFBJ8ipDonE"
+    },
+    {
+      "id": "material_dirt_1khqVEJij5ty7w9S2GRQyamSIC5Xs2_30",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtB_06.png",
+      "source_drive_id": "1khqVEJij5ty7w9S2GRQyamSIC5Xs2-30",
+      "sha256": "48a65ae54d495623288d18767fa4ce9cd273c7c28b40796773236a4d82e73350",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.5725108225108225,
+        0.0845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1khqVEJij5ty7w9S2GRQyamSIC5Xs2_30"
+    },
+    {
+      "id": "material_dirt_1qQAw8334JqxFzJRQyTDlj1xDiyMxZMRt",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtB_07.png",
+      "source_drive_id": "1qQAw8334JqxFzJRQyTDlj1xDiyMxZMRt",
+      "sha256": "e63ada4704f81a44b08c14a9fea4086eaea12df8b222c1d74355c48b3b98f269",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.6439393939393939,
+        0.0845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1qQAw8334JqxFzJRQyTDlj1xDiyMxZMRt"
+    },
+    {
+      "id": "material_dirt_1Xn0UF2XkQ_mCwQ1sEa4uHSN9w9r3kYZ_",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtB_08.png",
+      "source_drive_id": "1Xn0UF2XkQ_mCwQ1sEa4uHSN9w9r3kYZ_",
+      "sha256": "c84c759991147fd4f07e66b2ae3f4ce5d70001f0f6475e86753cb49148503e80",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.7153679653679653,
+        0.0845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1Xn0UF2XkQ_mCwQ1sEa4uHSN9w9r3kYZ_"
+    },
+    {
+      "id": "material_dirt_1rswYhTHKF4vHKw7xvg9iLc29bchGdNUW",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtB_09.png",
+      "source_drive_id": "1rswYhTHKF4vHKw7xvg9iLc29bchGdNUW",
+      "sha256": "20215897bd54fbc4b37b97f017aaa0490f15142ab48041dc4efb24218e170962",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.7867965367965368,
+        0.0845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1rswYhTHKF4vHKw7xvg9iLc29bchGdNUW"
+    },
+    {
+      "id": "material_dirt_1C0rSViuwsRuOi9Zy0I8giNFVSoz1NsH8",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtB_10.png",
+      "source_drive_id": "1C0rSViuwsRuOi9Zy0I8giNFVSoz1NsH8",
+      "sha256": "1d2825418f1c5ac05f02e9a4d156a2e7b6fcecd94af19dbecf41e1b4f8d23b46",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.8582251082251082,
+        0.0845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1C0rSViuwsRuOi9Zy0I8giNFVSoz1NsH8"
+    },
+    {
+      "id": "material_dirt_1cC198AoANaIWHRndguc0cR3j3HYpGx3v",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtB_11.png",
+      "source_drive_id": "1cC198AoANaIWHRndguc0cR3j3HYpGx3v",
+      "sha256": "5ec9d206fb0b6c3cbf2907807f1e20dee6cdc80be5415651ed868cb9a533e060",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.9296536796536796,
+        0.0845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1cC198AoANaIWHRndguc0cR3j3HYpGx3v"
+    },
+    {
+      "id": "material_dirt_1jbBT5wqslBoZzkgrNeMJQRlKRhxENbe4",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtC_01.png",
+      "source_drive_id": "1jbBT5wqslBoZzkgrNeMJQRlKRhxENbe4",
+      "sha256": "ebbe21e315dc73098edc5adce8cca738af93b971e83fe6f1b5a8d0b824361a3a",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.0010822510822510823,
+        0.16792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1jbBT5wqslBoZzkgrNeMJQRlKRhxENbe4"
+    },
+    {
+      "id": "material_dirt_1KhIRwkORcE_9o_mzPRBTKyY5dtERV4ND",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtC_02.png",
+      "source_drive_id": "1KhIRwkORcE_9o_mzPRBTKyY5dtERV4ND",
+      "sha256": "2985c58cab8949a7b6d90ab66e1335601a4484761ccc248af16747a8b5abdd90",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.07251082251082251,
+        0.16792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1KhIRwkORcE_9o_mzPRBTKyY5dtERV4ND"
+    },
+    {
+      "id": "material_dirt_1bKMeKaK2n0LoUsmqr5I3hinVHHqeJULS",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtC_03.png",
+      "source_drive_id": "1bKMeKaK2n0LoUsmqr5I3hinVHHqeJULS",
+      "sha256": "1f6dcae7ac8220b9aac5a4b8fc6231b50093ba317b19a0555e50a9863558d1c2",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.14393939393939395,
+        0.16792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1bKMeKaK2n0LoUsmqr5I3hinVHHqeJULS"
+    },
+    {
+      "id": "material_dirt_1nE8s3O23FOqGtEkfEOKkfjTyomqi8GoK",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtC_04.png",
+      "source_drive_id": "1nE8s3O23FOqGtEkfEOKkfjTyomqi8GoK",
+      "sha256": "96e73f69f0ef551a547cbdc0dc665ef85d5a303b8c36a2a3b6877e3a5dd87e16",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.21536796536796537,
+        0.16792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1nE8s3O23FOqGtEkfEOKkfjTyomqi8GoK"
+    },
+    {
+      "id": "material_dirt_1g_T8TTI_mYDcoBrLA_KDmnMvkh_918SW",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtC_05.png",
+      "source_drive_id": "1g_T8TTI_mYDcoBrLA_KDmnMvkh_918SW",
+      "sha256": "c5b1fd6abe87fafbff8a8e0109581ed6e466e1f2bcc3ae13fad61f6886010e48",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.28679653679653677,
+        0.16792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1g_T8TTI_mYDcoBrLA_KDmnMvkh_918SW"
+    },
+    {
+      "id": "material_dirt_1ySwC2Ody3CxJFH4z5HgL0wIA3G0sJ2AV",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtC_07.png",
+      "source_drive_id": "1ySwC2Ody3CxJFH4z5HgL0wIA3G0sJ2AV",
+      "sha256": "55207ea3478b9fe2ea4549e4f64a61a633c834c13999f51324ff576caa022d9f",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.3582251082251082,
+        0.16792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1ySwC2Ody3CxJFH4z5HgL0wIA3G0sJ2AV"
+    },
+    {
+      "id": "material_dirt_1Y7XXEJLRRXzXGye9B3NDyh1HKaYSbPkA",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtC_08.png",
+      "source_drive_id": "1Y7XXEJLRRXzXGye9B3NDyh1HKaYSbPkA",
+      "sha256": "02f28782da827e670ea85a64865d44d6206b3c3c29fde1a29421cd6098f0c0e2",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.4296536796536797,
+        0.16792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1Y7XXEJLRRXzXGye9B3NDyh1HKaYSbPkA"
+    },
+    {
+      "id": "material_dirt_1u_EmdiY0SFhal6yM9HdPY6xvpg_4WHwi",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtC_09.png",
+      "source_drive_id": "1u_EmdiY0SFhal6yM9HdPY6xvpg-4WHwi",
+      "sha256": "4df27880b3a2d7d8f41b419318930eab0cb7645ef4c7e337963c646cf04634e7",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.5010822510822511,
+        0.16792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1u_EmdiY0SFhal6yM9HdPY6xvpg_4WHwi"
+    },
+    {
+      "id": "material_dirt_1LI2_DV_0njFpkDZc0t3dhVti3jiDPnZG",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtC_10.png",
+      "source_drive_id": "1LI2-DV_0njFpkDZc0t3dhVti3jiDPnZG",
+      "sha256": "7f4ec552d05d1aac800de9bc5dd02ce7ba90f548382818d9ee3bf5c3339a01e7",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.5725108225108225,
+        0.16792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1LI2_DV_0njFpkDZc0t3dhVti3jiDPnZG"
+    },
+    {
+      "id": "material_dirt_1RF1nRyy0my6aCO7UFEOSkODb2exH8UU5",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtC_11.png",
+      "source_drive_id": "1RF1nRyy0my6aCO7UFEOSkODb2exH8UU5",
+      "sha256": "c07bd01be5e81b634a3c1136bf49fe600687b17df62ef02a841275deacbbc21e",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.6439393939393939,
+        0.16792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_1RF1nRyy0my6aCO7UFEOSkODb2exH8UU5"
+    },
+    {
+      "id": "material_dirt_15lmiHY1havVfMXA6__9_li0Kp0B9otLc",
+      "kind": "terrain",
+      "family": "dirt",
+      "original_filename": "dirt_path_128_64_dirtC_12.png",
+      "source_drive_id": "15lmiHY1havVfMXA6_-9_li0Kp0B9otLc",
+      "sha256": "3fbda325213ee27e72286b9719c3162b9745571fadc220ff8bbf46feda299f55",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.7153679653679653,
+        0.16792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_dirt_15lmiHY1havVfMXA6__9_li0Kp0B9otLc"
+    },
+    {
+      "id": "object_variant_fallen_log_1CdkeX5QiQW1k3ssBPxqN0P_bIKaNEjua",
+      "kind": "object",
+      "family": "fallen_log",
+      "original_filename": "fallen_log_v001_128_lab64.png",
+      "source_drive_id": "1CdkeX5QiQW1k3ssBPxqN0P-bIKaNEjua",
+      "sha256": "b3ba3c1b5ad80e8f2f5687359a097eb175448498492d7c68a5a6c837e87a0440",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.6268939393939394,
+        0.3768939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_fallen_log_1CdkeX5QiQW1k3ssBPxqN0P_bIKaNEjua"
+    },
+    {
+      "id": "object_variant_fallen_log_1wt3ufp0O41vPX9TQGv90zC0pgPM02BHW",
+      "kind": "object",
+      "family": "fallen_log",
+      "original_filename": "fallen_log_v002_128_lab64.png",
+      "source_drive_id": "1wt3ufp0O41vPX9TQGv90zC0pgPM02BHW",
+      "sha256": "ab880d167370e1682818e12d7d3e6e4df5aab6cb6f715d3960ef2779e71d17d7",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.7518939393939394,
+        0.3768939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_fallen_log_1wt3ufp0O41vPX9TQGv90zC0pgPM02BHW"
+    },
+    {
+      "id": "object_variant_fallen_log_1yzJziyFQyhMFI7ujEiV8gtwg_QvqU_LI",
+      "kind": "object",
+      "family": "fallen_log",
+      "original_filename": "fallen_log_v003_128_lab64.png",
+      "source_drive_id": "1yzJziyFQyhMFI7ujEiV8gtwg_QvqU_LI",
+      "sha256": "d52e998f1bc070ed43d25c5297c57fa3a3deb0af9aaa64462e64f95604df335d",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.8768939393939394,
+        0.3768939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_fallen_log_1yzJziyFQyhMFI7ujEiV8gtwg_QvqU_LI"
+    },
+    {
+      "id": "material_forest_1mBoDouJz2KrOZsUrFuzfFNGmw_6eag0t",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122857_r1c3_03.png",
+      "source_drive_id": "1mBoDouJz2KrOZsUrFuzfFNGmw-6eag0t",
+      "sha256": "94a891ad09784dc270bfea3492410e76e6aa4b29606516558603bd48328f0215",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.7867965367965368,
+        0.16792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1mBoDouJz2KrOZsUrFuzfFNGmw_6eag0t"
+    },
+    {
+      "id": "material_forest_10ZmZeWGHoNmQcO7tUwuy1A_UaYLXTklV",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122857_r1c4_04.png",
+      "source_drive_id": "10ZmZeWGHoNmQcO7tUwuy1A-UaYLXTklV",
+      "sha256": "28b39b110354a32424deb75ddfd1a6599402746bd117c080bcdc4e1771a77542",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.8582251082251082,
+        0.16792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_10ZmZeWGHoNmQcO7tUwuy1A_UaYLXTklV"
+    },
+    {
+      "id": "material_forest_1ygJYAZOvrFF7_eE5J4aJxW9hHsljjDH2",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122857_r2c1_05.png",
+      "source_drive_id": "1ygJYAZOvrFF7-eE5J4aJxW9hHsljjDH2",
+      "sha256": "1e56b29606b21df0d4ae129d140283f215c1f9e2916fb3752edcea29d51d5dbb",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.9296536796536796,
+        0.16792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1ygJYAZOvrFF7_eE5J4aJxW9hHsljjDH2"
+    },
+    {
+      "id": "material_forest_1VBe2cUDvWlsoejvyipIwLkcNb7D2E_h6",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122857_r2c2_06.png",
+      "source_drive_id": "1VBe2cUDvWlsoejvyipIwLkcNb7D2E-h6",
+      "sha256": "7d1861ca72f0a34bb44adbbfa2ffdb4cd6c3a8b54cb414b15c3730b6afec2d6f",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.0010822510822510823,
+        0.25126262626262624,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1VBe2cUDvWlsoejvyipIwLkcNb7D2E_h6"
+    },
+    {
+      "id": "material_forest_1c53RWUbH4Dc9XkC1HsOMacllQiBpy8d7",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122857_r2c3_07.png",
+      "source_drive_id": "1c53RWUbH4Dc9XkC1HsOMacllQiBpy8d7",
+      "sha256": "06cce4dda8ab5f15a350a721e60153b9bdde1a617075176f8f25a5fd82cd0217",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.07251082251082251,
+        0.25126262626262624,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1c53RWUbH4Dc9XkC1HsOMacllQiBpy8d7"
+    },
+    {
+      "id": "material_forest_1R9Cy6lUOFp5ZSHe3gbgr4KjOFv4QqFFi",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122857_r2c4_08.png",
+      "source_drive_id": "1R9Cy6lUOFp5ZSHe3gbgr4KjOFv4QqFFi",
+      "sha256": "123d7237f09be5063b1d842fa83d685f26cf54710f6937c584523d0b505f21cb",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.14393939393939395,
+        0.25126262626262624,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1R9Cy6lUOFp5ZSHe3gbgr4KjOFv4QqFFi"
+    },
+    {
+      "id": "material_forest_1JibRyt98gxJbL3fo0abEuhsKtGOU6yoo",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122857_r3c1_09.png",
+      "source_drive_id": "1JibRyt98gxJbL3fo0abEuhsKtGOU6yoo",
+      "sha256": "b7e8d3f22604006f41eb1bc8860c955ba49f9a3eca2538481c5b7d9ad4090577",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.21536796536796537,
+        0.25126262626262624,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1JibRyt98gxJbL3fo0abEuhsKtGOU6yoo"
+    },
+    {
+      "id": "material_forest_139sP3ekSTxHrLXeNClfb0fhNw4B2ApKM",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122857_r3c2_10.png",
+      "source_drive_id": "139sP3ekSTxHrLXeNClfb0fhNw4B2ApKM",
+      "sha256": "c767bfb9aad2fabb8e5a5560180a74166c3bb89e5ff45e160b2d831edcfd5930",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.28679653679653677,
+        0.25126262626262624,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_139sP3ekSTxHrLXeNClfb0fhNw4B2ApKM"
+    },
+    {
+      "id": "material_forest_1KJNGppM47hRyXmC7Id5boAQ6Ir8uYq2n",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122857_r3c3_11.png",
+      "source_drive_id": "1KJNGppM47hRyXmC7Id5boAQ6Ir8uYq2n",
+      "sha256": "db32ab983f0034ed8ef08004cae7b2f09aa5c13ec706abd21a253e5b233183aa",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.3582251082251082,
+        0.25126262626262624,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1KJNGppM47hRyXmC7Id5boAQ6Ir8uYq2n"
+    },
+    {
+      "id": "material_forest_1uDFiP_SZFyDrATz1uKQkHZf_s_BqF_XG",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122857_r3c4_12.png",
+      "source_drive_id": "1uDFiP_SZFyDrATz1uKQkHZf-s-BqF-XG",
+      "sha256": "51e3d4de41dc3357a98a7966af04d6418d019b32321e0cdef78ede0d8af3fb2f",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.4296536796536797,
+        0.25126262626262624,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1uDFiP_SZFyDrATz1uKQkHZf_s_BqF_XG"
+    },
+    {
+      "id": "material_forest_1hVggbBLgxI0cfbXe9mN0zC44x1FHIA_0",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122858_r1c1_01.png",
+      "source_drive_id": "1hVggbBLgxI0cfbXe9mN0zC44x1FHIA-0",
+      "sha256": "012780ed58c5e1001a8002d9d70bc2a2180435318c1eaebcb5075995118f68e2",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.5010822510822511,
+        0.25126262626262624,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1hVggbBLgxI0cfbXe9mN0zC44x1FHIA_0"
+    },
+    {
+      "id": "material_forest_1qaWirYf_UElNx2nGCbwzG3RBIxy0ymI9",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122858_r1c2_02.png",
+      "source_drive_id": "1qaWirYf-UElNx2nGCbwzG3RBIxy0ymI9",
+      "sha256": "309e56a70e915b37545aff947408a512143aeecac83ed829c10e2e9a9f0d4728",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.5725108225108225,
+        0.25126262626262624,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1qaWirYf_UElNx2nGCbwzG3RBIxy0ymI9"
+    },
+    {
+      "id": "material_forest_110PC5FYdgvvtppzMNZ9BzJVzxuVDVwoS",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122858_r1c3_03.png",
+      "source_drive_id": "110PC5FYdgvvtppzMNZ9BzJVzxuVDVwoS",
+      "sha256": "8f13a529acacfb07bf1dd1f2a14eebc93aea91d4b1eff685fa08352ac56d835b",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.6439393939393939,
+        0.25126262626262624,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_110PC5FYdgvvtppzMNZ9BzJVzxuVDVwoS"
+    },
+    {
+      "id": "material_forest_1SxVAtJTZ92QV4ndQWax_wO0lwuVIz2AJ",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122858_r1c4_04.png",
+      "source_drive_id": "1SxVAtJTZ92QV4ndQWax_wO0lwuVIz2AJ",
+      "sha256": "96deeab94f9a267b24e6ce6afd8241c3a4ee0b63da8172e95409e2e36d93d87e",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.7153679653679653,
+        0.25126262626262624,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1SxVAtJTZ92QV4ndQWax_wO0lwuVIz2AJ"
+    },
+    {
+      "id": "material_forest_1GUT0tU5a2JabMWU1y8V8MYd0Z9nlsqOx",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122858_r2c1_05.png",
+      "source_drive_id": "1GUT0tU5a2JabMWU1y8V8MYd0Z9nlsqOx",
+      "sha256": "2134f5ca3d6041199e35b719320fa16039b954cc400d377d83a5313647c2cdcf",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.7867965367965368,
+        0.25126262626262624,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1GUT0tU5a2JabMWU1y8V8MYd0Z9nlsqOx"
+    },
+    {
+      "id": "material_forest_1WhL9xSW_HIGketVPIjJCEnybBONuoi2I",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122858_r2c2_06.png",
+      "source_drive_id": "1WhL9xSW_HIGketVPIjJCEnybBONuoi2I",
+      "sha256": "a42824e539ebea8a06700567bb8e092da043f27441bd1c72377092857f05c264",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.8582251082251082,
+        0.25126262626262624,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1WhL9xSW_HIGketVPIjJCEnybBONuoi2I"
+    },
+    {
+      "id": "material_forest_1jg3YGdDzNbzSfXUok2FB7SjoiFgZ13ba",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122858_r2c3_07.png",
+      "source_drive_id": "1jg3YGdDzNbzSfXUok2FB7SjoiFgZ13ba",
+      "sha256": "fcc7623d83bfb6e65de03329fadf465ec82ebfd2308acb7fbdd1acf4fa87e9ef",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.9296536796536796,
+        0.25126262626262624,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1jg3YGdDzNbzSfXUok2FB7SjoiFgZ13ba"
+    },
+    {
+      "id": "material_forest_1PhaNZwSkm9oYjrp3H0ldDLJ53BFcdJDw",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122858_r2c4_08.png",
+      "source_drive_id": "1PhaNZwSkm9oYjrp3H0ldDLJ53BFcdJDw",
+      "sha256": "8cdaad9a080b3696a2e7f3726198b543cab49cdd251b36c89337d43fdd30e60c",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.0010822510822510823,
+        0.3345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1PhaNZwSkm9oYjrp3H0ldDLJ53BFcdJDw"
+    },
+    {
+      "id": "material_forest_12MiZ3jSvd4HEF7Qcv0LmRyNGWgvzBwpP",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122858_r3c1_09.png",
+      "source_drive_id": "12MiZ3jSvd4HEF7Qcv0LmRyNGWgvzBwpP",
+      "sha256": "29852893ea1e0d2cbf4029b2a8f2eacae0ccac0c0aad570043c77fff44d00d78",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.07251082251082251,
+        0.3345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_12MiZ3jSvd4HEF7Qcv0LmRyNGWgvzBwpP"
+    },
+    {
+      "id": "material_forest_1FuEBUhLT04tCx8xgbsP88KJddPj15Urp",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122858_r3c2_10.png",
+      "source_drive_id": "1FuEBUhLT04tCx8xgbsP88KJddPj15Urp",
+      "sha256": "eba024cd261773d4629a47b8181fb4e2809ab59e864935ea54b5dad1d33c5649",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.14393939393939395,
+        0.3345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1FuEBUhLT04tCx8xgbsP88KJddPj15Urp"
+    },
+    {
+      "id": "material_forest_1F7GwwcLfsfTpKsCrvi9Rk89opd8A7Gi8",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122858_r3c3_11.png",
+      "source_drive_id": "1F7GwwcLfsfTpKsCrvi9Rk89opd8A7Gi8",
+      "sha256": "a8a633d953f80313b6a6d1517cc0975a5b6c0c6391e7449cf1d670b6e4871980",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.21536796536796537,
+        0.3345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1F7GwwcLfsfTpKsCrvi9Rk89opd8A7Gi8"
+    },
+    {
+      "id": "material_forest_1TrZpRNmgCbGPOJ2Dv0x1kSrZN8s_j1u5",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122858_r3c4_12.png",
+      "source_drive_id": "1TrZpRNmgCbGPOJ2Dv0x1kSrZN8s-j1u5",
+      "sha256": "008c878aa6bda1fd7645bb57da6543f2e076b1f6a3bb81f71ef3473df01e9483",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.28679653679653677,
+        0.3345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1TrZpRNmgCbGPOJ2Dv0x1kSrZN8s_j1u5"
+    },
+    {
+      "id": "material_forest_1PCBzWI_PAXn8SJt_hjsbY09A1MVjBa5t",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122859_r1c1_01.png",
+      "source_drive_id": "1PCBzWI-PAXn8SJt_hjsbY09A1MVjBa5t",
+      "sha256": "06710ba75c9f07f1a854728145a5374da83ebc07ee08968507e67b401183e19e",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.3582251082251082,
+        0.3345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1PCBzWI_PAXn8SJt_hjsbY09A1MVjBa5t"
+    },
+    {
+      "id": "material_forest_1z3Z1lMDp7XcrxHMSP2BLR913RKSLStxR",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122859_r1c2_02.png",
+      "source_drive_id": "1z3Z1lMDp7XcrxHMSP2BLR913RKSLStxR",
+      "sha256": "58991b88b790cb261f8895a8254d5a665122d786c346e44c48380183e1931cf4",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.4296536796536797,
+        0.3345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1z3Z1lMDp7XcrxHMSP2BLR913RKSLStxR"
+    },
+    {
+      "id": "material_forest_1DwHU3IcKxmUet0MQiJbgdXSz5N1HwO9s",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122859_r1c3_03.png",
+      "source_drive_id": "1DwHU3IcKxmUet0MQiJbgdXSz5N1HwO9s",
+      "sha256": "c6d8a03496a59d789c77a74e92d9952f28009ecf582316aef129ba291ed73d9f",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.5010822510822511,
+        0.3345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1DwHU3IcKxmUet0MQiJbgdXSz5N1HwO9s"
+    },
+    {
+      "id": "material_forest_1SefEbEuoaQTPSDy0tcUH_tMrnx8kdVXp",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122859_r1c4_04.png",
+      "source_drive_id": "1SefEbEuoaQTPSDy0tcUH-tMrnx8kdVXp",
+      "sha256": "ff7f4d455929f6097f7cb9ef5864e96bc47411fa68780d62d66c417fba1a400e",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.5725108225108225,
+        0.3345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1SefEbEuoaQTPSDy0tcUH_tMrnx8kdVXp"
+    },
+    {
+      "id": "material_forest_1MWoIaeJhb8UyqgZcHv3C2cGdQrnUylP_",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122859_r2c1_05.png",
+      "source_drive_id": "1MWoIaeJhb8UyqgZcHv3C2cGdQrnUylP_",
+      "sha256": "ba771552fbe1b2145febdbb2df5794439716373fed67937e2baa6051b0d5a8fd",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.6439393939393939,
+        0.3345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1MWoIaeJhb8UyqgZcHv3C2cGdQrnUylP_"
+    },
+    {
+      "id": "material_forest_10uHn8MFxOoRbMVFVFCediKXvlJUu4mfR",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122859_r2c2_06.png",
+      "source_drive_id": "10uHn8MFxOoRbMVFVFCediKXvlJUu4mfR",
+      "sha256": "ac99c8b3d2f4a775ca1e9b7546376952e3f8ee2794e9467e189cadda9c3b5f8a",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.7153679653679653,
+        0.3345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_10uHn8MFxOoRbMVFVFCediKXvlJUu4mfR"
+    },
+    {
+      "id": "material_forest_1oYmqgyGGEMjrF2hnGJ_0HVjEJVZvJXBS",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122859_r2c3_07.png",
+      "source_drive_id": "1oYmqgyGGEMjrF2hnGJ-0HVjEJVZvJXBS",
+      "sha256": "055493976174f1782cf8c6aae5a7b83c68d1ee7030afef8af96b022499b49c85",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.7867965367965368,
+        0.3345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1oYmqgyGGEMjrF2hnGJ_0HVjEJVZvJXBS"
+    },
+    {
+      "id": "material_forest_1d9rxSVMlU_KGi7oFvvNS_mMNU5rji_1x",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122859_r2c4_08.png",
+      "source_drive_id": "1d9rxSVMlU-KGi7oFvvNS-mMNU5rji-1x",
+      "sha256": "c7b1b03ea9f0b2ead32f8cb31502edc6ef6a2ca368dbe371fc0fe1b5c802deea",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.8582251082251082,
+        0.3345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1d9rxSVMlU_KGi7oFvvNS_mMNU5rji_1x"
+    },
+    {
+      "id": "material_forest_1h0c_7Uyu7rYCHuD2KuWH2O7dhGiCLN81",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122859_r3c1_09.png",
+      "source_drive_id": "1h0c_7Uyu7rYCHuD2KuWH2O7dhGiCLN81",
+      "sha256": "c552c8dac25373d19d5bd1d067a4a92725eda2ae1d7fc5c1ae29e5a20062c1bb",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.9296536796536796,
+        0.3345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1h0c_7Uyu7rYCHuD2KuWH2O7dhGiCLN81"
+    },
+    {
+      "id": "material_forest_14PUDQcw2m_3Hp_LV9P0rWe5hqzCJUqqk",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122859_r3c2_10.png",
+      "source_drive_id": "14PUDQcw2m-3Hp-LV9P0rWe5hqzCJUqqk",
+      "sha256": "0bd81ee20276208180699acc96efa1447766c5baf1b0a2c96d389506967d7562",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.0010822510822510823,
+        0.41792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_14PUDQcw2m_3Hp_LV9P0rWe5hqzCJUqqk"
+    },
+    {
+      "id": "material_forest_1hp85ri3eHQcNZ3uWLwqWOmJgUMz3UrqI",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122859_r3c3_11.png",
+      "source_drive_id": "1hp85ri3eHQcNZ3uWLwqWOmJgUMz3UrqI",
+      "sha256": "c124f59410e84de705b5d09417e43188ad8fc49ee71821c5a959c9240d70baa0",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.07251082251082251,
+        0.41792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_1hp85ri3eHQcNZ3uWLwqWOmJgUMz3UrqI"
+    },
+    {
+      "id": "material_forest_17S3g7zJz98t6eJDMytoxODJ3vjRhEwRZ",
+      "kind": "terrain",
+      "family": "forest",
+      "original_filename": "forest_floor_122859_r3c4_12.png",
+      "source_drive_id": "17S3g7zJz98t6eJDMytoxODJ3vjRhEwRZ",
+      "sha256": "02683533e983f74af399cc9721a84a264b8bbcdaef210b65b456c4f64143cbe9",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.14393939393939395,
+        0.41792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_forest_17S3g7zJz98t6eJDMytoxODJ3vjRhEwRZ"
+    },
+    {
+      "id": "material_grass_1SnRuaODH71hb4rmQX_yvvAoH6EZKr_Db",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122814_r1c3_03.png",
+      "source_drive_id": "1SnRuaODH71hb4rmQX-yvvAoH6EZKr-Db",
+      "sha256": "b3b9b4fdf3dfe32d631b104604a819f147d129446eaf6b92552c11ee8a980dc2",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.21536796536796537,
+        0.41792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_1SnRuaODH71hb4rmQX_yvvAoH6EZKr_Db"
+    },
+    {
+      "id": "material_grass_18KshlpvRgKkzm9_HnQ0lENury_fXfss8",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122814_r1c4_04.png",
+      "source_drive_id": "18KshlpvRgKkzm9-HnQ0lENury-fXfss8",
+      "sha256": "cfd1a3c9f362b96f71572e69bdb66b4bb2bf2aeb3199138ff5d77672b5698337",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.28679653679653677,
+        0.41792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_18KshlpvRgKkzm9_HnQ0lENury_fXfss8"
+    },
+    {
+      "id": "material_grass_1VI6ryUJSzu7BA2_CVwpyFZbf6rVQvyUk",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122814_r2c1_05.png",
+      "source_drive_id": "1VI6ryUJSzu7BA2-CVwpyFZbf6rVQvyUk",
+      "sha256": "452aabcafb2ff3da94b0e411ec792ca765e7be7a1b4d86d26f6334c76d0d7538",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.3582251082251082,
+        0.41792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_1VI6ryUJSzu7BA2_CVwpyFZbf6rVQvyUk"
+    },
+    {
+      "id": "material_grass_1n3m99_cSx_HYd3Dj7wOci8exlHsX6uoG",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122814_r2c2_06.png",
+      "source_drive_id": "1n3m99_cSx_HYd3Dj7wOci8exlHsX6uoG",
+      "sha256": "309266bd469e42e192d6087c590782d79f7b267883929cb58a761f34574b3779",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.4296536796536797,
+        0.41792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_1n3m99_cSx_HYd3Dj7wOci8exlHsX6uoG"
+    },
+    {
+      "id": "material_grass_16SI2hvmTrhZl9xJpH9F3_KI_1qx4dhF4",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122814_r2c3_07.png",
+      "source_drive_id": "16SI2hvmTrhZl9xJpH9F3_KI_1qx4dhF4",
+      "sha256": "15aad93ebb8f6bfd1612d59140c5c463c07350501804124731b15dac130fcf09",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.5010822510822511,
+        0.41792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_16SI2hvmTrhZl9xJpH9F3_KI_1qx4dhF4"
+    },
+    {
+      "id": "material_grass_10Ql__VjMqwOJxZpAusStvm__edutnBYj",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122814_r2c4_08.png",
+      "source_drive_id": "10Ql--VjMqwOJxZpAusStvm--edutnBYj",
+      "sha256": "570287bc74859d3123dc54e9549c0654fae69975db5d768960aa34ba88050dee",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.5725108225108225,
+        0.41792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_10Ql__VjMqwOJxZpAusStvm__edutnBYj"
+    },
+    {
+      "id": "material_grass_1sQZ_FOmfx96CODgDQ5ejWPCD_lV_DWQW",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122814_r3c1_09.png",
+      "source_drive_id": "1sQZ_FOmfx96CODgDQ5ejWPCD-lV_DWQW",
+      "sha256": "cfd5787c1210a5507ec26a9ec76cc7912fe1ae5694f5ec71af2f327c7c8f3097",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.6439393939393939,
+        0.41792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_1sQZ_FOmfx96CODgDQ5ejWPCD_lV_DWQW"
+    },
+    {
+      "id": "material_grass_1ykEl08C1y6fFxBgtcaMYq2YKhzJc0Ozf",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122814_r3c2_10.png",
+      "source_drive_id": "1ykEl08C1y6fFxBgtcaMYq2YKhzJc0Ozf",
+      "sha256": "9599b520aaf69af30c2ca77b30409bf3bbbe034818452b107f96013122b268e7",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.7153679653679653,
+        0.41792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_1ykEl08C1y6fFxBgtcaMYq2YKhzJc0Ozf"
+    },
+    {
+      "id": "material_grass_1ZRQ8YXGegwJgCl9c_E_xTGGBQwtXQSov",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122814_r3c3_11.png",
+      "source_drive_id": "1ZRQ8YXGegwJgCl9c-E-xTGGBQwtXQSov",
+      "sha256": "78411a2fdf780b5570fd6724c04e5482a6fa34d584f7f113dc62b73f714f70be",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.7867965367965368,
+        0.41792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_1ZRQ8YXGegwJgCl9c_E_xTGGBQwtXQSov"
+    },
+    {
+      "id": "material_grass_1rYvcKSsmTyXHrEL7hC0ZV53QRgj_rYwB",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122814_r3c4_12.png",
+      "source_drive_id": "1rYvcKSsmTyXHrEL7hC0ZV53QRgj_rYwB",
+      "sha256": "8c0ff5803c0d28f626a53d31a677a88d59ba810cf06ae5b352fe0d8fd94e7f49",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.8582251082251082,
+        0.41792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_1rYvcKSsmTyXHrEL7hC0ZV53QRgj_rYwB"
+    },
+    {
+      "id": "material_grass_1EgDyZtgoSH04Ummqg7pL8uf0qg0aBLob",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122815_r1c1_01.png",
+      "source_drive_id": "1EgDyZtgoSH04Ummqg7pL8uf0qg0aBLob",
+      "sha256": "f9d5d746018fe6979c737cc36177da484ca20a7bef54d457455ff980ccfdfbd2",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.9296536796536796,
+        0.41792929292929293,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_1EgDyZtgoSH04Ummqg7pL8uf0qg0aBLob"
+    },
+    {
+      "id": "material_grass_1Kymghv2ErGhbwBpxaDjPkruHcxE4illL",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122815_r1c2_02.png",
+      "source_drive_id": "1Kymghv2ErGhbwBpxaDjPkruHcxE4illL",
+      "sha256": "854bf20fed880bae0c8393b7df7747c7375ef34839647c92bfe1574d3ae56c0e",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.0010822510822510823,
+        0.5012626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_1Kymghv2ErGhbwBpxaDjPkruHcxE4illL"
+    },
+    {
+      "id": "material_grass_1CG0G6hUqIxkR_jGAbJAvwpDvyQXwcZ0T",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122815_r1c3_03.png",
+      "source_drive_id": "1CG0G6hUqIxkR_jGAbJAvwpDvyQXwcZ0T",
+      "sha256": "94fd97e60d07915934c059a48865dd4a1bc2306e180c6460637abd92d54b1d44",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.07251082251082251,
+        0.5012626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_1CG0G6hUqIxkR_jGAbJAvwpDvyQXwcZ0T"
+    },
+    {
+      "id": "material_grass_18mlVD_dkblCZaVOcyJzLcAN2iOpKVMQj",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122815_r1c4_04.png",
+      "source_drive_id": "18mlVD-dkblCZaVOcyJzLcAN2iOpKVMQj",
+      "sha256": "407c1c54f2ad865c35d51a0ad01b849383010ef509c8449b0b6427a977b7769b",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.14393939393939395,
+        0.5012626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_18mlVD_dkblCZaVOcyJzLcAN2iOpKVMQj"
+    },
+    {
+      "id": "material_grass_1gdbV3NusRla9bmy1mbeDLx_o_Fg34MA_",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122815_r2c1_05.png",
+      "source_drive_id": "1gdbV3NusRla9bmy1mbeDLx_o_Fg34MA_",
+      "sha256": "9e4a0b4e30ff9aa851ce77595437f310b3d50310a2685c6225713b63a8817eda",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.21536796536796537,
+        0.5012626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_1gdbV3NusRla9bmy1mbeDLx_o_Fg34MA_"
+    },
+    {
+      "id": "material_grass_1LdbnXoCCHYsyKhbdziW5O0C9HgHF44nw",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122815_r2c2_06.png",
+      "source_drive_id": "1LdbnXoCCHYsyKhbdziW5O0C9HgHF44nw",
+      "sha256": "fc51171ebb044e00a88b5a0b7e72f22b356c87ef0fc33a0a5c82c876bec24908",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.28679653679653677,
+        0.5012626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_1LdbnXoCCHYsyKhbdziW5O0C9HgHF44nw"
+    },
+    {
+      "id": "material_grass_17iwHmhecPiAF27AoKV3MaKDgcHpSFpyX",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122815_r2c3_07.png",
+      "source_drive_id": "17iwHmhecPiAF27AoKV3MaKDgcHpSFpyX",
+      "sha256": "a903d328b48f58894dbdcea4284b86816e0abc8b86a4c32cf75a1d6b7478d49a",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.3582251082251082,
+        0.5012626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_17iwHmhecPiAF27AoKV3MaKDgcHpSFpyX"
+    },
+    {
+      "id": "material_grass_1qLgq_6G1a0A2IS0HH8QcSF9n2GGny8vD",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122815_r2c4_08.png",
+      "source_drive_id": "1qLgq_6G1a0A2IS0HH8QcSF9n2GGny8vD",
+      "sha256": "3ffb66fab0518ef61ad1baa556a17c84909844d4662c5d5b775e7beb4366e59a",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.4296536796536797,
+        0.5012626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_1qLgq_6G1a0A2IS0HH8QcSF9n2GGny8vD"
+    },
+    {
+      "id": "material_grass_1iOJFgpeSh9QScIUck4oT01araCw3_JH_",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122815_r3c1_09.png",
+      "source_drive_id": "1iOJFgpeSh9QScIUck4oT01araCw3_JH-",
+      "sha256": "fe0140b98958bdce5e06056e301f45da604a52216acbfa2b0906327dd3ae2514",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.5010822510822511,
+        0.5012626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_1iOJFgpeSh9QScIUck4oT01araCw3_JH_"
+    },
+    {
+      "id": "material_grass_14L4nWZBMS8AsC_ew_RK3HvwM1EUJ5OuJ",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122815_r3c2_10.png",
+      "source_drive_id": "14L4nWZBMS8AsC-ew-RK3HvwM1EUJ5OuJ",
+      "sha256": "1d8d1494d6e7f51268d225c755540860907b15efb359cdda2471746183724a25",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.5725108225108225,
+        0.5012626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_14L4nWZBMS8AsC_ew_RK3HvwM1EUJ5OuJ"
+    },
+    {
+      "id": "material_grass_1hcNVn9Z964gfJag3rd4Ika6Lr5ayaub0",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122815_r3c3_11.png",
+      "source_drive_id": "1hcNVn9Z964gfJag3rd4Ika6Lr5ayaub0",
+      "sha256": "3537145d15ce7169e6ba56b2422202e8a16945f4b587cda5ddb67767706b083f",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.6439393939393939,
+        0.5012626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_1hcNVn9Z964gfJag3rd4Ika6Lr5ayaub0"
+    },
+    {
+      "id": "material_grass_1RF9m_P1e_M5SAvtHeugMVcM1lnZho0ym",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122815_r3c4_12.png",
+      "source_drive_id": "1RF9m_P1e_M5SAvtHeugMVcM1lnZho0ym",
+      "sha256": "ec273b6a0b39fd7431e5f32ece837dfb31fcef6debc579b7dc5b4742b8372baf",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.7153679653679653,
+        0.5012626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_1RF9m_P1e_M5SAvtHeugMVcM1lnZho0ym"
+    },
+    {
+      "id": "material_grass_1_1YdqZA_mr70imV86SeCAuPW2VLJ7c1b",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122816_r1c1_01.png",
+      "source_drive_id": "1-1YdqZA_mr70imV86SeCAuPW2VLJ7c1b",
+      "sha256": "7b8cc8fd384cb654924535d27e5ce0b3a46027fdc1ba5ba2cbb5dc3e031de9a1",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.7867965367965368,
+        0.5012626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_1_1YdqZA_mr70imV86SeCAuPW2VLJ7c1b"
+    },
+    {
+      "id": "material_grass_1X_0AnmB08tTYwpRNFgO6hEPx6edhhLiG",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122816_r1c2_02.png",
+      "source_drive_id": "1X-0AnmB08tTYwpRNFgO6hEPx6edhhLiG",
+      "sha256": "6cf521ba57baac2496a736efb6f800f39139e0b27af2691c5cf3d7aa1b060a84",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.8582251082251082,
+        0.5012626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_1X_0AnmB08tTYwpRNFgO6hEPx6edhhLiG"
+    },
+    {
+      "id": "material_grass_1KNl49YaCY0HbJKtoF1djbMa0ZlqPZpQp",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122816_r1c3_03.png",
+      "source_drive_id": "1KNl49YaCY0HbJKtoF1djbMa0ZlqPZpQp",
+      "sha256": "175f7e79b79accd1984afb89fa9aea93c1cf20ec077e4cdd46f79a41a972893c",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.9296536796536796,
+        0.5012626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_1KNl49YaCY0HbJKtoF1djbMa0ZlqPZpQp"
+    },
+    {
+      "id": "material_grass_1QFCQgARLfHZ_wSYeUZ7AfnQ13yBAgTdB",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122816_r1c4_04.png",
+      "source_drive_id": "1QFCQgARLfHZ_wSYeUZ7AfnQ13yBAgTdB",
+      "sha256": "86a41420f58d100f8cbb585c0c6c5f9ec28b879fa1280e19f25c619f221edca0",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.0010822510822510823,
+        0.5845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_1QFCQgARLfHZ_wSYeUZ7AfnQ13yBAgTdB"
+    },
+    {
+      "id": "material_grass_1mdX_6JOCuKNsJA0aLZr0KBM2BFB8r8Hj",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122816_r2c1_05.png",
+      "source_drive_id": "1mdX_6JOCuKNsJA0aLZr0KBM2BFB8r8Hj",
+      "sha256": "4f2910da61ea0955261673820a0c4a997aeba042860cc968d07be8c3b9c7e631",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.07251082251082251,
+        0.5845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_1mdX_6JOCuKNsJA0aLZr0KBM2BFB8r8Hj"
+    },
+    {
+      "id": "material_grass_1fJw1Jx8NseMHIlVJhK8WPcip7EuNiuBj",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122816_r2c2_06.png",
+      "source_drive_id": "1fJw1Jx8NseMHIlVJhK8WPcip7EuNiuBj",
+      "sha256": "f092504fc0a8ff4e53e48cc8271859b61a1d73cfc92cf7f4ef6120aa110fa396",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.14393939393939395,
+        0.5845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_1fJw1Jx8NseMHIlVJhK8WPcip7EuNiuBj"
+    },
+    {
+      "id": "material_grass_1WaDrbjg6sNoCGWzS1DCgqfmNet_i_f2m",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122816_r2c3_07.png",
+      "source_drive_id": "1WaDrbjg6sNoCGWzS1DCgqfmNet_i_f2m",
+      "sha256": "da21ffaa394e325fb555b2c3e02e84d31f9b743fa9d21e937570ac18838d7fdd",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.21536796536796537,
+        0.5845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_1WaDrbjg6sNoCGWzS1DCgqfmNet_i_f2m"
+    },
+    {
+      "id": "material_grass_19qH7eTv62_TN05t4Ktz8viBRyCwXuHaq",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122816_r2c4_08.png",
+      "source_drive_id": "19qH7eTv62-TN05t4Ktz8viBRyCwXuHaq",
+      "sha256": "b8c3c197e27c6eb6facf618499241aac32df93fdcd4dbcbe50d5f581fa002498",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.28679653679653677,
+        0.5845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_19qH7eTv62_TN05t4Ktz8viBRyCwXuHaq"
+    },
+    {
+      "id": "material_grass_1QJ2n0JyHkDIIt8kk8d2NFxVYXhlpLECR",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122816_r3c1_09.png",
+      "source_drive_id": "1QJ2n0JyHkDIIt8kk8d2NFxVYXhlpLECR",
+      "sha256": "c4ead2f75452f40d0963130369a173dc8f9ac38fd783036b39d9084082b459fb",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.3582251082251082,
+        0.5845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_1QJ2n0JyHkDIIt8kk8d2NFxVYXhlpLECR"
+    },
+    {
+      "id": "material_grass_1xGx_xeCZl_0Hv5DFn2UlW6R7qu2eCFzV",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122816_r3c2_10.png",
+      "source_drive_id": "1xGx_xeCZl_0Hv5DFn2UlW6R7qu2eCFzV",
+      "sha256": "65efc90945cfdc67a0f647853ec7c0a72033e9a702880caaf0a3d0e77b5cd8b5",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.4296536796536797,
+        0.5845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_1xGx_xeCZl_0Hv5DFn2UlW6R7qu2eCFzV"
+    },
+    {
+      "id": "material_grass_1A7LBzkJrO_sBkVnSiMlojxYbwBZchNA8",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122816_r3c3_11.png",
+      "source_drive_id": "1A7LBzkJrO-sBkVnSiMlojxYbwBZchNA8",
+      "sha256": "924281dc5fb57e975303ef6e871c398409641955381257f9a00694c459b9e499",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.5010822510822511,
+        0.5845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_1A7LBzkJrO_sBkVnSiMlojxYbwBZchNA8"
+    },
+    {
+      "id": "material_grass_11fsftmN06VCmWRjJxP_w5cXyUdN3s4xB",
+      "kind": "terrain",
+      "family": "grass",
+      "original_filename": "terrain_grass_128_64_122816_r3c4_12.png",
+      "source_drive_id": "11fsftmN06VCmWRjJxP_w5cXyUdN3s4xB",
+      "sha256": "8d0c041ee57cdb2925668798a5b34180f5319eb2301bd93dd6040fea5fad37eb",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.5725108225108225,
+        0.5845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_grass_11fsftmN06VCmWRjJxP_w5cXyUdN3s4xB"
+    },
+    {
+      "id": "object_variant_oak_1cWqpjcrEHT3p_vjVIAbGMSwTaNNPV51U",
+      "kind": "object",
+      "family": "oak",
+      "original_filename": "oak_v003_128_lab64.png",
+      "source_drive_id": "1cWqpjcrEHT3p_vjVIAbGMSwTaNNPV51U",
+      "sha256": "eee6f79190c3d7fcd46bc529cd0687ec67b16d2d52e10d9d30ddac625e429524",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.001893939393939394,
+        0.5018939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_oak_1cWqpjcrEHT3p_vjVIAbGMSwTaNNPV51U"
+    },
+    {
+      "id": "object_variant_oak_1t7bH1iC8UjZD3ugKJGoFm_kNMJK32UV9",
+      "kind": "object",
+      "family": "oak",
+      "original_filename": "oak_v004_128_lab64.png",
+      "source_drive_id": "1t7bH1iC8UjZD3ugKJGoFm-kNMJK32UV9",
+      "sha256": "ae501b094a77ca89aa0b4b34723b60f6cd99522635611d5c72f3bf80a1bae9d3",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.1268939393939394,
+        0.5018939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_oak_1t7bH1iC8UjZD3ugKJGoFm_kNMJK32UV9"
+    },
+    {
+      "id": "object_variant_oak_1N8htahfrBqATONqmx7cDrPz4sO7J_8HE",
+      "kind": "object",
+      "family": "oak",
+      "original_filename": "oak_v005_128_lab64.png",
+      "source_drive_id": "1N8htahfrBqATONqmx7cDrPz4sO7J-8HE",
+      "sha256": "82fe8323213982e33a264260e6342fb57e9a4f4ccf7cbdcdadc6ea78a3adcaef",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.2518939393939394,
+        0.5018939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_oak_1N8htahfrBqATONqmx7cDrPz4sO7J_8HE"
+    },
+    {
+      "id": "object_variant_oak_1snTBNXQt1ri0T5hDMvAdtTz2KI4IScfr",
+      "kind": "object",
+      "family": "oak",
+      "original_filename": "oak_v006_128_lab64.png",
+      "source_drive_id": "1snTBNXQt1ri0T5hDMvAdtTz2KI4IScfr",
+      "sha256": "57da841a1374b94d7c23c234d2ca912e6a8874252cb1309046b3468ea93158a8",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.3768939393939394,
+        0.5018939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_oak_1snTBNXQt1ri0T5hDMvAdtTz2KI4IScfr"
+    },
+    {
+      "id": "object_variant_oak_1WBR5SXEU7jVgWHH5884_KfbciPQdqF2a",
+      "kind": "object",
+      "family": "oak",
+      "original_filename": "oak_v007_128_lab64.png",
+      "source_drive_id": "1WBR5SXEU7jVgWHH5884_KfbciPQdqF2a",
+      "sha256": "7d0e0840650dbd5f6a37e63ddc469b04b6f7fe7db545ef60d86424ac518d5541",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.5018939393939394,
+        0.5018939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_oak_1WBR5SXEU7jVgWHH5884_KfbciPQdqF2a"
+    },
+    {
+      "id": "object_variant_reeds_1QBuDp9wqo1qmDbzC9xYbrlr0Q2pcgOhR",
+      "kind": "object",
+      "family": "reeds",
+      "original_filename": "reeds_v003_128_lab64.png",
+      "source_drive_id": "1QBuDp9wqo1qmDbzC9xYbrlr0Q2pcgOhR",
+      "sha256": "a233cc5279be944cf4b1faf21128c27ad8bacd250d7b46fc47ddd06955776c11",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.6268939393939394,
+        0.5018939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_reeds_1QBuDp9wqo1qmDbzC9xYbrlr0Q2pcgOhR"
+    },
+    {
+      "id": "material_rock_1TNh9lGC0wkLcUT_pHZ6Lq4bYo1UybyVE",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockA_03.png",
+      "source_drive_id": "1TNh9lGC0wkLcUT-pHZ6Lq4bYo1UybyVE",
+      "sha256": "03e27bf57285643e431a70873fa73dc031c4e011a114a7fe760e19ff98eca7dd",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.6439393939393939,
+        0.5845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1TNh9lGC0wkLcUT_pHZ6Lq4bYo1UybyVE"
+    },
+    {
+      "id": "material_rock_1QqCzX1oNpQ1eEmPe3_XYsefHyPyWXhj9",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockA_04.png",
+      "source_drive_id": "1QqCzX1oNpQ1eEmPe3_XYsefHyPyWXhj9",
+      "sha256": "b0956dd6720b4be08b1649819b4e7ba94326ff909a3f165b33fd3d1cc8a160cb",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.7153679653679653,
+        0.5845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1QqCzX1oNpQ1eEmPe3_XYsefHyPyWXhj9"
+    },
+    {
+      "id": "material_rock_1lBk7jEnzUThFnnAsVXwke__EwJj5Re7F",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockA_06.png",
+      "source_drive_id": "1lBk7jEnzUThFnnAsVXwke__EwJj5Re7F",
+      "sha256": "eec293742a3cdbdb852c0042e6b427910af960c46acc3bb12e207eda52300e32",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.7867965367965368,
+        0.5845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1lBk7jEnzUThFnnAsVXwke__EwJj5Re7F"
+    },
+    {
+      "id": "material_rock_1DIU_JxF1gSAhvjl1VfhDw33Z_rBNvI_g",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockA_07.png",
+      "source_drive_id": "1DIU_JxF1gSAhvjl1VfhDw33Z-rBNvI-g",
+      "sha256": "c12360f0c995000d82df8a85138d091472f4063ef9dd6edfae09332eff614485",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.8582251082251082,
+        0.5845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1DIU_JxF1gSAhvjl1VfhDw33Z_rBNvI_g"
+    },
+    {
+      "id": "material_rock_1CUcbR_HVpkNFhJsAhzF00AQQKeQvowhm",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockA_09.png",
+      "source_drive_id": "1CUcbR_HVpkNFhJsAhzF00AQQKeQvowhm",
+      "sha256": "356955ab549803b429acbce49c1fde7c4e4ba0849010d56b1f1589ab1f766a00",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.9296536796536796,
+        0.5845959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1CUcbR_HVpkNFhJsAhzF00AQQKeQvowhm"
+    },
+    {
+      "id": "material_rock_1BWb32Pd0PRby7I_ivfJoj_UDKTky0pUZ",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockA_10.png",
+      "source_drive_id": "1BWb32Pd0PRby7I_ivfJoj-UDKTky0pUZ",
+      "sha256": "28bbcf8cf7db3dc7d9202e5e7ccdceb8f4719cfb903f97abfc035cd5197b2d31",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.0010822510822510823,
+        0.6679292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1BWb32Pd0PRby7I_ivfJoj_UDKTky0pUZ"
+    },
+    {
+      "id": "material_rock_1mwQv1egpkfT2py0t376PEYSvOID2BKmf",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockA_11.png",
+      "source_drive_id": "1mwQv1egpkfT2py0t376PEYSvOID2BKmf",
+      "sha256": "ce88a2eb96d5863e8e8d94052e1620f51ea4fdcbbcd4fb34eff644831d87dfd1",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.07251082251082251,
+        0.6679292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1mwQv1egpkfT2py0t376PEYSvOID2BKmf"
+    },
+    {
+      "id": "material_rock_1BHEkjFmrxcA1Ubngcoe10C3f_aehaIAc",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockB_01.png",
+      "source_drive_id": "1BHEkjFmrxcA1Ubngcoe10C3f-aehaIAc",
+      "sha256": "fa3dc654ff45b0ec097bde0d0262be0cf23b01b323d80d50ea8575e5a461a146",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.14393939393939395,
+        0.6679292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1BHEkjFmrxcA1Ubngcoe10C3f_aehaIAc"
+    },
+    {
+      "id": "material_rock_1c_Ik16YcfGdNrAX7igwJaq_7LvPTEReD",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockB_02.png",
+      "source_drive_id": "1c_Ik16YcfGdNrAX7igwJaq-7LvPTEReD",
+      "sha256": "eab926f65a14c4f650539748811e50bea8b14c0b3307c744ea6cfe4357cf78e9",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.21536796536796537,
+        0.6679292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1c_Ik16YcfGdNrAX7igwJaq_7LvPTEReD"
+    },
+    {
+      "id": "material_rock_1WVL3SGRtq_fmxJ42SkjEFM2YQIkzjuPj",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockB_03.png",
+      "source_drive_id": "1WVL3SGRtq-fmxJ42SkjEFM2YQIkzjuPj",
+      "sha256": "1bf4f9b69d613c844cf06ef151ebe4671940eebcaf5a721fc6dd2311d2fea895",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.28679653679653677,
+        0.6679292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1WVL3SGRtq_fmxJ42SkjEFM2YQIkzjuPj"
+    },
+    {
+      "id": "material_rock_12uYt_U9iR_Cm9FYT_TjdILC_IYLyCQBi",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockB_04.png",
+      "source_drive_id": "12uYt_U9iR_Cm9FYT_TjdILC-IYLyCQBi",
+      "sha256": "5a7e3753a6a90fbbb913fef1d48c798f22bc9b519c686f92da7d9e830996fed4",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.3582251082251082,
+        0.6679292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_12uYt_U9iR_Cm9FYT_TjdILC_IYLyCQBi"
+    },
+    {
+      "id": "material_rock_1PD1CoTEb4y5Dl8UMNNapQS4JyaHHl5q7",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockB_05.png",
+      "source_drive_id": "1PD1CoTEb4y5Dl8UMNNapQS4JyaHHl5q7",
+      "sha256": "daa503ee4d2919ee696fb6487ebe8f3f8294c31b48d95b35ce1d5cabd5b83ca8",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.4296536796536797,
+        0.6679292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1PD1CoTEb4y5Dl8UMNNapQS4JyaHHl5q7"
+    },
+    {
+      "id": "material_rock_1mWGUSfYLmt0dcVo6ODBAhgFXkPran7WE",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockB_06.png",
+      "source_drive_id": "1mWGUSfYLmt0dcVo6ODBAhgFXkPran7WE",
+      "sha256": "ab570753957fe9886555a07f9ab1c7c21861c96bf97fe70aa4dbc47b89f73422",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.5010822510822511,
+        0.6679292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1mWGUSfYLmt0dcVo6ODBAhgFXkPran7WE"
+    },
+    {
+      "id": "material_rock_1Rz7Uwr7IQt0xkDfesjlJ_pSrrLIWG1tu",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockB_06.png",
+      "source_drive_id": "1Rz7Uwr7IQt0xkDfesjlJ-pSrrLIWG1tu",
+      "sha256": "ab570753957fe9886555a07f9ab1c7c21861c96bf97fe70aa4dbc47b89f73422",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.5725108225108225,
+        0.6679292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1Rz7Uwr7IQt0xkDfesjlJ_pSrrLIWG1tu"
+    },
+    {
+      "id": "material_rock_1tEiqBSY2ht4BAky69ZqI70ou0XhRQz5y",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockB_07.png",
+      "source_drive_id": "1tEiqBSY2ht4BAky69ZqI70ou0XhRQz5y",
+      "sha256": "8fccb96754217befc2b54eeeaa99ba3d6c14ebb671c48382871d495c4d4a1e44",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.6439393939393939,
+        0.6679292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1tEiqBSY2ht4BAky69ZqI70ou0XhRQz5y"
+    },
+    {
+      "id": "material_rock_1GRVcef1IB3pWYqpaKw4_WdWqXLGPXg0S",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockB_08.png",
+      "source_drive_id": "1GRVcef1IB3pWYqpaKw4_WdWqXLGPXg0S",
+      "sha256": "0ed539952c290d155e90dd4c4bd6172e92d1f89a753950634e2a46be333cc672",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.7153679653679653,
+        0.6679292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1GRVcef1IB3pWYqpaKw4_WdWqXLGPXg0S"
+    },
+    {
+      "id": "material_rock_1LB1v5GX1RtIwXBIEewOkkciF6HdpuPNw",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockB_08.png",
+      "source_drive_id": "1LB1v5GX1RtIwXBIEewOkkciF6HdpuPNw",
+      "sha256": "0ed539952c290d155e90dd4c4bd6172e92d1f89a753950634e2a46be333cc672",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.7867965367965368,
+        0.6679292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1LB1v5GX1RtIwXBIEewOkkciF6HdpuPNw"
+    },
+    {
+      "id": "material_rock_1j1c_FbeQkIePYK_9d91ZiQJ1gEs9s3H2",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockB_09.png",
+      "source_drive_id": "1j1c_FbeQkIePYK-9d91ZiQJ1gEs9s3H2",
+      "sha256": "d10ee40eebf01bec59e7174f12bbe4ad146a561355686f9f6e3a25b6b8091e1b",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.8582251082251082,
+        0.6679292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1j1c_FbeQkIePYK_9d91ZiQJ1gEs9s3H2"
+    },
+    {
+      "id": "material_rock_1_qwGpesJxayqTILMSpW49czzo77c7Cb_",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockB_10.png",
+      "source_drive_id": "1_qwGpesJxayqTILMSpW49czzo77c7Cb_",
+      "sha256": "6d356b9b288092231a66b534dd5a740696c5ff97f81858c96af1f90d5a22b6cc",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.9296536796536796,
+        0.6679292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1_qwGpesJxayqTILMSpW49czzo77c7Cb_"
+    },
+    {
+      "id": "material_rock_12FYJusHXyTr8N0URZd_Nt3yrjbtFrGa1",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockB_11.png",
+      "source_drive_id": "12FYJusHXyTr8N0URZd_Nt3yrjbtFrGa1",
+      "sha256": "7a6ed1096f331b4d18745ddd6cf8ab7d2eab3a9f241f58552dc3094f8b49865b",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.0010822510822510823,
+        0.7512626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_12FYJusHXyTr8N0URZd_Nt3yrjbtFrGa1"
+    },
+    {
+      "id": "material_rock_1C_VQtDsasLkXwtEEDGGom7oWtk_DsJ81",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockB_12.png",
+      "source_drive_id": "1C_VQtDsasLkXwtEEDGGom7oWtk-DsJ81",
+      "sha256": "1b8f51eed38136c8109fb67222893169005e308eafbe604a1eeeea12b7a3051c",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.07251082251082251,
+        0.7512626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1C_VQtDsasLkXwtEEDGGom7oWtk_DsJ81"
+    },
+    {
+      "id": "material_rock_1Ym7c3F_ZQnvB8nmOxfyRvbSfXCQG5AZ3",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockC_01.png",
+      "source_drive_id": "1Ym7c3F_ZQnvB8nmOxfyRvbSfXCQG5AZ3",
+      "sha256": "0653a2d4359c44dfeb8dc330b322a40278fc39d17aeed78f95a3d96bd86a6312",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.14393939393939395,
+        0.7512626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1Ym7c3F_ZQnvB8nmOxfyRvbSfXCQG5AZ3"
+    },
+    {
+      "id": "material_rock_1rzDUmVsnRuxUND_YsiEumDU8WkNhlz4c",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockC_02.png",
+      "source_drive_id": "1rzDUmVsnRuxUND-YsiEumDU8WkNhlz4c",
+      "sha256": "cbd37e60b271b3f8da3ba71248cb4970ff8ad68245965cbb77a5ce8c6e937fb4",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.21536796536796537,
+        0.7512626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1rzDUmVsnRuxUND_YsiEumDU8WkNhlz4c"
+    },
+    {
+      "id": "material_rock_1DXXK8GyB1ep7X2IoZtlpeXkzXQLuosz_",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockC_03.png",
+      "source_drive_id": "1DXXK8GyB1ep7X2IoZtlpeXkzXQLuosz_",
+      "sha256": "a5074bd1f3ebdc29736ff7a356f3f178e4182ab2f18cafe7aab8e051ecf12c71",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.28679653679653677,
+        0.7512626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1DXXK8GyB1ep7X2IoZtlpeXkzXQLuosz_"
+    },
+    {
+      "id": "material_rock_1FGNX50qA_hhzFVon6zwEytlPv1VNDOo5",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockC_04.png",
+      "source_drive_id": "1FGNX50qA_hhzFVon6zwEytlPv1VNDOo5",
+      "sha256": "ecf71fddfb646cc1885966352c21c918c88d63348553ee5e224d91afa048367c",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.3582251082251082,
+        0.7512626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1FGNX50qA_hhzFVon6zwEytlPv1VNDOo5"
+    },
+    {
+      "id": "material_rock_1F25dlFuWaMjUgL2EvAA1r_v9p7ukrSuJ",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockC_05.png",
+      "source_drive_id": "1F25dlFuWaMjUgL2EvAA1r-v9p7ukrSuJ",
+      "sha256": "68b69b913cae4f2b195a5e5c0cfd4dbc7e4554826d02cfb91328367454ee1139",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.4296536796536797,
+        0.7512626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1F25dlFuWaMjUgL2EvAA1r_v9p7ukrSuJ"
+    },
+    {
+      "id": "material_rock_1lIVE1lPeipT7tQ4y4utZZOIL_rwOXEVW",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockC_06.png",
+      "source_drive_id": "1lIVE1lPeipT7tQ4y4utZZOIL-rwOXEVW",
+      "sha256": "aa407de8a7f33bf65bbb4882151283362a64e3bd714de7d200d41d861c46a35f",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.5010822510822511,
+        0.7512626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1lIVE1lPeipT7tQ4y4utZZOIL_rwOXEVW"
+    },
+    {
+      "id": "material_rock_1r1NMxlUthq7qFrNElCgKXiPuaDyg3Rxk",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockC_07.png",
+      "source_drive_id": "1r1NMxlUthq7qFrNElCgKXiPuaDyg3Rxk",
+      "sha256": "c8e2091206f6bfbd2192a9848bd3802a2d6bb9b8f18d77b0af486c2228b7de5b",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.5725108225108225,
+        0.7512626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1r1NMxlUthq7qFrNElCgKXiPuaDyg3Rxk"
+    },
+    {
+      "id": "material_rock_1atP_91DaG6P1mAdsWtoegKsplX8Pp3Av",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockC_08.png",
+      "source_drive_id": "1atP-91DaG6P1mAdsWtoegKsplX8Pp3Av",
+      "sha256": "d2eab936cd974bc13570e7e87bb4765f37af8d4a58fe946e921f61b0bab0080c",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.6439393939393939,
+        0.7512626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1atP_91DaG6P1mAdsWtoegKsplX8Pp3Av"
+    },
+    {
+      "id": "material_rock_1Ab5raHnNwOhBPdmOCYDfPXDjJJI96uS7",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockC_09.png",
+      "source_drive_id": "1Ab5raHnNwOhBPdmOCYDfPXDjJJI96uS7",
+      "sha256": "f3418d859d5cf585259956b0331912e7537bcfac310d9b4e948264e883731383",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.7153679653679653,
+        0.7512626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1Ab5raHnNwOhBPdmOCYDfPXDjJJI96uS7"
+    },
+    {
+      "id": "material_rock_1dk6KAlCzdJJjP0a9fZj7kq9uECjYvdFg",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockC_10.png",
+      "source_drive_id": "1dk6KAlCzdJJjP0a9fZj7kq9uECjYvdFg",
+      "sha256": "d5c750391aaceaf0e396a2ded8801626c6d383ae2d5fa6264b31453978b1c455",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.7867965367965368,
+        0.7512626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_1dk6KAlCzdJJjP0a9fZj7kq9uECjYvdFg"
+    },
+    {
+      "id": "material_rock_18rQSCvgys6d8CvfjZLPAky7Aewk3lZdV",
+      "kind": "terrain",
+      "family": "rock",
+      "original_filename": "rockC_11.png",
+      "source_drive_id": "18rQSCvgys6d8CvfjZLPAky7Aewk3lZdV",
+      "sha256": "4fcf1ed3c0dfd5cc026aeb5142932c0923cc4445f6d6eb14cca63d686f1b0c86",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.8582251082251082,
+        0.7512626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_rock_18rQSCvgys6d8CvfjZLPAky7Aewk3lZdV"
+    },
+    {
+      "id": "object_variant_rock_cluster_1iLLoHs2DJSDXRuLs9wQ_V9jhpnW_XBOe",
+      "kind": "object",
+      "family": "rock_cluster",
+      "original_filename": "rock_cluster_v001_128_lab64.png",
+      "source_drive_id": "1iLLoHs2DJSDXRuLs9wQ-V9jhpnW-XBOe",
+      "sha256": "9288235d79f234d01555bd781f1248aad4305e00336678e7e0413c6e820ffdaf",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.7518939393939394,
+        0.5018939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_rock_cluster_1iLLoHs2DJSDXRuLs9wQ_V9jhpnW_XBOe"
+    },
+    {
+      "id": "object_variant_rock_cluster_1Tj_VglEV4ALKV0kjqs3zVwNh3nw8IF_8",
+      "kind": "object",
+      "family": "rock_cluster",
+      "original_filename": "rock_cluster_v002_128_lab64.png",
+      "source_drive_id": "1Tj-VglEV4ALKV0kjqs3zVwNh3nw8IF-8",
+      "sha256": "60a590399467d4b6abbc1f3031259ea2c53da979d28c3f613b537fb3d4f98287",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.8768939393939394,
+        0.5018939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_rock_cluster_1Tj_VglEV4ALKV0kjqs3zVwNh3nw8IF_8"
+    },
+    {
+      "id": "object_variant_rock_cluster_1ZRgyTvB51VqP9WgM68r0WIBEoo6UF_QC",
+      "kind": "object",
+      "family": "rock_cluster",
+      "original_filename": "rock_cluster_v003_128_lab64.png",
+      "source_drive_id": "1ZRgyTvB51VqP9WgM68r0WIBEoo6UF-QC",
+      "sha256": "47a39fda090c39458d4c5400a56f1af341b619746e82e6ddd75c401f4ec63223",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.001893939393939394,
+        0.6268939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_rock_cluster_1ZRgyTvB51VqP9WgM68r0WIBEoo6UF_QC"
+    },
+    {
+      "id": "object_variant_rock_cluster_1XYpmelKd0w__hLlstgT_8iOJX0jKVorn",
+      "kind": "object",
+      "family": "rock_cluster",
+      "original_filename": "rock_cluster_v004_128_lab64.png",
+      "source_drive_id": "1XYpmelKd0w-_hLlstgT_8iOJX0jKVorn",
+      "sha256": "ab1a9a2e3f481fc13d0365234f4759c55c659f0eb66babb7b87bd3f40ac643ab",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.1268939393939394,
+        0.6268939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_rock_cluster_1XYpmelKd0w__hLlstgT_8iOJX0jKVorn"
+    },
+    {
+      "id": "object_variant_rock_cluster_1VyFJgEKpgowr5ngGBhurNA9lV_NQIeOa",
+      "kind": "object",
+      "family": "rock_cluster",
+      "original_filename": "rock_cluster_v005_128_lab64.png",
+      "source_drive_id": "1VyFJgEKpgowr5ngGBhurNA9lV-NQIeOa",
+      "sha256": "672f1a0861e25fdecc21eee8692c4a0b6600c1764bbd8dc0e33bb2a0000097bf",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.2518939393939394,
+        0.6268939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_rock_cluster_1VyFJgEKpgowr5ngGBhurNA9lV_NQIeOa"
+    },
+    {
+      "id": "object_variant_rock_cluster_1txmE_3UVxzPxP5oDQAEhF7Huf5c_XFue",
+      "kind": "object",
+      "family": "rock_cluster",
+      "original_filename": "rock_cluster_v006_128_lab64.png",
+      "source_drive_id": "1txmE_3UVxzPxP5oDQAEhF7Huf5c_XFue",
+      "sha256": "a4ba02aefa50a7109e64bb15d8a96e9cd6862e1b427c5bf3f956b597780ff233",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.3768939393939394,
+        0.6268939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_rock_cluster_1txmE_3UVxzPxP5oDQAEhF7Huf5c_XFue"
+    },
+    {
+      "id": "object_variant_rock_cluster_12rJY7o5EZ3Wv82YYjCcobSJLNBTZYs3u",
+      "kind": "object",
+      "family": "rock_cluster",
+      "original_filename": "rock_cluster_v007_128_lab64.png",
+      "source_drive_id": "12rJY7o5EZ3Wv82YYjCcobSJLNBTZYs3u",
+      "sha256": "d5fede7bfefe6c4f87822a62023382f55cbee95099b8ed1e6a9bd07c40fc3a0b",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.5018939393939394,
+        0.6268939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_rock_cluster_12rJY7o5EZ3Wv82YYjCcobSJLNBTZYs3u"
+    },
+    {
+      "id": "object_variant_rock_cluster_1TuIlgvgtZv3luacwWC8knCCWuAXFJRqO",
+      "kind": "object",
+      "family": "rock_cluster",
+      "original_filename": "rock_cluster_v008_128_lab64.png",
+      "source_drive_id": "1TuIlgvgtZv3luacwWC8knCCWuAXFJRqO",
+      "sha256": "1607ad51686c702a0c373be183d868f675f0a040ccb8350ea0085907ad7daeae",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.6268939393939394,
+        0.6268939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_rock_cluster_1TuIlgvgtZv3luacwWC8knCCWuAXFJRqO"
+    },
+    {
+      "id": "object_variant_rock_cluster_194C3M5VeXt2V0mynZIzs3uw_YdKHzcVO",
+      "kind": "object",
+      "family": "rock_cluster",
+      "original_filename": "rock_cluster_v009_128_lab64.png",
+      "source_drive_id": "194C3M5VeXt2V0mynZIzs3uw_YdKHzcVO",
+      "sha256": "ed4bbc700dbc4e12dcab56e7cf984a077b82d3ba4705eb8f8db79520908a4e06",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.7518939393939394,
+        0.6268939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_rock_cluster_194C3M5VeXt2V0mynZIzs3uw_YdKHzcVO"
+    },
+    {
+      "id": "object_variant_rock_spire_1_txTSFWvw58PrYgRRx4mW8lxENw4xgHF",
+      "kind": "object",
+      "family": "rock_spire",
+      "original_filename": "rock_spire_v001_128_lab64.png",
+      "source_drive_id": "1_txTSFWvw58PrYgRRx4mW8lxENw4xgHF",
+      "sha256": "297d56702b91e6f2816a2ec713877218d0f7f34686cb06c9237d9201abee9583",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.8768939393939394,
+        0.6268939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_rock_spire_1_txTSFWvw58PrYgRRx4mW8lxENw4xgHF"
+    },
+    {
+      "id": "object_variant_rock_spire_1R5SiUW2j5Y8j35WAXO_hd9chrtJDEstt",
+      "kind": "object",
+      "family": "rock_spire",
+      "original_filename": "rock_spire_v002_128_lab64.png",
+      "source_drive_id": "1R5SiUW2j5Y8j35WAXO-hd9chrtJDEstt",
+      "sha256": "8933bcd8ec626acc4755c22e0097e92eb381b629fbb4e43a32176d8a1c7a5804",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.001893939393939394,
+        0.7518939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_rock_spire_1R5SiUW2j5Y8j35WAXO_hd9chrtJDEstt"
+    },
+    {
+      "id": "object_variant_rock_spire_1peTwx_rfd2VHOkGCNVzx6ORdw6MV6_rB",
+      "kind": "object",
+      "family": "rock_spire",
+      "original_filename": "rock_spire_v003_128_lab64.png",
+      "source_drive_id": "1peTwx_rfd2VHOkGCNVzx6ORdw6MV6-rB",
+      "sha256": "eb5ab79e9bc220aa469aba45fbae71ec4c07b4bd9f31cf0b08ff06227d1ed041",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.1268939393939394,
+        0.7518939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_rock_spire_1peTwx_rfd2VHOkGCNVzx6ORdw6MV6_rB"
+    },
+    {
+      "id": "object_variant_rock_spire_1XcxYENxi7yIi2XqrkPAiCs9HZ7DuQF0V",
+      "kind": "object",
+      "family": "rock_spire",
+      "original_filename": "rock_spire_v004_128_lab64.png",
+      "source_drive_id": "1XcxYENxi7yIi2XqrkPAiCs9HZ7DuQF0V",
+      "sha256": "5620847174c79f9fbc01291fa3fe92d5629439cce48d49f87eea151ffdc1026f",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.2518939393939394,
+        0.7518939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_rock_spire_1XcxYENxi7yIi2XqrkPAiCs9HZ7DuQF0V"
+    },
+    {
+      "id": "object_variant_shrub_1_4w_0Kg09aD7IbQFjttH1KgdH2Wdcs_J",
+      "kind": "object",
+      "family": "shrub",
+      "original_filename": "shrub_v003_128_lab64.png",
+      "source_drive_id": "1-4w_0Kg09aD7IbQFjttH1KgdH2Wdcs-J",
+      "sha256": "77e099c9a8ce16c94e49bc0dc39727b3792d46be7497fb6cb5a8595a8caa1bad",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.3768939393939394,
+        0.7518939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_shrub_1_4w_0Kg09aD7IbQFjttH1KgdH2Wdcs_J"
+    },
+    {
+      "id": "object_variant_shrub_1fhL7vjmaIU63yk_y3SE2pOhViCw1Ifu_",
+      "kind": "object",
+      "family": "shrub",
+      "original_filename": "shrub_v004_128_lab64.png",
+      "source_drive_id": "1fhL7vjmaIU63yk_y3SE2pOhViCw1Ifu-",
+      "sha256": "5c477d64f73213f225cf62dd2d0ec0a42c5038706abca9af1eaf0520da27b122",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.5018939393939394,
+        0.7518939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_shrub_1fhL7vjmaIU63yk_y3SE2pOhViCw1Ifu_"
+    },
+    {
+      "id": "object_variant_shrub_1CQnIZyhZGFwnaoG3MNei2OVi9MQiYN_U",
+      "kind": "object",
+      "family": "shrub",
+      "original_filename": "shrub_v005_128_lab64.png",
+      "source_drive_id": "1CQnIZyhZGFwnaoG3MNei2OVi9MQiYN-U",
+      "sha256": "35aed14a8703227738d9128d8271859ee385cefc06e43743a22ceeed6533ecb2",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.6268939393939394,
+        0.7518939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_shrub_1CQnIZyhZGFwnaoG3MNei2OVi9MQiYN_U"
+    },
+    {
+      "id": "object_variant_shrub_1lKo1U_FBPG5VF4F27kuCgg6ulJPXC7V7",
+      "kind": "object",
+      "family": "shrub",
+      "original_filename": "shrub_v006_128_lab64.png",
+      "source_drive_id": "1lKo1U_FBPG5VF4F27kuCgg6ulJPXC7V7",
+      "sha256": "3a541c0e5524098dcbc8d840cc088d45fc5b504063c485d55f4f89912a398208",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.7518939393939394,
+        0.7518939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_shrub_1lKo1U_FBPG5VF4F27kuCgg6ulJPXC7V7"
+    },
+    {
+      "id": "object_variant_shrub_1zqsq_yjlmR0XmLn0H9F25HjQ7ixXI52h",
+      "kind": "object",
+      "family": "shrub",
+      "original_filename": "shrub_v007_128_lab64.png",
+      "source_drive_id": "1zqsq-yjlmR0XmLn0H9F25HjQ7ixXI52h",
+      "sha256": "bc34be47a389c231a8ec32ef36a58ff90d0b8d47565737e0df190081dd86776a",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.8768939393939394,
+        0.7518939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_shrub_1zqsq_yjlmR0XmLn0H9F25HjQ7ixXI52h"
+    },
+    {
+      "id": "object_variant_shrub_1_0guU_RSOMs_Yndl84hgatEIooahXN69",
+      "kind": "object",
+      "family": "shrub",
+      "original_filename": "shrub_v008_128_lab64.png",
+      "source_drive_id": "1_0guU-RSOMs-Yndl84hgatEIooahXN69",
+      "sha256": "861560c166776e078094ccb54648a8d065cd8e825c0a558740832fca215c5e10",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.001893939393939394,
+        0.8768939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_shrub_1_0guU_RSOMs_Yndl84hgatEIooahXN69"
+    },
+    {
+      "id": "object_variant_stump_1NksegZ_Vo9M_u2NchOLFUHHPrzzlCLyD",
+      "kind": "object",
+      "family": "stump",
+      "original_filename": "stump_v001_128_lab64.png",
+      "source_drive_id": "1NksegZ-Vo9M-u2NchOLFUHHPrzzlCLyD",
+      "sha256": "a5f5de5dc8f536fff5d4e10cfa39bd20dd3375a837993cfe9302eb83726a583e",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.1268939393939394,
+        0.8768939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_stump_1NksegZ_Vo9M_u2NchOLFUHHPrzzlCLyD"
+    },
+    {
+      "id": "object_variant_stump_1MJcyKhSqzwl_MvP83J7YUfrY9dFY2qF6",
+      "kind": "object",
+      "family": "stump",
+      "original_filename": "stump_v002_128_lab64.png",
+      "source_drive_id": "1MJcyKhSqzwl-MvP83J7YUfrY9dFY2qF6",
+      "sha256": "1c7c5642461c54942422bcc32e2fc6618cf35626c8d6381fce45ac0417dbc89c",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.2518939393939394,
+        0.8768939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_stump_1MJcyKhSqzwl_MvP83J7YUfrY9dFY2qF6"
+    },
+    {
+      "id": "object_variant_water_rocks_13vfbNUjrnbXH2uuAxY_BIu1E7WV_D_u6",
+      "kind": "object",
+      "family": "water_rocks",
+      "original_filename": "water_rocks_v001_128_lab64.png",
+      "source_drive_id": "13vfbNUjrnbXH2uuAxY_BIu1E7WV-D-u6",
+      "sha256": "9240a106445723b744aeb9b83fea54c391753a104c97e655ccce4d34eb97f829",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "transparent",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_01.png",
+      "uv_rect": [
+        0.3768939393939394,
+        0.8768939393939394,
+        0.12121212121212122,
+        0.12121212121212122
+      ],
+      "object_variant_id": "object_variant_water_rocks_13vfbNUjrnbXH2uuAxY_BIu1E7WV_D_u6"
+    },
+    {
+      "id": "material_wetland_1K6ih66JkayyvFQfq8lC5AUq1Wndkrylb",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_A_04_128_64.png",
+      "source_drive_id": "1K6ih66JkayyvFQfq8lC5AUq1Wndkrylb",
+      "sha256": "bd4be70531138784745e867b26159c327d5d1517e9c70989a4eeb410148ff693",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.9296536796536796,
+        0.7512626262626263,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_1K6ih66JkayyvFQfq8lC5AUq1Wndkrylb"
+    },
+    {
+      "id": "material_wetland_1AVz3g1xVaouPBdppFZ60QrAAm8Gb3eiK",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_A_05_128_64.png",
+      "source_drive_id": "1AVz3g1xVaouPBdppFZ60QrAAm8Gb3eiK",
+      "sha256": "12f46086aa3cc89894d10e6b2ec6fe48d0f3403cad192a38f460123d8075d99c",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.0010822510822510823,
+        0.8345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_1AVz3g1xVaouPBdppFZ60QrAAm8Gb3eiK"
+    },
+    {
+      "id": "material_wetland_1uatKGmszn5VITyzpH2nCTepDtPMrOdi1",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_A_06_128_64.png",
+      "source_drive_id": "1uatKGmszn5VITyzpH2nCTepDtPMrOdi1",
+      "sha256": "ab091ae910079b4cf8bf929126480896ac38c95401c4b994157edbb6c6c0fea6",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.07251082251082251,
+        0.8345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_1uatKGmszn5VITyzpH2nCTepDtPMrOdi1"
+    },
+    {
+      "id": "material_wetland_1jSwDCUbGKsJ_4ckXqpCNY75o9C_mWCOd",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_A_08_128_64.png",
+      "source_drive_id": "1jSwDCUbGKsJ_4ckXqpCNY75o9C-mWCOd",
+      "sha256": "a5989b5d8c757a575d81c200f3cd56ccaf51331fccf15c8a8fa362a1d6d8d8f6",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.14393939393939395,
+        0.8345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_1jSwDCUbGKsJ_4ckXqpCNY75o9C_mWCOd"
+    },
+    {
+      "id": "material_wetland_1MIIpoDXSBWKv7_sZwy9NtmKhzMTAaL2E",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_A_09_128_64.png",
+      "source_drive_id": "1MIIpoDXSBWKv7-sZwy9NtmKhzMTAaL2E",
+      "sha256": "165380e31828e669a3a913c89c3da782c6b9e0dd78724989ef79bc47364a9673",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.21536796536796537,
+        0.8345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_1MIIpoDXSBWKv7_sZwy9NtmKhzMTAaL2E"
+    },
+    {
+      "id": "material_wetland_1cJ3zSo_JVdrPcPLEnn2C5jwpcRm0kRLQ",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_A_10_128_64.png",
+      "source_drive_id": "1cJ3zSo_JVdrPcPLEnn2C5jwpcRm0kRLQ",
+      "sha256": "8e1f028482b391b34b028a318ab3d8451c5b6588ac2c796f50afe6f3da21582d",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.28679653679653677,
+        0.8345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_1cJ3zSo_JVdrPcPLEnn2C5jwpcRm0kRLQ"
+    },
+    {
+      "id": "material_wetland_15Xt_5gMIR_OXSh1rZcP5LU74Y35ciwXb",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_A_11_128_64.png",
+      "source_drive_id": "15Xt-5gMIR_OXSh1rZcP5LU74Y35ciwXb",
+      "sha256": "1dcdd94cb01589a23350267def278a7a22f0fc8fb2ce27883eca1d290159d0e0",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.3582251082251082,
+        0.8345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_15Xt_5gMIR_OXSh1rZcP5LU74Y35ciwXb"
+    },
+    {
+      "id": "material_wetland_1lYUTq9SgAMovqfr_XGou_46jv5is6ExD",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_A_12_128_64.png",
+      "source_drive_id": "1lYUTq9SgAMovqfr-XGou_46jv5is6ExD",
+      "sha256": "0128d237b1c6bf253aa0491e9d3972650e93ab00bf296e1cbb8f9523cf06dabf",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.4296536796536797,
+        0.8345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_1lYUTq9SgAMovqfr_XGou_46jv5is6ExD"
+    },
+    {
+      "id": "material_wetland_1erIJYWG5IyvO3jVfXLj1c_oEI4pVc0wK",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_B_01_128_64.png",
+      "source_drive_id": "1erIJYWG5IyvO3jVfXLj1c_oEI4pVc0wK",
+      "sha256": "7502a26a41c8869eaeb451541687c59325e8fa40b513ff285b5ee182d516ecb2",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.5010822510822511,
+        0.8345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_1erIJYWG5IyvO3jVfXLj1c_oEI4pVc0wK"
+    },
+    {
+      "id": "material_wetland_1GitAt2Bw2KQqYxAhGxbCMvHqZJy0Tiy0",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_B_02_128_64.png",
+      "source_drive_id": "1GitAt2Bw2KQqYxAhGxbCMvHqZJy0Tiy0",
+      "sha256": "1c08b24b150cbdd0aea9da6b20119955e91c3d18883269dfab38fd496b99631c",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.5725108225108225,
+        0.8345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_1GitAt2Bw2KQqYxAhGxbCMvHqZJy0Tiy0"
+    },
+    {
+      "id": "material_wetland_1ejfsZKEW06CSL89Y_SzJhsvTJDajla8N",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_B_03_128_64.png",
+      "source_drive_id": "1ejfsZKEW06CSL89Y_SzJhsvTJDajla8N",
+      "sha256": "0ed691974dace33d0356cb3766b1ea357ae8a513c3b674808c82be654a02028d",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.6439393939393939,
+        0.8345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_1ejfsZKEW06CSL89Y_SzJhsvTJDajla8N"
+    },
+    {
+      "id": "material_wetland_1wQAFmHezr53oUu_S_qsTxGrkT4O5F6ZZ",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_B_05_128_64.png",
+      "source_drive_id": "1wQAFmHezr53oUu_S_qsTxGrkT4O5F6ZZ",
+      "sha256": "e4d23bb04f8da78b7d43189f75cdd5ed326bc5a5c5e1201ac5f9724ecb0d8cab",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.7153679653679653,
+        0.8345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_1wQAFmHezr53oUu_S_qsTxGrkT4O5F6ZZ"
+    },
+    {
+      "id": "material_wetland_1ghpLvtLblRUxOu8k_QaUkeI1yXVasAin",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_B_06_128_64.png",
+      "source_drive_id": "1ghpLvtLblRUxOu8k_QaUkeI1yXVasAin",
+      "sha256": "8e82414d2e8d390fd2e4f129669a4278a9dbbb16dde447f3a754cdfbcd921504",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.7867965367965368,
+        0.8345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_1ghpLvtLblRUxOu8k_QaUkeI1yXVasAin"
+    },
+    {
+      "id": "material_wetland_1k80IJwHIwFTNvgJFr0BXFNi7M0NRbKMG",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_B_07_128_64.png",
+      "source_drive_id": "1k80IJwHIwFTNvgJFr0BXFNi7M0NRbKMG",
+      "sha256": "2f2e43e3e9d9a4c47ace1f96e8d74606988857934bed72a28644aa1bc58e9855",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.8582251082251082,
+        0.8345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_1k80IJwHIwFTNvgJFr0BXFNi7M0NRbKMG"
+    },
+    {
+      "id": "material_wetland_1E8wee6gVkLtB3j2AOuVwzJSbUZmv4Lln",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_B_08_128_64.png",
+      "source_drive_id": "1E8wee6gVkLtB3j2AOuVwzJSbUZmv4Lln",
+      "sha256": "d8a3ffbd29b694b8537d9cc63b4dfa25fb999e415a0b55959ee6b57db3f02cf7",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.9296536796536796,
+        0.8345959595959596,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_1E8wee6gVkLtB3j2AOuVwzJSbUZmv4Lln"
+    },
+    {
+      "id": "material_wetland_1_OwbvCTrxRQfOSVJ7PoVid2s_F1kWyRb",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_B_10_128_64.png",
+      "source_drive_id": "1_OwbvCTrxRQfOSVJ7PoVid2s_F1kWyRb",
+      "sha256": "150c21ddd1059d80e276d50f8571858189a87f51c12dc2b4cefa8a861df1698b",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.0010822510822510823,
+        0.9179292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_1_OwbvCTrxRQfOSVJ7PoVid2s_F1kWyRb"
+    },
+    {
+      "id": "material_wetland_1k8Sr6Lm_lpmMcsUj2nPS95scLJQfn0_E",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_B_11_128_64.png",
+      "source_drive_id": "1k8Sr6Lm-lpmMcsUj2nPS95scLJQfn0-E",
+      "sha256": "587b7576468ff157291087d9d0132306a9caa4d6441cb25ff0c9ab6b1e6be470",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.07251082251082251,
+        0.9179292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_1k8Sr6Lm_lpmMcsUj2nPS95scLJQfn0_E"
+    },
+    {
+      "id": "material_wetland_16bKileOSelUX43W6fAykcYg1S3y8IoLz",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_B_12_128_64.png",
+      "source_drive_id": "16bKileOSelUX43W6fAykcYg1S3y8IoLz",
+      "sha256": "7d5583081c3dd9da14922bfdb74bfb295b0d91b4f6a25dc31d2fca941686fcd1",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.14393939393939395,
+        0.9179292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_16bKileOSelUX43W6fAykcYg1S3y8IoLz"
+    },
+    {
+      "id": "material_wetland_1nvwiPqvHLNjuB2x82fGpmdnxCw_fOVsh",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_C_01_128_64.png",
+      "source_drive_id": "1nvwiPqvHLNjuB2x82fGpmdnxCw-fOVsh",
+      "sha256": "c21e091f90ca1f887ae9a622ace2a41a1e7e7cd5da91c3ef312896cd99bda1fa",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.21536796536796537,
+        0.9179292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_1nvwiPqvHLNjuB2x82fGpmdnxCw_fOVsh"
+    },
+    {
+      "id": "material_wetland_1kSFb__uFYumUDbCDyLdaexZ8TBZTx5R_",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_C_02_128_64.png",
+      "source_drive_id": "1kSFb_-uFYumUDbCDyLdaexZ8TBZTx5R_",
+      "sha256": "547ec81158eb2356b8474230ce2d3f3fef7dfb23bb2737bfffd728b35051e08c",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.28679653679653677,
+        0.9179292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_1kSFb__uFYumUDbCDyLdaexZ8TBZTx5R_"
+    },
+    {
+      "id": "material_wetland_11DYVKCQ6BfpaTRBx9mcHdyOeugZOk_FE",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_C_03_128_64.png",
+      "source_drive_id": "11DYVKCQ6BfpaTRBx9mcHdyOeugZOk-FE",
+      "sha256": "6f002f9157b663891b6403e470cf60c0a21d82b81221bc56a08aea2ffbfc29b0",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.3582251082251082,
+        0.9179292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_11DYVKCQ6BfpaTRBx9mcHdyOeugZOk_FE"
+    },
+    {
+      "id": "material_wetland_1X1ZqfM4buLVOt2Gz2BvitUgHHEllyfkc",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_C_04_128_64.png",
+      "source_drive_id": "1X1ZqfM4buLVOt2Gz2BvitUgHHEllyfkc",
+      "sha256": "f0e3fc02665cae1ebe2ef895ad13c1e689b64c68d64e1e3a181334dc9acc963f",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.4296536796536797,
+        0.9179292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_1X1ZqfM4buLVOt2Gz2BvitUgHHEllyfkc"
+    },
+    {
+      "id": "material_wetland_1k3QMFFHc6zjadVN9FkvDc_FvCkjTiF9R",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_C_05_128_64.png",
+      "source_drive_id": "1k3QMFFHc6zjadVN9FkvDc-FvCkjTiF9R",
+      "sha256": "dc9b006a5674061a6b429c0743c34221e58a913fc31ecb08cbbdf43d9bc15de7",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.5010822510822511,
+        0.9179292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_1k3QMFFHc6zjadVN9FkvDc_FvCkjTiF9R"
+    },
+    {
+      "id": "material_wetland_1Ng5WbfMjpAYM78oR9SUDstMFBdCYI0IE",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_C_06_128_64.png",
+      "source_drive_id": "1Ng5WbfMjpAYM78oR9SUDstMFBdCYI0IE",
+      "sha256": "6cd4ed2830b89d5b41d1fd9276fe3c09c500e30bb789170dc18713b2b5078a43",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.5725108225108225,
+        0.9179292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_1Ng5WbfMjpAYM78oR9SUDstMFBdCYI0IE"
+    },
+    {
+      "id": "material_wetland_1QDCb_ElJgEKJ0UUSdp5Uch7d5rEkyfkv",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_C_07_128_64.png",
+      "source_drive_id": "1QDCb-ElJgEKJ0UUSdp5Uch7d5rEkyfkv",
+      "sha256": "d340346797e3698eaa961c393e23b25360b04b796df6c315f288bd2f150859a6",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.6439393939393939,
+        0.9179292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_1QDCb_ElJgEKJ0UUSdp5Uch7d5rEkyfkv"
+    },
+    {
+      "id": "material_wetland_17wyLvlxdNa8XGJPyOALDDd5lnK1OKem6",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_C_09_128_64.png",
+      "source_drive_id": "17wyLvlxdNa8XGJPyOALDDd5lnK1OKem6",
+      "sha256": "c00460831ae9a49a55bfe566694edfefec0c086d1967203e2b3ace99728d9364",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.7153679653679653,
+        0.9179292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_17wyLvlxdNa8XGJPyOALDDd5lnK1OKem6"
+    },
+    {
+      "id": "material_wetland_1c0xxOeLJZ47UMTuK_wQt2Rjk3gtiI_8y",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_C_10_128_64.png",
+      "source_drive_id": "1c0xxOeLJZ47UMTuK_wQt2Rjk3gtiI_8y",
+      "sha256": "3a98fdd6dec5fa0eaccb953bd1ccc631e63041c4aeaf8afa35a73bf60a20fa98",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.7867965367965368,
+        0.9179292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_1c0xxOeLJZ47UMTuK_wQt2Rjk3gtiI_8y"
+    },
+    {
+      "id": "material_wetland_1WTrH1uPqYNqW_aZ8KNEI0h6JhURTz_fB",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_C_11_128_64.png",
+      "source_drive_id": "1WTrH1uPqYNqW-aZ8KNEI0h6JhURTz-fB",
+      "sha256": "467d92c488e2405f76c878bcd4247701064019891e3fb5fdb1106e3dae292625",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.8582251082251082,
+        0.9179292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_1WTrH1uPqYNqW_aZ8KNEI0h6JhURTz_fB"
+    },
+    {
+      "id": "material_wetland_1Z6Nj51kX_MCTaG8mQKjJ0HkCBttb_mL_",
+      "kind": "terrain",
+      "family": "wetland",
+      "original_filename": "Riverbank_Wetland_C_12_128_64.png",
+      "source_drive_id": "1Z6Nj51kX_MCTaG8mQKjJ0HkCBttb-mL_",
+      "sha256": "7321027ee98ae2a2c59dcba545a6b5a1b9604810b5e11405d097cd01c1500ddc",
+      "width": 128,
+      "height": 128,
+      "alpha_mode": "opaque",
+      "license_status": "user_declared_creator",
+      "license_evidence": "User confirmed creation of all OSMAN textures on 2026-10-28",
+      "atlas_page": "atlas_00.png",
+      "uv_rect": [
+        0.9296536796536796,
+        0.9179292929292929,
+        0.06926406926406926,
+        0.08080808080808081
+      ],
+      "material_id": "material_wetland_1Z6Nj51kX_MCTaG8mQKjJ0HkCBttb_mL_"
     }
   ],
   "atlas_padding": 2,
   "atlas_pages": [
     {
       "filename": "atlas_00.png",
-      "height": 396,
-      "sha256": "fc3432293fb7b0962cb6ac1b1c3ebb84c19ba46bfadcd903d6e07cac9b08f7db",
-      "width": 1056
+      "width": 1848,
+      "height": 1584,
+      "generated_from_sources": false,
+      "sha256": "27737dc2eff24e8f7aa67258162c557cffb64eb218b612d268d91c1a61cac78f"
+    },
+    {
+      "filename": "atlas_01.png",
+      "width": 1056,
+      "height": 1056,
+      "generated_from_sources": false,
+      "sha256": "1546df597e8f4bfa06798f4c8baaa1d3e3e4df2d00617fe16dc6f32290589bad"
     }
   ],
   "rejected": [],
-  "version": 1
+  "version": 1,
+  "compact_mobile_atlas": true
 }
