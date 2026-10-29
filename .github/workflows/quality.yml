@@ -48,6 +48,8 @@ jobs:
           cd game/love
           find progression -name '*.lua' -print0 | xargs -0 -n1 luac5.4 -p
           luac5.4 -p main.lua
+          luajit -b main.lua /tmp/tamu-main-luajit.bytecode
+          test -s /tmp/tamu-main-luajit.bytecode
           for interpreter in lua5.4 luajit; do
             "$interpreter" tests/player_stage3.lua
             "$interpreter" tests/core_stat_progression.lua

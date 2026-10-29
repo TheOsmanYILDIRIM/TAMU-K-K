@@ -28,9 +28,11 @@ jobs:
           print('R2_PACKAGED_SOURCE_OK')
           PY
           sudo apt-get update -qq
-          sudo apt-get install -y -qq lua5.4 love xvfb
+          sudo apt-get install -y -qq lua5.4 luajit love xvfb
           cd game/love
           luac5.4 -p main.lua world/r2_playable.lua
+          luajit -b main.lua /tmp/tamu-android-main-luajit.bytecode
+          test -s /tmp/tamu-android-main-luajit.bytecode
           lua5.4 tests/r2_pilot_contract.lua
           lua5.4 tests/terrain25d_runtime.lua
           lua5.4 tests/terrain25d_object_population.lua
