@@ -349,13 +349,9 @@ function Runtime:prepare(chunk,checkpoint)
    local page=asset.atlas_page
    local group=group_map[page]
    if not group then group={vertices={}};group_map[page]=group end
-   local verts=Geo.love_vertices({format="terrain25d-v1",
-     vertices=tri,indices={1,2,3}},asset.uv_rect)
    local out=group.vertices
-   for _,v in ipairs(verts) do
-     out[#out+1]=v
-     capture(v)
-   end
+   Geo.append_atlas_triangle(out,tri,asset.uv_rect)
+   capture(out[#out-2]);capture(out[#out-1]);capture(out[#out])
    ground_pages[page]=true
  end
  local function midpoint(a,b)
@@ -388,6 +384,7 @@ function Runtime:prepare(chunk,checkpoint)
    local delta=Materials.edge_jitter(x,y,1301)
    return self:family(x+delta*.65,y+delta*.37)
  end
+ local neighbour_offsets={{14,0},{-14,0},{0,14},{0,-14}}
  local function choose(x,y,boundary)
    local f=jittered_family(x,y)
    local other,proximity
@@ -401,7 +398,7 @@ function Runtime:prepare(chunk,checkpoint)
      f,other,proximity=Materials.interior_family(f,x,y)
    end
    if not other then
-     for _,d in ipairs({{14,0},{-14,0},{0,14},{0,-14}}) do
+     for _,d in ipairs(neighbour_offsets) do
        local k=jittered_family(x+d[1],y+d[2])
        if k~=f then other=k;break end
      end
@@ -418,22 +415,27 @@ function Runtime:prepare(chunk,checkpoint)
      local i=iy*(n+1)+ix+1
      local a,b,c,d=geo.vertices[i],geo.vertices[i+1],
        geo.vertices[i+n+1],geo.vertices[i+n+2]
-     local checks={
-       choose(x+8,y+8,boundary),choose(x+24,y+8,boundary),
-       choose(x+8,y+24,boundary),choose(x+24,y+24,boundary)
-     }
+     local authored_edge=boundary and edge_distance<146
      local split=false
-     local signature=self.color_profiles[checks[1].id]
-     for j=2,4 do
-       local other=self.color_profiles[checks[j].id]
-       if checks[j].family~=checks[1].family or
-         (signature and other and
-         (signature[1]-other[1])^2+(signature[2]-other[2])^2+
-          (signature[3]-other[3])^2>36) then
-         split=true;break
+     if not authored_edge then
+       -- Near an authored edge the following microtriangle branch ignores
+       -- split entirely. Avoid four wasted full CIELAB/ecology queries.
+       local checks={
+         choose(x+8,y+8,boundary),choose(x+24,y+8,boundary),
+         choose(x+8,y+24,boundary),choose(x+24,y+24,boundary)
+       }
+       local signature=self.color_profiles[checks[1].id]
+       for j=2,4 do
+         local other=self.color_profiles[checks[j].id]
+         if checks[j].family~=checks[1].family or
+           (signature and other and
+           (signature[1]-other[1])^2+(signature[2]-other[2])^2+
+            (signature[3]-other[3])^2>36) then
+           split=true;break
+         end
        end
      end
-     if boundary and edge_distance<146 then
+     if authored_edge then
        -- Near authored biome edges, use 8-unit source-ID mosaic samples,
        -- not 32-unit disk-like patches. Each microtriangle is fully opaque
        -- and carries a single untouched source texture (no pixel blending).
