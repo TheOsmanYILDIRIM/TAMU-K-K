@@ -873,9 +873,12 @@ local function draw_postchecks(perf_begin)
 end
 function love.draw()
   local perf_begin=love.timer.getTime()
+  local phase_trace=os.getenv('TAMU_PERF_PHASE_TRACE')=='1'
+  local terrain_finished,objects_finished
   if long_driver and boot_ready and long_driver.frame>0 then long_driver:beforeDraw() end
   if runtime25d then runtime25d:draw(stream,camera,w,h)
   else Terrain.draw(stream,camera,w,h,r2_pilot and r2_pilot.render_options) end
+  if phase_trace then terrain_finished=love.timer.getTime() end
   if cache_pilot_enabled and not boot_ready then
     local g=love.graphics
     local ready=0
@@ -906,6 +909,7 @@ function love.draw()
   end
   object_count=ObjectRenderer.draw(objects,stream,camera,w,h,player,
     selected_target,harvesting,sprite25d_draw)
+  if phase_trace then objects_finished=love.timer.getTime() end
   local ghost
   if not r2_pilot and stage_hud.placing and placement_target then
     local ok=building:preview("core:workbench",placement_target.x,placement_target.y,
@@ -954,6 +958,17 @@ function love.draw()
   g.setColor(.95,.95,.9,.7)
   g.circle("fill",bx+joystick.dx*55,by+joystick.dy*55,22)
   g.setColor(1,1,1)
+  if phase_trace and terrain_finished and objects_finished and
+     (frames<10 or frames%30==0) then
+    local finished=love.timer.getTime()
+    print(string.format(
+      'TAMU_BOOT_PHASE frame=%d terrain_ms=%.3f objects_ms=%.3f ui_ms=%.3f total_ms=%.3f visible=%d',
+      frames+1,(terrain_finished-perf_begin)*1000,
+      (objects_finished-terrain_finished)*1000,
+      (finished-objects_finished)*1000,(finished-perf_begin)*1000,
+      runtime25d and runtime25d.visible or 0))
+    io.stdout:flush()
+  end
   draw_postchecks(perf_begin)
 end
 safe_area=function()
