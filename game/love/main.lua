@@ -669,6 +669,9 @@ function love.draw()
     local baked=os.getenv("OSMAN_25D_BAKE")=="1"
     local count=baked and runtime25d.baked_written or runtime25d.baked_loaded
     if count>=requested then
+      if not baked then
+        love.graphics.captureScreenshot("tamu-prebaked-startup.png")
+      end
       print(string.format("TAMU_25D_BAKE_%s_OK count=%d frames=%d visible=%d",
         baked and "BUILD" or "VERIFY",count,frames,runtime25d.visible))
       io.stdout:flush()
