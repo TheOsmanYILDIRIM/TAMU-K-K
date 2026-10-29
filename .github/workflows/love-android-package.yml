@@ -36,6 +36,19 @@ jobs:
           lua5.4 tests/terrain25d_object_population.lua
           cd ../..
 
+      - name: Precompile exact R2 authored terrain into the playable package
+        run: |
+          set -euo pipefail
+          export XDG_DATA_HOME="$RUNNER_TEMP/tamu-mobile-bake"
+          mkdir -p "$XDG_DATA_HOME"
+          SDL_AUDIODRIVER=dummy OSMAN_25D_BAKE=1 timeout 420s xvfb-run -a love game/love 2>&1 | tee prebaked-compile.log
+          grep -q 'TAMU_25D_BAKE_BUILD_OK' prebaked-compile.log
+          mkdir -p game/love/assets/terrain25d/baked
+          find "$XDG_DATA_HOME" -name 'c_*.json.z' -exec cp {} game/love/assets/terrain25d/baked/ \;
+          count="$(find game/love/assets/terrain25d/baked -name 'c_*.json.z' | wc -l)"
+          test "$count" -ge 16
+          printf 'TAMU_PACKAGED_BAKED_CHUNKS=%s\n' "$count"
+          du -sh game/love/assets/terrain25d/baked
       - name: Validate and package playable LÖVE source
         run: |
           set -euo pipefail
@@ -90,6 +103,16 @@ jobs:
           grep -q LOVE_INTEGRATION_SMOKE_OK r2-25d-package-smoke.log
           SDL_AUDIODRIVER=dummy OSMAN_R2_PILOT=0 OSMAN_25D_RUNTIME=0 OSMAN_LOVE_INTEGRATION_SMOKE=1 timeout 120s xvfb-run -a love oyun-main-android-test.love 2>&1 | tee legacy-smoke.log
           grep -q LOVE_INTEGRATION_SMOKE_OK legacy-smoke.log
+      - name: Verify packaged authored mesh reload without CPU terrain generation
+        run: |
+          set -euo pipefail
+          export XDG_DATA_HOME="$RUNNER_TEMP/tamu-baked-replay"
+          mkdir -p "$XDG_DATA_HOME"
+          SDL_AUDIODRIVER=dummy OSMAN_25D_BAKE_VERIFY=1 timeout 180s xvfb-run -a love oyun-main-android-test.love 2>&1 | tee prebaked-replay.log
+          grep -q 'TAMU_25D_BAKE_VERIFY_OK' prebaked-replay.log
+          shot="$(find "$XDG_DATA_HOME" -name 'tamu-prebaked-startup.png' -print -quit)"
+          test -n "$shot" && test -s "$shot"
+          cp "$shot" tamu-prebaked-startup.png
       - name: Verify default R2 terrain actually becomes visible in the packaged game
         run: |
           set -euo pipefail
@@ -118,4 +141,7 @@ jobs:
             legacy-smoke.log
             default-world-visual.log
             tamu-default-world-visible.png
+            prebaked-compile.log
+            prebaked-replay.log
+            tamu-prebaked-startup.png
           if-no-files-found: error
