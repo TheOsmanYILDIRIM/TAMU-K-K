@@ -419,6 +419,91 @@ jobs:
           name: terrain25d-comparable-r2
           path: /tmp/terrain25d-compare/*.png
           if-no-files-found: error
+      - name: Package standalone PR9 R2/25D Android LÖVE test
+        if: github.ref_name == 'experiment/25d-runtime-20261028'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json, shutil, tempfile, zipfile, os
+          source=Path('game/love')
+          output=Path('/tmp/osman-25d-portable')
+          output.mkdir(exist_ok=True)
+          staged=output/'payload'
+          shutil.copytree(source,staged,dirs_exist_ok=True,
+              ignore=shutil.ignore_patterns('.env','.env.*','.git','__pycache__','*.pyc'))
+          maps={
+              'fisilti_ormani.r2.v1.json':'df5d0eeca59030e6585558c15d8f1e7bf049638ea8032dc17c1b80c74106f598',
+              'osman_overworld.v2.json':'ac5903fd22cd466cfc1786cbeef44f2679be87317c6bfd757a05a282172f78dc'}
+          target=staged/'data/worldbuild'
+          target.mkdir(parents=True,exist_ok=True)
+          for name,digest in maps.items():
+              src=Path('data/worldbuild')/name
+              assert hashlib.sha256(src.read_bytes()).hexdigest()==digest, f'R2 source SHA mismatch: {name}'
+              shutil.copyfile(src,target/name)
+          # Change the isolated packaged copy, not runtime behavior in the repo.
+          main=staged/'main.lua'
+          text=main.read_text()
+          marker='.osman-mobile-25d'
+          for var,flag in [('r2_pilot_enabled','OSMAN_R2_PILOT'),
+                           ('terrain25d_enabled','OSMAN_25D_RUNTIME')]:
+              anchor=f'local {var}=os.getenv("{flag}")=="1"'
+              assert text.count(anchor)==1, f'Unrecognized bootstrap: {var}'
+              text=text.replace(anchor,anchor+f' or love.filesystem.getInfo("{marker}")~=nil')
+          main.write_text(text)
+          (staged/marker).write_text('Opt-in 2.5D mobile test; session-only R2. No save migration.\n')
+          r2=staged/'world/r2_playable.lua'
+          code=r2.read_text()
+          start=code.index('local function source_read(name)\n')
+          end=code.index('local function read_doc(name,reader)\n',start)
+          bundled='''local function source_read(name)
+            -- Standalone .love: verified R2 JSON travels INSIDE this archive.
+            local path="data/worldbuild/"..name
+            local bytes,err=love.filesystem.read(path)
+            assert(bytes,"R2 packaged source unavailable ("..path.."): "..tostring(err))
+            return bytes
+          end
+          '''
+          code=code[:start]+bundled+code[end:]
+          r2.write_text(code)
+          (staged/'test-build-info.json').write_text(json.dumps({
+              'source_repository':'TheOsmanYILDIRIM/oyun',
+              'source_branch':'experiment/25d-runtime-20261028',
+              'packaging_commit':os.environ['GITHUB_SHA'],
+              'mode':'R2 authored opt-in 25D in bundled .love, session-only',
+              'maps_sha256':maps},indent=2)+'\n')
+          assert (staged/'main.lua').is_file() and (staged/'conf.lua').is_file()
+          assert (staged/'assets/terrain25d/manifest.json').is_file()
+          out=output/'OSMAN_A2_25D_PR9_20261029.love'
+          with zipfile.ZipFile(out,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=6) as z:
+              for f in sorted(staged.rglob('*')):
+                  if f.is_file():
+                      z.write(f,f.relative_to(staged).as_posix())
+          with zipfile.ZipFile(out) as z:
+              assert z.testzip() is None
+              names=set(z.namelist())
+              assert {'main.lua','conf.lua','.osman-mobile-25d',
+                  'data/worldbuild/fisilti_ormani.r2.v1.json',
+                  'data/worldbuild/osman_overworld.v2.json'} <= names
+              print('OSMAN_PORTABLE_ARCHIVE_OK files=',len(names),
+                  'bytes=',out.stat().st_size,
+                  'sha256=',hashlib.sha256(out.read_bytes()).hexdigest())
+          PY
+          luac5.4 -p /tmp/osman-25d-portable/payload/main.lua /tmp/osman-25d-portable/payload/world/r2_playable.lua
+          OSMAN_25D_SMOKE=1 OSMAN_25D_SHADOW_PREVIEW=1 timeout 180s \
+            xvfb-run -a love /tmp/osman-25d-portable/OSMAN_A2_25D_PR9_20261029.love \
+            2>&1 | tee /tmp/osman-25d-portable-smoke.log
+          grep -q 'TERRAIN25D_RUNTIME_LOVE_OK' /tmp/osman-25d-portable-smoke.log
+          grep -q 'TERRAIN25D_SHADOW_PREVIEW_OK hours=08,12,17,23' /tmp/osman-25d-portable-smoke.log
+          echo OSMAN_PORTABLE_LOVE_ENGINE_OK
+      - name: Upload standalone Android LÖVE test package
+        if: github.ref_name == 'experiment/25d-runtime-20261028'
+        uses: actions/upload-artifact@v4
+        with:
+          name: osman-a2-25d-pr9-love
+          path: /tmp/osman-25d-portable/OSMAN_A2_25D_PR9_20261029.love
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: success()
         with:
