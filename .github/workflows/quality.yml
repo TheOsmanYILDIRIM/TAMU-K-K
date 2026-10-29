@@ -16,6 +16,21 @@ jobs:
           python -m unittest discover -s scripts/tests -p 'test_terrain25d_assets.py' -v
       - name: Install Lua and real LÖVE test runtime
         run: sudo apt-get update -qq && sudo apt-get install -y lua5.4 luajit love xvfb
+      - name: Build and reload exact authored 25D meshes in real LÖVE
+        if: github.ref_name == 'experiment/25d-prebaked-mobile-mesh-20261029'
+        shell: bash
+        run: |
+          set -euo pipefail
+          export XDG_DATA_HOME="$RUNNER_TEMP/25d-prebake-ci"
+          mkdir -p "$XDG_DATA_HOME"
+          SDL_AUDIODRIVER=dummy OSMAN_25D_BAKE=1 OSMAN_25D_BAKE_LIMIT=4 timeout 240s xvfb-run -a love game/love 2>&1 | tee /tmp/tamu-bake-build.log
+          grep -q 'TAMU_25D_BAKE_BUILD_OK count=4' /tmp/tamu-bake-build.log
+          mkdir -p game/love/assets/terrain25d/baked
+          find "$XDG_DATA_HOME" -name 'c_*.json.z' -exec cp {} game/love/assets/terrain25d/baked/ \;
+          test "$(find game/love/assets/terrain25d/baked -name '*.json.z' | wc -l)" -ge 4
+          SDL_AUDIODRIVER=dummy OSMAN_25D_BAKE_VERIFY=1 OSMAN_25D_BAKE_LIMIT=4 timeout 180s xvfb-run -a love game/love 2>&1 | tee /tmp/tamu-bake-replay.log
+          grep -q 'TAMU_25D_BAKE_VERIFY_OK count=4' /tmp/tamu-bake-replay.log
+          rm -rf game/love/assets/terrain25d/baked
       - name: 25D geometry and real R2 authored mesh (Lua 5.4 / LuaJIT)
         shell: bash
         run: |
