@@ -1,3 +1,16 @@
+## 29 Ekim 2026 — Creative 2,5D bütünleştirme
+
+- En son main 2,5D ve karakter/rig değişikliklerini kayıpsız korumak için
+  `experiment/tamu-creative-main-reconcile-20261029` dalında düzenlendi.
+- 13 modüler tür, 34 atlas görünümü, Creative seçim/dokunma/döndürme/kat/geri alma,
+  32 dünya birimi yerleşim ve yakındaki temel kotuna hizalama.
+- Creative eşyaları envanter düşürmeden ve Stage6 kayıtlarına dokunmadan
+  oturum içinde üretir; kullanıcının kalıcı save ve eski World Builder verisi korunur.
+- Kalıcı save, çok oyunculu otorite, geçilebilir kapı/merdiven fiziği,
+  gerçek Android FPS ve nihai görsel kabul hâlâ açıktır.
+- Görev ancak Quality CI + gerçek LÖVE paket smoke + artefakt incelemesi
+  ardından main'e alınır. HEAD ve CI sonuçları çalışma sonunda doğrulanır.
+
 ## 2026-10-29 — Osman canlı rig, main entegrasyonu
 - Kullanıcı kararı: Plazma yerine canlı iskeletli ve sağlak 4 yönlü Osman; 2.5D/R2 dünya aynı kalır. `TAMU_USE_PLASMA=1` kontrollü geri dönüş. Orijinal core/plazma görselleri ve Stage6 kayıtları korunur.
 - 30 PNG parçası + `rig.json` (40 kemik, 24 slot, 44 animasyon) GitHub deney dalında gerçek binary dosyalar olarak import ve real LÖVE testine tabi tutuldu (run 40924546618, başarılı). Frame atlası yok.
