@@ -320,6 +320,7 @@ function Runtime:material(family,x,y,neighbor_family,proximity)
    neighbor_family and self.family_centres[neighbor_family],weight)
 end
 function Runtime:prepare(chunk,checkpoint)
+ chunk._25d_profile_phase='geo'
  assert(not chunk._25d_meshes and not chunk._meshes,"chunk already owns GPU meshes")
  local pilot=self.pilot
  local scale=pilot.render_options.height_scale or .35
@@ -328,9 +329,11 @@ function Runtime:prepare(chunk,checkpoint)
    {x=chunk.x,y=chunk.y},self.step)
  -- Complete expensive authored hydrology CPU sampling before ANY GPU
  -- allocation. A partially resumed coroutine can be dropped on eviction.
+ chunk._25d_profile_phase='shore'
  local shore=Shore.build(chunk,pilot.query,pilot.topography,pilot.routes,scale,
    checkpoint)
  if checkpoint then checkpoint() end
+ chunk._25d_profile_phase='ground'
  local n=chunk.size/self.step
  local groups,ground_pages={},{}
  local minx,miny,maxx,maxy=math.huge,math.huge,-math.huge,-math.huge
@@ -472,6 +475,7 @@ function Runtime:prepare(chunk,checkpoint)
    end
    if checkpoint then checkpoint() end
  end
+ chunk._25d_profile_phase='upload'
  local meshes,order={},{}
  chunk._25d_staging_meshes=meshes
  for page,group in pairs(groups) do
@@ -523,6 +527,7 @@ function Runtime:prepare(chunk,checkpoint)
  chunk._25d_staging_meshes=nil
  chunk._25d_reveal_start=love.timer and love.timer.getTime() or 0
  self.built=self.built+1
+ chunk._25d_profile_phase='done'
 end
 function Runtime:draw(stream,camera,w,h)
  assert(stream and stream.visible and camera and camera.zoom>0)
@@ -541,6 +546,7 @@ function Runtime:draw(stream,camera,w,h)
  local moving=motion>1.5
  local deadline=clock and now+(moving and self.build_time_budget or
    self.build_time_budget_idle)
+ local profile_enabled=os.getenv("OSMAN_25D_PROFILE")=="1"
  local uploads,resumes=0,0
  local resume_cap=moving and self.moving_resume_cap or self.idle_resume_cap
  for _,c in ipairs(chunks) do
@@ -554,12 +560,27 @@ function Runtime:draw(stream,camera,w,h)
        c._25d_prepare_job=job
      end
      repeat
+       local phase=c._25d_profile_phase or 'geo'
+       local cpu0=profile_enabled and clock and clock() or nil
        local ok,err=coroutine.resume(job)
+       if cpu0 then
+         local p=c._25d_profile or {geo=0,shore=0,ground=0,upload=0,other=0}
+         p[phase]=(p[phase] or 0)+(clock()-cpu0)*1000
+         c._25d_profile=p
+       end
        assert(ok,err)
        resumes=resumes+1
        if coroutine.status(job)=="dead" then
          c._25d_prepare_job=nil
          uploads=uploads+1
+         if profile_enabled then
+           local p=c._25d_profile or {}
+           print(string.format(
+             'TAMU_25D_CHUNK_CPU cx=%d cy=%d geo=%.1f shore=%.1f ground=%.1f upload=%.1f total=%.1f',
+             c.cx,c.cy,p.geo or 0,p.shore or 0,p.ground or 0,p.upload or 0,
+             (p.geo or 0)+(p.shore or 0)+(p.ground or 0)+(p.upload or 0)))
+           io.stdout:flush()
+         end
          break
        end
      until resumes>=resume_cap or (deadline and clock()>=deadline)
