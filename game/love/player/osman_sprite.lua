@@ -16,7 +16,7 @@ local function get(name)
   image:setFilter("linear","linear")
   local frames={}
   for i=0,info.frames-1 do
-    frames[i+1]=love.graphics.newQuad(256*i,0,256,320,image:getDimensions())
+    frames[i+1]=love.graphics.newQuad(256*(i%4),320*math.floor(i/4),256,320,image:getDimensions())
   end
   cached={image=image,frames=frames,count=info.frames,duration=info.duration}
   cache[name]=cached
