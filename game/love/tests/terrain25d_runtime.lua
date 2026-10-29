@@ -262,10 +262,25 @@ assert(shadow_calls>=1 and shadow_calls<=4
   and sprites.shadow_objects==1 and projected_shadow_sprites==2,
   "visible sprite alpha must cast two batched silhouette layers")
 assert(rt.page_pins and sprites.shadow_calls==shadow_calls)
+-- A stationary scene reuses GPU buffers without uploading two more
+-- projected silhouettes when the clock advances by a subpixel amount.
+sprites:draw_shadows(g,cam,360,780,{shadow_object})
+assert(sprites.shadow_reuses==1 and projected_shadow_sprites==2
+  and sprites.shadow_calls==shadow_calls)
+rt:set_sun_hour(8.00001)
+sprites:draw_shadows(g,cam,360,780,{shadow_object})
+assert(sprites.shadow_reuses==2 and projected_shadow_sprites==2,
+  "subpixel solar motion should reuse unchanged shadow buffers")
 rt:set_sun_hour(12)
 sprites:draw_shadows(g,cam,360,780,{shadow_object})
-assert(sprites.shadow_objects==1 and projected_shadow_sprites==4,
-  "shadow batches not reusable with changing sunlight")
+assert(sprites.shadow_objects==1 and projected_shadow_sprites==4
+  and sprites.shadow_rebuilds==2,
+  "visible noon change must rebuild the silhouettes")
+-- Camera motion invalidates buffers even with an identical object list.
+cam.x=cam.x+1
+sprites:draw_shadows(g,cam,360,780,{shadow_object})
+assert(projected_shadow_sprites==6 and sprites.shadow_rebuilds==3,
+  "camera motion cannot reuse stale projected coordinates")
 rt:set_sun_hour(23)
 sprites:draw_shadows(g,cam,360,780,{shadow_object})
 assert(sprites.shadow_calls==0 and sprites.shadow_objects==0,

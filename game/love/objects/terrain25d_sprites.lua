@@ -43,6 +43,7 @@ function Sprite.new(provider,manifest)
  local limit=1024
  return setmetatable({provider=provider,families=fam,
    batches_by_page={},shadow_batches={},shadow_frame=0,
+   shadow_cache=nil,shadow_rebuilds=0,shadow_reuses=0,
    frame=0,current_page=nil,shadow_calls=0,shadow_objects=0,
    limit=limit,pending=0,selected=nil,visible=0,culled=0,batches=0},Sprite)
 end
@@ -134,12 +135,13 @@ function Sprite:shadow_batch_for(page)
  entry.last_seen=self.shadow_frame
  return entry
 end
+-- Reuse immutable GPU shadow batches while a fixed view's moving sun
+-- changes by less than a third of a screen pixel. A changed camera, object
+-- or appreciable solar motion always rebuilds the original two RGBA layers.
 function Sprite:draw_shadows(g,camera,w,h,objects)
  self.shadow_frame=self.shadow_frame+1
  local sun=self.provider.sun
- -- Keep GPU atlas references alive only while their shadow batches persist.
  for page,entry in pairs(self.shadow_batches) do
-   entry.batch:clear();entry.count=0
    if self.shadow_frame-entry.last_seen>2 then
      entry.batch:release()
      self.provider:unpin_page(page)
@@ -147,22 +149,70 @@ function Sprite:draw_shadows(g,camera,w,h,objects)
    end
  end
  self.shadow_calls,self.shadow_objects=0,0
- if not sun or sun.cast<=0 then return 0 end
- local visible={}
+ if not sun or sun.cast<=0 then
+   self.shadow_cache=nil
+   return 0
+ end
+ local cache=self.shadow_cache
+ local reuse=cache and cache.x==camera.x and cache.y==camera.y
+   and cache.zoom==camera.zoom and cache.w==w and cache.h==h
+   and #cache.objects==#objects
+ if reuse then
+   local turn=math.abs(sun.rotation-cache.rotation)
+   turn=math.min(turn,2*math.pi-turn)
+   local error_px=turn*cache.extent
+     +math.abs(sun.length-cache.length)*cache.extent
+     +math.abs(sun.cast-cache.cast)*40
+   reuse=error_px<.33
+ end
+ if reuse then
+   for i,o in ipairs(objects) do
+     local state=cache.objects[i]
+     if state[1]~=o or state[2]~=o.x or state[3]~=o.y
+       or state[4]~=o.kind or state[5]~=o.id then
+       reuse=false
+       break
+     end
+   end
+ end
+ if reuse then
+   for _,page in ipairs(cache.pages) do
+     if not self.shadow_batches[page] then reuse=false;break end
+   end
+ end
+ if reuse then
+   self.shadow_reuses=self.shadow_reuses+1
+   self.shadow_objects=cache.count
+   g.setColor(1,1,1,1)
+   for _,page in ipairs(cache.pages) do
+     local entry=self.shadow_batches[page]
+     entry.last_seen=self.shadow_frame
+     g.draw(entry.batch)
+     self.shadow_calls=self.shadow_calls+1
+   end
+   return self.shadow_calls
+ end
+ self.shadow_rebuilds=self.shadow_rebuilds+1
+ for _,entry in pairs(self.shadow_batches) do
+   entry.batch:clear()
+   entry.count=0
+ end
+ local visible,overflowed,max_extent={},false,1
  for _,o in ipairs(objects) do
    local a,x,y,scale,family=self:appearance(camera,w,h,o)
    if a then
      local entry=self:shadow_batch_for(a.page)
      local batch=entry.batch
-     -- Prevent batch capacity overflow in an unusually dense authored scene.
+     -- Capacity overflow needs immediate drawing and disables caching;
+     -- otherwise a reused batch would omit its earlier flushed sprites.
      if entry.count+2>self.limit*2 then
        g.setColor(1,1,1,1);g.draw(batch)
        self.shadow_calls=self.shadow_calls+1
        batch:clear();entry.count=0
+       overflowed=true
      end
      local angle,sx,sy=Sprite.shadow_geometry(family,scale,sun)
-     -- Feather-like *silhouette layers*: no Gaussian blur and no ground
-     -- texture replacement. Two near-/far-contact opacity scales.
+     -- Keep the approved two-layer alpha silhouette fully intact.
      batch:setColor(.035,.048,.048,.13*sun.cast)
      batch:add(a.quad,x,y,angle,sx*1.17,sy*1.12,64,124)
      batch:setColor(.022,.032,.031,.42*sun.cast)
@@ -170,6 +220,7 @@ function Sprite:draw_shadows(g,camera,w,h,objects)
      entry.count=entry.count+2
      visible[a.page]=true
      self.shadow_objects=self.shadow_objects+1
+     max_extent=math.max(max_extent,math.abs(sy)*128)
    end
  end
  local pages={}
@@ -182,6 +233,18 @@ function Sprite:draw_shadows(g,camera,w,h,objects)
      g.draw(entry.batch)
      self.shadow_calls=self.shadow_calls+1
    end
+ end
+ if overflowed then
+   self.shadow_cache=nil
+ else
+   local snapshot={}
+   for i,o in ipairs(objects) do
+     snapshot[i]={o,o.x,o.y,o.kind,o.id}
+   end
+   self.shadow_cache={x=camera.x,y=camera.y,zoom=camera.zoom,
+     w=w,h=h,rotation=sun.rotation,length=sun.length,cast=sun.cast,
+     extent=max_extent,count=self.shadow_objects,
+     pages=pages,objects=snapshot}
  end
  return self.shadow_calls
 end
