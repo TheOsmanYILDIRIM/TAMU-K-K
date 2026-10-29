@@ -100,3 +100,22 @@ player collision, Android hardware FPS, or GPU execution timestamps.
 The expensive GitHub cache workflow is explicitly `workflow_dispatch`-only;
 the long-run test can be run manually with the script above when needed. Do not
 treat an unexecuted or skipped long-run test as passing.
+
+## Creative inşaat — LÖVE 2,5D teknik önizleme
+
+Creative oyun modu varsayılan 2,5D R2 sahnesinde **CREATIVE** düğmesiyle açılır
+(klavye **C**). Açınca 13 parça türünden seç, haritada dokunarak konum belirle,
+**PLACE / BUILD** düğmesine bas. **TURN**, **FLOOR +/-**, **UNDO** ile döndür,
+kat seviyesini değiştir ve son yerleştirmeyi geri al. Parmağınla sürükleyerek
+kamerayı taşı; mouse tekerleği/pinch ile yakınlaştır. **Q**, **Enter**, **[**, **]**,
+**Backspace** de aynı işlevleri sağlar.
+
+Bağlantılar 32 birimlik dünya grid ve yakındaki temel yüksekliğiyle hizalanır.
+Ücretsiz Creative uygulaması Stage5 üretim ekonomisine ve Stage6 kayıtlara
+yazmaz; kalıcı bina ve çok oyunculu işlemler sonraki geliştirmedir.
+Yapı görselleri 128×128/64 renk sınırında kodla üretilen 34 görünümlü
+prototip atlasa dayanır. Bu, gerçek Android APK veya FPS kabulü değildir.
+
+Paketleme: `python scripts/package_tamu_love.py --repo . --output /tmp/TAMU_KOK_Creative_25D.love`
+(kaynak katalog için Lua 5.4, atlas üretimi için Pillow gerekir).
+`TAMU_CREATIVE_SMOKE=1` ile paketi Xvfb üzerinde açarak gerçek .love kontrolü yapılır.

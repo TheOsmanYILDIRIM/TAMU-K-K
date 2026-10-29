@@ -22,6 +22,9 @@ local Stage6Session=require("save.production_session")
 local Stage6Clone=require("save.stage5_domain_clone")
 local CharacterProgression=require("progression.character")
 local StatHud=require("progression.hud")
+local Creative=require("systems.creative_build")
+local CreativeHUD=require("core.creative_build_hud")
+local CreativeRenderer=require("systems.creative_build_renderer")
 local stage6_enabled=os.getenv("OSMAN_STAGE6_EXPLICIT")=="1"
 local stage6_create=os.getenv("OSMAN_STAGE6_CREATE")=="1"
 local stage6_reopen_smoke=os.getenv("OSMAN_STAGE6_REOPEN_SMOKE")=="1"
@@ -94,6 +97,17 @@ crafting=Craft.new(inventory)
 harvesting=Harvest.new(objects,38,inventory)
 local stage_hud=StageHUD.new()
 local stat_hud=StatHud.new()
+local creative=Creative.new({
+ sample=function(_,x,y)return query:sample(x,y) end,
+ height=function(_,x,y)if r2_pilot then
+    return r2_pilot.topography:height(x,y)*.35 end return 0 end,
+ obstacles=function(_,x1,y1,x2,y2)return solid:obstacles(x1,y1,x2,y2) end
+})
+local creative_hud=CreativeHUD.new()
+local creative_renderer
+local creative_smoke=os.getenv("TAMU_CREATIVE_SMOKE")=="1"
+local creative_smoke_done=false
+
 local progression -- Session-only until a versioned Stage6 migration is approved.
 local placement_target=nil
 local placement_rotation=0
@@ -272,6 +286,7 @@ local function spawn()
 end
 function love.load()
   boot_started=love.timer.getTime()
+  creative_renderer=CreativeRenderer.new()
   if terrain25d_compare then
     local v=os.getenv("OSMAN_25D_COMPARE_DISPLAY") or "360x780"
     local ww,hh=v:match("^(%d+)x(%d+)$")
@@ -545,7 +560,7 @@ function love.update(dt)
     end
   end
   if terrain25d_smoke or terrain25d_compare then camera.x,camera.y=704,128
-  elseif not debug_view then camera.x,camera.y=player.x,player.y end
+  elseif not debug_view and not creative.active then camera.x,camera.y=player.x,player.y end
   stats=stream:update(camera,w,h)
   if terrain25d_compare then
     last_update_ms=(love.timer.getTime()-perf_begin)*1000
@@ -588,6 +603,7 @@ function love.draw()
     ghost={x=placement_target.x,y=placement_target.y,ok=ok}
   end
   PlacedRenderer.draw(building,camera,w,h,ghost)
+  creative_renderer:draw(creative,camera,w,h)
   local g=love.graphics
   local safe_x,safe_y,safe_w,safe_h=safe_area()
   g.setColor(.05,.12,.12,.75)
@@ -621,6 +637,7 @@ function love.draw()
   local hud_safe={x=safe_x,y=safe_y,w=safe_w,h=safe_h}
   stage_hud:draw(inventory,crafting,hud_safe,placement_rotation,route_status)
   stat_hud:draw(g,hud_safe,progression)
+  creative_hud:draw(creative,hud_safe)
   local bx,by=joystick_center()
   g.setColor(.2,.3,.34,.6)
   g.circle("fill",bx,by,72)
@@ -698,6 +715,40 @@ function love.draw()
         frames,stats.loaded,runtime25d.built,runtime25d.draw_calls,object_count))
       io.stdout:flush();love.event.quit();return
     end
+  end
+  if creative_smoke and not creative_smoke_done and frames>=110 and
+    stats.loaded>0 and (not runtime25d or runtime25d.built>0) then
+    local sx,sy,sw,sh=safe_area()
+    local ui=creative_hud:layout({x=sx,y=sy,w=sw,h=sh},creative)[1]
+    assert(ui.id=="creative_toggle" and
+      creative_hud:hit(ui.x+ui.w*.5,ui.y+ui.h*.5,
+        {x=sx,y=sy,w=sw,h=sh},creative)=="creative_toggle")
+    creative_hud:action("creative_toggle",creative)
+    assert(creative.active,"creative toggle failed")
+    local created=false
+    for iy=-4,4 do for ix=-4,4 do
+      creative.target={x=math.floor(player.x/32+.5)*32+ix*32,
+        y=math.floor(player.y/32+.5)*32+iy*32}
+      local ok=creative:preview()
+      if ok then
+        assert(creative:place(),"creative smoke placement failed")
+        created=true;break
+      end
+    end if created then break end end
+    assert(created and creative.revision==1 and #creative:snapshot().parts==1,
+      "creative touch/build smoke has no valid target")
+    -- Do not screenshot in the same frame: HUD was already drawn closed.
+    camera.x,camera.y=creative.target.x,creative.target.y
+    camera.zoom=2.6
+    creative_smoke_done=true
+  end
+  if creative_smoke and creative_smoke_done and frames>=114 then
+    love.graphics.captureScreenshot("tamu-creative-25d.png")
+    print(string.format("TAMU_CREATIVE_25D_SMOKE_OK chunks=%d parts=%d runtime25d=%s",
+      stats.loaded,creative.revision,tostring(runtime25d~=nil)))
+    io.stdout:flush()
+    love.event.quit()
+    return
   end
   if stat_smoke and frames>=25 and stats.loaded>0 and stats.pending==0 then
     assert(progression:stat("etkime")==2 and progression.state.unspent_points==1)
@@ -862,17 +913,23 @@ local function press(id,x,y)
   fingers[id]={x=x,y=y,origin_x=x,origin_y=y,move=false}
   local sx,sy,sw,sh=safe_area()
   local safe={x=sx,y=sy,w=sw,h=sh}
-  local stat_hit=stat_hud:hit(x,y,safe)
+  local creative_hit=creative_hud:hit(x,y,safe,creative)
+  if creative_hit then
+    fingers[id].creative_ui=creative_hit
+    return
+  end
+  local stat_hit=not creative.active and stat_hud:hit(x,y,safe)
   if stat_hit then
     fingers[id].stats=stat_hit
     return
   end
-  local action=stage_hud:hit(x,y,safe)
+  local action=not creative.active and stage_hud:hit(x,y,safe)
   if action then
     fingers[id].ui=action
     return
   end
-  if x>=sx+sw-136 and x<=sx+sw-14 and y>=sy+sh-175 and y<=sy+sh-109 then
+  if not creative.active and x>=sx+sw-136 and x<=sx+sw-14 and
+    y>=sy+sh-175 and y<=sy+sh-109 then
     fingers[id].button=true
     return
   end
@@ -904,6 +961,8 @@ local function move(id,x,y)
     end
   end
   if (x-p.origin_x)^2+(y-p.origin_y)^2>100 then p.move=true end
+  -- Drag pans while Creative is active; tap without drag selects placement.
+  if creative.active and not p.multi then camera:pan(x-p.x,y-p.y) end
   p.x,p.y=x,y
 end
 local function release(id,x,y)
@@ -914,6 +973,15 @@ local function release(id,x,y)
     if stat_hud:hit(x,y,{x=sx,y=sy,w=sw,h=sh})==p.stats then
       stat_action(p.stats)
     end
+  elseif p.creative_ui then
+    local sx,sy,sw,sh=safe_area()
+    if creative_hud:hit(x,y,{x=sx,y=sy,w=sw,h=sh},creative)==p.creative_ui then
+      creative_hud:action(p.creative_ui,creative)
+      if creative.active then stage_hud.open=false;stat_hud.open=false
+        stage_hud.placing=false;placement_target=nil
+        player:stop_navigation() end
+      route_status=creative.message
+    end
   elseif p.ui then
     local sx,sy,sw,sh=safe_area()
     if stage_hud:hit(x,y,{x=sx,y=sy,w=sw,h=sh})==p.ui then
@@ -921,6 +989,12 @@ local function release(id,x,y)
     end
   elseif p.button then interact_nearest()
   elseif not p.move and not p.multi then
+    if creative.active then
+      local ok,why=creative:tap_world(x,y,camera,w,h)
+      route_status=creative.message
+      fingers[id]=nil
+      return
+    end
     if r2_pilot and stage_hud.placing then
       route_status="R2 building unavailable: no approved build zones"
       fingers[id]=nil;return
@@ -975,7 +1049,18 @@ function love.keypressed(key)
     end
   end
   if key=="r" then camera.x,camera.y=player.x,player.y;camera.zoom=1.7 end
-  if key=="escape" then player:stop_navigation();selected_target=nil end
+  if key=="escape" then
+    if creative.active then creative:toggle() end
+    player:stop_navigation();selected_target=nil
+  end
+  if key=="c" then creative:toggle();stage_hud.open=false;stat_hud.open=false;return end
+  if creative.active then
+    if key=="q" then creative_hud:action("creative_rotate",creative);return end
+    if key=="return" then creative_hud:action("creative_place",creative);return end
+    if key=="[" then creative_hud:action("creative_level_down",creative);return end
+    if key=="]" then creative_hud:action("creative_level_up",creative);return end
+    if key=="backspace" then creative_hud:action("creative_undo",creative);return end
+  end
   if key=="e" then interact_nearest() end
   if key=="i" then hud_action("inventory") end
   if key=="1" then hud_action("recipe:core:planks_from_log") end
