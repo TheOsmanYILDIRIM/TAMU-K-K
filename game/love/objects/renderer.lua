@@ -48,8 +48,13 @@ end
 -- Opt-in mobile: prepare each authored population chunk in four small
 -- independent queries while the main loop still updates player/UI input.
 -- Immutable candidate membership is cached; depletion is always read live.
+local function stable_population(world)
+ return type(world.is_depleted)=='function' and
+   (world.generator_version==1 or
+    (world.query and world.query.generator_version==1))
+end
 function R.prepare_visible(world,stream,budget_ms,camera,w,h)
- if world.generator_version~=1 or type(world.is_depleted)~='function' then return 0 end
+ if not stable_population(world) then return 0 end
  local clock=love and love.timer and love.timer.getTime
  if type(clock)~='function' then return 0 end
  local start=clock()
@@ -102,8 +107,7 @@ function R.collect(world,stream,object_override)
   local started=clock and clock()
   R.metrics.collect_calls=R.metrics.collect_calls+1
   local list,seen={},{}
-  local immutable=world.generator_version==1 and
-    type(world.is_depleted)=="function"
+  local immutable=stable_population(world)
   local onscreen=type(object_override)=="table" and
     object_override.provider and (object_override.provider.object_chunks or
       object_override.provider.rendered_chunks)
