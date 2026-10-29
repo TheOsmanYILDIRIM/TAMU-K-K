@@ -28,7 +28,7 @@ jobs:
           print('R2_PACKAGED_SOURCE_OK')
           PY
           sudo apt-get update -qq
-          sudo apt-get install -y -qq lua5.4 luajit love xvfb
+          sudo apt-get install -y -qq lua5.4 luajit love xvfb ffmpeg
           cd game/love
           luac5.4 -p main.lua world/r2_playable.lua
           luajit -b main.lua /tmp/tamu-android-main-luajit.bytecode
@@ -57,13 +57,12 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           from zipfile import ZipFile,ZIP_DEFLATED
-          import hashlib,struct
+          import hashlib,struct,subprocess,tempfile
           root=Path('game/love')
-          needed=['main.lua','player/core_visual.lua','player/core_crystal_shader.lua',
-          'assets/file_000000007cf082119c4dde3e346c2bcb.png',
-          'assets/core_crystal_mask_aligned.png',
-          'assets/core_plasma_back_spritesheet_32x512.png',
-          'assets/core_plasma_front_spritesheet_32x512.png']
+          needed=['main.lua','player/rigby_visual.lua',
+                  'assets/terrain25d/atlas_00.png',
+                  'assets/terrain25d/atlas_01.png',
+                  'assets/terrain25d/manifest.json']
           for name in needed:
               assert (root/name).is_file(), f'Missing: {name}'
           expected={
@@ -74,19 +73,54 @@ jobs:
               assert hashlib.sha256(blob).hexdigest()==sha,f'{name} SHA mismatch'
               assert blob[:8]==bytes((137,80,78,71,13,10,26,10)),f'{name} PNG invalid'
               assert struct.unpack('>II',blob[16:24])==(1254,1254),f'{name} resolution invalid'
-          # Package entire running game tree, not test-only dummy main.lua.
-          files=sorted(p for p in root.rglob('*') if p.is_file() and
+          # Source assets and obsolete Core/Plasma textures remain in GitHub.
+          # This is a slim runtime package only; no source file is deleted.
+          excluded_core={
+            'assets/core_plasma_back_spritesheet_32x512.png',
+            'assets/core_plasma_front_spritesheet_32x512.png',
+            'assets/file_000000007cf082119c4dde3e346c2bcb.png',
+            'assets/core_crystal_mask_aligned.png',
+          }
+          def exclude(name):
+              return (name in excluded_core or
+                name.startswith('assets/terrain25d/source_png/') or
+                name.startswith('assets/terrain25d/pilot_sources/'))
+          source_files=sorted(p for p in root.rglob('*') if p.is_file() and
               not any(part.startswith('.') for part in p.relative_to(root).parts) and
               '__pycache__' not in p.parts)
-          out=Path('oyun-main-android-test.love')
-          with ZipFile(out,'w',ZIP_DEFLATED,compresslevel=8) as z:
-              for p in files:
-                  z.write(p,p.relative_to(root).as_posix())
+          names={p.relative_to(root).as_posix() for p in source_files}
+          assert len([n for n in names if n.startswith('assets/terrain25d/source_png/')])==228
+          assert excluded_core.issubset(names)
+          files=[p for p in source_files if not exclude(p.relative_to(root).as_posix())]
+          # Keep the same runtime filename and metadata; re-encode only in
+          # the build artifact. Original 192 kbps MP3 remains untouched in Git.
+          music='assets/settle_at_the_edge.mp3'
+          with tempfile.TemporaryDirectory() as td:
+              compressed=Path(td)/'settle_at_the_edge.mp3'
+              subprocess.run(['ffmpeg','-nostdin','-hide_banner','-loglevel','error',
+                  '-y','-i',str(root/music),'-map','0:a:0','-vn',
+                  '-c:a','libmp3lame','-b:a','64k','-ar','44100','-ac','2',
+                  str(compressed)],check=True)
+              assert compressed.stat().st_size < (root/music).stat().st_size*.5
+              out=Path('oyun-main-android-test.love')
+              with ZipFile(out,'w',ZIP_DEFLATED,compresslevel=8) as z:
+                  for p in files:
+                      name=p.relative_to(root).as_posix()
+                      if name==music:
+                          z.write(compressed,name)
+                      else:
+                          z.write(p,name)
           with ZipFile(out) as z:
               assert z.testzip() is None
-              assert all(name in z.namelist() for name in needed)
+              packaged=set(z.namelist())
+              assert set(needed).issubset(packaged)
+              assert not any(exclude(n) for n in packaged)
               assert z.namelist()[0] != 'game/love/main.lua'
-              print('LOVE_PACKAGE_FILE_COUNT',len(z.namelist()))
+              assert z.getinfo(music).file_size < (root/music).stat().st_size*.5
+              print('LOVE_PACKAGE_FILE_COUNT',len(packaged))
+              print('LOVE_MP3_SOURCE_BYTES',(root/music).stat().st_size)
+              print('LOVE_MP3_PACKAGED_BYTES',z.getinfo(music).file_size)
+              print('LOVE_OMITTED_SOURCE_FILES',len(source_files)-len(files))
           print('LOVE_SHA256',hashlib.sha256(out.read_bytes()).hexdigest())
           print('LOVE_BYTES',out.stat().st_size)
           PY
