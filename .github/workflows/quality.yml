@@ -16,6 +16,13 @@ jobs:
           python -m unittest discover -s scripts/tests -p 'test_terrain25d_assets.py' -v
       - name: Install Lua and real LÖVE test runtime
         run: sudo apt-get update -qq && sudo apt-get install -y lua5.4 luajit love xvfb
+      - name: Profile real default 25D startup CPU phases on authored scene
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDL_AUDIODRIVER=dummy OSMAN_25D_PROFILE=1 OSMAN_25D_VISUAL_PROBE=1 timeout 180s xvfb-run -a love game/love 2>&1 | tee /tmp/25d-chunk-phase-profile.log
+          grep -q 'TAMU_25D_VISIBLE_OK' /tmp/25d-chunk-phase-profile.log
+          grep -q 'TAMU_25D_CHUNK_CPU' /tmp/25d-chunk-phase-profile.log
       - name: 25D geometry and real R2 authored mesh (Lua 5.4 / LuaJIT)
         shell: bash
         run: |
