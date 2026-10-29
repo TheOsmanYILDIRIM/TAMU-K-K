@@ -111,4 +111,22 @@ function M.love_vertices(mesh,uv_rect)
  end
  return out
 end
+-- Fast append for a prevalidated atlas rect and one triangle.
+-- Exact same UV and color math as love_vertices, without creating an
+-- intermediate mesh descriptor and three temporary vertex records.
+function M.append_atlas_triangle(out,tri,rect)
+ local a,b,c=tri[1],tri[2],tri[3]
+ assert(a and b and c and rect and #rect==4,"atlas triangle invalid")
+ local u0=math.floor(math.min(a[3],b[3],c[3]))
+ local v0=math.floor(math.min(a[4],b[4],c[4]))
+ for i=1,3 do
+  local v=tri[i]
+  assert(v[3]-u0<=1+1e-9 and v[4]-v0<=1+1e-9,
+    "atlas triangle crosses tile period: subdivide mesh at texture seam")
+  local u=rect[1]+math.max(0,math.min(1,v[3]-u0))*rect[3]
+  local w=rect[2]+math.max(0,math.min(1,v[4]-v0))*rect[4]
+  out[#out+1]={v[1],v[2],u,w,v[5],v[5],v[5],1}
+ end
+ return out
+end
 return M
