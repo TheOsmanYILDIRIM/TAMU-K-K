@@ -129,3 +129,41 @@ Ana klasör: [OSMAN OYUN / Texture_Archive](https://drive.google.com/drive/folde
 - Oyun runtime dosyalarını Drive'dan çekmez. Yalnız açıkça seçilen/manuel kabul edilmiş işlenmiş PNG oyunun `game/love/assets/` katmanına bağlanır. T-01 görsel olarak kabul edilmiş olsa da kaynak PNG ve oyun smoke testleri ayrıca doğrulanır. Zemin texture'larını tekrar üretme veya değiştirme.
 
 **T-01 Drive kayıt kontrolü (2026-10-26):** [128×128 onaylı kaynak PNG](https://drive.google.com/file/d/153MCAvul1xx8FgSunFT6UFkC01yaa-5A/view) ve [izometrik kontrol levhası](https://drive.google.com/file/d/1uoZ3Sm1766-9jeZbF5GPmZlD4PYXs12x/view) `T-01_Old_Oak` klasörüne yüklenip Drive metadata/üst klasör kimliği geri okundu. Kaynak PNG RGBA, kaynak SHA-256: `b5606b648f5890d4082eaef33e6002a1ddfcbb099b0e7370f7c238ca320643e0` (bu sohbetin yerel dosya hash'i). Kaynağın yüksek çözünürlüklü orijinali henüz mevcut değil. Kullanıcı T-01'in görünümünü onayladı; oyuna runtime entegrasyonu veya Android smoke doğrulanmadı.
+
+---
+
+## 9. TAMU KÖK modüler yapı parçaları — görsel ve birleşme sözleşmesi V1 (2026-10-29)
+
+**Durum:** Kodla tanımlanmış geometri ve prompt standardı. **Henüz hiçbir yeni bina PNG'si, atlası veya oyun içi bina render'ı üretilmiş değildir.**
+Kaynak ilkeler: Bu rehber + TAMU Object Studio promptları + Mineclonia Texture Studio PROMPT_AUTHORING_GUIDE.md.
+Uygulama: game/love/systems/building_parts.lua, building_visual_contract.lua ve building_visual_prompts.lua; kabul testi game/love/tests/building_piece_catalog.lua.
+
+### A. Dünya ve bağlantı (otoriter)
+
+- Nominal modül **32×32 dünya birimi**; dünya (x,y,z) ekran pikselinden, chunk'tan ve R2'den bağımsızdır. Standart 45° kamera izdüşümü sx=(x-y)/sqrt(2), sy=(x+y)/(2sqrt(2))-z. Düz 32 kare, zoom=1'de **45,254834 ekran px geniş / 22,627417 px yüksek** 2:1 elmas olarak görünür.
+- Dünya yönleri N=-Y, E=+X, S=+Y, W=-X. Rotasyon 0/1/2/3 sırasıyla güney/batı/kuzey/doğuya bakar. **Her yön bağımsız çizilir**; izometrik bir PNG'yi ekranda 90° döndürmek geometrik olarak yanlıştır.
+- Yatay socket yönleri 0=Doğu, 2=Güney, 4=Batı, 6=Kuzey; bağlanmada yüz normal farkı 4 olmalıdır. Dikey socketler up/down eşleşir. Görünür dikiş ve fiziksel soket koordinatları aynı nominal dünya noktasına oturur.
+- Temel: 32×32×4; ince zemin/çatı: **32 görsel, 30 fiziksel** kenar × 2 kalınlık; duvar: **32 görsel, 30 fiziksel** uzunluk × 2 kalınlık × 24 yükseklik; yarım duvar/korkuluk/çit yüksekliği 12; eğimli çatı en fazla 12, merdiven yükseltisi 24 dünya birimidir.
+- Fiziksel 30 birimlik kutular 32 aralıklı yerleştirilmiş komşu panel/zeminler için duvar kalınlığına pay bırakır. **Bu bir görsel kırpma değildir**: görünür zeminler 32 birimlik kenarda birleşmelidir. Daraltılmış fiziksel kutu geçici, ihtiyatlı AABB yaklaşımıdır; gerçek geçilebilir kapı, pencere, merdiven ve eğimli çatı collider'ları ayrıca geliştirilecektir.
+- Taban, duvar, üst kat, çatı ve çit socketleri aynı dünya uzayına bağlıdır. Kapı/pencere açıklıkları malzeme görselinde GERÇEK RGBA alfa boşluğu olmalıdır; ancak mevcut erken çekirdeğin full-box collider'ı bu açıklıkları **henüz geçilebilir yapmaz**.
+
+### B. Görsel üretim kontratı (MTS + TAMU)
+
+- Her yön için **ayrı tek 1024×1024 düz RGBA kaynak PNG**. Kaynak alt pivotu (512,768), izin verilen dış güvenlik payı 64 px. Alttaki 32 kare görsel elmasının kaynak köşeleri: üst (512,640), sağ (768,768), alt (512,896), sol (256,768).
+- Kaynak dönüşüm ölçeği 8sqrt(2) kaynak px / izometrik oyun ekran birimi; 256×256 işlenmiş adayda zoom=1 runtime sprite ölçeği **1/sqrt(8) ≈ 0,353553**. Nihai kamera ölçeği ayrıca uygulanır. Sprite pivotu elle göz kararı yeniden ortalanmaz; geometri kodundan üretilen kaynak noktası esastır.
+- Ahşapta tahta uzunluğu/damar yönü ve uç-kesit çizgileri; taşta yatay taş sıra ve derz yükseklikleri; duvarlarda üst/alt sınır; çatıda mahya/eğim; çitte ray ve direk bağlanma yüksekliği aynı ailede **kardeş parçaların ortak referansıdır**. Köşe/post dekoru panellerin uçlarına iki kez basılmaz; bütün dekor nominal modül sınırı içinde kalır.
+- Köşe ve kenar bantları dikiş kilitli tutulur; rastgele aşınma varyasyonu önce panelin merkezine uygulanır. Oyunun gün/gece gölgesini PNG'ye pişirme: nötr, yumuşak dağınık malzeme ışığı yeterlidir. Taş/ahşap yüzeyler MTS Grounded Dark Fantasy: yıpranmış, düşük/orta kontrast, bastırılmış doygunluk, gerçekçi mineral/ahşap ölçeği.
+- Üretim (1) **malzeme/stil referansı**, (2) **Image A = kodla hesaplanmış gerçek 2,5D geometri/pivot/soket/kenar maskesi**, **Image B = onaylı materyal/stil referansı** ile tekil üretim, (3) gerekirse deterministik alfa/mask/kenar düzeltmesi. B'nin geometriyi veya A'nın malzeme kimliğini değiştirmesine izin verilmez.
+- İstenen: sahnesiz tek yalıtılmış parça, gerçek alfa, tam 45° ortografik izometrik perspektif. İstenmeyen: kolaj, atlas, poster, metin, UI, checkerboard, blok/piksel-art, sert baked gölge, zemine gömülü dekor. Modelden doğrudan 256px, 64 renk veya low-resolution sprite isteme; yüksek çözünürlük üret, mevcut Python işleme hattında ayrı adımla küçült.
+- Her şekil için elle yazılmış özel talimat kullan; **tanımsız tür/malzeme için generic prompt yok**. Prompt API: building_visual_prompts.make(def, rotation, reference|production|correction). 13 özgün şekil dili vardır.
+
+### C. Kabul kapıları
+
+1. 4 yönün her biri için socket/world koordinatı ve görünür geometrinin kodla hesaplanan referansla eşleşmesi.
+2. 2×2 zemin, dört yönde duvar köşeleri, 3 bağlı çit, alt/üst kat ve çatı için bitişik alfa/kenar testi. Gerçek işlenmiş PNG köşe/pivot noktalarında hedefe göre **en fazla 1 işlenmiş piksel** fark; daha büyük kayma ve karanlık alfa halosu reddedilir.
+3. Kaynak PNG ve 256px adayın SHA-256/alpha/palette/ölçü/versiyon kaydı, kaynak-işlenmiş-görsel kontrol ayrımı; ilgili malzeme/siluetler gerçek oyun ölçeğinde gözle incelenir.
+4. Atlas/SpriteBatch/LOD belleği ve gerçek mobil FPS ayrıca test edilir. **Şu anda görsel üretimi yapılmadığı için bu görsel kabul kapıları açık kalır.**
+
+**Katalog kapsamı:** 19 yapı tanımı × 4 yön = **76 gelecekte üretilecek bağımsız sprite**: ahşap/taş temel ve zemin; düz/pencereli/kapı açıklıklı duvar; yarım duvar, korkuluk, post; düz/eğimli çatı, merdiven; ahşap/taş çit ve çit kapısı. Katalog yalnız erken inşaat çekirdeğine aittir; Stage5 JSON kataloglarına, save_v2'ye, kullanıcı verisine veya World Builder'a dokunmaz.
+
+**Gelecek:** 8 yönlü görseller, gerçek açıklık collider'ları, taşıma/yükseltme/tamir, gelişmiş destek, save migration ve yeni dünyanın entegrasyonu ayrı geliştirme kabulüdür.

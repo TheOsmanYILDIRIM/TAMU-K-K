@@ -60,9 +60,12 @@ local function validate_defs(defs)
     for _,s in ipairs(def.sockets or {}) do
       assert(type(s)=="table" and name(s.id) and not unique[s.id]
         and name(s.kind) and finite(s.x) and finite(s.y) and finite(s.z)
-        and integer(s.facing) and s.facing>=0 and s.facing<8,"invalid socket")
+        and integer(s.facing) and s.facing>=0 and s.facing<8
+        and (s.axis==nil or s.axis=="side" or s.axis=="up" or s.axis=="down"),
+        "invalid socket")
       unique[s.id]=true
-      sockets[#sockets+1]={id=s.id,kind=s.kind,x=s.x,y=s.y,z=s.z,facing=s.facing}
+      sockets[#sockets+1]={id=s.id,kind=s.kind,x=s.x,y=s.y,z=s.z,
+        facing=s.facing,axis=s.axis or "side"}
     end
     copy[id]={id=id,mode=def.mode,size={def.size[1],def.size[2],def.size[3]},
       rotation_steps=def.rotation_steps,cost=costs,sockets=sockets}
@@ -93,25 +96,30 @@ function Kit:preview(def_id,position,rotation,connection,player)
   assert(type(connection)=="nil" or type(connection)=="table","invalid connection")
   local x,y,z=position.x,position.y,position.z
   local parent,parent_socket,child_socket
-  if def.mode=="attached" then
-    if not connection or not name(connection.parent_id) then return false,"missing_support" end
+  if connection then
+    if not name(connection.parent_id) then return false,"missing_support" end
     parent=self.items[connection.parent_id]
     if not parent or parent.status~="built" then return false,"missing_support" end
     parent_socket=socket_of(parent.def,connection.parent_socket)
     child_socket=socket_of(def,connection.child_socket)
     if not parent_socket or not child_socket or parent_socket.kind~=child_socket.kind then
       return false,"socket_mismatch" end
-    local parent_dir=(parent_socket.facing+parent.rotation*8/parent.def.rotation_steps)%8
-    local child_dir=(child_socket.facing+rotation*8/def.rotation_steps)%8
-    if (parent_dir-child_dir)%8~=4 then return false,"socket_direction" end
+    local pa,ca=parent_socket.axis or "side",child_socket.axis or "side"
+    if pa=="side" and ca=="side" then
+      local parent_dir=(parent_socket.facing+parent.rotation*8/parent.def.rotation_steps)%8
+      local child_dir=(child_socket.facing+rotation*8/def.rotation_steps)%8
+      if (parent_dir-child_dir)%8~=4 then return false,"socket_direction" end
+    elseif not ((pa=="up" and ca=="down") or (pa=="down" and ca=="up")) then
+      return false,"socket_axis"
+    end
     local key=parent.id..":"..parent_socket.id
     if self.socket_used[key] then return false,"socket_occupied" end
     local px,py,pz=point(parent,parent_socket)
     local dx,dy=rotated(child_socket.x,child_socket.y,rotation,def.rotation_steps)
     x,y,z=px-dx,py-dy,pz-child_socket.z
-    -- Authoritative snap, not screen-coordinate or user-provided z.
-  elseif connection then
-    return false,"unexpected_support"
+    -- Every snapped part uses the authoritative socket transform.
+  elseif def.mode=="attached" then
+    return false,"missing_support"
   end
   if (x-player.x)^2+(y-player.y)^2>self.reach^2 then return false,"out_of_range" end
   if def.mode~="attached" then
