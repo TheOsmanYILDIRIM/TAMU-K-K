@@ -1,7 +1,7 @@
 name: Build Android-testable LOVE package
 on:
   push:
-    branches: [main]
+    branches: [main, fix/love-package-assets-audio-20261029]
     paths:
       - '.github/workflows/love-android-package.yml'
       - 'game/love/**'
