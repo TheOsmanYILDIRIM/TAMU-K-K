@@ -66,7 +66,7 @@ jobs:
           test "$(find game/love/assets/terrain25d/baked -name '*.json.z' | wc -l)" -eq 27
           export XDG_DATA_HOME="$RUNNER_TEMP/tamu-27-binary"
           mkdir -p "$XDG_DATA_HOME"
-          OSMAN_25D_SUN_HOUR=10.5 TAMU_25D_27_COMPARE=1 OSMAN_25D_BAKE_VERIFY=1 OSMAN_25D_BAKE_LIMIT=27 timeout 240s xvfb-run -a love game/love 2>&1 | tee /tmp/tamu-27-binary.log
+          TAMU_PERF_PHASE_TRACE=1 OSMAN_25D_SUN_HOUR=10.5 TAMU_25D_27_COMPARE=1 OSMAN_25D_BAKE_VERIFY=1 OSMAN_25D_BAKE_LIMIT=27 timeout 240s xvfb-run -a love game/love 2>&1 | tee /tmp/tamu-27-binary.log
           grep -q 'TAMU_25D_27_COMPLETE mode=binary chunks=27' /tmp/tamu-27-binary.log
           test "$(grep -c 'TAMU_25D_BINARY_LOADED' /tmp/tamu-27-binary.log)" -eq 27
           cp "$(find "$XDG_DATA_HOME" -name 'tamu-27-binary.png' -print -quit)" /tmp/tamu-27-binary.png
