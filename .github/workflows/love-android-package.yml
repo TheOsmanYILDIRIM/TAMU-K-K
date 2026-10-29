@@ -1,64 +1,75 @@
-name: Build Android-testable LOVE package
+name: Import verified Osman live-rig assets (experiment only)
 on:
   push:
-    branches: [main]
-    paths:
-      - '.github/workflows/love-android-package.yml'
-      - 'game/love/**'
-  workflow_dispatch:
+    branches: [experiment/osman-rigby-4dir-20261029]
+    paths: [game/love/assets/osman_rig/source-transfer.zip, .github/workflows/love-android-package.yml]
 permissions:
-  contents: read
+  contents: write
 jobs:
-  package-love:
+  import-and-verify:
+    if: github.ref_name == 'experiment/osman-rigby-4dir-20261029'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
-      - name: Validate and package playable LÖVE source
+      - name: Expand SHA-pinned original parts and live animation data
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          from pathlib import Path
-          from zipfile import ZipFile,ZIP_DEFLATED
-          import hashlib,struct
-          root=Path('game/love')
-          needed=['main.lua','player/core_visual.lua','player/core_crystal_shader.lua',
-          'assets/file_000000007cf082119c4dde3e346c2bcb.png',
-          'assets/core_crystal_mask_aligned.png',
-          'assets/core_plasma_back_spritesheet_32x512.png',
-          'assets/core_plasma_front_spritesheet_32x512.png']
-          for name in needed:
-              assert (root/name).is_file(), f'Missing: {name}'
-          expected={
-          'assets/file_000000007cf082119c4dde3e346c2bcb.png':'2c63bc1645ab1718e8f612f17a8821ed4f22cd557ffd66c2e506e8d46d2dcf0b',
-          'assets/core_crystal_mask_aligned.png':'b718d0cab981f23d8334a868e268d45535fac61292af8d34733120999161f55b'}
-          for name,sha in expected.items():
-              blob=(root/name).read_bytes()
-              assert hashlib.sha256(blob).hexdigest()==sha,f'{name} SHA mismatch'
-              assert blob[:8]==bytes((137,80,78,71,13,10,26,10)),f'{name} PNG invalid'
-              assert struct.unpack('>II',blob[16:24])==(1254,1254),f'{name} resolution invalid'
-          # Package entire running game tree, not test-only dummy main.lua.
-          files=sorted(p for p in root.rglob('*') if p.is_file() and
-              not any(part.startswith('.') for part in p.relative_to(root).parts) and
-              '__pycache__' not in p.parts)
-          out=Path('oyun-main-android-test.love')
-          with ZipFile(out,'w',ZIP_DEFLATED,compresslevel=8) as z:
-              for p in files:
-                  z.write(p,p.relative_to(root).as_posix())
-          with ZipFile(out) as z:
+          from pathlib import Path, PurePosixPath
+          import hashlib,json,zipfile
+          archive=Path('game/love/assets/osman_rig/source-transfer.zip')
+          assert hashlib.sha256(archive.read_bytes()).hexdigest()=='602b716b1cbdeb30500266e753149434f1838ddc171f4fc6e8333998943e68f6'
+          with zipfile.ZipFile(archive) as z:
               assert z.testzip() is None
-              assert all(name in z.namelist() for name in needed)
-              assert z.namelist()[0] != 'game/love/main.lua'
-              print('LOVE_PACKAGE_FILE_COUNT',len(z.namelist()))
-          print('LOVE_SHA256',hashlib.sha256(out.read_bytes()).hexdigest())
-          print('LOVE_BYTES',out.stat().st_size)
+              manifest=json.loads(z.read('manifest.json'))
+              assert manifest['version']==1 and manifest['source_head']=='f6710eb493dbfc380cd13480ebb1b0cdddcf38b8'
+              selected=[f for f in manifest['files'] if f['path'].startswith('game/love/assets/osman_rig/') and f['path']!='game/love/assets/osman_rig/ASSETS_REQUIRED.md' or f['path'].startswith('game/love/tests/rigby_')]
+              assert len([f for f in selected if f['path'].endswith('.png')])==30
+              assert any(f['path']=='game/love/assets/osman_rig/rig.json' for f in selected)
+              expected={'manifest.json'}|{f['path'] for f in manifest['files']}
+              assert set(z.namelist())==expected
+              for f in selected:
+                  path=f['path']
+                  p=PurePosixPath(path)
+                  assert not p.is_absolute() and '..' not in p.parts
+                  data=z.read(path)
+                  assert len(data)==f['size'] and hashlib.sha256(data).hexdigest()==f['sha256'],path
+                  target=Path(path)
+                  assert not target.exists(), 'source already exists: '+path
+                  target.parent.mkdir(parents=True,exist_ok=True)
+                  target.write_bytes(data)
+              rig=json.loads(Path('game/love/assets/osman_rig/rig.json').read_text())
+              assert rig['format']=='tamu-rigby-fk/1' and len(rig['animations'])==44
+              assert len(rig['bones'])==40 and len(rig['slots'])==24
+              print('RIGBY_IMPORT_OK',len(selected),len(rig['animations']))
           PY
-          sha256sum oyun-main-android-test.love | tee oyun-main-android-test.love.sha256
-      - name: Upload playable LOVE file
-        uses: actions/upload-artifact@v4
-        with:
-          name: oyun-main-android-love
-          path: |
-            oyun-main-android-test.love
-            oyun-main-android-test.love.sha256
-          if-no-files-found: error
+      - name: Test native Lua parsers and animation numerics
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lua5.4 luajit love xvfb
+          cd game/love
+          luac5.4 -p main.lua objects/renderer.lua player/rigby_runtime.lua player/rigby_visual.lua
+          for engine in lua5.4 luajit; do
+            "$engine" tests/rigby_runtime.lua
+            "$engine" tests/rigby_visual.lua
+          done
+      - name: Real LÖVE startup with rig; retained plasma rollback
+        run: |
+          set -euo pipefail
+          SDL_AUDIODRIVER=dummy OSMAN_LOVE_INTEGRATION_SMOKE=1 timeout 120s xvfb-run -a love game/love 2>&1 | tee /tmp/rigby-start.log
+          grep -q LOVE_INTEGRATION_SMOKE_OK /tmp/rigby-start.log
+          SDL_AUDIODRIVER=dummy TAMU_USE_PLASMA=1 OSMAN_LOVE_INTEGRATION_SMOKE=1 timeout 120s xvfb-run -a love game/love 2>&1 | tee /tmp/plasma-rollback.log
+          grep -q LOVE_INTEGRATION_SMOKE_OK /tmp/plasma-rollback.log
+      - name: Commit original images and source to this experiment only
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = "experiment/osman-rigby-4dir-20261029"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add game/love/assets/osman_rig game/love/tests/rigby_*
+          git rm game/love/assets/osman_rig/source-transfer.zip
+          git diff --cached --stat
+          git commit -m "Import verified original Osman mesh parts and 44 rig animations"
+          git push origin "HEAD:refs/heads/$GITHUB_REF_NAME"
