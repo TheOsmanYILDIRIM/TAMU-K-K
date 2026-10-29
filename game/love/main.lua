@@ -106,9 +106,14 @@ local shadow_preview_step=0
 local shadow_preview_hours={8,12,17,23}
 local stream=Stream.new(query,r2_pilot and
   {size=256,step=8,max_loaded=48,build_budget=8,cache=chunk_cache,
+   render_only_25d=terrain25d_enabled,
    prefetch_options=cache_pilot_enabled and r2_pilot.render_options or nil} or
   {size=256,step=32,max_loaded=100,build_budget=5,cache=chunk_cache,
    prefetch_options=cache_pilot_enabled and {quality="standard"} or nil})
+-- The active 25D renderer owns all authored mesh generation.
+-- Never ask Stream to also build discarded legacy Marching geometry.
+assert(not terrain25d_enabled or stream.render_only_25d,
+  "R2/25D scene must use the lightweight render-only stream")
 local long_mode=os.getenv("OSMAN_R2_LONG_TRAVERSAL")
 assert(not long_mode or
   (r2_pilot_enabled and not stage6_enabled and
