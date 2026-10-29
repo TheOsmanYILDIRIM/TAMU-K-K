@@ -35,8 +35,16 @@ local r2_setting=os.getenv("OSMAN_R2_PILOT")
 local terrain25d_setting=os.getenv("OSMAN_25D_RUNTIME")
 local cache_pilot_enabled=os.getenv("OSMAN_CHUNK_CACHE_PILOT")=="1"
 local stage6_requested=stage6_enabled or stage6_create or stage6_reopen_smoke
+-- Legacy regression fixtures explicitly require the original seeded world.
+-- Ordinary play and production-world smoke still use standard R2 + 25D.
+local legacy_fixture_requested=
+  os.getenv("OSMAN_LOVE_STAGE5_RUNTIME_SMOKE")=="1" or
+  os.getenv("OSMAN_LOVE_STAGE4_SMOKE")=="1" or
+  os.getenv("OSMAN_LOVE_LIQUID_SMOKE")=="1" or
+  os.getenv("OSMAN_LOVE_STAT_SMOKE")=="1"
 local r2_pilot_enabled=(r2_setting=="1") or
-  (r2_setting==nil and not stage6_requested and not cache_pilot_enabled)
+  (r2_setting==nil and not stage6_requested and
+   not legacy_fixture_requested and not cache_pilot_enabled)
 local terrain25d_enabled=(terrain25d_setting=="1") or
   (terrain25d_setting==nil and r2_pilot_enabled and not cache_pilot_enabled)
 local terrain25d_smoke=os.getenv("OSMAN_25D_SMOKE")=="1"
