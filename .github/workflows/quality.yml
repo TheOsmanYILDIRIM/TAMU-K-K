@@ -31,11 +31,29 @@ jobs:
           SDL_AUDIODRIVER=dummy OSMAN_25D_BAKE_VERIFY=1 OSMAN_25D_BAKE_LIMIT=4 timeout 180s xvfb-run -a love game/love 2>&1 | tee /tmp/tamu-bake-replay.log
           grep -q 'TAMU_25D_BAKE_VERIFY_OK count=4' /tmp/tamu-bake-replay.log
           rm -rf game/love/assets/terrain25d/baked
-      - name: Diagnose default startup
+      - name: Diagnose default startup with preserved timed phase logs
         if: github.ref_name == 'experiment/25d-blackboot-diagnosis-20261029'
         shell: bash
         run: |
-          TAMU_BOOT_TRACE=1 OSMAN_LOVE_INTEGRATION_SMOKE=1 timeout 60s xvfb-run -a love game/love
+          set -uo pipefail
+          export XDG_DATA_HOME="$RUNNER_TEMP/tamu-blackboot-profile"
+          mkdir -p "$XDG_DATA_HOME"
+          set +e
+          TAMU_BOOT_TRACE=1 OSMAN_LOVE_INTEGRATION_SMOKE=1 SDL_AUDIODRIVER=dummy \
+            timeout 85s xvfb-run -a love game/love 2>&1 | tee tamu-blackboot-phases.log
+          result=${PIPESTATUS[0]}
+          set -e
+          printf 'TAMU_BOOT_DIAGNOSTIC_EXIT=%d\n' "$result" | tee -a tamu-blackboot-phases.log
+          grep -q 'TAMU_BAKED_PHASE' tamu-blackboot-phases.log
+          grep -q 'TAMU_RIGBY_PHASE' tamu-blackboot-phases.log
+          test "$result" -eq 0 -o "$result" -eq 124
+      - name: Archive timed blackboot diagnostic even on failure
+        if: always() && github.ref_name == 'experiment/25d-blackboot-diagnosis-20261029'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tamu-blackboot-phases
+          path: tamu-blackboot-phases.log
+          if-no-files-found: warn
       - name: 25D geometry and real R2 authored mesh (Lua 5.4 / LuaJIT)
         shell: bash
         run: |
