@@ -1,3 +1,9 @@
+## 2026-10-29 — Kullanıcı onaylı Osman karakteri artık varsayılan
+Kullanıcının 29 Ekim tarihli açık talebiyle eski 16 Ekim tarihli 'insansı rig ertelendi' kararı **karakter çizim katmanı için geçersizdir**. Yeni varsayılan `game/love/player/rigby_visual.lua` canlı iskeletli Osman karakteridir. `core_visual.lua`, plazma PNG'leri ve eski gameplay/sistem kayıtları silinmez; `TAMU_USE_PLASMA=1` geri dönüş seçeneğidir. 30 özgün PNG yalnız vücut parçalarıdır, frame atlası değildir. 44 klip, 4 yön, sağlak el soketi. Ana oyun dünya görseli R2/2.5D olarak kalır. Stage6/R2 kayıt sözleşmesi değişmez. CI, gerçek cihaz ve kaynak SHA ayrı kabul kanıtlarıdır.
+
+## R2 + 2.5D standard runtime kararı — 2026-10-29
+Kullanıcının açık güncel kararıyla, normal açılışta R2 authored dünya + 228 kaynaklı iki sayfalı kompakt 25D atlas varsayılandır. Eski dünya yalnız explicit OSMAN_R2_PILOT=0 / OSMAN_25D_RUNTIME=0, Stage5/Stage4/stat test fixture'ları ve Stage6 explicit modda korunur. R2 session-only ve save ile uyumsuz olmaya devam eder; Stage6 oyuncu kayıtları güvenli geçiş kararı olmadan R2'ye taşınmaz. R2 iki pinned harita JSON'unu game/love/assets/worldbuild içinden love.filesystem ile hash doğrulayarak okur; .love paketinde aynı haritalar zorunludur. Eski core/plazma varsayılan karakter çizimi ana dalda korunur; canlı Rigby2D karakter bağımsız deneyde ve birleşik .love önizlemesindedir, GitHub'a varlıkları tamamlanmadan main'e taşınmaz. Yedek, geçmiş, save ve stüdyolar korunur.
+
 # AGENTS.md — oyun (güncel LÖVE2D 45° izometrik 2D)
 
 ## Aktif mimari — 2026-10-15

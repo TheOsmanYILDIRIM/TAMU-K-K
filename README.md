@@ -1,3 +1,9 @@
+## Aktif oyuncu görünümü — 29 Ekim 2026
+**Varsayılan:** Osman canlı Rigby2D kemik/mesh animasyonu (4 izometrik yön, anatomik sağ el, 44 klip). Görselde önceden render edilmiş spritesheet kullanılmaz; yalnız PNG vücut parçaları ağırlıklı mesh'lerle hareket eder. R2 + kompakt atlaslı 2.5D/3N dünya standart kalır. Plazma yedeği `TAMU_USE_PLASMA=1` ile açılır. Canlı karakter ana oyun `player` objesiyle çizilir; hareket, su, hasat, envanter ve save kodu korunur. R2 session-only ve Stage6 kayıt mekanizması ayrı.
+
+## Güncel standart dünya — 29 Ekim 2026
+Normal LÖVE2D açılışı artık **R2 Fısıltı Ormanı + kompakt atlaslı 2.5D/3N** görünümdür. Authored haritalar `game/love/assets/worldbuild/` içinden hash denetimli paketlenir; `.love` dosyası depo dışından çalışır. Önceki dünya varsayılan olmaktan çıktı ama güvenli geri dönüş ve Stage6 için korunur. `OSMAN_R2_PILOT=0 OSMAN_25D_RUNTIME=0` eski görünüme geçer. R2 henüz session-only'dir, Stage6 kayıtları yeni haritaya taşınmaz. Plazma/çekirdek sistemi main'de korunmuştur; yeni canlı rigli Osman karakteri ayrı deney dalında ve indirilebilir birleşik önizlemededir, main'e eksik varlıklarla eklenmez.
+
 # TAMU KÖK — 45° izometrik 2D hayatta kalma / crafting oyunu
 
 **Proje kod adı:** TAMU KÖK (`tamu-kok`). Bu ad geliştirme projesinin kimliğidir; oyunun nihai yayın adı henüz belirlenmemiştir. GitHub depo yolu `TheOsmanYILDIRIM/oyun` ve çalışma dizinleri uyumluluk için korunur.
