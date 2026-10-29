@@ -562,6 +562,11 @@ function love.update(dt)
   if terrain25d_smoke or terrain25d_compare then camera.x,camera.y=704,128
   elseif not debug_view and not creative.active then camera.x,camera.y=player.x,player.y end
   stats=stream:update(camera,w,h)
+  -- Mobile object candidates must be prepared outside love.draw. R2's
+  -- ecology wrapper exposes generator_version via world.query.
+  if runtime25d then
+    ObjectRenderer.prepare_visible(objects,stream,1.2,camera,w,h)
+  end
   if terrain25d_compare then
     last_update_ms=(love.timer.getTime()-perf_begin)*1000
   end
