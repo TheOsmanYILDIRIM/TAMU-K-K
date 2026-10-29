@@ -16,6 +16,36 @@ jobs:
           python -m unittest discover -s scripts/tests -p 'test_terrain25d_assets.py' -v
       - name: Install Lua and real LÖVE test runtime
         run: sudo apt-get update -qq && sudo apt-get install -y lua5.4 luajit love xvfb
+      - name: Rigby JSON fast versus baseline parser on unchanged rig data
+        if: github.ref_name == 'experiment/25d-binary-vertex-20261030'
+        shell: bash
+        run: |
+          set -euo pipefail
+          luac5.4 -p game/love/save/json.lua
+          luajit -b game/love/save/json.lua /tmp/tamu-json.ljbc
+          git fetch --no-tags --depth=1 origin 36fe1fdd861b2b56535a523db63510e25415362b
+          git show 36fe1fdd861b2b56535a523db63510e25415362b:game/love/save/json.lua > /tmp/tamu-json-legacy.lua
+          cd game/love
+          for interpreter in lua5.4 luajit; do
+            "$interpreter" - <<'LUA'
+          local baseline=assert(loadfile('/tmp/tamu-json-legacy.lua'))()
+          local fast=require('save.json')
+          local f=assert(io.open('assets/osman_rig/rig.json','rb'))
+          local source=f:read('*a');f:close()
+          local clock=os.clock
+          collectgarbage('collect')
+          local old_start=clock();local old=baseline.decode(source)
+          local old_ms=(clock()-old_start)*1000
+          collectgarbage('collect')
+          local start=clock();local latest=fast.decode(source)
+          local fast_ms=(clock()-start)*1000
+          assert(baseline.encode(old)==fast.encode(latest),'Rigby JSON semantic parity failed')
+          assert(latest.format=='tamu-rigby-fk/1')
+          print(string.format('TAMU_RIGBY_JSON_COMPARE baseline_ms=%.3f fast_ms=%.3f speedup=%.2f',
+            old_ms,fast_ms,old_ms/fast_ms))
+          assert(fast_ms<old_ms,'optimized Rigby JSON not faster')
+          LUA
+          done
       - name: Measure all 27 authored chunks with binary and JSON, compare settled frames
         if: github.ref_name == 'experiment/25d-binary-vertex-20261030'
         shell: bash
@@ -36,13 +66,13 @@ jobs:
           test "$(find game/love/assets/terrain25d/baked -name '*.json.z' | wc -l)" -eq 27
           export XDG_DATA_HOME="$RUNNER_TEMP/tamu-27-binary"
           mkdir -p "$XDG_DATA_HOME"
-          TAMU_25D_27_COMPARE=1 OSMAN_25D_BAKE_VERIFY=1 OSMAN_25D_BAKE_LIMIT=27 timeout 240s xvfb-run -a love game/love 2>&1 | tee /tmp/tamu-27-binary.log
+          OSMAN_25D_SUN_HOUR=10.5 TAMU_25D_27_COMPARE=1 OSMAN_25D_BAKE_VERIFY=1 OSMAN_25D_BAKE_LIMIT=27 timeout 240s xvfb-run -a love game/love 2>&1 | tee /tmp/tamu-27-binary.log
           grep -q 'TAMU_25D_27_COMPLETE mode=binary chunks=27' /tmp/tamu-27-binary.log
           test "$(grep -c 'TAMU_25D_BINARY_LOADED' /tmp/tamu-27-binary.log)" -eq 27
           cp "$(find "$XDG_DATA_HOME" -name 'tamu-27-binary.png' -print -quit)" /tmp/tamu-27-binary.png
           export XDG_DATA_HOME="$RUNNER_TEMP/tamu-27-json"
           mkdir -p "$XDG_DATA_HOME"
-          TAMU_25D_27_COMPARE=1 TAMU_25D_FORCE_JSON=1 OSMAN_25D_BAKE_VERIFY=1 OSMAN_25D_BAKE_LIMIT=27 timeout 300s xvfb-run -a love game/love 2>&1 | tee /tmp/tamu-27-json.log
+          OSMAN_25D_SUN_HOUR=10.5 TAMU_25D_27_COMPARE=1 TAMU_25D_FORCE_JSON=1 OSMAN_25D_BAKE_VERIFY=1 OSMAN_25D_BAKE_LIMIT=27 timeout 300s xvfb-run -a love game/love 2>&1 | tee /tmp/tamu-27-json.log
           grep -q 'TAMU_25D_27_COMPLETE mode=json chunks=27' /tmp/tamu-27-json.log
           cp "$(find "$XDG_DATA_HOME" -name 'tamu-27-json.png' -print -quit)" /tmp/tamu-27-json.png
           python -m pip install pillow
