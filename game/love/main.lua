@@ -723,7 +723,12 @@ function love.draw()
     end if created then break end end
     assert(created and creative.revision==1 and #creative:snapshot().parts==1,
       "creative touch/build smoke has no valid target")
+    -- Do not screenshot in the same frame: HUD was already drawn closed.
+    camera.x,camera.y=creative.target.x,creative.target.y
+    camera.zoom=2.6
     creative_smoke_done=true
+  end
+  if creative_smoke and creative_smoke_done and frames>=114 then
     love.graphics.captureScreenshot("tamu-creative-25d.png")
     print(string.format("TAMU_CREATIVE_25D_SMOKE_OK chunks=%d parts=%d runtime25d=%s",
       stats.loaded,creative.revision,tostring(runtime25d~=nil)))
