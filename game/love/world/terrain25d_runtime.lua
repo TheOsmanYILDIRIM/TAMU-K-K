@@ -7,6 +7,7 @@ local Materials=require("world.terrain25d_materials")
 local Atlas=require("world.terrain25d_atlas")
 local Sun=require("world.terrain25d_sun")
 local Reveal=require("world.terrain25d_reveal")
+local Baked=require("world.terrain25d_baked")
 local Runtime={}; Runtime.__index=Runtime
 -- 128px source texture spans 64 world units; 32-unit mesh lattice stays
 -- aligned to UV seams. Large grass/stone details no longer rival trees.
@@ -121,6 +122,8 @@ function Runtime.new(pilot)
    catalog_counts={total=#archive.assets,packed=#m.assets,
      pages=#m.atlas_pages},
    built=0,visible=0,draw_calls=0,transition_triangles=0,
+   baked_written=0,baked_loaded=0,
+   bake_mode=os.getenv("OSMAN_25D_BAKE")=="1",
    uploads_per_frame=0,build_budget=1,step=32,
    build_time_budget=.0012,build_time_budget_idle=.0028,
    moving_resume_cap=5,idle_resume_cap=14,
@@ -539,31 +542,46 @@ function Runtime:draw(stream,camera,w,h)
  end
  self.last_camera_x,self.last_camera_y=camera.x,camera.y
  local moving=motion>1.5
- local deadline=clock and now+(moving and self.build_time_budget or
+ local budget=self.bake_mode and .03 or (moving and self.build_time_budget or
    self.build_time_budget_idle)
+ local deadline=clock and now+budget
  local uploads,resumes=0,0
- local resume_cap=moving and self.moving_resume_cap or self.idle_resume_cap
+ local resume_cap=self.bake_mode and 800 or
+   (moving and self.moving_resume_cap or self.idle_resume_cap)
  for _,c in ipairs(chunks) do
    if image_ready and not c._25d_meshes and uploads<self.build_budget
        and (not deadline or clock()<deadline) then
      local job=c._25d_prepare_job
-     if not job then
-       job=coroutine.create(function()
-         self:prepare(c,function() coroutine.yield() end)
-       end)
-       c._25d_prepare_job=job
+     local loaded=false
+     if not job and not self.bake_mode then
+       loaded=Baked.load(self,c)
+       if loaded then uploads=uploads+1 end
      end
-     repeat
-       local ok,err=coroutine.resume(job)
-       assert(ok,err)
-       resumes=resumes+1
-       if coroutine.status(job)=="dead" then
-         c._25d_prepare_job=nil
-         uploads=uploads+1
-         break
+     if not loaded then
+       if not job then
+         job=coroutine.create(function()
+           self:prepare(c,function() coroutine.yield() end)
+         end)
+         c._25d_prepare_job=job
        end
-     until resumes>=resume_cap or (deadline and clock()>=deadline)
-     if resumes>=resume_cap then break end
+       repeat
+         local ok,err=coroutine.resume(job)
+         assert(ok,err)
+         resumes=resumes+1
+         if coroutine.status(job)=="dead" then
+           c._25d_prepare_job=nil
+           uploads=uploads+1
+           if self.bake_mode then
+             local bytes=Baked.save(self,c)
+             self.baked_written=self.baked_written+1
+             print(string.format("TAMU_25D_BAKED_WRITE cx=%d cy=%d bytes=%d",c.cx,c.cy,bytes))
+             io.stdout:flush()
+           end
+           break
+         end
+       until resumes>=resume_cap or (deadline and clock()>=deadline)
+       if resumes>=resume_cap then break end
+     end
    end
  end
  self.uploads_per_frame=uploads

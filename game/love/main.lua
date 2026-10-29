@@ -660,6 +660,29 @@ function love.draw()
   g.circle("fill",bx+joystick.dx*55,by+joystick.dy*55,22)
   g.setColor(1,1,1)
   frames=frames+1
+  -- CI-only authored mesh compilation/verification; never alters player save.
+  if runtime25d and
+     (os.getenv("OSMAN_25D_BAKE")=="1" or
+      os.getenv("OSMAN_25D_BAKE_VERIFY")=="1") then
+    local requested=tonumber(os.getenv("OSMAN_25D_BAKE_LIMIT")) or
+      math.max(1,stats.needed or 1)
+    local baked=os.getenv("OSMAN_25D_BAKE")=="1"
+    local count=baked and runtime25d.baked_written or runtime25d.baked_loaded
+    if count>=requested then
+      if not baked then
+        love.graphics.captureScreenshot("tamu-prebaked-startup.png")
+      end
+      print(string.format("TAMU_25D_BAKE_%s_OK count=%d frames=%d visible=%d",
+        baked and "BUILD" or "VERIFY",count,frames,runtime25d.visible))
+      io.stdout:flush()
+      love.event.quit()
+      return
+    end
+    if frames>2400 then
+      error(string.format("25D baked acceptance timeout: mode=%s count=%d target=%d",
+        baked and "build" or "verify",count,requested))
+    end
+  end
   -- This probe checks actual terrain meshes, not merely 20 update frames.
   -- It is used by the packaged default-world CI visual acceptance.
   if os.getenv("OSMAN_25D_VISUAL_PROBE")=="1" then
