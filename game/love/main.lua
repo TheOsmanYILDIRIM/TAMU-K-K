@@ -726,15 +726,27 @@ function love.draw()
     creative_hud:action("creative_toggle",creative)
     assert(creative.active,"creative toggle failed")
     local created=false
+    -- Prefer the nearest dry buildable cell, never a distant area that
+    -- will still be streaming when the test screenshot is captured.
+    local candidates={}
     for iy=-4,4 do for ix=-4,4 do
-      creative.target={x=math.floor(player.x/32+.5)*32+ix*32,
-        y=math.floor(player.y/32+.5)*32+iy*32}
+      if ix~=0 or iy~=0 then
+        candidates[#candidates+1]={x=ix,y=iy,d=ix*ix+iy*iy}
+      end
+    end end
+    table.sort(candidates,function(a,b)
+      if a.d~=b.d then return a.d<b.d end
+      return a.y<b.y or (a.y==b.y and a.x<b.x)
+    end)
+    for _,o in ipairs(candidates) do
+      creative.target={x=math.floor(player.x/32+.5)*32+o.x*32,
+        y=math.floor(player.y/32+.5)*32+o.y*32}
       local ok=creative:preview()
       if ok then
         assert(creative:place(),"creative smoke placement failed")
         created=true;break
       end
-    end if created then break end end
+    end
     assert(created and creative.revision==1 and #creative:snapshot().parts==1,
       "creative touch/build smoke has no valid target")
     -- Do not screenshot in the same frame: HUD was already drawn closed.
@@ -742,7 +754,8 @@ function love.draw()
     camera.zoom=2.6
     creative_smoke_done=true
   end
-  if creative_smoke and creative_smoke_done and frames>=114 then
+  if creative_smoke and creative_smoke_done and frames>=210 and
+    stats.loaded>0 and stats.pending==0 then
     love.graphics.captureScreenshot("tamu-creative-25d.png")
     print(string.format("TAMU_CREATIVE_25D_SMOKE_OK chunks=%d parts=%d runtime25d=%s",
       stats.loaded,creative.revision,tostring(runtime25d~=nil)))
