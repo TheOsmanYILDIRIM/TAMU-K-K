@@ -166,7 +166,7 @@ local function load_binary(runtime,chunk)
  return true
 end
 function M.load(runtime,chunk)
- if load_binary(runtime,chunk) then return true end
+ if os.getenv('TAMU_25D_FORCE_JSON')~='1' and load_binary(runtime,chunk) then return true end
  local path=M.source_path(chunk)
  if not love.filesystem.getInfo(path,'file') then return false end
  local ok,doc=pcall(function()
