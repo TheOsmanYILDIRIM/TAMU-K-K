@@ -33,6 +33,7 @@ jobs:
           luac5.4 -p main.lua world/r2_playable.lua
           lua5.4 tests/r2_pilot_contract.lua
           lua5.4 tests/terrain25d_runtime.lua
+          lua5.4 tests/terrain25d_object_population.lua
           cd ../..
 
       - name: Validate and package playable LÖVE source
