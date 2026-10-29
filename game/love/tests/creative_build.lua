@@ -25,7 +25,8 @@ assert(c:tap_world(180,180,camera,360,360))
 local yes,b=c:preview();assert(yes and b.rotation==1 and b.x%32==16)
 assert(c:place())
 assert(c:select(4));c.rotation=1
-assert(c:tap_world(180,180,camera,360,360))
+local can_place,reason=c:tap_world(180,180,camera,360,360)
+assert(not can_place and reason=="occupied","different wall must be rejected")
 assert(c:preview()==false,"different wall cannot occupy identical space")
 assert(c:select(11));c.level=1
 assert(c:tap_world(210,180,camera,360,360))
