@@ -44,6 +44,8 @@ function Sprite.new(provider,manifest)
  return setmetatable({provider=provider,families=fam,
    batches_by_page={},shadow_batches={},shadow_frame=0,
    shadow_cache=nil,shadow_rebuilds=0,shadow_reuses=0,
+   contact_batch=nil,contact_cache=nil,contact_calls=0,
+   contact_objects=0,contact_rebuilds=0,contact_reuses=0,
    frame=0,current_page=nil,shadow_calls=0,shadow_objects=0,
    limit=limit,pending=0,selected=nil,visible=0,culled=0,batches=0},Sprite)
 end
@@ -135,6 +137,90 @@ function Sprite:shadow_batch_for(page)
  entry.last_seen=self.shadow_frame
  return entry
 end
+-- Only visual ID and geometry matter; R2 can re-materialize equal
+-- records without invalidating the rendered scene.
+local function same_scene(cache,camera,w,h,objects)
+ if not cache or cache.x~=camera.x or cache.y~=camera.y
+   or cache.zoom~=camera.zoom or cache.w~=w or cache.h~=h
+   or #cache.objects~=#objects then return false end
+ for i,o in ipairs(objects) do
+   local v=cache.objects[i]
+   if v[1]~=o.id or v[2]~=o.x or v[3]~=o.y
+     or v[4]~=o.kind or v[5]~=o.radius then return false end
+ end
+ return true
+end
+local function scene_snapshot(camera,w,h,objects)
+ local snapshot={}
+ for i,o in ipairs(objects) do
+   snapshot[i]={o.id,o.x,o.y,o.kind,o.radius}
+ end
+ return {x=camera.x,y=camera.y,zoom=camera.zoom,w=w,h=h,objects=snapshot}
+end
+-- Replace per-object filled ellipses with one 48x48 alpha-oval batch.
+-- Nine KiB of visual-only RGBA8; no change to collision, save, source PNGs
+-- or the approved two-layer projected sunlight silhouettes.
+function Sprite:draw_contacts(g,camera,w,h,objects)
+ self.contact_calls=0
+ if #objects==0 then
+   self.contact_objects=0
+   self.contact_cache=nil
+   return
+ end
+ if self.contact_batch and same_scene(self.contact_cache,camera,w,h,objects) then
+   self.contact_reuses=self.contact_reuses+1
+   if self.contact_objects>0 then
+     g.setColor(1,1,1,1)
+     g.draw(self.contact_batch)
+     self.contact_calls=1
+   end
+   return
+ end
+ self.contact_rebuilds=self.contact_rebuilds+1
+ if not self.contact_batch then
+   local size=48
+   local pixels=love.image.newImageData(size,size)
+   for py=0,size-1 do for px=0,size-1 do
+     local dx=(px+.5-size/2)/(size/2)
+     local dy=(py+.5-size/2)/(size/2)
+     local alpha=math.max(0,math.min(1,(1-math.sqrt(dx*dx+dy*dy))*size/2))
+     pixels:setPixel(px,py,1,1,1,alpha)
+   end end
+   local image=g.newImage(pixels)
+   pixels:release()
+   image:setFilter("linear","linear")
+   self.contact_batch=g.newSpriteBatch(image,self.limit*2,"stream")
+   self.contact_quad=g.newQuad(0,0,size,size,size,size)
+   self.contact_image=image
+ end
+ local batch=self.contact_batch
+ batch:clear()
+ batch:setColor(.06,.09,.08,.20)
+ local count,total,overflow=0,0,false
+ for _,o in ipairs(objects) do
+   local a,x,y=self:appearance(camera,w,h,o)
+   if a then
+     if count>=self.limit*2 then
+       g.setColor(1,1,1,1);g.draw(batch)
+       self.contact_calls=self.contact_calls+1
+       batch:clear();count=0;overflow=true
+     end
+     local z=camera.zoom
+     batch:add(self.contact_quad,x,y+2*z,0,
+       o.radius*z*1.15/24,o.radius*z*.52/24,24,24)
+     count=count+1
+     total=total+1
+   end
+ end
+ self.contact_objects=total
+ g.setColor(1,1,1,1)
+ if count>0 then
+   g.draw(batch)
+   self.contact_calls=self.contact_calls+1
+ end
+ -- An overflow flushes partial contents; it is intentionally not cacheable.
+ self.contact_cache=not overflow and scene_snapshot(camera,w,h,objects) or nil
+end
 -- Reuse immutable GPU shadow batches while a fixed view's moving sun
 -- changes by less than a third of a screen pixel. A changed camera, object
 -- or appreciable solar motion always rebuilds the original two RGBA layers.
@@ -151,12 +237,11 @@ function Sprite:draw_shadows(g,camera,w,h,objects)
  self.shadow_calls,self.shadow_objects=0,0
  if not sun or sun.cast<=0 then
    self.shadow_cache=nil
+   self:draw_contacts(g,camera,w,h,objects)
    return 0
  end
  local cache=self.shadow_cache
- local reuse=cache and cache.x==camera.x and cache.y==camera.y
-   and cache.zoom==camera.zoom and cache.w==w and cache.h==h
-   and #cache.objects==#objects
+ local reuse=same_scene(cache,camera,w,h,objects)
  if reuse then
    local turn=math.abs(sun.rotation-cache.rotation)
    turn=math.min(turn,2*math.pi-turn)
@@ -164,16 +249,6 @@ function Sprite:draw_shadows(g,camera,w,h,objects)
      +math.abs(sun.length-cache.length)*cache.extent
      +math.abs(sun.cast-cache.cast)*40
    reuse=error_px<.33
- end
- if reuse then
-   for i,o in ipairs(objects) do
-     local state=cache.objects[i]
-     if state[1]~=o or state[2]~=o.x or state[3]~=o.y
-       or state[4]~=o.kind or state[5]~=o.id then
-       reuse=false
-       break
-     end
-   end
  end
  if reuse then
    for _,page in ipairs(cache.pages) do
@@ -190,6 +265,7 @@ function Sprite:draw_shadows(g,camera,w,h,objects)
      g.draw(entry.batch)
      self.shadow_calls=self.shadow_calls+1
    end
+   self:draw_contacts(g,camera,w,h,objects)
    return self.shadow_calls
  end
  self.shadow_rebuilds=self.shadow_rebuilds+1
@@ -237,15 +313,15 @@ function Sprite:draw_shadows(g,camera,w,h,objects)
  if overflowed then
    self.shadow_cache=nil
  else
-   local snapshot={}
-   for i,o in ipairs(objects) do
-     snapshot[i]={o,o.x,o.y,o.kind,o.id}
-   end
-   self.shadow_cache={x=camera.x,y=camera.y,zoom=camera.zoom,
-     w=w,h=h,rotation=sun.rotation,length=sun.length,cast=sun.cast,
-     extent=max_extent,count=self.shadow_objects,
-     pages=pages,objects=snapshot}
+   self.shadow_cache=scene_snapshot(camera,w,h,objects)
+   self.shadow_cache.rotation=sun.rotation
+   self.shadow_cache.length=sun.length
+   self.shadow_cache.cast=sun.cast
+   self.shadow_cache.extent=max_extent
+   self.shadow_cache.count=self.shadow_objects
+   self.shadow_cache.pages=pages
  end
+ self:draw_contacts(g,camera,w,h,objects)
  return self.shadow_calls
 end
 function Sprite:queue(g,camera,w,h,o,selected)
@@ -256,8 +332,6 @@ function Sprite:queue(g,camera,w,h,o,selected)
  if self.pending>=self.limit or
    (self.current_page and self.current_page~=a.page) then self:flush(g) end
  local batch=self:batch_for(a.page)
- g.setColor(.06,.09,.08,.20)
- g.ellipse("fill",x,y+2*z,o.radius*z*1.15,o.radius*z*.52)
  batch:add(a.quad,x,y,0,scale,scale,64,124)
  self.current_page=a.page
  self.pending=self.pending+1
@@ -266,6 +340,7 @@ function Sprite:queue(g,camera,w,h,o,selected)
 end
 function Sprite:draw(g,camera,w,h,o,selected)
  self:begin_frame()
+ self:draw_shadows(g,camera,w,h,{o})
  self:queue(g,camera,w,h,o,selected)
  self:flush(g)
 end

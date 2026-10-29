@@ -1,7 +1,7 @@
 -- Pure Lua regression: all 228 source IDs, lazy multi-page images, GPU eviction.
 package.path="./?.lua;./?/init.lua;"..package.path
 local uploads,draws,pastes,decoded,created=0,0,0,0,0
-local projected_shadow_sprites=0
+local projected_shadow_sprites,contact_sprites=0,0
 local function fakeImage(w,h)
  local v={w=w,h=h,released=false}
  function v:getDimensions() return self.w,self.h end
@@ -21,6 +21,10 @@ local function fakeData(w,h)
    assert(other.w==128 and other.h==128 and
      sx==0 and sy==0 and pw==128 and ph==128)
    pastes=pastes+1
+ end
+ function d:setPixel(x,y,r,g,b,alpha)
+   assert(x>=0 and x<self.w and y>=0 and y<self.h)
+   assert(r==1 and g==1 and b==1 and alpha>=0 and alpha<=1)
  end
  function d:release() self.released=true end
  return d
@@ -50,7 +54,13 @@ local g={
        alpha>=0 and alpha<=1)
    end
    function b:add(quad,x,y,r,sx,sy,ox,oy)
-     assert(quad and sx>0 and sy~=0 and ox==64 and oy==124)
+     assert(quad and sx>0 and sy~=0)
+     if ox==24 then
+       assert(oy==24 and quad[3]==48 and quad[4]==48 and sy>0)
+       contact_sprites=contact_sprites+1
+     else
+       assert(ox==64 and oy==124)
+     end
      if sy<0 then
        assert(type(r)=="number" and r==r,
          "sunlight projected rotation is not finite")
@@ -261,16 +271,28 @@ local shadow_calls=sprites:draw_shadows(g,cam,360,780,{shadow_object})
 assert(shadow_calls>=1 and shadow_calls<=4
   and sprites.shadow_objects==1 and projected_shadow_sprites==2,
   "visible sprite alpha must cast two batched silhouette layers")
-assert(rt.page_pins and sprites.shadow_calls==shadow_calls)
+assert(rt.page_pins and sprites.shadow_calls==shadow_calls
+  and sprites.contact_calls==1 and sprites.contact_objects==1
+  and contact_sprites==1,
+  "ground contact shadow must use one atlas batch draw")
 -- A stationary scene reuses GPU buffers without uploading two more
 -- projected silhouettes when the clock advances by a subpixel amount.
 sprites:draw_shadows(g,cam,360,780,{shadow_object})
 assert(sprites.shadow_reuses==1 and projected_shadow_sprites==2
-  and sprites.shadow_calls==shadow_calls)
+  and sprites.shadow_calls==shadow_calls and sprites.contact_reuses==1
+  and contact_sprites==1,"stationary scene must reuse both batches")
 rt:set_sun_hour(8.00001)
 sprites:draw_shadows(g,cam,360,780,{shadow_object})
-assert(sprites.shadow_reuses==2 and projected_shadow_sprites==2,
-  "subpixel solar motion should reuse unchanged shadow buffers")
+assert(sprites.shadow_reuses==2 and projected_shadow_sprites==2
+  and sprites.contact_reuses==2 and contact_sprites==1,
+  "subpixel solar motion should reuse both shadow buffers")
+-- Equivalent source records can be rebuilt without redrawing their batches.
+sprites:draw_shadows(g,cam,360,780,{
+ {id=shadow_object.id,x=shadow_object.x,y=shadow_object.y,
+  kind=shadow_object.kind,radius=shadow_object.radius}})
+assert(sprites.shadow_reuses==3 and sprites.contact_reuses==3
+  and projected_shadow_sprites==2 and contact_sprites==1,
+  "equal objects in new tables must reuse visual batches")
 rt:set_sun_hour(12)
 sprites:draw_shadows(g,cam,360,780,{shadow_object})
 assert(sprites.shadow_objects==1 and projected_shadow_sprites==4
@@ -279,12 +301,20 @@ assert(sprites.shadow_objects==1 and projected_shadow_sprites==4
 -- Camera motion invalidates buffers even with an identical object list.
 cam.x=cam.x+1
 sprites:draw_shadows(g,cam,360,780,{shadow_object})
-assert(projected_shadow_sprites==6 and sprites.shadow_rebuilds==3,
-  "camera motion cannot reuse stale projected coordinates")
+assert(projected_shadow_sprites==6 and sprites.shadow_rebuilds==3
+  and sprites.contact_rebuilds==2 and contact_sprites==2,
+  "camera motion must rebuild both sunlight and contact shadow buffers")
+sprites:draw_shadows(g,cam,360,780,{
+ {id=shadow_object.id,x=shadow_object.x+1,y=shadow_object.y,
+  kind=shadow_object.kind,radius=shadow_object.radius}})
+assert(sprites.contact_rebuilds==3 and contact_sprites==3
+  and projected_shadow_sprites==8,
+  "object movement invalidates both shadow batches")
 rt:set_sun_hour(23)
 sprites:draw_shadows(g,cam,360,780,{shadow_object})
-assert(sprites.shadow_calls==0 and sprites.shadow_objects==0,
-  "no solar silhouette casts when sun is below horizon")
+assert(sprites.shadow_calls==0 and sprites.shadow_objects==0
+  and sprites.contact_calls==1,
+  "night has a contact batch but no projected sunlight silhouette")
 rt:set_sun_hour(8)
 rt:advance_sun(10)
 assert(rt.sun_hour>morningHour and rt.sun_hour<morningHour+1,
