@@ -576,89 +576,7 @@ function love.update(dt)
     perf_tick("update",perf_begin)
   end
 end
-function love.draw()
-  local perf_begin=love.timer.getTime()
-  if long_driver and boot_ready and long_driver.frame>0 then long_driver:beforeDraw() end
-  if runtime25d then runtime25d:draw(stream,camera,w,h)
-  else Terrain.draw(stream,camera,w,h,r2_pilot and r2_pilot.render_options) end
-  if cache_pilot_enabled and not boot_ready then
-    local g=love.graphics
-    local ready=0
-    for _,c in ipairs(stream:visible()) do
-      if c._terrain_meshes then ready=ready+1 end
-    end
-    g.clear(.04,.07,.08,1)
-    g.setColor(.93,.96,.90)
-    g.print("Preparing the world",math.max(20,w*.1),h*.44)
-    g.setColor(.19,.39,.38)
-    g.rectangle("fill",w*.1,h*.5,w*.8,14)
-    g.setColor(.53,.85,.68)
-    g.rectangle("fill",w*.1,h*.5,w*.8*ready/math.max(1,stats.needed),14)
-    g.setColor(1,1,1)
-    g.print(string.format("%d / %d chunks",ready,stats.needed),w*.1,h*.54)
-    perf_tick("draw",perf_begin)
-    return
-  end
-  -- Present useful loading feedback instead of a blank default screen.
-  if runtime25d and runtime25d.visible==0 then
-    local g=love.graphics
-    g.setColor(.75,.92,.91,1)
-    g.print("TAMU - Dunya hazirlaniyor",24,math.floor(h*.44))
-    g.print(string.format("Arazi: %d / %d   Chunk: %d",
-      runtime25d.built or 0,stats.needed or 0,stats.loaded or 0),
-      24,math.floor(h*.44)+34)
-    g.setColor(1,1,1,1)
-  end
-  object_count=ObjectRenderer.draw(objects,stream,camera,w,h,player,
-    selected_target,harvesting,sprite25d_draw)
-  local ghost
-  if not r2_pilot and stage_hud.placing and placement_target then
-    local ok=building:preview("core:workbench",placement_target.x,placement_target.y,
-      placement_rotation,player.x,player.y)
-    ghost={x=placement_target.x,y=placement_target.y,ok=ok}
-  end
-  PlacedRenderer.draw(building,camera,w,h,ghost)
-  creative_renderer:draw(creative,camera,w,h)
-  local g=love.graphics
-  local safe_x,safe_y,safe_w,safe_h=safe_area()
-  g.setColor(.05,.12,.12,.75)
-  g.rectangle("fill",safe_x+8,safe_y+8,math.min(safe_w-16,600),124,12,12)
-  g.setColor(1,1,1)
-  if safe_w<420 then
-    g.print((r2_pilot and "R2 PILOT / " or "WORLD / ")..query.seed,safe_x+18,safe_y+15)
-    g.print(string.format("Chunks %d  Objects %d",stats.loaded,object_count),
-      safe_x+18,safe_y+38)
-    g.print(string.format("Log %d  Plank %d  Bench %d",
-      inventory:count("core:wood_log"),inventory:count("core:wood_plank"),
-      building.revision),safe_x+18,safe_y+61)
-  else
-    g.print((r2_pilot and "R2 FISILTI / seed " or "WORLD OBJECTS / seed ")..query.seed,safe_x+18,safe_y+15)
-    g.print(string.format("Chunks %d/%d  Objects %d  State %s",stats.loaded,stats.needed,object_count,player.state),safe_x+18,safe_y+38)
-    g.print(string.format("Logs %d  Planks %d  Stone %d  Benches %d",
-      inventory:count("core:wood_log"),inventory:count("core:wood_plank"),
-      inventory:count("core:stone"),building.revision),safe_x+18,safe_y+61)
-  end
-  if route_status~="" then g.print(route_status,safe_x+18,safe_y+84) end
-  if harvesting.active then
-    g.setColor(.14,.25,.23,.85)
-    g.rectangle("fill",safe_x+18,safe_y+106,190,9)
-    g.setColor(.96,.75,.28)
-    g.rectangle("fill",safe_x+18,safe_y+106,190*harvesting:progress(),9)
-  end
-  g.setColor(.12,.30,.31,.76)
-  g.rectangle("fill",safe_x+safe_w-136,safe_y+safe_h-175,122,66,13,13)
-  g.setColor(1,.95,.83)
-  g.print("COLLECT",safe_x+safe_w-120,safe_y+safe_h-149)
-  local hud_safe={x=safe_x,y=safe_y,w=safe_w,h=safe_h}
-  stage_hud:draw(inventory,crafting,hud_safe,placement_rotation,route_status)
-  stat_hud:draw(g,hud_safe,progression)
-  creative_hud:draw(creative,hud_safe)
-  local bx,by=joystick_center()
-  g.setColor(.2,.3,.34,.6)
-  g.circle("fill",bx,by,72)
-  g.setColor(.95,.95,.9,.7)
-  g.circle("fill",bx+joystick.dx*55,by+joystick.dy*55,22)
-  g.setColor(1,1,1)
+local function draw_postchecks(perf_begin)
   frames=frames+1
   -- CI-only authored mesh compilation/verification; never alters player save.
   if runtime25d and
@@ -928,6 +846,91 @@ function love.draw()
   if long_driver and boot_ready and long_driver.frame>0 then
     long_driver:afterDraw(object_count)
   end
+end
+function love.draw()
+  local perf_begin=love.timer.getTime()
+  if long_driver and boot_ready and long_driver.frame>0 then long_driver:beforeDraw() end
+  if runtime25d then runtime25d:draw(stream,camera,w,h)
+  else Terrain.draw(stream,camera,w,h,r2_pilot and r2_pilot.render_options) end
+  if cache_pilot_enabled and not boot_ready then
+    local g=love.graphics
+    local ready=0
+    for _,c in ipairs(stream:visible()) do
+      if c._terrain_meshes then ready=ready+1 end
+    end
+    g.clear(.04,.07,.08,1)
+    g.setColor(.93,.96,.90)
+    g.print("Preparing the world",math.max(20,w*.1),h*.44)
+    g.setColor(.19,.39,.38)
+    g.rectangle("fill",w*.1,h*.5,w*.8,14)
+    g.setColor(.53,.85,.68)
+    g.rectangle("fill",w*.1,h*.5,w*.8*ready/math.max(1,stats.needed),14)
+    g.setColor(1,1,1)
+    g.print(string.format("%d / %d chunks",ready,stats.needed),w*.1,h*.54)
+    perf_tick("draw",perf_begin)
+    return
+  end
+  -- Present useful loading feedback instead of a blank default screen.
+  if runtime25d and runtime25d.visible==0 then
+    local g=love.graphics
+    g.setColor(.75,.92,.91,1)
+    g.print("TAMU - Dunya hazirlaniyor",24,math.floor(h*.44))
+    g.print(string.format("Arazi: %d / %d   Chunk: %d",
+      runtime25d.built or 0,stats.needed or 0,stats.loaded or 0),
+      24,math.floor(h*.44)+34)
+    g.setColor(1,1,1,1)
+  end
+  object_count=ObjectRenderer.draw(objects,stream,camera,w,h,player,
+    selected_target,harvesting,sprite25d_draw)
+  local ghost
+  if not r2_pilot and stage_hud.placing and placement_target then
+    local ok=building:preview("core:workbench",placement_target.x,placement_target.y,
+      placement_rotation,player.x,player.y)
+    ghost={x=placement_target.x,y=placement_target.y,ok=ok}
+  end
+  PlacedRenderer.draw(building,camera,w,h,ghost)
+  creative_renderer:draw(creative,camera,w,h)
+  local g=love.graphics
+  local safe_x,safe_y,safe_w,safe_h=safe_area()
+  g.setColor(.05,.12,.12,.75)
+  g.rectangle("fill",safe_x+8,safe_y+8,math.min(safe_w-16,600),124,12,12)
+  g.setColor(1,1,1)
+  if safe_w<420 then
+    g.print((r2_pilot and "R2 PILOT / " or "WORLD / ")..query.seed,safe_x+18,safe_y+15)
+    g.print(string.format("Chunks %d  Objects %d",stats.loaded,object_count),
+      safe_x+18,safe_y+38)
+    g.print(string.format("Log %d  Plank %d  Bench %d",
+      inventory:count("core:wood_log"),inventory:count("core:wood_plank"),
+      building.revision),safe_x+18,safe_y+61)
+  else
+    g.print((r2_pilot and "R2 FISILTI / seed " or "WORLD OBJECTS / seed ")..query.seed,safe_x+18,safe_y+15)
+    g.print(string.format("Chunks %d/%d  Objects %d  State %s",stats.loaded,stats.needed,object_count,player.state),safe_x+18,safe_y+38)
+    g.print(string.format("Logs %d  Planks %d  Stone %d  Benches %d",
+      inventory:count("core:wood_log"),inventory:count("core:wood_plank"),
+      inventory:count("core:stone"),building.revision),safe_x+18,safe_y+61)
+  end
+  if route_status~="" then g.print(route_status,safe_x+18,safe_y+84) end
+  if harvesting.active then
+    g.setColor(.14,.25,.23,.85)
+    g.rectangle("fill",safe_x+18,safe_y+106,190,9)
+    g.setColor(.96,.75,.28)
+    g.rectangle("fill",safe_x+18,safe_y+106,190*harvesting:progress(),9)
+  end
+  g.setColor(.12,.30,.31,.76)
+  g.rectangle("fill",safe_x+safe_w-136,safe_y+safe_h-175,122,66,13,13)
+  g.setColor(1,.95,.83)
+  g.print("COLLECT",safe_x+safe_w-120,safe_y+safe_h-149)
+  local hud_safe={x=safe_x,y=safe_y,w=safe_w,h=safe_h}
+  stage_hud:draw(inventory,crafting,hud_safe,placement_rotation,route_status)
+  stat_hud:draw(g,hud_safe,progression)
+  creative_hud:draw(creative,hud_safe)
+  local bx,by=joystick_center()
+  g.setColor(.2,.3,.34,.6)
+  g.circle("fill",bx,by,72)
+  g.setColor(.95,.95,.9,.7)
+  g.circle("fill",bx+joystick.dx*55,by+joystick.dy*55,22)
+  g.setColor(1,1,1)
+  draw_postchecks(perf_begin)
 end
 safe_area=function()
   if love.window and love.window.getSafeArea then
