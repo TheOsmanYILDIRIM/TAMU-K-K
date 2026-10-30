@@ -98,6 +98,12 @@ jobs:
           find "$XDG_DATA_HOME" -name 'c_*.json.z' -exec cp {} game/love/assets/terrain25d/baked/ \;
           test "$(find game/love/assets/terrain25d/baked -name '*.verts.z' | wc -l)" -eq 27
           test "$(find game/love/assets/terrain25d/baked -name '*.json.z' | wc -l)" -eq 27
+          export XDG_DATA_HOME="$RUNNER_TEMP/tamu-binary-thread"
+          mkdir -p "$XDG_DATA_HOME"
+          TAMU_25D_BINARY_THREAD_PROBE=1 timeout 150s xvfb-run -a love game/love 2>&1 | tee /tmp/tamu-27-worker.log
+          grep -q 'TAMU_BINARY_THREAD_OK chunks=' /tmp/tamu-27-worker.log
+          grep -q 'TAMU_25D_BINARY_LOADED' /tmp/tamu-27-worker.log
+
           export XDG_DATA_HOME="$RUNNER_TEMP/tamu-27-binary"
           mkdir -p "$XDG_DATA_HOME"
           TAMU_PERF_PHASE_TRACE=1 OSMAN_25D_SUN_HOUR=10.5 TAMU_25D_27_COMPARE=1 OSMAN_25D_BAKE_VERIFY=1 OSMAN_25D_BAKE_LIMIT=27 timeout 240s xvfb-run -a love game/love 2>&1 | tee /tmp/tamu-27-binary.log
@@ -148,6 +154,7 @@ jobs:
           name: tamu-27-binary-vs-json
           path: |
             /tmp/tamu-27-bake.log
+            /tmp/tamu-27-worker.log
             /tmp/tamu-27-binary.log
             /tmp/tamu-27-json.log
             /tmp/tamu-27-binary.png
