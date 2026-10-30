@@ -40,8 +40,8 @@ function M.flush()
   if not M.enabled or #M.records==0 then return end
   local start=now()
   rotate()
-  local ok=love.filesystem.append(trace_path(),table.concat(M.records))
-  if not ok then
+  local called,ok=pcall(love.filesystem.append,trace_path(),table.concat(M.records))
+  if not called or not ok then
     -- Never crash gameplay because telemetry storage is read-only or full.
     M.dropped=M.dropped+#M.records;M.records={};M.bytes=0
     M.enabled=false;return false
@@ -95,8 +95,8 @@ function M.export()
     if M.recent[idx] then lines[#lines+1]=M.recent[idx] end
   end
   local name='diagnostics/tamu-export-recent.jsonl'
-  local ok,err=love.filesystem.write(name,table.concat(lines,'\n')..'\n')
-  return ok,ok and name or tostring(err)
+  local called,ok,err=pcall(love.filesystem.write,name,table.concat(lines,'\n')..'\n')
+  return called and ok,called and ok and name or tostring(err or ok)
 end
 function M.begin(dt)
   if not M.enabled then return end
