@@ -16,6 +16,40 @@ jobs:
           python -m unittest discover -s scripts/tests -p 'test_terrain25d_assets.py' -v
       - name: Install Lua and real LÖVE test runtime
         run: sudo apt-get update -qq && sudo apt-get install -y lua5.4 luajit love xvfb
+      - name: Authored terrain warm residency and return without GPU rebuild
+        if: github.ref_name == 'experiment/25d-binary-vertex-20261030'
+        shell: bash
+        run: |
+          set -euo pipefail
+          luac5.4 -p game/love/world/stream.lua game/love/main.lua game/love/world/terrain25d_runtime.lua
+          cd game/love
+          for interpreter in lua5.4 luajit; do
+            "$interpreter" - <<'LUA'
+          local Stream=require('world.stream')
+          local Camera=require('core.camera')
+          local query={field={},sample=function() return 0 end}
+          local stream=Stream.new(query,{size=256,step=32,render_only_25d=true,
+            max_loaded=80,warm_limit=24,build_budget=80})
+          local camera=Camera.new()
+          camera.zoom=2
+          camera.x,camera.y=0,0
+          stream:update(camera,320,640)
+          local initial=stream:visible()
+          assert(#initial>0)
+          local key,original=initial[1].key,initial[1]
+          local released=0
+          original._25d_meshes={terrain=true}
+          original._meshes={terrain={release=function() released=released+1 end}}
+          camera.x=3072
+          stream:update(camera,320,640)
+          assert(stream.warm[key] and stream.warm[key].chunk==original)
+          camera.x=0
+          stream:update(camera,320,640)
+          assert(stream:get_loaded(original.cx,original.cy)==original)
+          assert(released==0 and stream.warm_hits>=1)
+          print('TAMU_WARM_RETURN_OK hits='..stream.warm_hits)
+          LUA
+          done
       - name: Rigby JSON fast versus baseline parser on unchanged rig data
         if: github.ref_name == 'experiment/25d-binary-vertex-20261030'
         shell: bash
