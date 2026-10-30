@@ -1,9 +1,9 @@
 name: quality
-# Avoid spawning an expensive full-world CI for each iterative experiment
-# commit. Main remains push-verified; isolated branch runs are opt-in.
+# Keep main protected, and validate the authorized performance experiment.
+# Same-branch concurrency cancels older commits when a new revision is pushed.
 on:
   push:
-    branches: [main]
+    branches: [main, experiment/25d-binary-vertex-20261030]
   workflow_dispatch:
 # Preserve existing branch test coverage, but never spend Actions minutes on
 # outdated commits when several changes land on the same branch quickly.
