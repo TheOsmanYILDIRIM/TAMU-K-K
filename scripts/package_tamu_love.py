@@ -19,7 +19,18 @@ def main(repo,output):
     for p in root.rglob('*'):
         if p.is_file() and p.suffix.lower() not in ('.pyc','.log') and '__pycache__' not in p.parts:
             rel=p.relative_to(root).as_posix()
-            if rel.startswith(('assets/tamu_creative_','assets/worldbuild/')) or rel in ('assets/creative_build_atlas.png','assets/creative_build_manifest.json'):
+            if rel.startswith(('assets/tamu_creative_','assets/worldbuild/','assets/terrain25d/source_png/')) or rel in ('assets/creative_build_atlas.png','assets/creative_build_manifest.json'):
+                continue
+            # No legacy plasma/Core fallback. Keep source files in Git archives.
+            if rel.startswith('player/core_') or rel in (
+                'player/axe_strike.lua','assets/axe_121227.png',
+                'assets/settle_at_the_edge.mp3',
+                'assets/file_000000007cf082119c4dde3e346c2bcb.png',
+                'assets/core_crystal_mask_aligned.png',
+                'assets/core_plasma_front_spritesheet_32x512.png',
+                'assets/core_plasma_back_spritesheet_32x512.png'):
+                continue
+            if rel.startswith('assets/creative_') and rel.endswith('.png'):
                 continue
             content.append((rel,p.read_bytes()))
     for name,sha in R2.items():
