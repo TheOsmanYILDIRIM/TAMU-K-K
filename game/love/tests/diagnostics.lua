@@ -33,7 +33,17 @@ for i=1,90 do
  Diagnostics.measure('shadows_ms',2)
  Diagnostics.draw_done({chunks=35,objects=90,missing=0,shadow_rebuilds=2})
 end
+local exported,name=Diagnostics.export()
+assert(exported and name=='diagnostics/tamu-export-recent.jsonl')
+local export_lines=0
+for line in files[name]:gmatch('[^\\n]+') do
+  local v=require('save.json').decode(line)
+  assert(v.kind=='frame')
+  export_lines=export_lines+1
+end
+assert(export_lines==90)
 Diagnostics.close()
+Diagnostics.close() -- shutdown idempotency
 local data=table.concat({files['diagnostics/tamu-trace-0.jsonl'] or '',
  files['diagnostics/tamu-trace-1.jsonl'] or '',
  files['diagnostics/tamu-trace-2.jsonl'] or ''})
