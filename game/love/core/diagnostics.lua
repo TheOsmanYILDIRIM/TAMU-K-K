@@ -77,6 +77,12 @@ function M.event(name,fields)
     if type(k)=='string' and #k<=48 and
       (type(v)=='number' or type(v)=='boolean') then data[k]=v end
   end
+  if name=='fatal_error' and type(fields)=='table' and type(fields.message)=='string' then
+    -- Stable correlation without saving potentially sensitive stack text.
+    local hash=5381
+    for i=1,#fields.message do hash=(hash*33+fields.message:byte(i))%2147483647 end
+    data.error_hash=hash;data.error_length=#fields.message
+  end
   row('event',data)
 end
 -- Explicit on-device export. It never transmits data or touches save files.
@@ -90,7 +96,7 @@ function M.export()
   end
   local name='diagnostics/tamu-export-recent.jsonl'
   local ok,err=love.filesystem.write(name,table.concat(lines,'\n')..'\n')
-  return ok,name or err
+  return ok,ok and name or tostring(err)
 end
 function M.begin(dt)
   if not M.enabled then return end
