@@ -1,3 +1,11 @@
+## 2026-10-30 — Düşük çözünürlüklü gölge atlasları (KABUL BEKLİYOR)
+
+- Kullanıcı kararı: gölgeleri ağaçların GERÇEK 128px RGBA alpha siluetlerinden üret, 32x32 gölge texture atlaslarını ağaç atlasından ayrı tut; GitHub CI ve .love test paketi isteği.
+- Deney dalı: scripts/build_tamu_static_shadow_atlases.py artık source atlas_01.png SHA denetimi ile 60 varyant için 8 adet küçük gölge atlası + v3 manifest üretir. Orijinal 128px ağaç dokuları korunur.
+- objects/terrain25d_sprites.lua paketlenmiş v3 manifest varsa önce gölge SpriteBatch (32px mask), ardından özgün object atlasını kullanır; dinamik/contact shadow algoritması bu yolda çalışmaz. Paketleme 8 sayfayı ekler. quality.yml içinde Lua test ve LOVE ZIP sayfa/manifest kontrolü vardır.
+- Açık: yeni CI sonucunu oku; gerçek 8 PNG ve .love artifact çıktısı henüz doğrulanmadı. GitHub repo içinde üretilmiş PNG binary dosyalarının commit'i henüz yoktur, build aşamasında üretilir. Android cihaz A/B FPS/görsel kabulü açık. Main'e merge yok.
+
+---
 ## 2026-10-30 — Statik obje-gölge atlas deneyi (KABUL BEKLİYOR)
 
 - Karar: önceden gölgeli obje atlasları, karakter boyutu aynı kalırken ağaçlar dünya ölçeğinde büyütüldü. Main'e merge yok.
