@@ -16,6 +16,19 @@ jobs:
           python -m unittest discover -s scripts/tests -p 'test_terrain25d_assets.py' -v
       - name: Install Lua and real LÖVE test runtime
         run: sudo apt-get update -qq && sudo apt-get install -y lua5.4 luajit love xvfb
+      - name: Fail fast on Lua and packaging syntax in streaming experiment
+        if: github.ref_name == 'experiment/25d-binary-vertex-20261030'
+        shell: bash
+        run: |
+          set -euo pipefail
+          luac5.4 -p game/love/world/terrain25d_runtime.lua
+          luac5.4 -p game/love/world/terrain25d_baked.lua
+          luac5.4 -p game/love/world/terrain25d_binary_worker.lua
+          luac5.4 -p game/love/world/stream.lua
+          luac5.4 -p game/love/main.lua
+          luajit -b game/love/main.lua /tmp/tamu-main-check.ljc
+          luajit -b game/love/world/terrain25d_binary_worker.lua /tmp/tamu-worker-check.ljc
+          python3 -m py_compile scripts/package_tamu_love.py
       - name: Real LÖVE off-thread procedural terrain build and GPU upload
         if: github.ref_name == 'experiment/25d-binary-vertex-20261030'
         shell: bash
