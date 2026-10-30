@@ -33,6 +33,8 @@ jobs:
           luac5.4 -p game/love/world/stream.lua
           luac5.4 -p game/love/main.lua
           luac5.4 -p game/love/core/perf_hud.lua
+          luac5.4 -p game/love/player/rigby_runtime.lua
+          luajit -b game/love/player/rigby_runtime.lua /tmp/tamu-rigby-runtime-check.ljc
           luac5.4 -p game/love/objects/renderer.lua
           luac5.4 -p game/love/tests/terrain25d_object_population.lua
           luajit -b game/love/objects/renderer.lua /tmp/tamu-renderer-check.ljc
@@ -41,6 +43,10 @@ jobs:
           luajit -b game/love/world/terrain25d_binary_worker.lua /tmp/tamu-worker-check.ljc
           python3 -m py_compile scripts/package_tamu_love.py
           cd game/love
+          lua5.4 tests/rigby_runtime.lua
+          luajit tests/rigby_runtime.lua
+          lua5.4 tests/rigby_visual.lua
+          luajit tests/rigby_visual.lua
           lua5.4 tests/terrain25d_runtime.lua
           luajit tests/terrain25d_runtime.lua
           lua5.4 tests/terrain25d_batch.lua
