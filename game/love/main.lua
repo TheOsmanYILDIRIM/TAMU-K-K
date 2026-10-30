@@ -968,9 +968,11 @@ function love.draw()
   local phase_trace=os.getenv('TAMU_PERF_PHASE_TRACE')=='1'
   local terrain_finished,objects_finished
   if long_driver and boot_ready and long_driver.frame>0 then long_driver:beforeDraw() end
-  if terrain_on then
-    if runtime25d then runtime25d:draw(stream,camera,w,h)
-    else Terrain.draw(stream,camera,w,h,r2_pilot and r2_pilot.render_options) end
+  if runtime25d then
+    runtime25d.suppress_terrain_draw=not terrain_on
+    runtime25d:draw(stream,camera,w,h)
+  elseif terrain_on then
+    Terrain.draw(stream,camera,w,h,r2_pilot and r2_pilot.render_options)
   end
   if coverage_walk_enabled and runtime25d then
     if not coverage_walk.started then
