@@ -60,13 +60,19 @@ function M.benchmark_sample(dt,update_ms,draw_ms,runtime,stats,sprites)
    table.sort(a)
    local function q(p) return a[math.ceil(#a*p)] end
    local p50,p95,p99=q(.5),q(.95),q(.99)
+   local gpu_stats=love.graphics and love.graphics.getStats and
+     love.graphics.getStats() or {}
+   local gpu_calls=gpu_stats.drawcalls or 0
+   local gpu_batched=gpu_stats.drawcallsbatched or 0
+   local texture_mib=(gpu_stats.texturememory or 0)/1048576
    local terrain_calls=runtime and runtime.draw_calls or 0
    local object_calls=sprites and sprites.batches or 0
    local shadow_calls=sprites and sprites.shadow_calls or 0
    local contact_calls=sprites and sprites.contact_calls or 0
    print(string.format(
-     'TAMU_CI_CPU_400 frames=%d p50_ms=%.3f p95_ms=%.3f p99_ms=%.3f target_p95_ms=2.500 terrain_calls=%d object_batches=%d shadow_calls=%d contact_calls=%d',
-     #a,p50,p95,p99,terrain_calls,object_calls,shadow_calls,contact_calls))
+     'TAMU_CI_CPU_400 frames=%d p50_ms=%.3f p95_ms=%.3f p99_ms=%.3f target_p95_ms=2.500 terrain_calls=%d object_batches=%d shadow_calls=%d contact_calls=%d gpu_drawcalls=%d gpu_batched=%d texture_mib=%.2f',
+     #a,p50,p95,p99,terrain_calls,object_calls,shadow_calls,contact_calls,
+     gpu_calls,gpu_batched,texture_mib))
    io.stdout:flush()
    love.event.quit()
  end
