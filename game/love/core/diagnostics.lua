@@ -96,6 +96,17 @@ function M.draw_done(extra)
     contact_rebuilds=extra.contact_rebuilds or 0,contact_reuses=extra.contact_reuses or 0,
     trace_write_ms=M.write_ms}
   row('frame',sample)
+  if M.last_missing~=nil and sample.missing~=M.last_missing then
+    row('chunk_coverage_changed',{before=M.last_missing,after=sample.missing,
+      chunks=sample.chunks,pending=sample.pending})
+  end
+  if M.last_pending~=nil and sample.pending~=M.last_pending then
+    row('chunk_pending_changed',{before=M.last_pending,after=sample.pending})
+  end
+  local shadow_delta=sample.shadow_rebuilds-(M.last_shadow_rebuilds or sample.shadow_rebuilds)
+  if shadow_delta>0 then row('shadow_rebuilt',{count=shadow_delta,objects=sample.objects}) end
+  M.last_missing=sample.missing;M.last_pending=sample.pending
+  M.last_shadow_rebuilds=sample.shadow_rebuilds
   if M.dt>=34 or draw_ms>=25 or (M.update_ms or 0)>=12 then
     M.stalled=M.stalled+1
     row('slow_frame',{dt_ms=M.dt,draw_ms=draw_ms,update_ms=M.update_ms,
