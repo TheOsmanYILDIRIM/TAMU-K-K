@@ -1,3 +1,13 @@
+## 2026-10-30 — Statik obje-gölge atlas deneyi (KABUL BEKLİYOR)
+
+- Karar: önceden gölgeli obje atlasları, karakter boyutu aynı kalırken ağaçlar dünya ölçeğinde büyütüldü. Main'e merge yok.
+- scripts/build_tamu_static_shadow_atlases.py 60 object variant'ı mevcut atlas_01.png'den alarak 8 adet üç saatlik dilim için 4'er sayfa (toplam 32 PNG) ve v2 manifest üretmek üzere eklendi.
+- scripts/package_tamu_love.py build aşamasında bu atlasları pakete eklemek üzere güncellendi. game/love/objects/terrain25d_sprites.lua manifest mevcutsa birleşik gölgeli atlası çizer ve eski dynamic/contact shadow pass'ini atlar; manifest yoksa eski kodu kullanır.
+- Lua5.4/LuaJIT için tests/terrain25d_static_shadows.lua ve mevcut quality.yml testi eklendi.
+- AÇIK: Yeni CI, gerçek PNG/.love üretimi, mobil max texture/memory, LÖVE/Xvfb visual overlap, Android gerçek FPS ve mevcut görsel/saklama regresyonları kanıtlanmadı. Kaynak değişikliklerini üretim kabulü sayma.
+- Sonraki adım: quality logunu ve üretilmiş ZIP'i açarak 32 sayfa + manifesti doğrula; görüntüyü incele ve Android sabit/yürüme karşılaştırmasını yap. Main'e merge yapma.
+
+---
 ## 2026-10-30 — Telemetri iyileştirmesi (kısmi, CI/Android doğrulanmadı)
 
 - Aynı deney dalında var olan `core/diagnostics.lua`, analiz betiği ve quality testleri tespit edildi; devirdeki 'henüz yapılmadı' notu kod durumunu yansıtmıyordu.
