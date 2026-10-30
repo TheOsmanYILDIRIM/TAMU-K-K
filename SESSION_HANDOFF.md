@@ -14,8 +14,14 @@
 - Creative remains session-only, no Stage5/Stage6/save mutation. User requested
   a NEW experiment branch; do NOT merge into main before real LÖVE + visual
   inspection, CI, and device acceptance. Detailed tests in README.
-- Verification in this commit is **pending** until new branch Quality
-  (Lua5.4/LuaJIT/Python/real LÖVE) reports a result. Android FPS not claimed.
+- **Verified source commit** `888168e8d55f01c530a5b95e746d696aeae30908`:
+  GitHub Quality run `41065311446` SUCCESS; Lua5.4/LuaJIT Creative grounding
+  `TAMU_CREATIVE_GROUNDED_OK`, Python 2/2 art/projection tests, real LÖVE/Xvfb
+  `TAMU_CREATIVE_25D_SMOKE_OK` with one physical support. Artifact is a
+  tested 466-entry `.love` ZIP; SHA256
+  `e1e5a48cac7a01aa1399fe607c3f905250a0e529bb1115e8decdc1ed906402b7`.
+  Actual mobile hardware/FPS and full 13-part assembly in the renderer are
+  **not verified**; thin west/north roof silhouettes remain visually open.
 
 ## 29 Ekim 2026 — Creative 2,5D bütünleştirme
 
