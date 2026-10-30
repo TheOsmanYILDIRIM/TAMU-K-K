@@ -1,6 +1,8 @@
 -- Mobile opt-in atlas sprite batching; original Y-depth/harvest stays authoritative.
 -- Only packed, reviewed atlas pages are accessed, and only for visible sprites.
 local Sprite={};Sprite.__index=Sprite
+local StaticJson=require('save.json')
+local SHADOW_ROOT='assets/terrain25d/static_shadow/'
 local function hash(id)
  local n=19
  for i=1,#id do n=(n*33+id:byte(i))%2147483647 end
@@ -43,7 +45,17 @@ function Sprite.new(provider,manifest)
  end
  assert(fam.oak and fam.conifer and fam.boulder)
  local limit=1024
+ local static_manifest
+ if love.filesystem and love.filesystem.getInfo and
+   love.filesystem.getInfo(SHADOW_ROOT..'objects_shadow_manifest.json','file') then
+   local raw=love.filesystem.read(SHADOW_ROOT..'objects_shadow_manifest.json')
+   local ok,m=pcall(StaticJson.decode,raw or '')
+   if ok and m and m.version==1 and #m.pages==8 and m.objects then
+     static_manifest=m
+   end
+ end
  return setmetatable({provider=provider,families=fam,
+   static_manifest=static_manifest,static_images={},
    batches_by_page={},shadow_batches={},shadow_frame=0,
    shadow_cache=nil,shadow_rebuilds=0,shadow_reuses=0,
    contact_batch=nil,contact_cache=nil,contact_calls=0,
@@ -57,7 +69,10 @@ function Sprite:begin_frame()
  for page,entry in pairs(self.batches_by_page) do
    if self.frame-entry.last_seen>2 then
      entry.batch:release()
-     self.provider:unpin_page(page)
+     if entry.static then
+       entry.image:release()
+       self.static_images[page]=nil
+     else self.provider:unpin_page(page) end
      self.batches_by_page[page]=nil
    end
  end
@@ -67,10 +82,18 @@ end
 function Sprite:batch_for(page)
  local entry=self.batches_by_page[page]
  if not entry then
-   local image=self.provider:page(page)
+   local static=page:sub(1,13)=='staticshadow:'
+   local image
+   if static then
+     image=love.graphics.newImage(SHADOW_ROOT..page:sub(14))
+     image:setFilter('linear','linear')
+     self.static_images[page]=image
+   else
+     image=self.provider:page(page)
+     self.provider:pin_page(page)
+   end
    local batch=love.graphics.newSpriteBatch(image,self.limit,"stream")
-   self.provider:pin_page(page)
-   entry={batch=batch,last_seen=self.frame}
+   entry={batch=batch,last_seen=self.frame,static=static,image=static and image or nil}
    self.batches_by_page[page]=entry
  end
  entry.last_seen=self.frame
@@ -262,6 +285,12 @@ end
 -- changes by less than a third of a screen pixel. A changed camera, object
 -- or appreciable solar motion always rebuilds the original two RGBA layers.
 function Sprite:draw_shadows(g,camera,w,h,objects)
+ if self.static_manifest then
+   -- Shadows are baked into each object's time-slot atlas entry. No
+   -- per-object shadow projection or contact pass runs during draw.
+   self.shadow_calls,self.shadow_objects=0,0
+   return 0
+ end
  self.shadow_frame=self.shadow_frame+1
  local sun=self.provider.sun
  for page,entry in pairs(self.shadow_batches) do
@@ -375,11 +404,25 @@ function Sprite:queue(g,camera,w,h,o,selected)
    (self.current_page and self.current_page~=a.page) then self:flush(g) end
  local progress=self.provider.object_reveal and
    self.provider:object_reveal(o.x,o.y) or 1
- local batch=self:batch_for(a.page)
+ local page=a.page
+ local quad=a.quad
+ local pivot_x,pivot_y=64,124
+ if self.static_manifest then
+   local atlas=self.static_manifest
+   local entry=atlas.objects[a.id]
+   assert(entry,'missing static shadow sprite '..tostring(a.id))
+   local hour=self.provider.sun and self.provider.sun.hour or 12
+   local slot=(math.floor(hour/3+.5)*3)%24
+   page='staticshadow:objects_shadow_'..string.format('%02d',slot)..'.png'
+   quad=love.graphics.newQuad(entry.u,entry.v,entry.width,entry.height,
+     atlas.width,atlas.height)
+   pivot_x,pivot_y=entry.pivot[1],entry.pivot[2]
+ end
+ local batch=self:batch_for(page)
  batch:setColor(1,1,1,progress)
  self.pending_reveal=self.pending_reveal or progress<.999
- batch:add(a.quad,x,y,0,scale,scale,64,124)
- self.current_page=a.page
+ batch:add(quad,x,y,0,scale,scale,pivot_x,pivot_y)
+ self.current_page=page
  self.pending=self.pending+1
  self.visible=self.visible+1
  if selected then self.selected={x=x,y=y,radius=o.radius,zoom=z} end
