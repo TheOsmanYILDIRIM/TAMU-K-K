@@ -1,5 +1,10 @@
 name: quality
-on: [push]
+# Avoid spawning an expensive full-world CI for each iterative experiment
+# commit. Main remains push-verified; isolated branch runs are opt-in.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
 # Preserve existing branch test coverage, but never spend Actions minutes on
 # outdated commits when several changes land on the same branch quickly.
 concurrency:
