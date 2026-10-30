@@ -614,6 +614,15 @@ local function draw_postchecks(perf_begin)
       error('binary background worker failed to load four real authored chunks')
     end
   end
+  if os.getenv('TAMU_25D_FULL_AUTHORED_BAKE')=='1' and runtime25d then
+    if runtime25d:bake_authored_step() then
+      print(string.format('TAMU_AUTHORED_BAKE_OK chunks=%d',
+        #runtime25d.authored_bake_queue))
+      io.stdout:flush()
+      love.event.quit()
+      return
+    end
+  end
   -- CI-only authored mesh compilation/verification; never alters player save.
   if runtime25d and
      (os.getenv("OSMAN_25D_BAKE")=="1" or
