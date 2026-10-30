@@ -918,6 +918,13 @@ function Runtime:draw(stream,camera,w,h)
  self.object_chunks=stream.render_visible and
    stream:render_visible(camera,w,h,80*camera.zoom+16) or chunks
  self.culled_chunks=#chunks-#draw_chunks
+ -- The full terrain pipeline still prepares identical resident chunks in
+ -- matched render tests. Suppress only terrain GPU drawing when disabled.
+ if self.suppress_terrain_draw then
+   self.visible=#draw_chunks
+   self.draw_calls=0
+   return self.visible
+ end
  local g=love.graphics
  g.clear(.075,.115,.128,1);g.push("all")
  g.translate(w/2,h/2);g.scale(camera.zoom)
