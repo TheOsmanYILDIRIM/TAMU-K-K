@@ -152,8 +152,9 @@ end
 -- Only visual ID and geometry matter; R2 can re-materialize equal
 -- records without invalidating the rendered scene.
 local function same_scene(cache,camera,w,h,objects)
- if not cache or cache.x~=camera.x or cache.y~=camera.y
-   or cache.zoom~=camera.zoom or cache.w~=w or cache.h~=h
+ -- Screen-space batch geometry remains valid when only the camera pans.
+ -- Translate the cached batch by the projected camera displacement.
+ if not cache or cache.zoom~=camera.zoom or cache.w~=w or cache.h~=h
    or #cache.objects~=#objects then return false end
  for i,o in ipairs(objects) do
    local v=cache.objects[i]
@@ -161,6 +162,16 @@ local function same_scene(cache,camera,w,h,objects)
      or v[4]~=o.kind or v[5]~=o.radius then return false end
  end
  return true
+end
+local function draw_camera_batch(g,batch,cache,camera,w,h)
+ -- camera:project is authoritative for the game's isometric transform.
+ -- The old camera centre, projected using the new camera, gives the exact
+ -- translation needed by every cached screen-space sprite vertex.
+ local x,y=camera:project(cache.x,cache.y,w,h)
+ g.push()
+ g.translate(x-w*.5,y-h*.5)
+ g.draw(batch)
+ g.pop()
 end
 local function scene_snapshot(camera,w,h,objects)
  local snapshot={}
@@ -186,7 +197,7 @@ function Sprite:draw_contacts(g,camera,w,h,objects)
    self.contact_reuses=self.contact_reuses+1
    if self.contact_objects>0 then
      g.setColor(1,1,1,1)
-     g.draw(self.contact_batch)
+     draw_camera_batch(g,self.contact_batch,self.contact_cache,camera,w,h)
      self.contact_calls=1
    end
    return
@@ -283,7 +294,7 @@ function Sprite:draw_shadows(g,camera,w,h,objects)
    for _,page in ipairs(cache.pages) do
      local entry=self.shadow_batches[page]
      entry.last_seen=self.shadow_frame
-     g.draw(entry.batch)
+     draw_camera_batch(g,entry.batch,cache,camera,w,h)
      self.shadow_calls=self.shadow_calls+1
    end
    self:draw_contacts(g,camera,w,h,objects)
