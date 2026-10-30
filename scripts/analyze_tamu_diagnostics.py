@@ -40,6 +40,22 @@ def analyse(paths):
         by_session[r.get("session", "unknown")].append(r)
     sessions = []
     for sid, rows in by_session.items():
+        # Rotation can put older frames in a later input file. Reorder by
+        # frame sequence before differencing monotonic lifetime counters.
+        rows.sort(key=lambda r: (r.get("frame", 0), r.get("t", 0)))
+        prev_shadow = None
+        prev_contact = None
+        for record in rows:
+            current = record.get("shadow_rebuilds")
+            if isinstance(current, (int, float)):
+                record["shadow_rebuilt_this_frame"] = (
+                    max(0, current - prev_shadow) if prev_shadow is not None else 0)
+                prev_shadow = current
+            current = record.get("contact_rebuilds")
+            if isinstance(current, (int, float)):
+                record["contact_rebuilt_this_frame"] = (
+                    max(0, current - prev_contact) if prev_contact is not None else 0)
+                prev_contact = current
         fields = ["frame_ms", "fps", "dt_ms", "update_ms", "draw_ms", "drawcalls",
                   "shaderswitches", "texture_mib", "lua_kib",
                   "chunks", "objects", "missing", "pending",
@@ -76,7 +92,8 @@ def analyse(paths):
                         slow_phase_totals[key] += value
         slow_vs_normal = {}
         for name, predicate in (
-            ("shadow_rebuilds", lambda v: v > 0),
+            ("shadow_rebuilt_this_frame", lambda v: v > 0),
+            ("contact_rebuilt_this_frame", lambda v: v > 0),
             ("missing", lambda v: v > 0),
             ("pending", lambda v: v > 0),
         ):
