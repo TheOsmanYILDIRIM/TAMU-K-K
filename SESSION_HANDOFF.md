@@ -1,3 +1,12 @@
+## 2026-10-30 — Açılış performans izolasyon profilleri (KABUL BEKLİYOR)
+
+- Kullanıcının isteğiyle mod seçilmeden gerçek oyun başlatılmayacak şekilde main.lua başına hafif core/perf_isolation_boot.lua yönlendiricisi eklendi; ayrı karakter, arazi doku örneği, obje örneği, ikili kombinasyonlar, boş sahne ve tam oyun seçimi var.
+- Yalıtılmış modlarda kapalı katmanlar hiç require edilmez; world/stream/worker/save/gameplay döngüsü kurulmaz. Karakter gerçek Rigby görselini yükler; arazi yalnız mevcut atlas grass tekrarından oluşan statik proxy, objeler yalnız 24 adet atlas proxy'dir. Tam R2 tek başına renderer testi henüz YOK.
+- Var olan quality.yml içine tests/perf_isolation_boot.lua Lua5.4/LuaJIT kontrolü eklendi. Gerçek oyun yolu GitHub CI ortamında CI=true ile mevcut davranışını korur.
+- Kabul: CI, izole Android screenshot ve FPS, boş sahne vs karakter vs gerçek R2 kıyaslaması açık; normal mod Stage5/6 ve R2 regresyonları henüz tekrar doğrulanmadı. Main'e merge yok.
+
+---
+
 ## 2026-10-30 — Düşük çözünürlüklü gölge atlasları (KABUL BEKLİYOR)
 
 - Kullanıcı kararı: gölgeleri ağaçların GERÇEK 128px RGBA alpha siluetlerinden üret, 32x32 gölge texture atlaslarını ağaç atlasından ayrı tut; GitHub CI ve .love test paketi isteği.
