@@ -31,10 +31,13 @@ local function prepare(mode)
  if mode=='none' then return end
  cam=require('core.camera').new()
  cam.zoom=1.4
- local json=require('save.json')
- local m=json.decode(assert(love.filesystem.read('assets/terrain25d/manifest.json')))
- local page={}
- for _,p in ipairs(m.atlas_pages) do page[p.filename]=p end
+ local m,page
+ if includes(mode,'terrain') or includes(mode,'objects') then
+   local json=require('save.json')
+   m=json.decode(assert(love.filesystem.read('assets/terrain25d/manifest.json')))
+   page={}
+   for _,p in ipairs(m.atlas_pages) do page[p.filename]=p end
+ end
  if includes(mode,'terrain') then
    local terrain=m.assets
    for _,a in ipairs(terrain) do
@@ -110,7 +113,10 @@ end
 function Boot.install()
  function love.load() end
  function love.update(dt)
-   if selected then count=count+1;elapsed=elapsed+dt end
+   if selected then
+     count=count+1;elapsed=elapsed+dt
+     if assets.actor then assets.actor.time=elapsed end
+   end
  end
  function love.draw()
    local g=love.graphics
