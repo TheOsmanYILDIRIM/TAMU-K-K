@@ -1,5 +1,6 @@
 -- Exact pass-order and atlas batching regression, with no gameplay state.
 package.path='./?.lua;./?/init.lua;'..package.path
+local unpack=table.unpack or unpack
 local clock=0
 local created,released=0,0
 love={timer={getTime=function() clock=clock+.00015;return clock end},
