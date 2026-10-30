@@ -89,6 +89,13 @@ jobs:
               assert 'assets/worldbuild/fisilti_ormani.r2.v1.json' in paths
           print('TAMU_AUTHORED_LOVE_OK binary_chunks=156')
           PY
+          export XDG_DATA_HOME="$RUNNER_TEMP/tamu-authored-walk"
+          mkdir -p "$XDG_DATA_HOME"
+          SDL_AUDIODRIVER=dummy TAMU_25D_WALK_PROBE=1 timeout 240s xvfb-run -a love /tmp/tamu-authored-compiled.love 2>&1 | tee /tmp/tamu-authored-walk.log
+          grep -q 'TAMU_WALK_COVERAGE frames=480 max_missing=0' /tmp/tamu-authored-walk.log
+          grep -q 'TAMU_25D_BINARY_LOADED' /tmp/tamu-authored-walk.log
+          echo 'TAMU_AUTHORED_WALK_ZERO_GAP_OK'
+
 
       - name: Upload complete authored-region binary GPU cache
         if: always() && github.ref_name == 'experiment/25d-binary-vertex-20261030'
@@ -98,6 +105,7 @@ jobs:
           path: |
             /tmp/tamu-authored-bake.log
             /tmp/tamu-authored-compiled.love
+            /tmp/tamu-authored-walk.log
             /tmp/tamu-authored-binary/
           if-no-files-found: warn
       - name: Rigby JSON fast versus baseline parser on unchanged rig data
