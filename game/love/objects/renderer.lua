@@ -104,7 +104,7 @@ function R.prepare_visible(world,stream,budget_ms,camera,w,h)
 end
 -- Scratch buffers are only used by the synchronous render path.
 -- Public R.collect still returns an independent table for other callers.
-local draw_pool={objects={},seen={},order={},visual={}}
+local draw_pool={objects={},seen={},order={},entries={},visual={}}
 local function clear_array(a)
  for i=#a,1,-1 do a[i]=nil end
  return a
@@ -179,9 +179,25 @@ end
 function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_override)
   local all=R.collect(world,stream,object_override,draw_pool)
   local order=clear_array(draw_pool.order)
-  order[1]={id="!player",depth=Depth.key(player.x,player.y),player=true}
-  for _,o in ipairs(all) do
-    order[#order+1]={id=o.id,depth=Depth.key(o.x,o.y),object=o}
+  local entries=draw_pool.entries
+  local player_entry=entries[1]
+  if not player_entry then
+    player_entry={};entries[1]=player_entry
+  end
+  player_entry.id="!player"
+  player_entry.depth=Depth.key(player.x,player.y)
+  player_entry.player=true
+  player_entry.object=nil
+  order[1]=player_entry
+  for i,o in ipairs(all) do
+    local slot=i+1
+    local entry=entries[slot]
+    if not entry then entry={};entries[slot]=entry end
+    entry.id=o.id
+    entry.depth=Depth.key(o.x,o.y)
+    entry.player=nil
+    entry.object=o
+    order[slot]=entry
   end
   table.sort(order,Depth.before)
   local g=love.graphics
