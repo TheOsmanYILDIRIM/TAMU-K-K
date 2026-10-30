@@ -74,6 +74,11 @@ function M.benchmark_sample(dt,update_ms,draw_ms,runtime,stats,sprites)
      #a,p50,p95,p99,terrain_calls,object_calls,shadow_calls,contact_calls,
      gpu_calls,gpu_batched,texture_mib))
    io.stdout:flush()
+   local flavor=os.getenv('TAMU_DISABLE_TERRAIN_BATCH')=='1'
+     and 'unbatched' or 'batched'
+   if love.graphics and love.graphics.captureScreenshot then
+     love.graphics.captureScreenshot('tamu-terrain-'..flavor..'.png')
+   end
    love.event.quit()
  end
 end
