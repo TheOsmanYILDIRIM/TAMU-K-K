@@ -76,6 +76,24 @@ jobs:
           find "$XDG_DATA_HOME" -name 'c_*.meta.json' -exec cp {} /tmp/tamu-authored-binary/ \;
           test "$(find /tmp/tamu-authored-binary -name '*.verts.z' | wc -l)" -eq 156
           test "$(find /tmp/tamu-authored-binary -name '*.meta.json' | wc -l)" -eq 156
+          python3 - <<'PY'
+          import pathlib,zlib
+          prebuilt=pathlib.Path('/tmp/tamu-authored-binary')
+          worker=pathlib.Path(__import__('os').environ['RUNNER_TEMP'])/'tamu-cpu-worker-smoke'
+          generated=list(worker.rglob('25d-terrain-cache-v1/c_*.verts.z'))
+          assert generated,'CPU worker produced no persistent binary terrain'
+          checked=0
+          for src in generated:
+              target=prebuilt/src.name
+              if target.exists():
+                  lhs=zlib.decompress(src.read_bytes())
+                  rhs=zlib.decompress(target.read_bytes())
+                  assert lhs==rhs,f'CPU worker and authored GPU bake differ at {src.name}'
+                  checked+=1
+          assert checked>0,'no overlapping authored chunk to compare'
+          print(f'TAMU_CPU_GPU_VERTEX_PARITY_OK chunks={checked}')
+          PY
+
           python3 -m pip install pillow
           python3 scripts/package_tamu_love.py --repo . --prebaked-dir /tmp/tamu-authored-binary --output /tmp/tamu-authored-compiled.love
           python3 - <<'PY'
