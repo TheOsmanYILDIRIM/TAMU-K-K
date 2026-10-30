@@ -13,9 +13,10 @@ from pathlib import Path
 from PIL import Image, ImageChops
 
 HOURS = tuple(range(0, 24, 3))
-CELL = 512
+CELL = 256
+SHADOW_RES = 32
 COLS = 4
-PIVOT = (256, 400)
+PIVOT = (128, 192)
 TREE = {"oak", "broadleaf", "conifer", "dead_tree"}
 
 def sun(hour):
@@ -37,23 +38,25 @@ def tile(source, family, hour):
     if cast:
         # Source alpha produces the same silhouette identity as the live
         # renderer; project it to the ground using a compact transformed mask.
-        alpha = source.getchannel("A")
+        # Downsample shadow alpha to a strict 32x32 source mask FIRST.
+        # Only the original RGBA object sprite retains full resolution.
+        alpha = source.getchannel("A").resize((SHADOW_RES, SHADOW_RES),
+                                                Image.Resampling.BOX)
         height = .74 if family in TREE else .45
-        width = 125
-        depth = max(12, int(125 * length * height * .65))
+        width = max(2, round(125 / CELL * SHADOW_RES))
+        depth = max(2, round(125 * length * height * .65 / CELL * SHADOW_RES))
         flattened = alpha.resize((width, depth), Image.Resampling.BILINEAR)
-        # Fixed sun direction within each atlas time slot.
         rotation = math.degrees(math.atan2(-sx, sy))
-        rotated = flattened.rotate(rotation, resample=Image.Resampling.BICUBIC, expand=True)
+        rotated = flattened.rotate(rotation, resample=Image.Resampling.BILINEAR, expand=True)
         intensity = round(95 * cast)
         rotated = rotated.point(lambda v: (v * intensity) // 255)
-        # Shadow extends away from the sprite's ground pivot.
         off_x = round(sx * depth * .42)
         off_y = round(sy * depth * .42)
-        x = px - rotated.width//2 + off_x
-        y = py - rotated.height//2 + off_y
-        mask = Image.new("L", (CELL, CELL))
-        mask.paste(rotated, (x, y))
+        x = round(px / CELL * SHADOW_RES) - rotated.width//2 + off_x
+        y = round(py / CELL * SHADOW_RES) - rotated.height//2 + off_y
+        mask_low = Image.new("L", (SHADOW_RES, SHADOW_RES))
+        mask_low.paste(rotated, (x, y))
+        mask = mask_low.resize((CELL, CELL), Image.Resampling.BILINEAR)
         color = Image.new("RGBA", (CELL,CELL), (8, 12, 11, 255))
         canvas.paste(color, (0,0), mask)
     # Original authored PNG stays unchanged and above its own shadow.
@@ -110,7 +113,7 @@ def build(root, output):
             atlas.save(path,optimize=True)
             pages.append({"hour":hour,"part":part,"filename":filename,
                           "sha256":hashlib.sha256(path.read_bytes()).hexdigest()})
-    lookup={"version":2,"slot_hours":list(HOURS),"cell":CELL,
+    lookup={"version":2,"slot_hours":list(HOURS),"cell":CELL,"shadow_resolution":SHADOW_RES,
             "width":COLS*CELL,"height":COLS*CELL,"pages":pages,"objects":index}
     (output/"objects_shadow_manifest.json").write_text(
         json.dumps(lookup,sort_keys=True,indent=2)+"\n")
