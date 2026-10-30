@@ -14,13 +14,13 @@ local batch={
  end,
 }
 local sprite=setmetatable({
- static_manifest={version=1,width=2048,height=512,
-   objects={['oak-A']={u=0,v=0,width=512,height=512,pivot={256,400}}}},
+ static_manifest={version=2,width=2048,height=512,
+   objects={['oak-A']={u=0,v=0,width=512,height=512,pivot={256,400},page=0}}}},
  provider={sun={hour=10.5},object_reveal=function()return 1 end},
  pending=0,limit=1024,visible=0,culled=0,
  appearance=function()return source,100,200,1.1,'oak' end,
  batch_for=function(_,page)
-   assert(page=='staticshadow:objects_shadow_12.png',page)
+   assert(page=='staticshadow:objects_shadow_12_0.png',page)
    return batch
  end,
 },Sprite)
