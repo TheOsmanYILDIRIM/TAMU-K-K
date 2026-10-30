@@ -38,18 +38,22 @@ local data=table.concat({files['diagnostics/tamu-trace-0.jsonl'] or '',
  files['diagnostics/tamu-trace-1.jsonl'] or '',
  files['diagnostics/tamu-trace-2.jsonl'] or ''})
 local Json=require('save.json')
-local frames,spikes,starts,ends=0,0,0,0
+local frames,spikes,starts,ends,summaries=0,0,0,0,0
 for line in data:gmatch('[^\n]+') do
  local v=Json.decode(line)
- assert(v.schema==1 and v.session and v.t)
+ assert(v.schema==2 and v.session and v.t)
  if v.kind=='frame' then
    frames=frames+1
    assert(v.phases.shadows_ms==2 and v.drawcalls==55 and v.objects==90)
  elseif v.kind=='slow_frame' then spikes=spikes+1
  elseif v.kind=='session_start' then starts=starts+1
- elseif v.kind=='session_end' then ends=ends+1 end
+ elseif v.kind=='session_end' then ends=ends+1
+ elseif v.kind=='window_summary' then
+  summaries=summaries+1
+  assert(v.frame_p95_ms>=v.frame_p50_ms and v.frame_p99_ms>=v.frame_p95_ms)
+ end
 end
-assert(starts==1 and ends==1 and frames==90)
+assert(starts==1 and ends==1 and frames==90 and summaries>=1)
 assert(spikes==0,'slow threshold must use update/draw or dt, not sum')
 assert(#data>1000 and #data<1024*1024)
 -- A slow mobile draw must be independently reported.
