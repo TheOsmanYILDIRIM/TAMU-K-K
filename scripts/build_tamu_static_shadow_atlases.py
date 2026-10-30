@@ -68,25 +68,27 @@ def build(root, output):
         raise ValueError("no authored objects")
     page_by_name={p["filename"]:p for p in manifest["atlas_pages"]}
     source_by_page={}
+    atlas_images={}
     results=[]
     output.mkdir(parents=True,exist_ok=True)
     for a in objects:
         page=page_by_name[a["atlas_page"]]
-        refs=page.get("sources", [])
-        if not refs:
-            raise ValueError("missing source mapping for "+a["id"])
+        if page["filename"] not in atlas_images:
+            atlas_path=root/page["filename"]
+            if not atlas_path.is_file():
+                raise FileNotFoundError(atlas_path)
+            atlas_images[page["filename"]]=Image.open(atlas_path).convert("RGBA")
+        original=atlas_images[page["filename"]]
         u=a["uv_rect"]
         target_x=round(u[0]*page["width"])
         target_y=round(u[1]*page["height"])
-        found=[s for s in refs if s["x"]==target_x and s["y"]==target_y]
-        if len(found)!=1:
-            raise ValueError("ambiguous source tile for "+a["id"])
-        source=root/found[0]["path"]
-        if not source.is_file():
-            raise FileNotFoundError(source)
-        im=Image.open(source).convert("RGBA")
+        width=round(u[2]*page["width"])
+        height=round(u[3]*page["height"])
+        if width!=128 or height!=128:
+            raise ValueError("non-128px object atlas cell "+a["id"])
+        im=original.crop((target_x,target_y,target_x+width,target_y+height))
         if im.size!=(128,128):
-            raise ValueError("non-128px authored tile "+str(source))
+            raise ValueError("invalid crop "+a["id"])
         source_by_page[a["id"]]=im
     rows=math.ceil(len(objects)/COLS)
     for hour in HOURS:
