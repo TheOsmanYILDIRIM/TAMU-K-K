@@ -1,3 +1,13 @@
+## 2026-10-30 — LÖVE paket temizliği / kaynak arşivi (KISMİ, TEST BEKLİYOR)
+
+- Kullanıcının gözlemi: eşdeğer opak obje modu da ~30 FPS; alpha blending tek başına darboğaz değil.
+- Kaynak saklama dalı: archive/tamu-source-assets-20261030, başlangıç commit ece9610c. Kaynakların mevcut depodaki tarihsel içeriğini saklamak için branch oluşturuldu; içerik fiziksel olarak bu dalda ayrı klasöre taşınmadı.
+- experiment/25d-binary-vertex-20261030 scripts/package_tamu_love.py: manifestteki packed atlas_00/atlas_01 dosyaları SHA-256 ile doğrulanır, source_png/ tekil authored PNG dosyaları .love içine konmaz. Bağımlılığı bulunmayan settle_at_the_edge.mp3 ve CreativeRenderer'ın kullanmadığı tekil creative_*.png önizlemeleri de paketten çıkarılır; birleşik creative_build_atlas.png korunur.
+- Korunan opsiyonel geri dönüş: eski plazma/core assetleri, axe ve ilgili kodlar hâlâ referanslandığı için silinmedi. Ana dal/yedekler/tarihsel dallara otomatik silme uygulanmadı; bütün dallarda toplu çalışma açık ve dal bazında bağımlılık doğrulaması gerektirir.
+- AÇIK: Bu commit için gerçek paket üretimi/ZIP bütünlüğü, LÖVE/Android regresyonu ve APK kontrolü henüz doğrulanmadı. Tüm dallarda dosya ve ölü kod temizliği yapılmış sayılmaz. CI gereksiz kuyruğu yaratmamak için bu deney dalında quality push kapalıdır.
+
+---
+
 ## 2026-10-30 — Eşdeğer tam sahne render izolasyon profilleri (CI BEKLİYOR)
 
 - Önceki 24 sabit obje/izole boş dünya FPS kıyaslaması geçersiz kabul edildi: normal tam oyunda 137 nesne, R2 ve gameplay vardı. Kullanıcının Android kanıtında tam oyun ~25 FPS, yalnız izolasyon 60 FPS, chunk yüklemesinde kısa ~51 FPS.
