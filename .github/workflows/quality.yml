@@ -33,6 +33,7 @@ jobs:
           luac5.4 -p game/love/main.lua
           luac5.4 -p game/love/core/perf_hud.lua
           luac5.4 -p game/love/objects/renderer.lua
+          luac5.4 -p game/love/tests/terrain25d_object_population.lua
           luajit -b game/love/objects/renderer.lua /tmp/tamu-renderer-check.ljc
           luajit -b game/love/core/perf_hud.lua /tmp/tamu-perf-hud-check.ljc
           luajit -b game/love/main.lua /tmp/tamu-main-check.ljc
@@ -131,7 +132,7 @@ jobs:
           PY
           export XDG_DATA_HOME="$RUNNER_TEMP/tamu-cpu-400"
           mkdir -p "$XDG_DATA_HOME"
-          SDL_AUDIODRIVER=dummy TAMU_CPU_400_BENCH=1 OSMAN_25D_SUN_HOUR=10.5 timeout 180s xvfb-run -a love /tmp/tamu-authored-compiled.love 2>&1 | tee /tmp/tamu-cpu-400.log
+          SDL_AUDIODRIVER=dummy TAMU_PERF_PHASE_TRACE=1 TAMU_CPU_400_BENCH=1 OSMAN_25D_SUN_HOUR=10.5 timeout 180s xvfb-run -a love /tmp/tamu-authored-compiled.love 2>&1 | tee /tmp/tamu-cpu-400.log
           python3 - <<'PY'
           import re
           from pathlib import Path
