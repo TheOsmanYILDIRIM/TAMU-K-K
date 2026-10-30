@@ -197,3 +197,27 @@ zamanlayıcısı değildir. `texture_mib` sürücünün raporladığı tahmindir
 kıyaslama yapılmalıdır. JSONL dosyası analiz için bilgisayara aktarılabilir;
 oyuncu kimliği, konum, ağ isteği, envanter verisi ve kimlik bilgileri yazılmaz.
 
+
+## Prebaked static object-shadow atlases (experimental, not device-accepted)
+
+The approved 128px object variants are **not resized or overwritten**. Trees
+are rendered at a larger world scale; the Rigby character, collision and
+gameplay world coordinates are unchanged. The package builder reads the
+checked-in `assets/terrain25d/atlas_01.png`, precomposes objects and their
+ground shadows, and generates **eight 3-hour time slots**, each split into
+four 2048px-or-smaller PNG pages (32 separate PNG atlas pages total).
+
+`python3 scripts/package_tamu_love.py --repo . --output /tmp/tamu-static.love`
+automatically includes `assets/terrain25d/static_shadow/` and a versioned
+manifest. The runtime chooses the nearest slot and draws its precomposited
+objects in one pass; the old per-frame projected shadow/contact passes are
+bypassed **only when the complete baked manifest is packaged**. Running the
+unpackaged source preserves the legacy shadow path. Static shadow lighting
+changes in 3-hour increments, not continuously.
+
+The atlas generator is `scripts/build_tamu_static_shadow_atlases.py`; Pillow
+is required at build time, not on the device. Lua 5.4/LuaJIT regression is
+`tests/terrain25d_static_shadows.lua`. **Android FPS, generated PNG inspection,
+visual shadow/overlap acceptance and actual packaging CI remain unverified**.
+Do not merge without these checks. Approximate precomposed shadows can differ
+from the prior two-layer live projections.
