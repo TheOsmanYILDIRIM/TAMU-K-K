@@ -1,3 +1,11 @@
+## 2026-10-30 — Telemetri iyileştirmesi (kısmi, CI/Android doğrulanmadı)
+
+- Aynı deney dalında var olan `core/diagnostics.lua`, analiz betiği ve quality testleri tespit edildi; devirdeki 'henüz yapılmadı' notu kod durumunu yansıtmıyordu.
+- Değişiklikler: bellek içi 120 kare ring buffer, F10 ile yerel son-kare JSONL export, dosya yazma istisnasında oyunu durdurmama, idempotent close, fatal hata mesajı yerine korelasyon hash'i, mevcut diagnostics testinde export doğrulaması.
+- Main'e merge yok. GitHub dosyaları/diff geri okundu; CI çalışma sonucu ve gerçek LÖVE/Android telemetri dosyası doğrulanmadı. `quality.yml` mevcut Lua5.4/LuaJIT diagnostics testini içerir.
+- Açık: CI kabulü, Android `.love` kurulumu ve JSONL export erişimi, log overhead A/B, mobil dışa aktarma UI, gölge sabit/yürüme cihaz karşılaştırması, kapsamlı exception/worker/sun korelasyonu. Beyin kanonik görevine bu sohbette yazılmadı.
+
+---
 ## 2026-10-30 — TAMU Android performans ve telemetri devri (AKTİF, açık)
 
 **Proje:** `TheOsmanYILDIRIM/TAMU-K-K`, yetkili deney dalı `experiment/25d-binary-vertex-20261030`; main'e merge yok. Çalışmadan önce güncel HEAD, `AGENTS.md`, `game/love/README.md` ve kanonik agy-vault görev revizyonunu kontrol et. Kullanıcı gerçek Android'de stabil 60 FPS, yürürken görünür eksik chunk sıfır ve gelecekte AI/mob bütçesi istiyor. GitHub Xvfb CPU zamanı Android GPU FPS'si değildir.
