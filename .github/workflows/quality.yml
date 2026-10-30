@@ -32,6 +32,8 @@ jobs:
           luac5.4 -p game/love/world/stream.lua
           luac5.4 -p game/love/main.lua
           luac5.4 -p game/love/core/perf_hud.lua
+          luac5.4 -p game/love/objects/renderer.lua
+          luajit -b game/love/objects/renderer.lua /tmp/tamu-renderer-check.ljc
           luajit -b game/love/core/perf_hud.lua /tmp/tamu-perf-hud-check.ljc
           luajit -b game/love/main.lua /tmp/tamu-main-check.ljc
           luajit -b game/love/world/terrain25d_binary_worker.lua /tmp/tamu-worker-check.ljc
@@ -127,18 +129,18 @@ jobs:
               assert 'assets/worldbuild/fisilti_ormani.r2.v1.json' in paths
           print('TAMU_AUTHORED_LOVE_OK binary_chunks=156')
           PY
-          export XDG_DATA_HOME="$RUNNER_TEMP/tamu-cpu-200"
+          export XDG_DATA_HOME="$RUNNER_TEMP/tamu-cpu-400"
           mkdir -p "$XDG_DATA_HOME"
-          SDL_AUDIODRIVER=dummy TAMU_CPU_200_BENCH=1 OSMAN_25D_SUN_HOUR=10.5 timeout 180s xvfb-run -a love /tmp/tamu-authored-compiled.love 2>&1 | tee /tmp/tamu-cpu-200.log
+          SDL_AUDIODRIVER=dummy TAMU_CPU_400_BENCH=1 OSMAN_25D_SUN_HOUR=10.5 timeout 180s xvfb-run -a love /tmp/tamu-authored-compiled.love 2>&1 | tee /tmp/tamu-cpu-400.log
           python3 - <<'PY'
           import re
           from pathlib import Path
-          log=Path('/tmp/tamu-cpu-200.log').read_text()
-          match=re.search(r'TAMU_CI_CPU_200 frames=180 p50_ms=([0-9.]+) p95_ms=([0-9.]+) p99_ms=([0-9.]+)',log)
+          log=Path('/tmp/tamu-cpu-400.log').read_text()
+          match=re.search(r'TAMU_CI_CPU_400 frames=180 p50_ms=([0-9.]+) p95_ms=([0-9.]+) p99_ms=([0-9.]+)',log)
           assert match,'missing stable 180-frame CPU benchmark'
           p50,p95,p99=map(float,match.groups())
-          print(f'TAMU_200FPS_EQUIVALENT target_p95_ms=5.000 actual_p95_ms={p95:.3f} p50_ms={p50:.3f} p99_ms={p99:.3f}')
-          assert p95<=5.0, 'desktop CPU p95 exceeds 5ms (200fps-equivalent) budget'
+          print(f'TAMU_400FPS_EQUIVALENT target_p95_ms=2.500 actual_p95_ms={p95:.3f} p50_ms={p50:.3f} p99_ms={p99:.3f}')
+          assert p95<=2.5, 'desktop CPU p95 exceeds 2.5ms (400fps-equivalent) budget'
           PY
           export XDG_DATA_HOME="$RUNNER_TEMP/tamu-authored-walk"
           mkdir -p "$XDG_DATA_HOME"
@@ -157,7 +159,7 @@ jobs:
             /tmp/tamu-authored-bake.log
             /tmp/tamu-authored-compiled.love
             /tmp/tamu-authored-walk.log
-            /tmp/tamu-cpu-200.log
+            /tmp/tamu-cpu-400.log
             /tmp/tamu-authored-binary/
           if-no-files-found: warn
       - name: Rigby JSON fast versus baseline parser on unchanged rig data
