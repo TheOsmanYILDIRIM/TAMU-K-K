@@ -26,7 +26,7 @@ def analyse(paths):
                     continue
                 try:
                     record = json.loads(line)
-                    if record.get("schema") != 1 or not isinstance(record.get("kind"), str):
+                    if record.get("schema") not in (1, 2) or not isinstance(record.get("kind"), str):
                         invalid += 1
                         continue
                     record["_file"] = str(path)
@@ -40,7 +40,7 @@ def analyse(paths):
         by_session[r.get("session", "unknown")].append(r)
     sessions = []
     for sid, rows in by_session.items():
-        fields = ["dt_ms", "update_ms", "draw_ms", "drawcalls",
+        fields = ["frame_ms", "fps", "dt_ms", "update_ms", "draw_ms", "drawcalls",
                   "shaderswitches", "texture_mib", "lua_kib",
                   "chunks", "objects", "missing", "pending",
                   "trace_write_ms"]
