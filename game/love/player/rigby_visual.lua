@@ -109,6 +109,20 @@ function V.update_pose(player,ctx)
     else i.request=nil end
   end
   local clip=assert(directions[direction].animations[action],'unknown action')
+  -- Animation-only mobile sampling at 30 Hz: maintain full-rate gameplay,
+  -- camera, movement and collision while avoiding redundant CPU skinning
+  -- and GPU vertex uploads between animation ticks. Actions, facing and
+  -- explicit tool frames always sample immediately.
+  local mobile=love.system and love.system.getOS and love.system.getOS()=='Android'
+  local hz=tonumber(os.getenv('TAMU_RIGBY_POSE_HZ')) or (mobile and 30 or 0)
+  if hz>0 and not ctx.bone_offsets and not i.transition and
+     not i.request and not ctx.tool and forced_time==nil and
+     i.clip==clip and i.direction==direction and
+     i.pose_clock and clock-i.pose_clock>=0 and
+     clock-i.pose_clock<1/hz then
+    return i
+  end
+  i.pose_clock=clock
   local previous=i.clip
   local changed=clip~=previous
   if changed then
