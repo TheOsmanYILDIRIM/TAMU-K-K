@@ -1,3 +1,12 @@
+## 2026-10-30 — İzole gerçek R2 arazi ve kamera hareketi (AÇIK KABUL)
+
+- Performans açılış seçicisindeki terrain ve terrain+objects profilleri statik doku tekrarı yerine gerçek authored R2 + world.stream (render_only_25d) + world.terrain25d_runtime kullanıyor. Gameplay/Rigby/inventory/harvest yaratılmıyor; R2 query/geometry/chunk worker yalnız arazi için gerekli.
+- Tüm izolasyon modlarında parmak/mouse sürükleme, pinch/wheel zoom, WASD/yön tuşu kamera hareketi; obje SpriteBatch camera transform eklendi. Tam oyun kendi mevcut kamera/input sistemini koruyor.
+- tests/perf_isolation_boot.lua menü yüklenmeden oyun modülü çağrılmaması ve kamera callback'lerinin varlığını kontrol etmek üzere genişletildi. Repo dosya SHA ve HEAD geri okundu.
+- AÇIK: gerçek LÖVE/Xvfb, Lua5.4/LuaJIT, Android kamera/R2 görüntüsü ve FPS A/B kabulü. Main'e merge yok.
+
+---
+
 ## 2026-10-30 — Açılış performans izolasyon profilleri (KABUL BEKLİYOR)
 
 - Kullanıcının isteğiyle mod seçilmeden gerçek oyun başlatılmayacak şekilde main.lua başına hafif core/perf_isolation_boot.lua yönlendiricisi eklendi; ayrı karakter, arazi doku örneği, obje örneği, ikili kombinasyonlar, boş sahne ve tam oyun seçimi var.
