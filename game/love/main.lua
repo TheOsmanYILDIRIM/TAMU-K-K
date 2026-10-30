@@ -1246,6 +1246,11 @@ function love.wheelmoved(_,dy)
   camera:zoom_at(1.15^dy,x,y,w,h)
 end
 function love.keypressed(key)
+  if key=="f10" then
+    local ok,path=Diagnostics.export()
+    print("TAMU_DIAGNOSTICS_EXPORT "..(ok and "OK " or "FAILED ")..tostring(path))
+    return
+  end
   if key=="f9" then PerfHud.toggle();return end
   if key=="p" then stat_action("stats_toggle");return end
   if stat_hud.open then
