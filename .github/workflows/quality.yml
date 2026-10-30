@@ -27,6 +27,7 @@ jobs:
         run: |
           set -euo pipefail
           luac5.4 -p game/love/world/terrain25d_runtime.lua
+          luac5.4 -p game/love/tests/terrain25d_batch.lua
           luac5.4 -p game/love/world/terrain25d_baked.lua
           luac5.4 -p game/love/world/terrain25d_binary_worker.lua
           luac5.4 -p game/love/world/stream.lua
@@ -42,6 +43,8 @@ jobs:
           cd game/love
           lua5.4 tests/terrain25d_runtime.lua
           luajit tests/terrain25d_runtime.lua
+          lua5.4 tests/terrain25d_batch.lua
+          luajit tests/terrain25d_batch.lua
           cd ../..
       - name: Real LÖVE off-thread procedural terrain build and GPU upload
         if: github.ref_name == 'experiment/25d-binary-vertex-20261030'
