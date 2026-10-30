@@ -3,13 +3,9 @@ local Depth=require("player.depth")
 local R={metrics={collect_calls=0,cold_queries=0,cold_query_ms=0,
  cold_query_max_ms=0,collect_last_ms=0,collect_max_ms=0,
  prepared_chunks=0,prepare_last_ms=0,prepare_max_ms=0}}
--- The original plasma renderer remains unchanged and explicitly selectable.
-local use_plasma=os.getenv("TAMU_USE_PLASMA")=="1"
-local CoreVisual=use_plasma and require("player.core_visual")
-  or require("player.rigby_visual")
+-- Rigby is the only production avatar; no legacy plasma fallback.
+local CoreVisual=require("player.rigby_visual")
 local Direction=require("player.direction")
-local AxeStrike=require("player.axe_strike")
-local axe_image=nil
 local function player_sprite(g,camera,w,h,player,visual_context)
   return CoreVisual.draw(g,camera,w,h,player,visual_context)
 end
@@ -182,7 +178,7 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_ove
   local visual={}
   if harvesting and harvesting.active then
     local source=world:get(harvesting.active.object_id)
-    if source and (source.kind=="rock" or (not use_plasma and source.kind=="tree")) then
+    if source and (source.kind=="rock" or source.kind=="tree") then
       visual.tool=source.kind=="tree" and "axe" or "pickaxe"
       visual.tool_seconds=harvesting.active.elapsed
       visual.facing=Direction.from_world(source.x-player.x,source.y-player.y,player.facing)
@@ -199,19 +195,6 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_ove
     end
   end
   if type(object_override)=="table" then object_override:flush(g) end
-  -- Preserve the flying axe only for the backed-up plasma mode.
-  if use_plasma and harvesting and harvesting.active then
-    local source=world:get(harvesting.active.object_id)
-    if source and source.kind=="tree" then
-      if not axe_image then axe_image=love.graphics.newImage("assets/axe_121227.png") end
-      local px,foot=camera:project(player.x,player.y,w,h)
-      local tx,ty=camera:project(source.x,source.y,w,h)
-      local elapsed=harvesting.active.elapsed
-      -- One independent 0.88s strike cycle, synchronized to harvest elapsed.
-      AxeStrike.draw(g,axe_image,elapsed,{x=px,y=foot-21*camera.zoom},
-        {x=tx,y=ty-29*camera.zoom},math.min(.034*camera.zoom,.065))
-    end
-  end
   g.pop()
   return #all
 end
