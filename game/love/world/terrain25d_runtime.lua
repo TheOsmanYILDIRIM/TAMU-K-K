@@ -127,8 +127,18 @@ function Runtime.new(pilot)
    uploads_per_frame=0,build_budget=3,step=32,
    build_time_budget=.002,build_time_budget_idle=.0035,
    moving_resume_cap=5,idle_resume_cap=14,
+   binary_worker=nil,binary_pending={},binary_ready={},binary_inflight=0,
+   binary_max_inflight=12,
    reveal_seconds=.85,last_camera_x=nil,last_camera_y=nil,
    frame_now=0,reveal_shader=compact and Reveal.new() or nil},Runtime)
+ -- Separate immutable terrain byte decompression from graphics uploads.
+ -- CI bake/verify and forced JSON tests continue using the original path.
+ if not self.bake_mode and os.getenv('OSMAN_25D_BAKE_VERIFY')~='1'
+     and os.getenv('TAMU_25D_FORCE_JSON')~='1'
+     and love.thread and love.thread.newThread then
+   self.binary_worker=love.thread.newThread('world/terrain25d_binary_worker.lua')
+   self.binary_worker:start()
+ end
  -- Compact mobile atlas: decoded in a real LÖVE worker thread. Main only
  -- performs one bounded GPU upload per frame, with no 228 source PNG paste.
  if compact then
@@ -527,9 +537,47 @@ function Runtime:prepare(chunk,checkpoint)
  chunk._25d_reveal_start=love.timer and love.timer.getTime() or 0
  self.built=self.built+1
 end
+function Runtime:poll_binary_results()
+ if not self.binary_worker then return end
+ local ready=love.thread.getChannel('tamu25d:binary:ready')
+ for i=1,8 do
+   local item=ready:pop()
+   if not item then break end
+   if self.binary_pending[item.key] then
+     self.binary_pending[item.key]=nil
+     self.binary_inflight=math.max(0,self.binary_inflight-1)
+     self.binary_ready[item.key]=item
+   end
+ end
+end
+function Runtime:enqueue_binary(chunks)
+ if not self.binary_worker then return end
+ local worker_error=self.binary_worker.getError and
+   self.binary_worker:getError()
+ if worker_error then
+   print('TAMU_BINARY_THREAD_ERROR '..tostring(worker_error))
+   self.binary_worker=nil
+   self.binary_pending={}
+   self.binary_ready={}
+   self.binary_inflight=0
+   return
+ end
+ local requests=love.thread.getChannel('tamu25d:binary:requests')
+ for _,c in ipairs(chunks) do
+   if self.binary_inflight>=self.binary_max_inflight then break end
+   if not c._25d_meshes and not c._25d_prepare_job and
+      not self.binary_pending[c.key] and not self.binary_ready[c.key] then
+     self.binary_pending[c.key]=true
+     self.binary_inflight=self.binary_inflight+1
+     requests:push({cx=c.cx,cy=c.cy})
+   end
+ end
+end
 function Runtime:draw(stream,camera,w,h)
  assert(stream and stream.visible and camera and camera.zoom>0)
  local chunks=stream:visible()
+ self:poll_binary_results()
+ self:enqueue_binary(chunks)
  self.stream=stream
  self.current_camera=camera
  local image_ready=self:poll_compact_images()
@@ -553,11 +601,27 @@ function Runtime:draw(stream,camera,w,h)
        and (not deadline or clock()<deadline) then
      local job=c._25d_prepare_job
      local loaded=false
+     local waiting=false
      if not job and not self.bake_mode then
-       loaded=Baked.load(self,c)
+       if self.binary_worker then
+         local result=self.binary_ready[c.key]
+         if result then
+           self.binary_ready[c.key]=nil
+           if result.missing then
+             -- No authored binary: retain existing procedural fallback.
+             waiting=false
+           else
+             loaded=Baked.load_ready(self,c,result)
+           end
+         elseif self.binary_pending[c.key] then
+           waiting=true
+         end
+       else
+         loaded=Baked.load(self,c)
+       end
        if loaded then uploads=uploads+1 end
      end
-     if not loaded then
+     if not loaded and not waiting then
        if not job then
          job=coroutine.create(function()
            self:prepare(c,function() coroutine.yield() end)
