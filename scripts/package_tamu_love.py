@@ -18,11 +18,28 @@ def main(repo,output,prebaked_dir=None):
     generate(assets,json.loads(raw_catalog),repo)
     shadow_dir=output.parent/'tamu_static_shadow_generated'
     shadow_manifest=build_static_shadows(root/'assets/terrain25d',shadow_dir)
+    # Packed terrain/object atlas pages supersede the authored source PNGs.
+    # Reject incomplete or mismatched atlas input instead of generating a
+    # silently broken LOVE file after excluding its source fallbacks.
+    atlas_root=root/'assets/terrain25d'
+    manifest=json.loads((atlas_root/'manifest.json').read_text())
+    for page in manifest['atlas_pages']:
+        assert not page.get('generated_from_sources'), (
+            'source-dependent atlas cannot be stripped: '+page['filename'])
+        atlas_path=atlas_root/page['filename']
+        assert atlas_path.is_file(),('missing packed atlas',page['filename'])
+        expected=page.get('sha256')
+        if expected:
+            assert hashlib.sha256(atlas_path.read_bytes()).hexdigest()==expected, (
+                'packed atlas checksum mismatch',page['filename'])
     content=[]
     for p in root.rglob('*'):
         if p.is_file() and p.suffix.lower() not in ('.pyc','.log') and '__pycache__' not in p.parts:
             rel=p.relative_to(root).as_posix()
-            if rel.startswith(('assets/tamu_creative_','assets/worldbuild/')) or rel in ('assets/creative_build_atlas.png','assets/creative_build_manifest.json'):
+            if rel.startswith(('assets/tamu_creative_','assets/worldbuild/',
+                               'assets/terrain25d/source_png/')) or rel in (
+                               'assets/creative_build_atlas.png',
+                               'assets/creative_build_manifest.json'):
                 continue
             content.append((rel,p.read_bytes()))
     for generated in sorted(shadow_dir.iterdir()):
@@ -60,6 +77,10 @@ def main(repo,output,prebaked_dir=None):
     with zipfile.ZipFile(output) as z:
         assert z.testzip() is None
         assert 'main.lua' in z.namelist() and 'assets/creative_build_atlas.png' in z.namelist()
+        assert not any(n.startswith('assets/terrain25d/source_png/')
+                       for n in z.namelist()), 'source PNG leaked into LOVE'
+        assert all('assets/terrain25d/'+p['filename'] in z.namelist()
+                   for p in manifest['atlas_pages']), 'packed atlas absent'
         assert len([p for p in z.namelist() if p.startswith('assets/terrain25d/static_shadow/shadows_') and p.endswith('.png')])==8
         assert all(z.read('assets/worldbuild/'+n)==(repo/'data/worldbuild'/n).read_bytes() for n in R2)
     print(json.dumps({'file':str(output),'size':output.stat().st_size,
