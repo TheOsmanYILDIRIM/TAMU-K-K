@@ -333,7 +333,7 @@ function Runtime:material(family,x,y,neighbor_family,proximity)
  return Materials.choose(family,x,y,list,self.color_profiles,
    neighbor_family and self.family_centres[neighbor_family],weight)
 end
-function Runtime:prepare(chunk,checkpoint)
+function Runtime:prepare(chunk,checkpoint,cpu_only)
  assert(not chunk._25d_meshes and not chunk._meshes,"chunk already owns GPU meshes")
  local pilot=self.pilot
  local scale=pilot.render_options.height_scale or .35
@@ -487,11 +487,16 @@ function Runtime:prepare(chunk,checkpoint)
    if checkpoint then checkpoint() end
  end
  local meshes,order={},{}
- chunk._25d_staging_meshes=meshes
+ if not cpu_only then chunk._25d_staging_meshes=meshes end
  for page,group in pairs(groups) do
-   local gpu=love.graphics.newMesh(group.vertices,"triangles","static")
-   gpu:setTexture(self:page(page))
-   meshes[page]=gpu;order[#order+1]=page
+   if cpu_only then
+     meshes[page]=group.vertices
+   else
+     local gpu=love.graphics.newMesh(group.vertices,"triangles","static")
+     gpu:setTexture(self:page(page))
+     meshes[page]=gpu
+   end
+   order[#order+1]=page
    if checkpoint then checkpoint() end
  end
  table.sort(order)
@@ -514,9 +519,13 @@ function Runtime:prepare(chunk,checkpoint)
      if checkpoint and k%24==1 then checkpoint() end
    end
    for page,item in pairs(group) do
-     local gpu=love.graphics.newMesh(item.vertices,"triangles","static")
-     gpu:setTexture(self:page(page))
-     meshes["!"..layer..":"..page]=gpu
+     if cpu_only then
+       meshes["!"..layer..":"..page]=item.vertices
+     else
+       local gpu=love.graphics.newMesh(item.vertices,"triangles","static")
+       gpu:setTexture(self:page(page))
+       meshes["!"..layer..":"..page]=gpu
+     end
      overlay_order[layer][#overlay_order[layer]+1]=page
      if checkpoint then checkpoint() end
    end
@@ -524,11 +533,17 @@ function Runtime:prepare(chunk,checkpoint)
  end
  if #shore.water>0 then
    for _,v in ipairs(shore.water) do capture(v) end
-   meshes["!water"]=love.graphics.newMesh(
-     shore.water,"triangles","static")
+   if cpu_only then meshes["!water"]=shore.water
+   else meshes["!water"]=love.graphics.newMesh(
+     shore.water,"triangles","static") end
    if checkpoint then checkpoint() end
  end
  assert(minx<=maxx and miny<=maxy,"empty 25D render bounds")
+ if cpu_only then
+   return {meshes=meshes,bounds={minx,miny,maxx,maxy},
+     ground_order=order,overlay_order=overlay_order,
+     ground_pages=ground_pages}
+ end
  chunk._25d_bounds={minx,miny,maxx,maxy}
  chunk._25d_overlay_order=overlay_order
  chunk._25d_meshes=meshes;chunk._25d_ground_order=order
@@ -537,6 +552,28 @@ function Runtime:prepare(chunk,checkpoint)
  chunk._25d_staging_meshes=nil
  chunk._25d_reveal_start=love.timer and love.timer.getTime() or 0
  self.built=self.built+1
+end
+-- CPU worker context: same reviewed material selection and authored R2
+-- geometry, but no GPU/shader creation or image decoding.
+function Runtime.cpu_new(pilot)
+ local m=Json.decode(assert(love.filesystem.read(
+   'assets/terrain25d/manifest.json')))
+ local profiles=Json.decode(assert(love.filesystem.read(
+   'assets/terrain25d/color_profiles.json')))
+ local families={}
+ for _,asset in ipairs(m.assets) do
+   local group=families[asset.family] or {}
+   group[#group+1]=asset
+   families[asset.family]=group
+ end
+ for _,group in pairs(families) do
+   table.sort(group,function(a,b)return a.id<b.id end)
+ end
+ return setmetatable({pilot=pilot,manifest=m,families=families,
+   color_profiles=profiles.assets,
+   family_centres=Materials.centres(families,profiles.assets),
+   authored_boundaries=Materials.boundaries(pilot.query,pilot.authored_map),
+   transition_triangles=0,step=32},Runtime)
 end
 -- CI-only immutable authored polygon sweep. The huge worldmap bounds are
 -- design-only; never bake 16K+ procedural tiles as if authored content.
