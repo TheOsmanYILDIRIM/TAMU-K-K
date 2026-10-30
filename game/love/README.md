@@ -255,3 +255,21 @@ restart the app before switching profiles. Full game loads original modules
 after its selection; CI=true keeps the previous direct production entrypoint,
 and TAMU_ISOLATION_BOOT=1 forces the selector for test runs. Device FPS,
 camera/visual checks and regression acceptance still require testing.
+
+## Matched full-world render diagnosis (experimental)
+
+The startup menu now prioritizes comparable full-world modes. Each comparison
+loads the same authored R2 world, normal stream, original 137-ish visible
+population (count varies with camera), player and gameplay logic. It gates
+only drawing: terrain only, objects only, Rigby only, terrain+objects,
+all except HUD, all except Rigby, and full reference. A blank engine mode is
+retained as a separate non-equivalent baseline.
+
+Unlike the older 24-object synthetic preview, these matched profiles run the
+original object collection and depth sorting with the same camera/world
+context; disabled rendering does not imply disabling gameplay CPU work.
+The 25D renderer still prepares resident terrain/chunks even when its GPU
+terrain draws are suppressed, retaining object discovery and texture readiness.
+These are **draw-stage isolation tests**, not independent no-call system tests.
+Interpret all FPS comparisons with that explicit distinction. Reboot the app
+to switch profiles. Android CI and visual correctness remain to be confirmed.
