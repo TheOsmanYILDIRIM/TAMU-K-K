@@ -97,11 +97,14 @@ function M.save_binary(runtime,chunk)
  assert(love.filesystem.write(BAKING..name..'.meta.json',Json.encode(meta)))
  return #compressed
 end
-local function load_binary(runtime,chunk)
+local function load_binary(runtime,chunk,prepared)
  local name=ROOT..binary_name(chunk)
- if not love.filesystem.getInfo(name..'.meta.json','file') or
-    not love.filesystem.getInfo(name..'.verts.z','file') then return false end
+ if not prepared and (not love.filesystem.getInfo(name..'.meta.json','file') or
+    not love.filesystem.getInfo(name..'.verts.z','file')) then return false end
  local ok,doc,raw=pcall(function()
+  if prepared then
+    return Json.decode(prepared.meta),prepared.raw
+  end
   local meta=Json.decode(assert(love.filesystem.read(name..'.meta.json')))
   local bytes=love.data.decompress('string','zlib',
     assert(love.filesystem.read(name..'.verts.z')))
@@ -164,6 +167,11 @@ local function load_binary(runtime,chunk)
  print(string.format('TAMU_25D_BINARY_LOADED cx=%d cy=%d vertices=%d',
   chunk.cx,chunk.cy,total/STRIDE))
  return true
+end
+function M.load_ready(runtime,chunk,prepared)
+ assert(prepared and type(prepared.meta)=='string'
+   and type(prepared.raw)=='string','decoded binary payload required')
+ return load_binary(runtime,chunk,prepared)
 end
 function M.load(runtime,chunk)
  if os.getenv('TAMU_25D_FORCE_JSON')~='1' and load_binary(runtime,chunk) then return true end
