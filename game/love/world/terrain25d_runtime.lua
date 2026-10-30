@@ -124,8 +124,8 @@ function Runtime.new(pilot)
    built=0,visible=0,draw_calls=0,transition_triangles=0,
    baked_written=0,baked_loaded=0,
    bake_mode=os.getenv("OSMAN_25D_BAKE")=="1",
-   uploads_per_frame=0,build_budget=1,step=32,
-   build_time_budget=.0012,build_time_budget_idle=.0028,
+   uploads_per_frame=0,build_budget=3,step=32,
+   build_time_budget=.002,build_time_budget_idle=.0035,
    moving_resume_cap=5,idle_resume_cap=14,
    reveal_seconds=.85,last_camera_x=nil,last_camera_y=nil,
    frame_now=0,reveal_shader=compact and Reveal.new() or nil},Runtime)
@@ -587,6 +587,25 @@ function Runtime:draw(stream,camera,w,h)
    end
  end
  self.uploads_per_frame=uploads
+ -- Count missing screen-intersecting chunks including pending Stream chunks,
+ -- not merely chunks that already have a resident mesh.
+ local ready_visible=0
+ local required=stream.visible_required_keys or {}
+ for _,c in ipairs(chunks) do
+   if required[c.key] and c._25d_meshes then ready_visible=ready_visible+1 end
+ end
+ self.missing_visible=math.max(0,(stream.visible_required_count or 0)-ready_visible)
+ self.required_visible=stream.visible_required_count or 0
+ self.coverage_over_budget=stream.coverage_over_budget or 0
+ if os.getenv('TAMU_25D_COVERAGE_TRACE')=='1' and
+    (self.missing_visible~=self.previous_missing_visible or
+     self.coverage_over_budget>0) then
+   print(string.format(
+     'TAMU_25D_COVERAGE missing=%d required=%d resident=%d uploads=%d over_cap=%d',
+     self.missing_visible,self.required_visible,#chunks,uploads,self.coverage_over_budget))
+   io.stdout:flush()
+ end
+ self.previous_missing_visible=self.missing_visible
  local draw_chunks=stream.render_visible and stream:render_visible(camera,w,h)
    or chunks
  self.rendered_chunks=draw_chunks
