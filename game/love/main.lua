@@ -951,14 +951,27 @@ local function draw_postchecks(perf_begin)
     long_driver:afterDraw(object_count)
   end
 end
+local function render_flags()
+  local mode=_G.TAMU_RENDER_PROFILE or 'full'
+  if mode=='compare_terrain' then return true,false,false,false end
+  if mode=='compare_objects' then return false,true,false,false end
+  if mode=='compare_rig' then return false,false,true,false end
+  if mode=='compare_terrain_objects' then return true,true,false,false end
+  if mode=='compare_nohud' then return true,true,true,false end
+  if mode=='compare_norig' then return true,true,false,true end
+  return true,true,true,true
+end
 function love.draw()
+  local terrain_on,objects_on,rig_on,hud_on=render_flags()
   Diagnostics.draw_begin()
   local perf_begin=love.timer.getTime()
   local phase_trace=os.getenv('TAMU_PERF_PHASE_TRACE')=='1'
   local terrain_finished,objects_finished
   if long_driver and boot_ready and long_driver.frame>0 then long_driver:beforeDraw() end
-  if runtime25d then runtime25d:draw(stream,camera,w,h)
-  else Terrain.draw(stream,camera,w,h,r2_pilot and r2_pilot.render_options) end
+  if terrain_on then
+    if runtime25d then runtime25d:draw(stream,camera,w,h)
+    else Terrain.draw(stream,camera,w,h,r2_pilot and r2_pilot.render_options) end
+  end
   if coverage_walk_enabled and runtime25d then
     if not coverage_walk.started then
       if runtime25d.missing_visible==0 and runtime25d.required_visible>0 then
@@ -1014,7 +1027,8 @@ function love.draw()
     g.setColor(1,1,1,1)
   end
   object_count=ObjectRenderer.draw(objects,stream,camera,w,h,player,
-    selected_target,harvesting,sprite25d_draw)
+    selected_target,harvesting,sprite25d_draw,
+    {objects=objects_on,rig=rig_on})
   Diagnostics.phase("objects_and_shadows")
   if phase_trace then objects_finished=love.timer.getTime() end
   local ghost
@@ -1023,10 +1037,13 @@ function love.draw()
       placement_rotation,player.x,player.y)
     ghost={x=placement_target.x,y=placement_target.y,ok=ok}
   end
-  PlacedRenderer.draw(building,camera,w,h,ghost)
-  creative_renderer:draw(creative,camera,w,h)
+  if objects_on then
+    PlacedRenderer.draw(building,camera,w,h,ghost)
+    creative_renderer:draw(creative,camera,w,h)
+  end
   local g=love.graphics
   local safe_x,safe_y,safe_w,safe_h=safe_area()
+  if hud_on then
   g.setColor(.05,.12,.12,.75)
   g.rectangle("fill",safe_x+8,safe_y+8,math.min(safe_w-16,600),124,12,12)
   g.setColor(1,1,1)
@@ -1074,6 +1091,11 @@ function love.draw()
   g.setColor(.95,.95,.9,.7)
   g.circle("fill",bx+joystick.dx*55,by+joystick.dy*55,22)
   g.setColor(1,1,1)
+  end -- user HUD draw gate
+  if _G.TAMU_RENDER_PROFILE and _G.TAMU_RENDER_PROFILE~='full' then
+    g.setColor(1,1,1,1)
+    g.print('MATCHED: '.._G.TAMU_RENDER_PROFILE..' FPS '..love.timer.getFPS(),12,12)
+  end
   if phase_trace and terrain_finished and objects_finished and
      (frames<10 or frames%30==0) then
     local finished=love.timer.getTime()
