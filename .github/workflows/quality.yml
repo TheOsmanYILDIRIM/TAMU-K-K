@@ -31,6 +31,8 @@ jobs:
           luac5.4 -p game/love/world/terrain25d_binary_worker.lua
           luac5.4 -p game/love/world/stream.lua
           luac5.4 -p game/love/main.lua
+          luac5.4 -p game/love/core/perf_hud.lua
+          luajit -b game/love/core/perf_hud.lua /tmp/tamu-perf-hud-check.ljc
           luajit -b game/love/main.lua /tmp/tamu-main-check.ljc
           luajit -b game/love/world/terrain25d_binary_worker.lua /tmp/tamu-worker-check.ljc
           python3 -m py_compile scripts/package_tamu_love.py
