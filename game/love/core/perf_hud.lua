@@ -41,4 +41,30 @@ function M.draw(runtime,w,h,safe_x,safe_y,safe_w,draw_ms)
  g.print(string.format('Eksik %d/%d  Bekleyen %d',gap,M.last_needed,M.last_pending),x+7,y+65)
  g.pop()
 end
+-- CI-only fixed-scene CPU budget. FPS/VSync is not a desktop-to-Android
+-- comparison; sample real Lua update+draw elapsed time after full coverage.
+local bench={samples={},stable_frames=0}
+function M.benchmark_sample(dt,update_ms,draw_ms,runtime,stats)
+ if os.getenv('TAMU_CPU_200_BENCH')~='1' then return end
+ local ready=runtime and runtime.required_visible>0
+   and runtime.missing_visible==0 and stats and stats.pending==0
+ if not ready then
+   bench.samples={};bench.stable_frames=0
+   return
+ end
+ bench.stable_frames=bench.stable_frames+1
+ if bench.stable_frames<=30 then return end
+ local a=bench.samples
+ a[#a+1]=(update_ms or 0)+(draw_ms or 0)
+ if #a>=180 then
+   table.sort(a)
+   local function q(p) return a[math.ceil(#a*p)] end
+   local p50,p95,p99=q(.5),q(.95),q(.99)
+   print(string.format(
+     'TAMU_CI_CPU_200 frames=%d p50_ms=%.3f p95_ms=%.3f p99_ms=%.3f target_p95_ms=5.000',
+     #a,p50,p95,p99))
+   io.stdout:flush()
+   love.event.quit()
+ end
+end
 return M
