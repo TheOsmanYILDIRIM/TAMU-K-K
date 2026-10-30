@@ -50,6 +50,12 @@ local function prepare(mode)
      end
    end
    assert(assets.terrain_img,'terrain atlas unavailable')
+   local w,h=view()
+   local batch=love.graphics.newSpriteBatch(assets.terrain_img,(math.ceil(w/95)+1)*(math.ceil(h/95)+1),'static')
+   for y=0,h,95 do for x=0,w,95 do
+     batch:add(assets.terrain_quad,x,y,0,.75,.75)
+   end end
+   assets.terrain_batch=batch
  end
  if includes(mode,'objects') then
    local p=assert(page['atlas_01.png'])
@@ -63,6 +69,15 @@ local function prepare(mode)
      end
    end
    assert(#assets.object_quads>0)
+   local w,h=view()
+   local batch=love.graphics.newSpriteBatch(assets.object_img,24,'static')
+   local n=#assets.object_quads
+   for i=1,24 do
+     local x=(i*113)%math.max(1,w)
+     local y=h*.20+(i*79)%math.max(1,math.floor(h*.66))
+     batch:add(assets.object_quads[(i-1)%n+1],x,y,0,1.05,1.05,64,124)
+   end
+   assets.object_batch=batch
  end
  if includes(mode,'character') then
    assets.rig=require('player.rigby_visual')
@@ -76,19 +91,11 @@ local function draw_scene()
  if assets.terrain_img then
    -- Static visual baseline: no procedural generator, chunk/worker or ecology.
    g.setColor(1,1,1)
-   for y=0,h,95 do for x=0,w,95 do
-     g.draw(assets.terrain_img,assets.terrain_quad,x,y,0,.75,.75)
-   end end
+   g.draw(assets.terrain_batch)
  end
  if assets.object_img then
    g.setColor(1,1,1)
-   local n=#assets.object_quads
-   for i=1,24 do
-     local x=(i*113)%math.max(1,w)
-     local y=h*.20+(i*79)%math.max(1,math.floor(h*.66))
-     g.draw(assets.object_img,assets.object_quads[(i-1)%n+1],
-       x,y,0,1.05,1.05,64,124)
-   end
+   g.draw(assets.object_batch)
  end
  if assets.rig then assets.rig.draw(g,cam,w,h,assets.actor,{}) end
  g.setColor(1,1,1)
