@@ -33,6 +33,10 @@ jobs:
           luac5.4 -p game/love/world/stream.lua
           luac5.4 -p game/love/main.lua
           luac5.4 -p game/love/core/perf_hud.lua
+          luac5.4 -p game/love/conf.lua
+          luac5.4 -p game/love/player/rigby_visual.lua
+          luajit -b game/love/player/rigby_visual.lua /tmp/tamu-rigby-visual-check.ljc
+          luajit -b game/love/conf.lua /tmp/tamu-conf-check.ljc
           luac5.4 -p game/love/player/rigby_runtime.lua
           luajit -b game/love/player/rigby_runtime.lua /tmp/tamu-rigby-runtime-check.ljc
           luac5.4 -p game/love/objects/renderer.lua
