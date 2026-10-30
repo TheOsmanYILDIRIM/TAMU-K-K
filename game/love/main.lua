@@ -602,6 +602,18 @@ local function draw_postchecks(perf_begin)
     binary_benchmark.start_at=binary_benchmark.start_at or perf_begin
     binary_benchmark.frames[#binary_benchmark.frames+1]=(now-perf_begin)*1000
   end
+  if os.getenv('TAMU_25D_BINARY_THREAD_PROBE')=='1' and runtime25d then
+    if runtime25d.baked_loaded>=4 then
+      print(string.format('TAMU_BINARY_THREAD_OK chunks=%d missing=%d',
+        runtime25d.baked_loaded,runtime25d.missing_visible or -1))
+      io.stdout:flush()
+      love.event.quit()
+      return
+    end
+    if frames>600 then
+      error('binary background worker failed to load four real authored chunks')
+    end
+  end
   -- CI-only authored mesh compilation/verification; never alters player save.
   if runtime25d and
      (os.getenv("OSMAN_25D_BAKE")=="1" or
