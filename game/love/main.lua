@@ -26,6 +26,7 @@ local Creative=require("systems.creative_build")
 local CreativeHUD=require("core.creative_build_hud")
 local CreativeRenderer=require("systems.creative_build_renderer")
 local PerfHud=require("core.perf_hud")
+local Diagnostics=require("core.diagnostics")
 local stage6_enabled=os.getenv("OSMAN_STAGE6_EXPLICIT")=="1"
 local stage6_create=os.getenv("OSMAN_STAGE6_CREATE")=="1"
 local stage6_reopen_smoke=os.getenv("OSMAN_STAGE6_REOPEN_SMOKE")=="1"
@@ -287,6 +288,7 @@ local function spawn()
 end
 function love.load()
   boot_started=love.timer.getTime()
+  Diagnostics.start()
   -- Compare Android physical-pixel workload with Xvfb's logical viewport.
   local logical_w,logical_h=love.graphics.getDimensions()
   local physical_w,physical_h=love.graphics.getPixelDimensions()
@@ -464,6 +466,7 @@ end
 local coverage_walk={frames=0,started=false,missing_max=0,paused=0}
 local coverage_walk_enabled=os.getenv('TAMU_25D_WALK_PROBE')=='1'
 function love.update(dt)
+  Diagnostics.begin(dt)
   local perf_begin=love.timer.getTime()
   if runtime25d then runtime25d:advance_sun(dt) end
   if cache_pilot_enabled and not boot_ready then
@@ -585,6 +588,8 @@ function love.update(dt)
   if terrain25d_compare then
     last_update_ms=(love.timer.getTime()-perf_begin)*1000
   end
+  Diagnostics.phase("update_gameplay_stream_objects")
+  Diagnostics.update_done()
   PerfHud.update(dt,(love.timer.getTime()-perf_begin)*1000,stats)
   if long_driver then long_driver:afterUpdate(stats) end
   if os.getenv("OSMAN_CHUNK_CACHE_BASELINE_SMOKE")=="1"
@@ -918,6 +923,7 @@ local function draw_postchecks(perf_begin)
   end
 end
 function love.draw()
+  Diagnostics.draw_begin()
   local perf_begin=love.timer.getTime()
   local phase_trace=os.getenv('TAMU_PERF_PHASE_TRACE')=='1'
   local terrain_finished,objects_finished
@@ -948,6 +954,7 @@ function love.draw()
       end
     end
   end
+  Diagnostics.phase("terrain_draw")
   if phase_trace then terrain_finished=love.timer.getTime() end
   if cache_pilot_enabled and not boot_ready then
     local g=love.graphics
@@ -979,6 +986,7 @@ function love.draw()
   end
   object_count=ObjectRenderer.draw(objects,stream,camera,w,h,player,
     selected_target,harvesting,sprite25d_draw)
+  Diagnostics.phase("objects_and_shadows")
   if phase_trace then objects_finished=love.timer.getTime() end
   local ghost
   if not r2_pilot and stage_hud.placing and placement_target then
@@ -1041,6 +1049,13 @@ function love.draw()
       runtime25d and runtime25d.visible or 0))
     io.stdout:flush()
   end
+  Diagnostics.phase("hud_ui")
+  Diagnostics.draw_done({chunks=stats and stats.loaded,objects=object_count,
+    missing=runtime25d and runtime25d.missing_visible,pending=stats and stats.pending,
+    shadow_rebuilds=sprite25d_draw and sprite25d_draw.shadow_rebuilds,
+    shadow_reuses=sprite25d_draw and sprite25d_draw.shadow_reuses,
+    contact_rebuilds=sprite25d_draw and sprite25d_draw.contact_rebuilds,
+    contact_reuses=sprite25d_draw and sprite25d_draw.contact_reuses})
   PerfHud.benchmark_sample(0,PerfHud.update_ms,
     (love.timer.getTime()-perf_begin)*1000,runtime25d,stats,sprite25d_draw)
   draw_postchecks(perf_begin)
@@ -1267,5 +1282,6 @@ end
 -- A worker may still be compressing disposable geometry at shutdown.
 -- Drain only after gameplay has stopped, never inside the frame budget.
 function love.quit()
+ Diagnostics.close()
  if chunk_cache then chunk_cache:close() end
 end
