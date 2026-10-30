@@ -709,8 +709,8 @@ local function flatten_pass(chunks,layer)
  end
  return runs
 end
-local function aggregate_pass(runtime,runs)
- local output={}
+local function aggregate_pass(runtime,runs,output)
+ assert(output and #output==0,'empty owned mesh staging required')
  for _,run in ipairs(runs) do
    if #run.meshes<2 then
      output[#output+1]={mesh=run.meshes[1],owned=false}
@@ -765,7 +765,9 @@ function Runtime:update_ground_batch(draw_chunks,now)
    self.ground_batch_staging={}
    self.ground_batch_job=coroutine.create(function()
      for _,layer in ipairs({'ground','path','bank','water'}) do
-       self.ground_batch_staging[layer]=aggregate_pass(self,flatten_pass(draw_chunks,layer))
+       local output={}
+       self.ground_batch_staging[layer]=output
+       aggregate_pass(self,flatten_pass(draw_chunks,layer),output)
      end
    end)
  end
