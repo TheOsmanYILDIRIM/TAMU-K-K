@@ -39,7 +39,12 @@ def main(repo,output,prebaked_dir=None):
             if rel.startswith(('assets/tamu_creative_','assets/worldbuild/',
                                'assets/terrain25d/source_png/')) or rel in (
                                'assets/creative_build_atlas.png',
-                               'assets/creative_build_manifest.json'):
+                               'assets/creative_build_manifest.json',
+                               'assets/settle_at_the_edge.mp3'):
+                continue
+            # CreativeRenderer reads the verified aggregate atlas and manifest,
+            # never its individual preview PNGs; retain originals in Git.
+            if rel.startswith('assets/creative_') and rel.endswith('.png'):
                 continue
             content.append((rel,p.read_bytes()))
     for generated in sorted(shadow_dir.iterdir()):
@@ -81,6 +86,10 @@ def main(repo,output,prebaked_dir=None):
                        for n in z.namelist()), 'source PNG leaked into LOVE'
         assert all('assets/terrain25d/'+p['filename'] in z.namelist()
                    for p in manifest['atlas_pages']), 'packed atlas absent'
+        assert 'assets/settle_at_the_edge.mp3' not in z.namelist()
+        assert not any(n.startswith('assets/creative_') and n.endswith('.png')
+                       and n!='assets/creative_build_atlas.png'
+                       for n in z.namelist()), 'duplicate creative preview PNG'
         assert len([p for p in z.namelist() if p.startswith('assets/terrain25d/static_shadow/shadows_') and p.endswith('.png')])==8
         assert all(z.read('assets/worldbuild/'+n)==(repo/'data/worldbuild'/n).read_bytes() for n in R2)
     print(json.dumps({'file':str(output),'size':output.stat().st_size,
