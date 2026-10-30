@@ -66,6 +66,7 @@ jobs:
           find "$XDG_DATA_HOME" -name 'c_*.meta.json' -exec cp {} /tmp/tamu-authored-binary/ \;
           test "$(find /tmp/tamu-authored-binary -name '*.verts.z' | wc -l)" -eq 156
           test "$(find /tmp/tamu-authored-binary -name '*.meta.json' | wc -l)" -eq 156
+          python3 -m pip install pillow
           python3 scripts/package_tamu_love.py --repo . --prebaked-dir /tmp/tamu-authored-binary --output /tmp/tamu-authored-compiled.love
           python3 - <<'PY'
           import zipfile
