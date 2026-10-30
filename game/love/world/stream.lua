@@ -33,7 +33,7 @@ function Stream.new(query, opts)
   }, Stream)
 end
 
-local function view_range(camera,width,height,size)
+local function view_range(camera,width,height,size,margin)
   assert(type(width)=="number" and width > 0 and type(height)=="number" and height > 0,
          "invalid viewport")
   local min_x,min_y,max_x,max_y
@@ -44,8 +44,9 @@ local function view_range(camera,width,height,size)
     min_x=math.min(min_x or x,x); min_y=math.min(min_y or y,y)
     max_x=math.max(max_x or x,x); max_y=math.max(max_y or y,y)
   end
-  return math.floor(min_x/size)-1,math.floor(min_y/size)-1,
-         math.floor(max_x/size)+1,math.floor(max_y/size)+1
+  margin=margin or 1
+  return math.floor(min_x/size)-margin,math.floor(min_y/size)-margin,
+         math.floor(max_x/size)+margin,math.floor(max_y/size)+margin
 end
 
 -- Screen-space overlap is a diamond bounding box, not centre distance.
@@ -64,7 +65,8 @@ function Stream:needed(camera,width,height)
      and type(camera.x)=="number" and type(camera.y)=="number",
      "camera required")
   local size=self.chunker.size
-  local min_x,min_y,max_x,max_y=view_range(camera,width,height,size)
+  local min_x,min_y,max_x,max_y=view_range(camera,width,height,size,
+    self.render_only_25d and 2 or 1)
   local candidates={}
   for cy=min_y,max_y do for cx=min_x,max_x do
     local midx,midy=(cx+0.5)*size,(cy+0.5)*size
