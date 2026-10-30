@@ -2,12 +2,13 @@
 -- before the user selects a mode. Does not modify saves or user settings.
 local Boot={}
 local options={
- {id='full',label='TAM OYUN'},
- {id='character',label='SADECE KARAKTER'},
- {id='terrain',label='SADECE GERCEK R2 ARAZI'},
- {id='objects',label='SADECE OBJELER'},
- {id='terrain_objects',label='ARAZI + OBJELER'},
- {id='character_objects',label='KARAKTER + OBJELER'},
+ {id='full',label='TAM OYUN - REFERANS'},
+ {id='compare_terrain',label='TAM SAHNE - YALNIZ ARAZI'},
+ {id='compare_objects',label='TAM SAHNE - YALNIZ OBJELER'},
+ {id='compare_rig',label='TAM SAHNE - YALNIZ RIGBY'},
+ {id='compare_terrain_objects',label='TAM SAHNE - ARAZI + OBJELER'},
+ {id='compare_nohud',label='TAM SAHNE - HUD KAPALI'},
+ {id='compare_norig',label='TAM SAHNE - RIGBY KAPALI'},
  {id='none',label='BOS SAHNE / MOTOR TABANI'}
 }
 local selected=nil
@@ -109,7 +110,8 @@ local function draw_scene()
  end
 end
 local function select_mode(mode)
- if mode=='full' then
+ if mode=='full' or mode:sub(1,8)=='compare_' then
+   _G.TAMU_RENDER_PROFILE=mode
    _G.TAMU_ISOLATION_SELECTED=true
    local chunk=assert(love.filesystem.load('main.lua'))
    chunk() -- installs original LOVE callbacks, only now requires game modules.
@@ -151,7 +153,7 @@ function Boot.install()
    g.clear(.035,.065,.075,1)
    g.setColor(.9,.96,.95)
    g.printf('TAMU / IZOLASYON TESTI',0,35,w,'center')
-   g.printf('Mod secilene kadar oyun yuklenmez',0,62,w,'center')
+   g.printf('KARSILASTIRMA: AYNI DUNYA VE NESNELER',0,62,w,'center')
    for i,o in ipairs(options) do
      local x,y,bw,bh=region(i)
      g.setColor(.13,.24,.26,.96)
