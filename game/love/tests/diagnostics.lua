@@ -6,6 +6,7 @@ local fs={
  createDirectory=function() return true end,
  getInfo=function(path) return files[path] and {size=#files[path]} end,
  remove=function(path) files[path]=nil;return true end,
+ write=function(path,data) files[path]=data;return true end,
  append=function(path,data) files[path]=(files[path] or '')..data;return true end,
 }
 love={
