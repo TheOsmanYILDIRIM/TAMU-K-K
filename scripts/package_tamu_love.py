@@ -46,6 +46,13 @@ def main(repo,output,prebaked_dir=None):
             # never its individual preview PNGs; retain originals in Git.
             if rel.startswith('assets/creative_') and rel.endswith('.png'):
                 continue
+            if rel.startswith('player/core_') or rel in (
+                'player/axe_strike.lua','assets/axe_121227.png',
+                'assets/file_000000007cf082119c4dde3e346c2bcb.png',
+                'assets/core_crystal_mask_aligned.png',
+                'assets/core_plasma_front_spritesheet_32x512.png',
+                'assets/core_plasma_back_spritesheet_32x512.png'):
+                continue
             content.append((rel,p.read_bytes()))
     for generated in sorted(shadow_dir.iterdir()):
         if generated.is_file():
