@@ -142,6 +142,13 @@ GPU sürücüsünün sunduğu `drawcalls`, `shaderswitches`,
 Buffer en geç 2 saniyede ya da 64 KiB'de diske gönderilir;
 `trace_write_ms` tanılama yazma maliyetidir.
 
+Çevrimdışı analiz: `python3 scripts/analyze_tamu_diagnostics.py tamu-trace-*.jsonl --output report.json`.
+Rapor oturum bazında p50/p95/p99 ölçümlerini, faz sürelerini, en yavaş 12 kareyi,
+bozuk satır sayısını ve olay türlerinin sayılarını üretir. JSONL dosyalarını
+gönderirken hata mesajlarını kontrol edin; oturum loglarını yalnız güvenilir
+kanallarda paylaşın. Konsol başlangıcında `love.filesystem.getSaveDirectory()`
+ile gerçek kayıt dizini öğrenilebilir.
+
 **Sınırlar:** LÖVE `draw_ms` GPU beklemesi içerebilir; GPU nanosaniye
 zamanlayıcısı değildir. `texture_mib` sürücünün raporladığı tahmindir.
 Ölçümün kendisi yük oluşturur; `TAMU_DIAGNOSTICS=0` kontrolü ile A/B
