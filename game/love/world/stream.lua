@@ -95,6 +95,9 @@ function Stream:needed(camera,width,height)
       if #required>=self.max_loaded then break end
       required[#required+1]=c
     end
+    local visible_keys={}
+    for _,c in ipairs(visible) do visible_keys[c.key]=true end
+    self.visible_required_keys=visible_keys
     self.visible_required_count=#visible
     self.coverage_over_budget=#visible>self.max_loaded and
       (#visible-self.max_loaded) or 0
