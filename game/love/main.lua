@@ -25,6 +25,7 @@ local StatHud=require("progression.hud")
 local Creative=require("systems.creative_build")
 local CreativeHUD=require("core.creative_build_hud")
 local CreativeRenderer=require("systems.creative_build_renderer")
+local PerfHud=require("core.perf_hud")
 local stage6_enabled=os.getenv("OSMAN_STAGE6_EXPLICIT")=="1"
 local stage6_create=os.getenv("OSMAN_STAGE6_CREATE")=="1"
 local stage6_reopen_smoke=os.getenv("OSMAN_STAGE6_REOPEN_SMOKE")=="1"
@@ -578,6 +579,7 @@ function love.update(dt)
   if terrain25d_compare then
     last_update_ms=(love.timer.getTime()-perf_begin)*1000
   end
+  PerfHud.update(dt,(love.timer.getTime()-perf_begin)*1000,stats)
   if long_driver then long_driver:afterUpdate(stats) end
   if os.getenv("OSMAN_CHUNK_CACHE_BASELINE_SMOKE")=="1"
    or os.getenv("OSMAN_CHUNK_CACHE_SMOKE")=="1" then
@@ -1014,6 +1016,8 @@ function love.draw()
   stage_hud:draw(inventory,crafting,hud_safe,placement_rotation,route_status)
   stat_hud:draw(g,hud_safe,progression)
   creative_hud:draw(creative,hud_safe)
+  PerfHud.draw(runtime25d,w,h,safe_x,safe_y,safe_w,
+    (love.timer.getTime()-perf_begin)*1000)
   local bx,by=joystick_center()
   g.setColor(.2,.3,.34,.6)
   g.circle("fill",bx,by,72)
@@ -1211,6 +1215,7 @@ function love.wheelmoved(_,dy)
   camera:zoom_at(1.15^dy,x,y,w,h)
 end
 function love.keypressed(key)
+  if key=="f9" then PerfHud.toggle();return end
   if key=="p" then stat_action("stats_toggle");return end
   if stat_hud.open then
     local number=tonumber(key)
