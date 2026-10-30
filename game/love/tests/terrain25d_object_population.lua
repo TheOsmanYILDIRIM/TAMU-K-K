@@ -25,4 +25,17 @@ assert(world.calls==4,'R2 must prepare 4 spatial candidate quadrants')
 local candidates=Renderer.collect(world,stream,overlay)
 assert(#candidates==1 and candidates[1]==hit,'R2 authored object must render')
 assert(world.calls==4,'draw must not perform cold queries')
+-- Reusable render buffers must retain the identical visible entity references
+-- and never force fresh ecology queries on a prepared chunk.
+local scratch={objects={},seen={}}
+for _=1,30 do
+ local current=Renderer.collect(world,stream,overlay,scratch)
+ assert(current==scratch.objects and #current==1 and current[1]==hit,
+   'pooled visible objects changed or leaked between frames')
+end
+assert(world.calls==4,'pooled frames must not query ecology')
+local independent=Renderer.collect(world,stream,overlay)
+assert(independent~=scratch.objects and independent[1]==hit,
+  'public nonpooled collect must retain independent result semantics')
 print('R2_25D_OBJECT_POPULATION_OK')
+print('TAMU_OBJECT_POOL_SEMANTICS_OK')
