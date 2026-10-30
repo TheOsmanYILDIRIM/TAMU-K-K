@@ -92,7 +92,9 @@ local function draw_scene()
  end
  if assets.object_img then
    g.setColor(1,1,1)
-   g.draw(assets.object_batch)
+   local px,py=cam:project(0,0,w,h)
+   local factor=cam.zoom/1.4
+   g.draw(assets.object_batch,px-factor*w*.5,py-factor*h*.5,0,factor,factor)
  end
  if assets.rig then assets.rig.draw(g,cam,w,h,assets.actor,{}) end
  g.setColor(1,1,1)
