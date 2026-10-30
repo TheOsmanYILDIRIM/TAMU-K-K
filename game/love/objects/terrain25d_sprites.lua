@@ -400,8 +400,7 @@ function Sprite:queue(g,camera,w,h,o,selected)
  if not a then self.culled=self.culled+1;return end
  local z=camera.zoom
  -- Keep draw order as authored by ObjectRenderer's Y-depth sort.
- if self.pending>=self.limit or
-   (self.current_page and self.current_page~=a.page) then self:flush(g) end
+ if self.pending>=self.limit then self:flush(g) end
  local progress=self.provider.object_reveal and
    self.provider:object_reveal(o.x,o.y) or 1
  local page=a.page
@@ -414,10 +413,14 @@ function Sprite:queue(g,camera,w,h,o,selected)
    local hour=self.provider.sun and self.provider.sun.hour or 12
    local slot=(math.floor(hour/3+.5)*3)%24
    page='staticshadow:objects_shadow_'..string.format('%02d',slot)..'.png'
-   quad=love.graphics.newQuad(entry.u,entry.v,entry.width,entry.height,
-     atlas.width,atlas.height)
+   if not entry.quad then
+     entry.quad=love.graphics.newQuad(entry.u,entry.v,entry.width,entry.height,
+       atlas.width,atlas.height)
+   end
+   quad=entry.quad
    pivot_x,pivot_y=entry.pivot[1],entry.pivot[2]
  end
+ if self.current_page and self.current_page~=page then self:flush(g) end
  local batch=self:batch_for(page)
  batch:setColor(1,1,1,progress)
  self.pending_reveal=self.pending_reveal or progress<.999
