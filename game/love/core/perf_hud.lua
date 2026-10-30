@@ -44,8 +44,8 @@ end
 -- CI-only fixed-scene CPU budget. FPS/VSync is not a desktop-to-Android
 -- comparison; sample real Lua update+draw elapsed time after full coverage.
 local bench={samples={},stable_frames=0}
-function M.benchmark_sample(dt,update_ms,draw_ms,runtime,stats)
- if os.getenv('TAMU_CPU_200_BENCH')~='1' then return end
+function M.benchmark_sample(dt,update_ms,draw_ms,runtime,stats,sprites)
+ if os.getenv('TAMU_CPU_400_BENCH')~='1' then return end
  local ready=runtime and runtime.required_visible>0
    and runtime.missing_visible==0 and stats and stats.pending==0
  if not ready then
@@ -60,9 +60,13 @@ function M.benchmark_sample(dt,update_ms,draw_ms,runtime,stats)
    table.sort(a)
    local function q(p) return a[math.ceil(#a*p)] end
    local p50,p95,p99=q(.5),q(.95),q(.99)
+   local terrain_calls=runtime and runtime.draw_calls or 0
+   local object_calls=sprites and sprites.batches or 0
+   local shadow_calls=sprites and sprites.shadow_calls or 0
+   local contact_calls=sprites and sprites.contact_calls or 0
    print(string.format(
-     'TAMU_CI_CPU_200 frames=%d p50_ms=%.3f p95_ms=%.3f p99_ms=%.3f target_p95_ms=5.000',
-     #a,p50,p95,p99))
+     'TAMU_CI_CPU_400 frames=%d p50_ms=%.3f p95_ms=%.3f p99_ms=%.3f target_p95_ms=2.500 terrain_calls=%d object_batches=%d shadow_calls=%d contact_calls=%d',
+     #a,p50,p95,p99,terrain_calls,object_calls,shadow_calls,contact_calls))
    io.stdout:flush()
    love.event.quit()
  end
