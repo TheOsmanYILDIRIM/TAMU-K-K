@@ -68,6 +68,42 @@ Stage6 explicit play does NOT award session XP to avoid non-atomic cross-save co
 The HUD displays SESSION ONLY / NOT SAVED. Do not mistake test snapshot/restore
 for production durable saving. A new versioned save contract and migration are required.
 
+## Android Diagnostics JSONL — production triage (experiment)
+
+Existing `core/diagnostics.lua` is **enabled by default on Android** and off by
+default on desktop. It writes bounded JSONL files inside LÖVE's save directory,
+not inside the .love archive:
+
+- `diagnostics/tamu-trace-0.jsonl` through `tamu-trace-2.jsonl`, rotated
+  at 4 MiB per file (approximately 12 MiB total).
+- Schema v2 `session_start`, per-frame `frame`, `slow_frame`,
+  `window_summary` (5-second p50/p95/p99 and stage averages),
+  `chunk_coverage_changed`, `chunk_pending_changed`, `shadow_rebuilt`,
+  `app_focus`, `app_visibility`, `android_low_memory`, `fatal_error`,
+  and `session_end`.
+- `frame_ms` is a **frame-pacing approximation** derived from dt and measured
+  update/draw wall time. `draw_ms` can include driver stalls; neither is an
+  actual GPU timestamp. `getStats()` is draw-call/texture telemetry.
+- Unhandled errors, focus/background transitions, and memory warnings are
+  flushed; every 2 seconds or 64 KiB also flushes. Trace I/O overhead is
+  recorded as `trace_write_ms`.
+- The save-directory location is printed at startup under
+  `TAMU_DIAGNOSTICS_START save_dir=...`. Android access to app-private
+  storage depends on the installed LÖVE client and Android version.
+- Set `TAMU_DIAGNOSTICS=0` to disable collection; on a desktop
+  `TAMU_DIAGNOSTICS=1` enables the same data format.
+
+Once trace files have been copied from the device, run:
+
+```sh
+python3 scripts/analyze_tamu_diagnostics.py tamu-trace-*.jsonl --output report.json
+```
+
+The offline analyzer accepts v1/v2 files and reports per-session frame
+distribution, hot phases, and correlations between slow frames and shadow,
+pending-chunk, and missing-chunk counters. It does **not** claim causal
+attribution where GPU fences or hardware counters were not measured.
+
 ## Manual performance investigation: 10x long traversal (expensive)
 
 Run **only** after chunk streaming, terrain, GPU allocation, cache, camera, or
