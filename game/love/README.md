@@ -273,3 +273,7 @@ terrain draws are suppressed, retaining object discovery and texture readiness.
 These are **draw-stage isolation tests**, not independent no-call system tests.
 Interpret all FPS comparisons with that explicit distinction. Reboot the app
 to switch profiles. Android CI and visual correctness remain to be confirmed.
+
+### Opak obje A/B testi
+
+`compare_objects` normal alpha karışımıyla; `compare_objects_opaque` aynı R2 sahnesi/nesne geometrisi, sayısı, sırası ve atlasıyla, yalnız obje sprite çiziminin alpha karışımı kapatılarak çalışır. Gölge geçişi değiştirilmez; ekran görüntüsü kasıtlı olarak farklıdır, şeffaf texeller arka planı örtebilir. Bu test **alpha blend maliyetini** ayırır, bütün fill-rate/overdraw maliyetini değil. İki modu aynı kamera/zoom ve bekleyen chunk=0 koşullarında karşılaştır. Android sonucu henüz doğrulanmadı.
