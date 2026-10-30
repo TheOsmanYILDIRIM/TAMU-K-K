@@ -57,7 +57,7 @@ def analyse(paths):
                     max(0, current - prev_contact) if prev_contact is not None else 0)
                 prev_contact = current
         fields = ["frame_ms", "fps", "dt_ms", "update_ms", "draw_ms", "drawcalls",
-                  "shaderswitches", "texture_mib", "lua_kib",
+                  "shader_switches", "texture_mib", "lua_kib",
                   "chunks", "objects", "missing", "pending",
                   "trace_write_ms"]
         phase_names = sorted({k for r in rows for k in (r.get("phases") or {})})
