@@ -221,3 +221,17 @@ is required at build time, not on the device. Lua 5.4/LuaJIT regression is
 visual shadow/overlap acceptance and actual packaging CI remain unverified**.
 Do not merge without these checks. Approximate precomposed shadows can differ
 from the prior two-layer live projections.
+
+## 32px texture-derived static shadows (experiment)
+
+The source `atlas_01.png` remains the full-resolution 128px object atlas.
+The Python builder uses each variant's actual alpha to generate 32x32
+shadow masks in **eight separate small time-of-day atlas pages**. The
+`package_tamu_love.py` build embeds these pages; at runtime the shadow
+batch is drawn once underneath the original full-resolution object sprites.
+No realtime rotated RGBA silhouettes or procedural contact ellipses run in
+this packaged path. Fallback without a manifest still uses legacy shadows.
+
+CI validates shadow page count, dimensions, and embedded manifest. Actual
+Android visual and performance acceptance are still open. The 3-hour shadow
+slots deliberately step rather than continuously animate.
