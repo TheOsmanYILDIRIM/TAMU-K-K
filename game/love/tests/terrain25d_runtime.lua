@@ -337,17 +337,21 @@ sprites:draw_shadows(g,cam,360,780,{shadow_object})
 assert(sprites.shadow_objects==1 and projected_shadow_sprites==4
   and sprites.shadow_rebuilds==2,
   "visible noon change must rebuild the silhouettes")
--- Camera motion invalidates buffers even with an identical object list.
+-- Panning reuses both preprojected batches with a camera transform.
+local previous_shadow_reuses=sprites.shadow_reuses
+local previous_contact_reuses=sprites.contact_reuses
 cam.x=cam.x+1
 sprites:draw_shadows(g,cam,360,780,{shadow_object})
-assert(projected_shadow_sprites==6 and sprites.shadow_rebuilds==3
-  and sprites.contact_rebuilds==2 and contact_sprites==2,
-  "camera motion must rebuild both sunlight and contact shadow buffers")
+assert(projected_shadow_sprites==4 and sprites.shadow_rebuilds==2
+  and sprites.contact_rebuilds==1 and contact_sprites==1
+  and sprites.shadow_reuses==previous_shadow_reuses+1
+  and sprites.contact_reuses==previous_contact_reuses+1,
+  "camera pan must translate cached shadows without rebuilding GPU batches")
 sprites:draw_shadows(g,cam,360,780,{
  {id=shadow_object.id,x=shadow_object.x+1,y=shadow_object.y,
   kind=shadow_object.kind,radius=shadow_object.radius}})
-assert(sprites.contact_rebuilds==3 and contact_sprites==3
-  and projected_shadow_sprites==8,
+assert(sprites.contact_rebuilds==2 and contact_sprites==2
+  and projected_shadow_sprites==6 and sprites.shadow_rebuilds==3,
   "object movement invalidates both shadow batches")
 rt:set_sun_hour(23)
 sprites:draw_shadows(g,cam,360,780,{shadow_object})
