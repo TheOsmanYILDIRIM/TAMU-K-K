@@ -788,23 +788,34 @@ function Runtime:draw(stream,camera,w,h)
  local tint=self.sun.tint
  local calls,visible=0,0
  local shader=self.reveal_shader
+ -- Render-only style cache: each chunk is drawn for ground, overlays and
+ -- water within the same frame. Avoid redoing projection, reveal sampling
+ -- and uniform vectors for the same chunk on every layer.
+ local styles={}
+ local active_shader=false
+ g.setColor(tint[1],tint[2],tint[3],1)
  local function prepare_style(chunk)
-   local progress=self:chunk_reveal(chunk,now)
-   if shader and progress<.999 then
-     local cx,cy=chunk.x+chunk.size*.5,chunk.y+chunk.size*.5
-     local sx,sy=camera:project(cx,cy,w,h)
-     local radius=(chunk.size*.707106781186548+32)*camera.zoom
-     local front=progress*radius
+   if not shader then return end
+   local style=styles[chunk]
+   if not style then
+     local progress=self:chunk_reveal(chunk,now)
+     if progress<.999 then
+       local cx,cy=chunk.x+chunk.size*.5,chunk.y+chunk.size*.5
+       local sx,sy=camera:project(cx,cy,w,h)
+       local radius=(chunk.size*.707106781186548+32)*camera.zoom
+       style={origin={sx,sy},front=progress*radius}
+     else
+       style=false
+     end
+     styles[chunk]=style
+   end
+   if style then
      shader:send('radial',1)
-     shader:send('waveOrigin',{sx,sy})
-     shader:send('waveFront',front)
-     g.setShader(shader)
-     g.setColor(tint[1],tint[2],tint[3],1)
-   else
-     if shader then g.setShader() end
-     -- A headless test without shader only gets fully opaque completed mesh;
-     -- the real LÖVE/GLES path uses 3px creation pixels, never alpha fade.
-     g.setColor(tint[1],tint[2],tint[3],1)
+     shader:send('waveOrigin',style.origin)
+     shader:send('waveFront',style.front)
+     if not active_shader then g.setShader(shader);active_shader=true end
+   elseif active_shader then
+     g.setShader();active_shader=false
    end
  end
  for _,c in ipairs(draw_chunks) do
@@ -832,7 +843,7 @@ function Runtime:draw(stream,camera,w,h)
      g.draw(c._25d_meshes['!water']);calls=calls+1
    end
  end
- if shader then g.setShader() end
+ if active_shader then g.setShader() end
  g.setColor(1,1,1,1)
  g.pop()
  self:prune_pages(stream,chunks)
