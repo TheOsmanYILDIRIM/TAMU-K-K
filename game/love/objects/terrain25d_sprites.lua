@@ -50,7 +50,7 @@ function Sprite.new(provider,manifest)
    love.filesystem.getInfo(SHADOW_ROOT..'objects_shadow_manifest.json','file') then
    local raw=love.filesystem.read(SHADOW_ROOT..'objects_shadow_manifest.json')
    local ok,m=pcall(StaticJson.decode,raw or '')
-   if ok and m and m.version==1 and #m.pages==8 and m.objects then
+   if ok and m and m.version==2 and #m.pages>=8 and m.objects then
      static_manifest=m
    end
  end
@@ -412,7 +412,7 @@ function Sprite:queue(g,camera,w,h,o,selected)
    assert(entry,'missing static shadow sprite '..tostring(a.id))
    local hour=self.provider.sun and self.provider.sun.hour or 12
    local slot=(math.floor(hour/3+.5)*3)%24
-   page='staticshadow:objects_shadow_'..string.format('%02d',slot)..'.png'
+   page='staticshadow:objects_shadow_'..string.format('%02d',slot)..'_'..tostring(entry.page)..'.png'
    if not entry.quad then
      entry.quad=love.graphics.newQuad(entry.u,entry.v,entry.width,entry.height,
        atlas.width,atlas.height)
