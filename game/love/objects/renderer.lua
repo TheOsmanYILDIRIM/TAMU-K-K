@@ -180,6 +180,7 @@ end
 function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_override)
   local perf_clock=Diagnostics.enabled and love.timer.getTime
   local perf_at=perf_clock and perf_clock() or 0
+  local rig_elapsed_ms=0
   local all=R.collect(world,stream,object_override,draw_pool)
   if perf_clock then Diagnostics.measure("object_collect_ms",(perf_clock()-perf_at)*1000);perf_at=perf_clock() end
   local order=clear_array(draw_pool.order)
@@ -230,7 +231,11 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_ove
       if type(object_override)=="table" then object_override:flush(g) end
       local rig_start=perf_clock and perf_clock()
       player_sprite(g,camera,w,h,player,visual)
-      if rig_start then Diagnostics.measure("rigby_ms",(perf_clock()-rig_start)*1000) end
+      if rig_start then
+        local elapsed=(perf_clock()-rig_start)*1000
+        rig_elapsed_ms=rig_elapsed_ms+elapsed
+        Diagnostics.measure("rigby_ms",elapsed)
+      end
     elseif type(object_override)=="table" then
       object_override:queue(g,camera,w,h,entry.object,entry.id==selected_id)
     else
@@ -238,7 +243,11 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_ove
     end
   end
   if type(object_override)=="table" then object_override:flush(g) end
-  if perf_clock then Diagnostics.measure("sprite_pipeline_ms",(perf_clock()-perf_at)*1000) end
+  if perf_clock then
+    -- Exclusive sprite queue/flush time: omit player Rigby draw and shadows.
+    Diagnostics.measure("sprite_pipeline_ms",math.max(0,
+      (perf_clock()-perf_at)*1000-rig_elapsed_ms))
+  end
   -- Preserve the flying axe only for the backed-up plasma mode.
   if use_plasma and harvesting and harvesting.active then
     local source=world:get(harvesting.active.object_id)
