@@ -133,7 +133,8 @@ function Runtime.new(pilot)
    frame_now=0,reveal_shader=compact and Reveal.new() or nil},Runtime)
  -- Separate immutable terrain byte decompression from graphics uploads.
  -- CI bake/verify and forced JSON tests continue using the original path.
- if not self.bake_mode and os.getenv('OSMAN_25D_BAKE_VERIFY')~='1'
+ if not self.bake_mode and os.getenv('TAMU_25D_FULL_AUTHORED_BAKE')~='1'
+     and os.getenv('OSMAN_25D_BAKE_VERIFY')~='1'
      and os.getenv('TAMU_25D_FORCE_JSON')~='1'
      and love.thread and love.thread.newThread then
    self.binary_worker=love.thread.newThread('world/terrain25d_binary_worker.lua')
@@ -536,6 +537,51 @@ function Runtime:prepare(chunk,checkpoint)
  chunk._25d_staging_meshes=nil
  chunk._25d_reveal_start=love.timer and love.timer.getTime() or 0
  self.built=self.built+1
+end
+-- CI-only immutable authored polygon sweep. The huge worldmap bounds are
+-- design-only; never bake 16K+ procedural tiles as if authored content.
+function Runtime:bake_authored_step()
+ if not self.authored_bake_queue then
+   local minx,miny,maxx,maxy=math.huge,math.huge,-math.huge,-math.huge
+   for _,region in ipairs(self.pilot.authored_map.regions or {}) do
+     for _,point in ipairs(region.polygon or {}) do
+       minx=math.min(minx,point[1]);maxx=math.max(maxx,point[1])
+       miny=math.min(miny,point[2]);maxy=math.max(maxy,point[2])
+     end
+   end
+   assert(minx<maxx and miny<maxy,'no authored polygon footprint')
+   local margin=3 -- three full chunks beyond authored polygon in each direction
+   local x0=math.floor(minx/256)-margin
+   local x1=math.floor(maxx/256)+margin
+   local y0=math.floor(miny/256)-margin
+   local y1=math.floor(maxy/256)+margin
+   local queue={}
+   for cy=y0,y1 do for cx=x0,x1 do
+     queue[#queue+1]={cx=cx,cy=cy,x=cx*256,y=cy*256,
+       key=cx..':'..cy,size=256,layers={}}
+   end end
+   self.authored_bake_queue=queue
+   self.authored_bake_index=1
+   print(string.format('TAMU_AUTHORED_BAKE_PLAN chunks=%d cx=%d..%d cy=%d..%d',
+     #queue,x0,x1,y0,y1))
+ end
+ if not self.page_images['atlas_00.png'] then return false end
+ local index=self.authored_bake_index
+ local queue=self.authored_bake_queue
+ if index>#queue then return true end
+ local chunk=queue[index]
+ self:prepare(chunk)
+ Baked.save_binary(self,chunk)
+ for _,mesh in pairs(chunk._meshes or {}) do
+   if mesh.release then mesh:release() end
+ end
+ self.authored_bake_index=index+1
+ if index%10==0 or index==#queue then
+   print(string.format('TAMU_AUTHORED_BAKE_PROGRESS done=%d total=%d',
+     index,#queue))
+   io.stdout:flush()
+ end
+ return index==#queue
 end
 function Runtime:poll_binary_results()
  if not self.binary_worker then return end
