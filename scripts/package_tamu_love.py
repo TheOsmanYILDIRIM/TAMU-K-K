@@ -5,6 +5,7 @@ No environment variables, user saves, or private files are copied.
 import argparse, hashlib, json, zipfile, subprocess, sys
 from pathlib import Path
 from build_creative_assets import generate
+from build_tamu_static_shadow_atlases import build as build_static_shadows
 R2={
  'fisilti_ormani.r2.v1.json':'df5d0eeca59030e6585558c15d8f1e7bf049638ea8032dc17c1b80c74106f598',
  'osman_overworld.v2.json':'ac5903fd22cd466cfc1786cbeef44f2679be87317c6bfd757a05a282172f78dc',
@@ -15,6 +16,8 @@ def main(repo,output,prebaked_dir=None):
     assets=output.parent/'tamu_creative_generated'
     raw_catalog=subprocess.check_output(["lua5.4","scripts/export_building_parts.lua"],cwd=repo)
     generate(assets,json.loads(raw_catalog),repo)
+    shadow_dir=output.parent/'tamu_static_shadow_generated'
+    shadow_manifest=build_static_shadows(root/'assets/terrain25d',shadow_dir)
     content=[]
     for p in root.rglob('*'):
         if p.is_file() and p.suffix.lower() not in ('.pyc','.log') and '__pycache__' not in p.parts:
@@ -22,6 +25,10 @@ def main(repo,output,prebaked_dir=None):
             if rel.startswith(('assets/tamu_creative_','assets/worldbuild/')) or rel in ('assets/creative_build_atlas.png','assets/creative_build_manifest.json'):
                 continue
             content.append((rel,p.read_bytes()))
+    for generated in sorted(shadow_dir.iterdir()):
+        if generated.is_file():
+            content.append(('assets/terrain25d/static_shadow/'+generated.name, generated.read_bytes()))
+    assert len(shadow_manifest['pages'])==8
     for name,sha in R2.items():
         raw=(root/'assets/worldbuild'/name).read_bytes() if (root/'assets/worldbuild'/name).is_file() else (repo/'data/worldbuild'/name).read_bytes()
         assert hashlib.sha256(raw).hexdigest()==sha,(name,'unpinned world data')
@@ -53,6 +60,7 @@ def main(repo,output,prebaked_dir=None):
     with zipfile.ZipFile(output) as z:
         assert z.testzip() is None
         assert 'main.lua' in z.namelist() and 'assets/creative_build_atlas.png' in z.namelist()
+        assert len([p for p in z.namelist() if p.startswith('assets/terrain25d/static_shadow/objects_shadow_') and p.endswith('.png')])==8
         assert all(z.read('assets/worldbuild/'+n)==(repo/'data/worldbuild'/n).read_bytes() for n in R2)
     print(json.dumps({'file':str(output),'size':output.stat().st_size,
        'sha256':hashlib.sha256(output.read_bytes()).hexdigest(),'count':len(paths)}))
