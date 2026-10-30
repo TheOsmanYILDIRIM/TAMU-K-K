@@ -183,15 +183,20 @@ end
 -- Replace per-object filled ellipses with one 48x48 alpha-oval batch.
 -- Nine KiB of visual-only RGBA8; no change to collision, save, source PNGs
 -- or the approved two-layer projected sunlight silhouettes.
-function Sprite:draw_contacts(g,camera,w,h,objects)
+function Sprite:draw_contacts(g,camera,w,h,objects,stable_hint)
  self.contact_calls=0
  if #objects==0 then
    self.contact_objects=0
    self.contact_cache=nil
    return
  end
- local stable=not self.provider.objects_fully_revealed
-   or self.provider:objects_fully_revealed(objects)
+ -- The shadow pass already checked this visible set. Do not scan
+ -- reveal state twice during every moving-camera frame.
+ local stable=stable_hint
+ if stable==nil then
+   stable=not self.provider.objects_fully_revealed
+     or self.provider:objects_fully_revealed(objects)
+ end
  if stable and self.contact_batch and
     same_scene(self.contact_cache,camera,w,h,objects) then
    self.contact_reuses=self.contact_reuses+1
@@ -297,7 +302,7 @@ function Sprite:draw_shadows(g,camera,w,h,objects)
      draw_camera_batch(g,entry.batch,cache,camera,w,h)
      self.shadow_calls=self.shadow_calls+1
    end
-   self:draw_contacts(g,camera,w,h,objects)
+   self:draw_contacts(g,camera,w,h,objects,stable)
    return self.shadow_calls
  end
  self.shadow_rebuilds=self.shadow_rebuilds+1
@@ -356,7 +361,7 @@ function Sprite:draw_shadows(g,camera,w,h,objects)
    self.shadow_cache.count=self.shadow_objects
    self.shadow_cache.pages=pages
  end
- self:draw_contacts(g,camera,w,h,objects)
+ self:draw_contacts(g,camera,w,h,objects,stable)
  return self.shadow_calls
 end
 function Sprite:queue(g,camera,w,h,o,selected)
