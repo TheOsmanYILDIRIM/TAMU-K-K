@@ -101,7 +101,8 @@ local stat_hud=StatHud.new()
 local creative=Creative.new({
  sample=function(_,x,y)return query:sample(x,y) end,
  height=function(_,x,y)if r2_pilot then
-    return r2_pilot.topography:height(x,y)*.35 end return 0 end,
+    return r2_pilot.topography:height(x,y)*
+      (r2_pilot.render_options.height_scale or .35) end return 0 end,
  obstacles=function(_,x1,y1,x2,y2)return solid:obstacles(x1,y1,x2,y2) end
 })
 local creative_hud=CreativeHUD.new()
@@ -775,14 +776,28 @@ local function draw_postchecks(perf_begin)
       if a.d~=b.d then return a.d<b.d end
       return a.y<b.y or (a.y==b.y and a.x<b.x)
     end)
+    local chosen,fallback
     for _,o in ipairs(candidates) do
       creative.target={x=math.floor(player.x/32+.5)*32+o.x*32,
         y=math.floor(player.y/32+.5)*32+o.y*32}
-      local ok=creative:preview()
+      local ok,part=creative:preview()
       if ok then
-        assert(creative:place(),"creative smoke placement failed")
-        created=true;break
+        fallback=fallback or {x=part.x,y=part.y}
+        if #part.supports>0 then
+          chosen={x=part.x,y=part.y};break
+        end
       end
+    end
+    chosen=chosen or fallback
+    if chosen then
+      local px,py=camera:project(chosen.x,chosen.y,w,h)
+      -- Test REAL R2 mounted camera inverse exactly once, not a second
+      -- hand-applied height compensation. The tap must land on the cell.
+      local ok=creative:tap_world(px,py,camera,w,h)
+      assert(ok and creative.target.x==chosen.x and
+         creative.target.y==chosen.y,"mounted R2 tap/iso mismatch")
+      assert(creative:place(),"creative smoke placement failed")
+      created=true
     end
     assert(created and creative.revision==1 and #creative:snapshot().parts==1,
       "creative touch/build smoke has no valid target")
@@ -794,8 +809,9 @@ local function draw_postchecks(perf_begin)
   if creative_smoke and creative_smoke_done and frames>=210 and
     stats.loaded>0 and stats.pending==0 then
     love.graphics.captureScreenshot("tamu-creative-25d.png")
-    print(string.format("TAMU_CREATIVE_25D_SMOKE_OK chunks=%d parts=%d runtime25d=%s",
-      stats.loaded,creative.revision,tostring(runtime25d~=nil)))
+    print(string.format("TAMU_CREATIVE_25D_SMOKE_OK chunks=%d parts=%d runtime25d=%s supports=%d",
+      stats.loaded,creative.revision,tostring(runtime25d~=nil),
+      creative_renderer.supports_drawn or 0))
     io.stdout:flush()
     love.event.quit()
     return

@@ -62,21 +62,30 @@ class Painter:
                      width=max(1, round(width*SUPERSAMPLE)), joint='curve')
 
     def block(self, x1, x2, y1, y2, z1, z2, palette, surface=None, rhythm='none'):
-        # World-facing +x and +y sides occlude hidden faces in 45deg view.
-        sides = [
-            ([(x2,y1,z1),(x2,y2,z1),(x2,y2,z2),(x2,y1,z2)], 'face_x'),
-            ([(x1,y2,z1),(x2,y2,z1),(x2,y2,z2),(x1,y2,z2)], 'face_y')]
-        for face, key in sides:
-            self.polygon(face, palette[key],palette['line'],0.35)
+        # Camera sees WORLD +X and +Y faces, independently of the part's
+        # orientation. Rotate local face normals BEFORE selecting the visible
+        # side. The old code always painted local +X/+Y; 180-degree walls
+        # showed their hidden face through the silhouette.
+        r=self.rotation
+        xf=x2 if r in (0,1) else x1
+        yf=y2 if r in (0,3) else y1
+        xcolor='face_x' if r%2==0 else 'face_y'
+        ycolor='face_y' if r%2==0 else 'face_x'
+        sides=[
+            ([(xf,y1,z1),(xf,y2,z1),(xf,y2,z2),(xf,y1,z2)],xcolor),
+            ([(x1,yf,z1),(x2,yf,z1),(x2,yf,z2),(x1,yf,z2)],ycolor)
+        ]
+        for face,key in sides:
+            self.polygon(face,palette[key],palette['line'],0.35)
         if rhythm == 'stone':
             for z in range(math.ceil(z1)+4, math.ceil(z2),4):
                 if z>=z2: break
-                self.line([(x2,y1,z),(x2,y2,z)],palette['line'],0.5)
-                self.line([(x1,y2,z),(x2,y2,z)],palette['line'],0.5)
+                self.line([(xf,y1,z),(xf,y2,z)],palette['line'],0.5)
+                self.line([(x1,yf,z),(x2,yf,z)],palette['line'],0.5)
             for x in range(math.ceil(x1)+8, math.ceil(x2),8):
-                self.line([(x,y2,z1),(x,y2,z2)],palette['line'],0.35)
+                self.line([(x,yf,z1),(x,yf,z2)],palette['line'],0.35)
             for y in range(math.ceil(y1)+8, math.ceil(y2),8):
-                self.line([(x2,y,z1),(x2,y,z2)],palette['line'],0.35)
+                self.line([(xf,y,z1),(xf,y,z2)],palette['line'],0.35)
         top_palette = surface or palette
         self.polygon([(x1,y1,z2),(x2,y1,z2),(x2,y2,z2),(x1,y2,z2)],
                      top_palette['top'],palette['line'],0.4)
@@ -146,24 +155,37 @@ def wall(p,kind,material,height=24):
     p.block(-16,16,-1,1,0,height,pal,
             rhythm='stone' if material=='stone' else 'none')
     if material=='wood':
+        # The visible external face changes when the wall turns. 180-degree
+        # back-facing panels must not bleed front detail through the timber.
+        face=1.04 if p.rotation in (0,3) else -1.04
         for xx in (-10,-2,6,14):
-            p.line([(xx,1.04,1),(xx,1.04,height-1)],pal['line'],0.55)
+            p.line([(xx,face,1),(xx,face,height-1)],pal['line'],0.55)
         for zz in (2,height-2):
-            p.line([(-15,1.06,zz),(15,1.06,zz)],pal['light'],0.6)
+            p.line([(-15,face,zz),(15,face,zz)],pal['light'],0.6)
 
 
 def slope(p,material,height=12):
     pal=ROOF if material=='wood' else STONE
     x1,x2,y1,y2=-16,16,-16,16
-    # Back high edge / front low edge: genuine 3D wedge.
-    p.polygon([(x2,y1,0),(x2,y2,0),(x2,y2,0),(x2,y1,height)],pal['face_x'],pal['line'],0.6)
-    p.polygon([(x1,y2,0),(x2,y2,0),(x2,y2,0),(x1,y2,0)],pal['face_y'])
-    p.polygon([(x1,y1,height),(x2,y1,height),(x2,y2,0),(x1,y2,0)],pal['top'],pal['line'],0.6)
+    # A roof part is the COVERING, not a solid triangular gable wall.
+    # Only the visible thin fascia is drawn at whichever x-edge faces the
+    # camera. Gable infill belongs to another structural piece.
+    face_x=x2 if p.rotation in (0,1) else x1
+    p.polygon([(face_x,y1,height),(face_x,y2,0),
+               (face_x,y2,-0.7),(face_x,y1,height-0.7)],
+              pal['face_x'],pal['line'],0.4)
+    if p.rotation in (0,3):
+        p.polygon([(x1,y2,0),(x2,y2,0),(x2,y2,-0.7),(x1,y2,-0.7)],
+                  pal['face_y'])
+    p.polygon([(x1,y1,height),(x2,y1,height),(x2,y2,0),(x1,y2,0)],
+              pal['top'],pal['line'],0.6)
     for yy in range(-12,16,4):
         zz=height*(16-yy)/32
-        p.line([(x1,yy,zz+0.04),(x2,yy,zz+0.04)],pal['line'],0.65)
+        p.line([(x1,yy,zz+0.04),(x2,yy,zz+0.04)],
+               pal['line'],0.55)
     for xx in (-8,0,8):
-        p.line([(xx,y1,height+0.02),(xx,y2,0.02)],pal['face_y'],0.4)
+        p.line([(xx,y1,height+0.02),(xx,y2,0.02)],
+               pal['face_y'],0.4)
 
 
 def stairs(p,material):

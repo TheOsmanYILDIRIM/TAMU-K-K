@@ -741,7 +741,7 @@ jobs:
           path: /tmp/core-stat-progression-smoke-*.png
           if-no-files-found: error
       - name: TAMU Creative 25D Lua and generated visual tests
-        if: github.ref_name == 'experiment/tamu-creative-main-reconcile-20261029' || github.ref_name == 'main'
+        if: (github.ref_name == 'experiment/tamu-creative-main-reconcile-20261029' || github.ref_name == 'main' || github.ref_name == 'experiment/tamu-creative-grounded-20261030')
         shell: bash
         run: |
           set -euo pipefail
@@ -756,7 +756,7 @@ jobs:
           python scripts/package_tamu_love.py --repo . --output "$RUNNER_TEMP/TAMU_KOK_Creative_25D.love"
           test -s "$RUNNER_TEMP/TAMU_KOK_Creative_25D.love"
       - name: TAMU packaged 25D Creative real LÖVE/Xvfb touch/placement
-        if: github.ref_name == 'experiment/tamu-creative-main-reconcile-20261029' || github.ref_name == 'main'
+        if: (github.ref_name == 'experiment/tamu-creative-main-reconcile-20261029' || github.ref_name == 'main' || github.ref_name == 'experiment/tamu-creative-grounded-20261030')
         shell: bash
         run: |
           set -euo pipefail
@@ -767,7 +767,7 @@ jobs:
           cp "$shot" "$RUNNER_TEMP/tamu-creative-25d.png"
           file "$RUNNER_TEMP/tamu-creative-25d.png" | grep -q 'PNG image data'
       - name: TAMU creative 25D runnable LOVE artifact
-        if: (github.ref_name == 'experiment/tamu-creative-main-reconcile-20261029' || github.ref_name == 'main') && success()
+        if: ((github.ref_name == 'experiment/tamu-creative-main-reconcile-20261029' || github.ref_name == 'main' || github.ref_name == 'experiment/tamu-creative-grounded-20261030')) && success()
         uses: actions/upload-artifact@v4
         with:
           name: TAMU_KOK_Creative_25D_Love

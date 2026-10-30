@@ -119,3 +119,29 @@ prototip atlasa dayanır. Bu, gerçek Android APK veya FPS kabulü değildir.
 Paketleme: `python scripts/package_tamu_love.py --repo . --output /tmp/TAMU_KOK_Creative_25D.love`
 (kaynak katalog için Lua 5.4, atlas üretimi için Pillow gerekir).
 `TAMU_CREATIVE_SMOKE=1` ile paketi Xvfb üzerinde açarak gerçek .love kontrolü yapılır.
+
+## Creative 2,5D zemine oturtma ve 45° açı sözleşmesi (30 Ekim 2026)
+
+Deney dalı: `experiment/tamu-creative-grounded-20261030`;
+kaynak `experiment/25d-binary-vertex-20261030` HEAD
+`6be45ffe6f38e7c3a39e7d3407014e9299d93805`.
+Eski kullanıcı save'i, R2 topografyası, 25D GPU binary/perf hattı ve canlı rig değiştirilmedi.
+
+- Creative dünya koordinatları **aynı** `world.iso.project(x,y,z)` ile çizilir;
+  R2 kamera `project()` içinde zeminin yüksekliğini zaten çıkarır, ikinci kez
+  çıkarılması daha önce binaları havaya kaldırıyordu.
+- R2 `unproject()` zaten arazi yüksekliğini hesaba katar.
+  Dokunma noktasına ikinci `height * zoom` dönüşümü uygulanmaz.
+- Temellerde gerçek 5 örnekten yüksek yüzeye oturan datum seçilir; aşağı
+  doğru gereken 4 ayak konumları oturumda saklanır ve yalnız görünür destekler
+  tek LÖVE Mesh çiziminde toplanır. 16 birimden fazla düşüş, toprağa gömülme,
+  tehlikeli yüzey ve desteksiz dikey parçalar reddedilir.
+- Yönlü duvarlar S/W/N/E doğru uç kenarına oturur; 4 yön atlasında gizli
+  dünya yüzleri yanlışlıkla çizilmez. Duvar/çatı görseli 128×128 RGBA,
+  en fazla 64 renk, aynı 2:1 45° izdüşümünde kalır.
+- Creative menüsü, ücretsiz modüler inşaat, kat/döndürme/geri alma değişmez.
+  Gerçek kapı/merdiven yürünürlüğü ve kalıcı Creative save açık işlerdir.
+- Hedefli regresyon: Lua5.4 + LuaJIT `game/love/tests/creative_build.lua`;
+  Python `scripts/test_creative_assets.py`; gerçek .love/Xvfb Creative giriş,
+  tek dokunuş, 25D yükseklik ve ekran görüntüsü. Gerçek Android FPS ayrı kapıdır.
+

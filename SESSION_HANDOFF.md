@@ -1,3 +1,22 @@
+## 2026-10-30 — Creative 2,5D grounded experiment
+
+- New branch `experiment/tamu-creative-grounded-20261030` based on latest
+  `experiment/25d-binary-vertex-20261030` HEAD
+  `6be45ffe6f38e7c3a39e7d3407014e9299d93805` (63 commits beyond main).
+- Root cause: `r2_playable:mount_camera` already adjusts terrain elevation
+  inside camera.project/unproject; Creative was projecting ground height twice.
+  Fix: world.iso.project used once for every structure, and R2 picking uses
+  mounted unproject without another height correction.
+- Foundations: 5 sampled points, stable world datum, ground-connected stilts
+  in revision-cached support Mesh; buried/too-long/unsupported placements rejected.
+- All four wall orientations now reference the correct world edge;
+  procedural textures choose camera-facing geometry by rotation.
+- Creative remains session-only, no Stage5/Stage6/save mutation. User requested
+  a NEW experiment branch; do NOT merge into main before real LÖVE + visual
+  inspection, CI, and device acceptance. Detailed tests in README.
+- Verification in this commit is **pending** until new branch Quality
+  (Lua5.4/LuaJIT/Python/real LÖVE) reports a result. Android FPS not claimed.
+
 ## 29 Ekim 2026 — Creative 2,5D bütünleştirme
 
 - En son main 2,5D ve karakter/rig değişikliklerini kayıpsız korumak için

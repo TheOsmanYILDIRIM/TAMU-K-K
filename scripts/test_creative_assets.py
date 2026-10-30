@@ -5,7 +5,34 @@ import json,sys,unittest,tempfile,hashlib,zipfile,subprocess
 from PIL import Image
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 from build_creative_assets import generate
+from building_default_assets import iso,render
 class CreativeAssetsTest(unittest.TestCase):
+    def test_2_to_1_geometry_and_directional_faces(self):
+        # Art and game world MUST use exactly the same 45-degree orthographic
+        # projection; screen image dimensions do not control world placement.
+        import math
+        center=iso(0,0,0)
+        right=iso(32,0,0)
+        left=iso(0,32,0)
+        self.assertAlmostEqual(right[0]-center[0],-(left[0]-center[0]))
+        self.assertAlmostEqual(right[1]-center[1],left[1]-center[1])
+        self.assertAlmostEqual(abs(right[0]-center[0]) /
+                               (right[1]-center[1]),2.0,places=9)
+        self.assertAlmostEqual(iso(0,0,12)[1],center[1]-24)
+        definition={'visual':{'shape':'wall','material':'wood'}}
+        views=[render(definition,rotation) for rotation in range(4)]
+        for image in views:
+            self.assertEqual(image.size,(128,128))
+            self.assertTrue(image.getchannel('A').getbbox())
+        # Back-facing wall isn't a painted copy of a front-facing wall:
+        # back/side facets and plank details must respect the camera.
+        self.assertNotEqual(views[0].tobytes(),views[2].tobytes())
+        self.assertNotEqual(views[1].tobytes(),views[3].tobytes())
+        roofs=[render({'visual':{'shape':'roof_slope','material':'wood'}},r)
+               for r in range(4)]
+        self.assertTrue(all(p.getchannel('A').getbbox() for p in roofs))
+        self.assertTrue(all(p.mode=='RGBA' for p in roofs))
+
     def test_34_views_and_real_alpha(self):
         fixture=Path(__file__).parent/'sample_building_catalog.json'
         if fixture.is_file():
