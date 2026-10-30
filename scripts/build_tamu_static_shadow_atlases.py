@@ -90,22 +90,28 @@ def build(root, output):
         if im.size!=(128,128):
             raise ValueError("invalid crop "+a["id"])
         source_by_page[a["id"]]=im
-    rows=math.ceil(len(objects)/COLS)
+    pages=[]
+    index={}
+    for i,a in enumerate(objects):
+        local=i%16
+        index[a["id"]]={"u":(local%COLS)*CELL,"v":(local//COLS)*CELL,
+                         "width":CELL,"height":CELL,"pivot":list(PIVOT),
+                         "page":i//16}
     for hour in HOURS:
-        atlas=Image.new("RGBA",(COLS*CELL, rows*CELL))
-        for i,a in enumerate(objects):
-            part=tile(source_by_page[a["id"]],a["family"],hour)
-            atlas.alpha_composite(part, ((i%COLS)*CELL,(i//COLS)*CELL))
-        filename=f"objects_shadow_{hour:02d}.png"
-        path=output/filename
-        atlas.save(path, optimize=True)
-        results.append({"hour":hour,"filename":filename,
-                        "sha256":hashlib.sha256(path.read_bytes()).hexdigest()})
-    index={a["id"]:{"u":(i%COLS)*CELL,"v":(i//COLS)*CELL,
-                     "width":CELL,"height":CELL,"pivot":list(PIVOT)}
-           for i,a in enumerate(objects)}
-    lookup={"version":1,"slot_hours":list(HOURS),"cell":CELL,
-            "width":COLS*CELL,"height":rows*CELL,"pages":results,"objects":index}
+        for part in range(math.ceil(len(objects)/16)):
+            subset=objects[part*16:(part+1)*16]
+            rows=math.ceil(len(subset)/COLS)
+            atlas=Image.new("RGBA",(COLS*CELL,rows*CELL))
+            for i,a in enumerate(subset):
+                atlas.alpha_composite(tile(source_by_page[a["id"]],a["family"],hour),
+                                      ((i%COLS)*CELL,(i//COLS)*CELL))
+            filename=f"objects_shadow_{hour:02d}_{part}.png"
+            path=output/filename
+            atlas.save(path,optimize=True)
+            pages.append({"hour":hour,"part":part,"filename":filename,
+                          "sha256":hashlib.sha256(path.read_bytes()).hexdigest()})
+    lookup={"version":2,"slot_hours":list(HOURS),"cell":CELL,
+            "width":COLS*CELL,"height":COLS*CELL,"pages":pages,"objects":index}
     (output/"objects_shadow_manifest.json").write_text(
         json.dumps(lookup,sort_keys=True,indent=2)+"\n")
     return lookup
@@ -116,4 +122,4 @@ if __name__=="__main__":
     parser.add_argument("--output",type=Path,required=True)
     args=parser.parse_args()
     out=build(args.source,args.output)
-    print(f"TAMU_STATIC_SHADOW_ATLASES_OK slots={len(out['pages'])} objects={len(out['objects'])}")
+    print(f"TAMU_STATIC_SHADOW_ATLASES_OK pages={len(out['pages'])} objects={len(out['objects'])}")
