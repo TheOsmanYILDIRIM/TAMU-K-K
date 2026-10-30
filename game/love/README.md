@@ -185,6 +185,12 @@ gönderirken hata mesajlarını kontrol edin; oturum loglarını yalnız güveni
 kanallarda paylaşın. Konsol başlangıcında `love.filesystem.getSaveDirectory()`
 ile gerçek kayıt dizini öğrenilebilir.
 
+**Son kare dışa aktarma (ek):** Masaüstü klavyesinde `F10`, son 120 kareyi
+`diagnostics/tamu-export-recent.jsonl` dosyasına yerel olarak yazar.
+Otomatik paylaşım yoktur. Android dokunmatik dışa aktarma düğmesi henüz yoktur.
+Hata olaylarının ham mesajı tutulmaz; yalnız korelasyon hash'i ve uzunluğu kaydedilir.
+Bu özelliklerin gerçek Android dosya/izin doğrulaması ve performans overhead testi açıktır.
+
 **Sınırlar:** LÖVE `draw_ms` GPU beklemesi içerebilir; GPU nanosaniye
 zamanlayıcısı değildir. `texture_mib` sürücünün raporladığı tahmindir.
 Ölçümün kendisi yük oluşturur; `TAMU_DIAGNOSTICS=0` kontrolü ile A/B
