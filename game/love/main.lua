@@ -454,6 +454,8 @@ local function keyboard()
   if mag>0 and (sx~=0 or sy~=0) then wx,wy=wx/mag,wy/mag end
   return wx,wy
 end
+local coverage_walk={frames=0,started=false,missing_max=0,paused=0}
+local coverage_walk_enabled=os.getenv('TAMU_25D_WALK_PROBE')=='1'
 function love.update(dt)
   local perf_begin=love.timer.getTime()
   if runtime25d then runtime25d:advance_sun(dt) end
@@ -581,8 +583,6 @@ function love.update(dt)
     perf_tick("update",perf_begin)
   end
 end
-local coverage_walk={frames=0,started=false,missing_max=0,paused=0}
-local coverage_walk_enabled=os.getenv('TAMU_25D_WALK_PROBE')=='1'
 local binary_benchmark={frames={},ready_at=nil,start_at=nil}
 local function binary_benchmark_report()
   local a=binary_benchmark.frames
