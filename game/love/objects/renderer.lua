@@ -102,11 +102,23 @@ function R.prepare_visible(world,stream,budget_ms,camera,w,h)
  R.metrics.prepare_max_ms=math.max(R.metrics.prepare_max_ms,elapsed)
  return resumes
 end
-function R.collect(world,stream,object_override)
+-- Scratch buffers are only used by the synchronous render path.
+-- Public R.collect still returns an independent table for other callers.
+local draw_pool={objects={},seen={},order={},visual={}}
+local function clear_array(a)
+ for i=#a,1,-1 do a[i]=nil end
+ return a
+end
+local function clear_map(a)
+ for k in pairs(a) do a[k]=nil end
+ return a
+end
+function R.collect(world,stream,object_override,scratch)
   local clock=love and love.timer and love.timer.getTime
   local started=clock and clock()
   R.metrics.collect_calls=R.metrics.collect_calls+1
-  local list,seen={},{}
+  local list=scratch and clear_array(scratch.objects) or {}
+  local seen=scratch and clear_map(scratch.seen) or {}
   local immutable=stable_population(world)
   local onscreen=type(object_override)=="table" and
     object_override.provider and (object_override.provider.object_chunks or
@@ -165,9 +177,12 @@ function R.collect(world,stream,object_override)
   return list
 end
 function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_override)
-  local all=R.collect(world,stream,object_override)
-  local order={{id="!player",depth=Depth.key(player.x,player.y),player=true}}
-  for _,o in ipairs(all) do order[#order+1]={id=o.id,depth=Depth.key(o.x,o.y),object=o} end
+  local all=R.collect(world,stream,object_override,draw_pool)
+  local order=clear_array(draw_pool.order)
+  order[1]={id="!player",depth=Depth.key(player.x,player.y),player=true}
+  for _,o in ipairs(all) do
+    order[#order+1]={id=o.id,depth=Depth.key(o.x,o.y),object=o}
+  end
   table.sort(order,Depth.before)
   local g=love.graphics
   g.push("all")
@@ -179,7 +194,7 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_ove
   end
   -- Only the legacy plasma mode uses autonomous tools. The rig follows the
   -- approved harvest clip and exposes the right-hand socket for future items.
-  local visual={}
+  local visual=clear_map(draw_pool.visual)
   if harvesting and harvesting.active then
     local source=world:get(harvesting.active.object_id)
     if source and (source.kind=="rock" or (not use_plasma and source.kind=="tree")) then
