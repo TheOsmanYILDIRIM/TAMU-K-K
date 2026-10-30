@@ -29,7 +29,12 @@ function Stream.new(query, opts)
     generation_ms=generation_ms,jobs={},cache=opts.cache,
     prefetch_options=opts.prefetch_options,
     prefetch_done={},prefetch_job=nil,previous_camera=nil,
-    resident={}, ordered={}, wanted_count=0
+    resident={}, ordered={}, wanted_count=0,
+    -- Bound GPU residency: never release finished nearby authored meshes
+    -- immediately on a small camera excursion. Non-25D stays unchanged.
+    warm={},warm_count=0,warm_limit=opts.warm_limit or
+      (opts.render_only_25d and 24 or 0),warm_tick=0,
+    warm_hits=0,warm_evictions=0
   }, Stream)
 end
 
@@ -128,6 +133,28 @@ function Stream:needed(camera,width,height)
   return candidates
 end
 
+local function release_chunk(chunk)
+  if chunk._meshes then
+    for _,mesh in pairs(chunk._meshes) do
+      if mesh and mesh.release then mesh:release() end
+    end
+  end
+  if chunk._25d_staging_meshes then
+    for _,mesh in pairs(chunk._25d_staging_meshes) do
+      if mesh and mesh.release then mesh:release() end
+    end
+    chunk._25d_staging_meshes=nil
+  end
+  if chunk._terrain_stage then
+    for _,mesh in pairs(chunk._terrain_stage) do
+      if mesh and mesh.release then mesh:release() end
+    end
+    chunk._terrain_stage=nil
+  end
+  chunk._terrain_job=nil
+  chunk._25d_prepare_job=nil
+end
+
 function Stream:update(camera,width,height,budget)
   if self.cache and self.cache.poll then self.cache:poll() end
   budget=budget or self.build_budget
@@ -138,30 +165,44 @@ function Stream:update(camera,width,height,budget)
   for _,c in ipairs(candidates) do want[c.key]=true end
   for key,chunk in pairs(self.resident) do
     if not want[key] then
-      -- Mesh resources are owned by cached chunks and must be released on eviction.
-      if chunk._meshes then
-        for _,mesh in pairs(chunk._meshes) do
-          if mesh and mesh.release then mesh:release() end
-        end
+      -- Keep only FINISHED GPU chunks; never cache a suspended mesh job.
+      if self.render_only_25d and self.warm_limit>0 and chunk._25d_meshes
+         and not chunk._25d_prepare_job then
+        self.warm_tick=self.warm_tick+1
+        self.warm[key]={chunk=chunk,tick=self.warm_tick}
+        self.warm_count=self.warm_count+1
+      else
+        release_chunk(chunk)
       end
-      -- The opt-in 25D upload may be yielded mid-batch; do not leak its
-      -- uncommitted meshes when the camera leaves the chunk.
-      if chunk._25d_staging_meshes then
-        for _,mesh in pairs(chunk._25d_staging_meshes) do
-          if mesh and mesh.release then mesh:release() end
-        end
-        chunk._25d_staging_meshes=nil
-      end
-      -- A partially prepared terrain job can already own GPU meshes.
-      if chunk._terrain_stage then
-        for _,mesh in pairs(chunk._terrain_stage) do
-          if mesh and mesh.release then mesh:release() end
-        end
-        chunk._terrain_stage=nil
-      end
-      chunk._terrain_job=nil
       self.resident[key]=nil
     end
+  end
+  -- If the camera returns, adopt the exact previous GPU mesh; no decode,
+  -- no GPU upload and no authored hydrology generation.
+  for _,c in ipairs(candidates) do
+    if not self.resident[c.key] then
+      local cached=self.warm[c.key]
+      if cached then
+        self.resident[c.key]=cached.chunk
+        self.warm[c.key]=nil
+        self.warm_count=self.warm_count-1
+        self.warm_hits=self.warm_hits+1
+      end
+    end
+  end
+  -- Deterministic LRU bounded by warm_limit, in addition to visible residents.
+  while self.warm_count>self.warm_limit do
+    local oldest_key,oldest_tick
+    for key,item in pairs(self.warm) do
+      if not oldest_tick or item.tick<oldest_tick then
+        oldest_key,oldest_tick=key,item.tick
+      end
+    end
+    if not oldest_key then break end
+    release_chunk(self.warm[oldest_key].chunk)
+    self.warm[oldest_key]=nil
+    self.warm_count=self.warm_count-1
+    self.warm_evictions=self.warm_evictions+1
   end
   for key in pairs(self.jobs) do
     if not want[key] then self.jobs[key]=nil end
