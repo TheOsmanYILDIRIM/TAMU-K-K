@@ -797,7 +797,7 @@ function Runtime:draw(stream,camera,w,h)
  local function prepare_style(chunk)
    if not shader then return end
    local style=styles[chunk]
-   if not style then
+   if style==nil then
      local progress=self:chunk_reveal(chunk,now)
      if progress<.999 then
        local cx,cy=chunk.x+chunk.size*.5,chunk.y+chunk.size*.5
