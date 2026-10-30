@@ -64,6 +64,10 @@ function M.phase(name)
   if not M.enabled or not M.phases then return end
   local t=now();M.phases[name]=safe((t-M.mark)*1000);M.mark=t
 end
+function M.measure(name,elapsed_ms)
+  if not M.enabled or not M.phases then return end
+  M.phases[name]=safe((M.phases[name] or 0)+(elapsed_ms or 0))
+end
 function M.update_done()
   if not M.enabled then return end
   M.update_ms=safe((now()-M.frame_start)*1000)
