@@ -10,9 +10,11 @@ end
 -- WORLD-scale proportions, not pixel sizes or collision radii.
 -- Tree silhouettes lead, large rocks are smaller, undergrowth stays low.
 local BASE_SCALE={
- oak=.48,broadleaf=.52,conifer=.55,dead_tree=.43,
- boulder=.33,rock_cluster=.38,rock_spire=.41,water_rocks=.28,
- shrub=.24,reeds=.23,stump=.19,fallen_log=.30
+ -- Character/world transform stays unchanged. Authored 128px tree sprites
+ -- were underscaled (~0.5x); enlarge the ecosystem rather than the avatar.
+ oak=1.04,broadleaf=1.12,conifer=1.20,dead_tree=.94,
+ boulder=.44,rock_cluster=.50,rock_spire=.53,water_rocks=.38,
+ shrub=.30,reeds=.28,stump=.26,fallen_log=.41
 }
 function Sprite.scale_for(family,zoom,id)
  local base=assert(BASE_SCALE[family],"unknown 25D sprite family: "..tostring(family))
