@@ -61,8 +61,40 @@ def analyse(paths):
                             "p99": percentile(samples, .99)}
         slow = sorted(rows, key=lambda r: max(r.get("dt_ms", 0),
                      r.get("draw_ms", 0)), reverse=True)[:12]
+        slow_rows = [r for r in rows if
+                     max(r.get("dt_ms", 0), r.get("frame_ms", 0),
+                         r.get("draw_ms", 0)) >= 33.333]
+        slow_phase_totals = Counter()
+        slow_phase_peaks = Counter()
+        for r in slow_rows:
+            phases_now = r.get("phases") or {}
+            if phases_now:
+                key = max(phases_now, key=phases_now.get)
+                slow_phase_peaks[key] += 1
+                for key, value in phases_now.items():
+                    if isinstance(value, (int, float)):
+                        slow_phase_totals[key] += value
+        slow_vs_normal = {}
+        for name, predicate in (
+            ("shadow_rebuilds", lambda v: v > 0),
+            ("missing", lambda v: v > 0),
+            ("pending", lambda v: v > 0),
+        ):
+            def rate(data):
+                if not data:
+                    return 0.0
+                return round(sum(1 for r in data if isinstance(r.get(name), (int, float))
+                                 and predicate(r.get(name))) / len(data), 3)
+            slow_vs_normal[name] = {
+                "slow_rate": rate(slow_rows),
+                "all_rate": rate(rows),
+            }
         sessions.append({
             "session": sid, "frames": len(rows),
+            "slow_frame_count": len(slow_rows),
+            "slow_phase_peak_counts": dict(slow_phase_peaks),
+            "slow_phase_total_ms": {k: round(v, 3) for k, v in slow_phase_totals.items()},
+            "slow_vs_all": slow_vs_normal,
             "metrics": metrics, "phases": phases,
             "slowest": [{"frame": r.get("frame"), "dt_ms": r.get("dt_ms"),
                          "update_ms": r.get("update_ms"), "draw_ms": r.get("draw_ms"),
@@ -70,7 +102,7 @@ def analyse(paths):
                          "missing": r.get("missing")} for r in slow]
         })
     counts = Counter(r["kind"] for r in events)
-    return {"format": "tamu-diagnostics-analysis-v1", "files": len(paths),
+    return {"format": "tamu-diagnostics-analysis-v2", "files": len(paths),
             "invalid_lines": invalid, "event_counts": dict(counts),
             "sessions": sessions}
 
