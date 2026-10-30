@@ -28,7 +28,7 @@ def main(repo,output,prebaked_dir=None):
     for generated in sorted(shadow_dir.iterdir()):
         if generated.is_file():
             content.append(('assets/terrain25d/static_shadow/'+generated.name, generated.read_bytes()))
-    assert len(shadow_manifest['pages'])==32
+    assert len(shadow_manifest['pages'])==8
     for name,sha in R2.items():
         raw=(root/'assets/worldbuild'/name).read_bytes() if (root/'assets/worldbuild'/name).is_file() else (repo/'data/worldbuild'/name).read_bytes()
         assert hashlib.sha256(raw).hexdigest()==sha,(name,'unpinned world data')
@@ -60,7 +60,7 @@ def main(repo,output,prebaked_dir=None):
     with zipfile.ZipFile(output) as z:
         assert z.testzip() is None
         assert 'main.lua' in z.namelist() and 'assets/creative_build_atlas.png' in z.namelist()
-        assert len([p for p in z.namelist() if p.startswith('assets/terrain25d/static_shadow/objects_shadow_') and p.endswith('.png')])==32
+        assert len([p for p in z.namelist() if p.startswith('assets/terrain25d/static_shadow/shadows_') and p.endswith('.png')])==8
         assert all(z.read('assets/worldbuild/'+n)==(repo/'data/worldbuild'/n).read_bytes() for n in R2)
     print(json.dumps({'file':str(output),'size':output.stat().st_size,
        'sha256':hashlib.sha256(output.read_bytes()).hexdigest(),'count':len(paths)}))
