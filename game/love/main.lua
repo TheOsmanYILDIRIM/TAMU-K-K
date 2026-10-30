@@ -602,6 +602,15 @@ local function draw_postchecks(perf_begin)
     binary_benchmark.start_at=binary_benchmark.start_at or perf_begin
     binary_benchmark.frames[#binary_benchmark.frames+1]=(now-perf_begin)*1000
   end
+  if os.getenv('TAMU_25D_CPU_WORKER_PROBE')=='1' and runtime25d then
+    if (runtime25d.worker_generated or 0)>=1 then
+      print('TAMU_25D_CPU_WORKER_OK chunks='..runtime25d.worker_generated)
+      io.stdout:flush()
+      love.event.quit()
+      return
+    end
+    if frames>720 then error('CPU terrain worker failed to supply new GPU mesh') end
+  end
   if os.getenv('TAMU_25D_BINARY_THREAD_PROBE')=='1' and runtime25d then
     if runtime25d.baked_loaded>=4 then
       print(string.format('TAMU_BINARY_THREAD_OK chunks=%d missing=%d',
