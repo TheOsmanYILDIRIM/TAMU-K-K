@@ -119,3 +119,32 @@ prototip atlasa dayanır. Bu, gerçek Android APK veya FPS kabulü değildir.
 Paketleme: `python scripts/package_tamu_love.py --repo . --output /tmp/TAMU_KOK_Creative_25D.love`
 (kaynak katalog için Lua 5.4, atlas üretimi için Pillow gerekir).
 `TAMU_CREATIVE_SMOKE=1` ile paketi Xvfb üzerinde açarak gerçek .love kontrolü yapılır.
+
+## TAMU Android tanılama ve performans kayıtları (JSONL v1)
+
+Android'de varsayılan açık; masaüstünde yalnız `TAMU_DIAGNOSTICS=1` ile etkin.
+Kapatmak için `TAMU_DIAGNOSTICS=0`. Kayıtlar LÖVE'nin
+`love.filesystem.getSaveDirectory()` dizininde `diagnostics/tamu-trace-0.jsonl`,
+`tamu-trace-1.jsonl`, `tamu-trace-2.jsonl` dosyalarına yazılır
+(her biri yaklaşık 4 MiB döngüsel sınır, toplam yaklaşık 12 MiB).
+Oyun save/checkpoint verileri değiştirilmez.
+
+Her JSONL satırı bağımsız JSON nesnesidir (`schema:1`,
+`session`, `t` monotonic saniye ve `frame`).
+`session_start`: Android/DPI/framebuffer bilgileri.
+`frame`: `dt_ms`, `update_ms`, `draw_ms`,
+`phases` (terrain, objeler, gölge, Rigby, sprite, HUD),
+GPU sürücüsünün sunduğu `drawcalls`, `shaderswitches`,
+`texture_mib`, Lua KiB, chunk/obje sayısı ve gölge cache sayaçları.
+`slow_frame`: 34 ms üzeri kare aralığı, 25 ms üzeri draw veya
+12 ms üzeri update. `summary`: 5 saniyelik durum.
+`fatal_error` olayları varsayılan LÖVE hata ekranını bozmadan kaydedilir.
+Buffer en geç 2 saniyede ya da 64 KiB'de diske gönderilir;
+`trace_write_ms` tanılama yazma maliyetidir.
+
+**Sınırlar:** LÖVE `draw_ms` GPU beklemesi içerebilir; GPU nanosaniye
+zamanlayıcısı değildir. `texture_mib` sürücünün raporladığı tahmindir.
+Ölçümün kendisi yük oluşturur; `TAMU_DIAGNOSTICS=0` kontrolü ile A/B
+kıyaslama yapılmalıdır. JSONL dosyası analiz için bilgisayara aktarılabilir;
+oyuncu kimliği, konum, ağ isteği, envanter verisi ve kimlik bilgileri yazılmaz.
+
