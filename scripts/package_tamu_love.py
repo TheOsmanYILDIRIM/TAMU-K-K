@@ -28,7 +28,7 @@ def main(repo,output,prebaked_dir=None):
     for generated in sorted(shadow_dir.iterdir()):
         if generated.is_file():
             content.append(('assets/terrain25d/static_shadow/'+generated.name, generated.read_bytes()))
-    assert len(shadow_manifest['pages'])==8
+    assert len(shadow_manifest['pages'])==32*4
     for name,sha in R2.items():
         raw=(root/'assets/worldbuild'/name).read_bytes() if (root/'assets/worldbuild'/name).is_file() else (repo/'data/worldbuild'/name).read_bytes()
         assert hashlib.sha256(raw).hexdigest()==sha,(name,'unpinned world data')
