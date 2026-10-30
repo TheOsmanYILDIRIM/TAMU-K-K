@@ -691,10 +691,16 @@ function Runtime:draw(stream,camera,w,h)
          if result then
            self.binary_ready[c.key]=nil
            if result.missing then
-             -- No authored binary: retain existing procedural fallback.
+             print('TAMU_25D_CPU_WORKER_REJECT '..c.key..' '..
+               tostring(result.error))
+             -- Worker failures preserve the original cooperative renderer.
              waiting=false
            else
              loaded=Baked.load_ready(self,c,result)
+             if loaded and result.generated then
+               self.worker_generated=(self.worker_generated or 0)+1
+               print('TAMU_25D_CPU_WORKER_LOADED key='..c.key)
+             end
            end
          elseif self.binary_pending[c.key] then
            waiting=true
