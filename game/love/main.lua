@@ -955,6 +955,7 @@ local function render_flags()
   local mode=_G.TAMU_RENDER_PROFILE or 'full'
   if mode=='compare_terrain' then return true,false,false,false end
   if mode=='compare_objects' then return false,true,false,false end
+  if mode=='compare_objects_opaque' then return false,true,false,false end
   if mode=='compare_rig' then return false,false,true,false end
   if mode=='compare_terrain_objects' then return true,true,false,false end
   if mode=='compare_nohud' then return true,true,true,false end
@@ -1030,7 +1031,8 @@ function love.draw()
   end
   object_count=ObjectRenderer.draw(objects,stream,camera,w,h,player,
     selected_target,harvesting,sprite25d_draw,
-    {objects=objects_on,rig=rig_on})
+    {objects=objects_on,rig=rig_on,
+     opaque_objects=_G.TAMU_RENDER_PROFILE=='compare_objects_opaque'})
   Diagnostics.phase("objects_and_shadows")
   if phase_trace then objects_finished=love.timer.getTime() end
   local ghost
