@@ -1,5 +1,6 @@
 -- Sorted 45-degree world-foot sprites; GPU-independent placement and mutable state.
 local Depth=require("player.depth")
+local Diagnostics=require("core.diagnostics")
 local R={metrics={collect_calls=0,cold_queries=0,cold_query_ms=0,
  cold_query_max_ms=0,collect_last_ms=0,collect_max_ms=0,
  prepared_chunks=0,prepare_last_ms=0,prepare_max_ms=0}}
@@ -177,7 +178,10 @@ function R.collect(world,stream,object_override,scratch)
   return list
 end
 function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_override)
+  local perf_clock=Diagnostics.enabled and love.timer.getTime
+  local perf_at=perf_clock and perf_clock() or 0
   local all=R.collect(world,stream,object_override,draw_pool)
+  if perf_clock then Diagnostics.measure("object_collect_ms",(perf_clock()-perf_at)*1000);perf_at=perf_clock() end
   local order=clear_array(draw_pool.order)
   local entries=draw_pool.entries
   local player_entry=entries[1]
@@ -200,6 +204,7 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_ove
     order[slot]=entry
   end
   table.sort(order,Depth.before)
+  if perf_clock then Diagnostics.measure("depth_sort_ms",(perf_clock()-perf_at)*1000);perf_at=perf_clock() end
   local g=love.graphics
   g.push("all")
   if type(object_override)=="table" then
@@ -207,6 +212,7 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_ove
     -- Render projected source-alpha shadows below ALL Y-sorted sprites and
     -- the player, so an afternoon shadow never paints over a closer tree.
     object_override:draw_shadows(g,camera,w,h,all)
+    if perf_clock then Diagnostics.measure("shadows_ms",(perf_clock()-perf_at)*1000);perf_at=perf_clock() end
   end
   -- Only the legacy plasma mode uses autonomous tools. The rig follows the
   -- approved harvest clip and exposes the right-hand socket for future items.
@@ -222,7 +228,9 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_ove
   for _,entry in ipairs(order) do
     if entry.player then
       if type(object_override)=="table" then object_override:flush(g) end
+      local rig_start=perf_clock and perf_clock()
       player_sprite(g,camera,w,h,player,visual)
+      if rig_start then Diagnostics.measure("rigby_ms",(perf_clock()-rig_start)*1000) end
     elseif type(object_override)=="table" then
       object_override:queue(g,camera,w,h,entry.object,entry.id==selected_id)
     else
@@ -230,6 +238,7 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_ove
     end
   end
   if type(object_override)=="table" then object_override:flush(g) end
+  if perf_clock then Diagnostics.measure("sprite_pipeline_ms",(perf_clock()-perf_at)*1000) end
   -- Preserve the flying axe only for the backed-up plasma mode.
   if use_plasma and harvesting and harvesting.active then
     local source=world:get(harvesting.active.object_id)
