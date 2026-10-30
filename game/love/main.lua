@@ -561,6 +561,11 @@ function love.update(dt)
   end
   if terrain25d_smoke or terrain25d_compare then camera.x,camera.y=704,128
   elseif not debug_view and not creative.active then camera.x,camera.y=player.x,player.y end
+  if coverage_walk_enabled and coverage_walk.started then
+    -- Deterministic camera traversal at the normal 96 world-unit/s walk pace.
+    -- Renderer-only CI probe: no player/save/world state is mutated.
+    camera.x=camera.x+math.min(dt,.05)*96
+  end
   stats=stream:update(camera,w,h)
   -- Mobile object candidates must be prepared outside love.draw. R2's
   -- ecology wrapper exposes generator_version via world.query.
@@ -576,6 +581,8 @@ function love.update(dt)
     perf_tick("update",perf_begin)
   end
 end
+local coverage_walk={frames=0,started=false,missing_max=0,paused=0}
+local coverage_walk_enabled=os.getenv('TAMU_25D_WALK_PROBE')=='1'
 local binary_benchmark={frames={},ready_at=nil,start_at=nil}
 local function binary_benchmark_report()
   local a=binary_benchmark.frames
@@ -878,6 +885,30 @@ function love.draw()
   if long_driver and boot_ready and long_driver.frame>0 then long_driver:beforeDraw() end
   if runtime25d then runtime25d:draw(stream,camera,w,h)
   else Terrain.draw(stream,camera,w,h,r2_pilot and r2_pilot.render_options) end
+  if coverage_walk_enabled and runtime25d then
+    if not coverage_walk.started then
+      if runtime25d.missing_visible==0 and runtime25d.required_visible>0 then
+        coverage_walk.started=true
+        print(string.format('TAMU_WALK_READY visible=%d',runtime25d.required_visible))
+      end
+    else
+      coverage_walk.frames=coverage_walk.frames+1
+      local missing=runtime25d.missing_visible or 0
+      coverage_walk.missing_max=math.max(coverage_walk.missing_max,missing)
+      if missing>0 then
+        print(string.format('TAMU_WALK_GAP frame=%d missing=%d camera_x=%.2f',
+          coverage_walk.frames,missing,camera.x))
+      end
+      if coverage_walk.frames>=480 then
+        print(string.format('TAMU_WALK_COVERAGE frames=%d max_missing=%d',
+          coverage_walk.frames,coverage_walk.missing_max))
+        love.graphics.captureScreenshot('tamu-walk-coverage.png')
+        io.stdout:flush()
+        love.event.quit()
+        return
+      end
+    end
+  end
   if phase_trace then terrain_finished=love.timer.getTime() end
   if cache_pilot_enabled and not boot_ready then
     local g=love.graphics
