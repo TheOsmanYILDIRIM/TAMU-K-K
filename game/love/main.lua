@@ -1,3 +1,11 @@
+-- No gameplay module is required before explicit visual-mode selection.
+-- CI retains production entrypoint by default; tests may opt in explicitly.
+if not _G.TAMU_ISOLATION_SELECTED and
+   os.getenv('TAMU_ISOLATION_BOOT')~='0' and
+   (os.getenv('CI')~='true' or os.getenv('TAMU_ISOLATION_BOOT')=='1') then
+  require('core.perf_isolation_boot').install()
+  return
+end
 -- Integrated procedural world and playable placeholder player.
 local Query=require("world.world_query")
 local Stream=require("world.stream")
