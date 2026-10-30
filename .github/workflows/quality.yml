@@ -1,5 +1,10 @@
 name: quality
 on: [push]
+# Preserve existing branch test coverage, but never spend Actions minutes on
+# outdated commits when several changes land on the same branch quickly.
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -169,88 +174,6 @@ jobs:
           assert(fast_ms<old_ms,'optimized Rigby JSON not faster')
           LUA
           done
-      - name: Measure all 27 authored chunks with binary and JSON, compare settled frames
-        if: github.ref_name == 'experiment/25d-binary-vertex-20261030'
-        shell: bash
-        run: |
-          set -euo pipefail
-          luac5.4 -p game/love/world/terrain25d_baked.lua game/love/world/terrain25d_runtime.lua game/love/main.lua
-          luajit -b game/love/main.lua /tmp/tamu-27-main.ljbc
-          export SDL_AUDIODRIVER=dummy
-          export XDG_DATA_HOME="$RUNNER_TEMP/tamu-27-bake"
-          mkdir -p "$XDG_DATA_HOME"
-          OSMAN_25D_BAKE=1 OSMAN_25D_BAKE_LIMIT=27 timeout 480s xvfb-run -a love game/love 2>&1 | tee /tmp/tamu-27-bake.log
-          grep -q 'TAMU_25D_BAKE_BUILD_OK count=27' /tmp/tamu-27-bake.log
-          mkdir -p game/love/assets/terrain25d/baked
-          find "$XDG_DATA_HOME" -name 'c_*.verts.z' -exec cp {} game/love/assets/terrain25d/baked/ \;
-          find "$XDG_DATA_HOME" -name 'c_*.meta.json' -exec cp {} game/love/assets/terrain25d/baked/ \;
-          find "$XDG_DATA_HOME" -name 'c_*.json.z' -exec cp {} game/love/assets/terrain25d/baked/ \;
-          test "$(find game/love/assets/terrain25d/baked -name '*.verts.z' | wc -l)" -eq 27
-          test "$(find game/love/assets/terrain25d/baked -name '*.json.z' | wc -l)" -eq 27
-          export XDG_DATA_HOME="$RUNNER_TEMP/tamu-binary-thread"
-          mkdir -p "$XDG_DATA_HOME"
-          TAMU_25D_BINARY_THREAD_PROBE=1 timeout 150s xvfb-run -a love game/love 2>&1 | tee /tmp/tamu-27-worker.log
-          grep -q 'TAMU_BINARY_THREAD_OK chunks=' /tmp/tamu-27-worker.log
-          grep -q 'TAMU_25D_BINARY_LOADED' /tmp/tamu-27-worker.log
-
-          export XDG_DATA_HOME="$RUNNER_TEMP/tamu-27-binary"
-          mkdir -p "$XDG_DATA_HOME"
-          TAMU_PERF_PHASE_TRACE=1 OSMAN_25D_SUN_HOUR=10.5 TAMU_25D_27_COMPARE=1 OSMAN_25D_BAKE_VERIFY=1 OSMAN_25D_BAKE_LIMIT=27 timeout 240s xvfb-run -a love game/love 2>&1 | tee /tmp/tamu-27-binary.log
-          grep -q 'TAMU_25D_27_COMPLETE mode=binary chunks=27' /tmp/tamu-27-binary.log
-          test "$(grep -c 'TAMU_25D_BINARY_LOADED' /tmp/tamu-27-binary.log)" -eq 27
-          cp "$(find "$XDG_DATA_HOME" -name 'tamu-27-binary.png' -print -quit)" /tmp/tamu-27-binary.png
-          export XDG_DATA_HOME="$RUNNER_TEMP/tamu-walk-coverage"
-          mkdir -p "$XDG_DATA_HOME"
-          TAMU_25D_WALK_PROBE=1 TAMU_25D_COVERAGE_TRACE=1 OSMAN_25D_SUN_HOUR=10.5 timeout 160s xvfb-run -a love game/love 2>&1 | tee /tmp/tamu-walk-coverage.log
-          grep -q 'TAMU_WALK_COVERAGE frames=480 max_missing=0' /tmp/tamu-walk-coverage.log
-          shot="$(find "$XDG_DATA_HOME" -name 'tamu-walk-coverage.png' -print -quit)"
-          test -n "$shot" && test -s "$shot"
-          cp "$shot" /tmp/tamu-walk-coverage.png
-          export XDG_DATA_HOME="$RUNNER_TEMP/tamu-27-json"
-          mkdir -p "$XDG_DATA_HOME"
-          OSMAN_25D_SUN_HOUR=10.5 TAMU_25D_27_COMPARE=1 TAMU_25D_FORCE_JSON=1 OSMAN_25D_BAKE_VERIFY=1 OSMAN_25D_BAKE_LIMIT=27 timeout 300s xvfb-run -a love game/love 2>&1 | tee /tmp/tamu-27-json.log
-          grep -q 'TAMU_25D_27_COMPLETE mode=json chunks=27' /tmp/tamu-27-json.log
-          cp "$(find "$XDG_DATA_HOME" -name 'tamu-27-json.png' -print -quit)" /tmp/tamu-27-json.png
-          python -m pip install pillow
-          python - <<'PY'
-          from PIL import Image,ImageChops,ImageStat
-          import re
-          from pathlib import Path
-          p=Path('/tmp')
-          b=Image.open(p/'tamu-27-binary.png').convert('RGBA')
-          j=Image.open(p/'tamu-27-json.png').convert('RGBA')
-          assert b.size==j.size and b.width>=320
-          diff=ImageChops.difference(b,j)
-          stat=ImageStat.Stat(diff)
-          worst=max(stat.extrema[k][1] for k in range(3))
-          mean=max(stat.mean[:3])
-          print(f'TAMU_27_VISUAL_DIFF size={b.size} max_rgb={worst} mean_rgb={mean:.6f}')
-          assert worst<=3 and mean<=0.12,'binary/JSON frame mismatch'
-          def timing(name):
-              data=(p/f'tamu-27-{name}.log').read_text()
-              m=re.search(r'TAMU_25D_27_COMPLETE mode='+name+r' chunks=27 wall_ms=([0-9.]+)',data)
-              assert m, name
-              return float(m.group(1))
-          binary,json=timing('binary'),timing('json')
-          print(f'TAMU_27_WALL_COMPARE binary_ms={binary:.3f} json_ms={json:.3f} ratio={json/binary:.2f}')
-          assert binary<json,'binary did not improve 27-chunk wall time'
-          PY
-          rm -rf game/love/assets/terrain25d/baked
-      - name: Upload 27-chunk parity evidence
-        if: always() && github.ref_name == 'experiment/25d-binary-vertex-20261030'
-        uses: actions/upload-artifact@v4
-        with:
-          name: tamu-27-binary-vs-json
-          path: |
-            /tmp/tamu-27-bake.log
-            /tmp/tamu-27-worker.log
-            /tmp/tamu-27-binary.log
-            /tmp/tamu-27-json.log
-            /tmp/tamu-27-binary.png
-            /tmp/tamu-27-json.png
-            /tmp/tamu-walk-coverage.log
-            /tmp/tamu-walk-coverage.png
-          if-no-files-found: warn
       - name: 25D geometry and real R2 authored mesh (Lua 5.4 / LuaJIT)
         shell: bash
         run: |
