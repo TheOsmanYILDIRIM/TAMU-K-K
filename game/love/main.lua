@@ -119,7 +119,20 @@ local chunk_cache=cache_pilot_enabled and
    size=256,step=r2_pilot and 8 or 32,quality="standard"}) or nil
 local runtime25d,sprite25d_draw
 local shadow_preview_step=0
-local shadow_preview_hours={8,12,17,23}
+local shadow_preview_hours={0,3,6,9,12,15,18,21}
+local function cycle_test_sun()
+  if not runtime25d then return end
+  local current=runtime25d.sun_hour or 12
+  local next_hour=(math.floor(current/3+1)*3)%24
+  runtime25d:set_sun_hour(next_hour)
+  runtime25d.sun_locked=true
+  Diagnostics.event('test_sun_changed',{hour=next_hour})
+  print('TAMU_TEST_SUN_HOUR '..next_hour)
+end
+local function sun_test_bounds()
+  local width=love.graphics.getDimensions()
+  return width-114,142,100,40
+end
 local stream=Stream.new(query,r2_pilot and
   {size=256,step=8,max_loaded=80,warm_limit=16,build_budget=12,cache=chunk_cache,
    render_only_25d=terrain25d_enabled,
@@ -1038,6 +1051,13 @@ function love.draw()
   stage_hud:draw(inventory,crafting,hud_safe,placement_rotation,route_status)
   stat_hud:draw(g,hud_safe,progression)
   creative_hud:draw(creative,hud_safe)
+  if runtime25d then
+    local tx,ty,tw,th=sun_test_bounds()
+    g.setColor(.12,.22,.24,.90)
+    g.rectangle('fill',tx,ty,tw,th,8,8)
+    g.setColor(1,1,.84,1)
+    g.print(string.format('SUN %02d >',math.floor(runtime25d.sun_hour or 12)),tx+9,ty+10)
+  end
   PerfHud.draw(runtime25d,w,h,safe_x,safe_y,safe_w,
     (love.timer.getTime()-perf_begin)*1000)
   local bx,by=joystick_center()
@@ -1120,6 +1140,13 @@ local function press(id,x,y)
   fingers[id]={x=x,y=y,origin_x=x,origin_y=y,move=false}
   local sx,sy,sw,sh=safe_area()
   local safe={x=sx,y=sy,w=sw,h=sh}
+  if runtime25d then
+    local tx,ty,tw,th=sun_test_bounds()
+    if x>=tx and x<=tx+tw and y>=ty and y<=ty+th then
+      fingers[id].sun_test=true
+      return
+    end
+  end
   local creative_hit=creative_hud:hit(x,y,safe,creative)
   if creative_hit then
     fingers[id].creative_ui=creative_hit
@@ -1157,7 +1184,7 @@ end
 local function move(id,x,y)
   local p=fingers[id];if not p then return end
   if p.joystick then joystick:move(id,x,y);return end
-  if p.button or p.ui or p.stats then return end
+  if p.button or p.ui or p.stats or p.sun_test then return end
   if p.multi then
     local partner
     for other,q in pairs(fingers) do if other~=id and not q.joystick and not q.button then partner=q;break end end
@@ -1175,6 +1202,9 @@ end
 local function release(id,x,y)
   local p=fingers[id];if not p then return end
   if p.joystick then joystick:release(id)
+  elseif p.sun_test then
+    local tx,ty,tw,th=sun_test_bounds()
+    if x>=tx and x<=tx+tw and y>=ty and y<=ty+th then cycle_test_sun() end
   elseif p.stats then
     local sx,sy,sw,sh=safe_area()
     if stat_hud:hit(x,y,{x=sx,y=sy,w=sw,h=sh})==p.stats then
@@ -1252,6 +1282,7 @@ function love.keypressed(key)
     return
   end
   if key=="f9" then PerfHud.toggle();return end
+  if key=="f8" then cycle_test_sun();return end
   if key=="p" then stat_action("stats_toggle");return end
   if stat_hud.open then
     local number=tonumber(key)
