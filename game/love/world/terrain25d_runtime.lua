@@ -668,6 +668,137 @@ function Runtime:enqueue_binary(chunks)
    end
  end
 end
+-- Stable-view render-only aggregation. The original meshes remain authoritative
+-- and owned by Stream. Aggregates preserve the exact pass and page ordering.
+local function same_chunks(a,b)
+ if not a or #a~=#b then return false end
+ for i,c in ipairs(a) do
+   if c~=b[i] or c._25d_meshes~=b[i]._25d_meshes then return false end
+ end
+ return true
+end
+local function release_merged(cache)
+ if not cache then return end
+ for _,entry in ipairs(cache) do
+   if entry.owned and entry.mesh.release then entry.mesh:release() end
+ end
+end
+local function flatten_pass(chunks,layer)
+ local runs,group={},nil
+ local function append(mesh,page)
+   if not group or group.page~=page then
+     group={page=page,meshes={}}
+     runs[#runs+1]=group
+   end
+   group.meshes[#group.meshes+1]=mesh
+ end
+ for _,c in ipairs(chunks) do
+   if c._25d_meshes then
+     if layer=='ground' then
+       for _,page in ipairs(c._25d_ground_order) do
+         append(c._25d_meshes[page],page)
+       end
+     elseif layer=='water' then
+       if c._25d_meshes['!water'] then append(c._25d_meshes['!water'],'!water') end
+     else
+       for _,page in ipairs((c._25d_overlay_order or {})[layer] or {}) do
+         append(c._25d_meshes['!'..layer..':'..page],page)
+       end
+     end
+   end
+ end
+ return runs
+end
+local function aggregate_pass(runtime,runs)
+ local output={}
+ for _,run in ipairs(runs) do
+   if #run.meshes<2 then
+     output[#output+1]={mesh=run.meshes[1],owned=false}
+   else
+     local count=0
+     for _,mesh in ipairs(run.meshes) do count=count+mesh:getVertexCount() end
+     -- Bound temporary CPU/GPU duplication on mobile; oversized runs fall
+     -- back to their original meshes without losing draw order.
+     if count>96000 then
+       for _,mesh in ipairs(run.meshes) do output[#output+1]={mesh=mesh,owned=false} end
+     else
+       local vertices={}
+       for _,mesh in ipairs(run.meshes) do
+         for i=1,mesh:getVertexCount() do
+           vertices[#vertices+1]={mesh:getVertex(i)}
+           if #vertices%1024==0 then coroutine.yield() end
+         end
+       end
+       local merged=love.graphics.newMesh(vertices,'triangles','static')
+       if run.page~='!water' then merged:setTexture(runtime:page(run.page)) end
+       output[#output+1]={mesh=merged,owned=true}
+       coroutine.yield()
+     end
+   end
+ end
+ return output
+end
+function Runtime:update_ground_batch(draw_chunks,now)
+ if not self.compact or os.getenv('TAMU_DISABLE_TERRAIN_BATCH')=='1' then return nil end
+ for _,c in ipairs(draw_chunks) do
+   if not c._25d_meshes or self:chunk_reveal(c,now)<.999 then
+     self:invalidate_ground_batch()
+     return nil
+   end
+ end
+ local previous=self.ground_batch_view
+ if not same_chunks(previous,draw_chunks) then
+   self:invalidate_ground_batch()
+   self.ground_batch_view={}
+   for i,c in ipairs(draw_chunks) do self.ground_batch_view[i]=c end
+   self.ground_batch_stable=0
+   return nil
+ end
+ self.ground_batch_stable=(self.ground_batch_stable or 0)+1
+ if self.ground_batch then return self.ground_batch end
+ if self.ground_batch_stable<12 then return nil end
+ if not self.ground_batch_job then
+   self.ground_batch_staging={}
+   self.ground_batch_job=coroutine.create(function()
+     for _,layer in ipairs({'ground','path','bank','water'}) do
+       self.ground_batch_staging[layer]=aggregate_pass(self,flatten_pass(draw_chunks,layer))
+     end
+   end)
+ end
+ local start=love.timer.getTime()
+ repeat
+   local ok,err=coroutine.resume(self.ground_batch_job)
+   if not ok then
+     self:invalidate_ground_batch()
+     print('TAMU_TERRAIN_BATCH_REJECT '..tostring(err))
+     return nil
+   end
+   if coroutine.status(self.ground_batch_job)=='dead' then
+     self.ground_batch=self.ground_batch_staging
+     self.ground_batch_staging=nil
+     self.ground_batch_job=nil
+     return self.ground_batch
+   end
+ until love.timer.getTime()-start>=.001
+ return nil
+end
+function Runtime:invalidate_ground_batch()
+ if self.ground_batch then
+   for _,layer in ipairs({'ground','path','bank','water'}) do
+     release_merged(self.ground_batch[layer])
+   end
+ end
+ if self.ground_batch_staging then
+   for _,layer in ipairs({'ground','path','bank','water'}) do
+     release_merged(self.ground_batch_staging[layer])
+   end
+ end
+ self.ground_batch=nil
+ self.ground_batch_staging=nil
+ self.ground_batch_job=nil
+ self.ground_batch_view=nil
+ self.ground_batch_stable=0
+end
 function Runtime:draw(stream,camera,w,h)
  assert(stream and stream.visible and camera and camera.zoom>0)
  local chunks=stream:visible()
@@ -787,6 +918,7 @@ function Runtime:draw(stream,camera,w,h)
  g.translate(-x,-y)
  local tint=self.sun.tint
  local calls,visible=0,0
+ local merged=self:update_ground_batch(draw_chunks,now)
  local shader=self.reveal_shader
  -- Render-only style cache: each chunk is drawn for ground, overlays and
  -- water within the same frame. Avoid redoing projection, reveal sampling
@@ -818,6 +950,15 @@ function Runtime:draw(stream,camera,w,h)
      g.setShader();active_shader=false
    end
  end
+ if merged then
+   visible=#draw_chunks
+   for _,layer in ipairs({'ground','path','bank','water'}) do
+     for _,entry in ipairs(merged[layer]) do
+       g.draw(entry.mesh)
+       calls=calls+1
+     end
+   end
+ else
  for _,c in ipairs(draw_chunks) do
    if c._25d_meshes then
      visible=visible+1
@@ -842,6 +983,7 @@ function Runtime:draw(stream,camera,w,h)
      prepare_style(c)
      g.draw(c._25d_meshes['!water']);calls=calls+1
    end
+ end
  end
  if active_shader then g.setShader() end
  g.setColor(1,1,1,1)
