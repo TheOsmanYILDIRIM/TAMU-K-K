@@ -287,6 +287,12 @@ local function spawn()
 end
 function love.load()
   boot_started=love.timer.getTime()
+  -- Compare Android physical-pixel workload with Xvfb's logical viewport.
+  local logical_w,logical_h=love.graphics.getDimensions()
+  local physical_w,physical_h=love.graphics.getPixelDimensions()
+  local dpi=love.window.getDPIScale and love.window.getDPIScale() or 1
+  print(string.format('TAMU_DISPLAY_DIAG logical=%dx%d physical=%dx%d dpi_scale=%.3f pixels=%d',
+    logical_w,logical_h,physical_w,physical_h,dpi,physical_w*physical_h))
   creative_renderer=CreativeRenderer.new()
   if terrain25d_compare then
     local v=os.getenv("OSMAN_25D_COMPARE_DISPLAY") or "360x780"
