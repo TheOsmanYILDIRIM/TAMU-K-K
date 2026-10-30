@@ -9,7 +9,7 @@ R2={
  'fisilti_ormani.r2.v1.json':'df5d0eeca59030e6585558c15d8f1e7bf049638ea8032dc17c1b80c74106f598',
  'osman_overworld.v2.json':'ac5903fd22cd466cfc1786cbeef44f2679be87317c6bfd757a05a282172f78dc',
 }
-def main(repo,output):
+def main(repo,output,prebaked_dir=None):
     root=repo/'game/love'
     assert (root/'main.lua').is_file() and (root/'conf.lua').is_file()
     assets=output.parent/'tamu_creative_generated'
@@ -29,6 +29,18 @@ def main(repo,output):
     content.append(('assets/tamu_creative_25d.flag',b'packaged-only-25d-creative-v1\n'))
     for name in ('creative_build_atlas.png','creative_build_manifest.json'):
         content.append(('assets/'+name,(assets/name).read_bytes()))
+    if prebaked_dir is not None:
+        prebaked_dir=Path(prebaked_dir)
+        bins=sorted(prebaked_dir.glob('c_*.verts.z'))
+        metas=sorted(prebaked_dir.glob('c_*.meta.json'))
+        assert len(bins)==len(metas)==156, 'authored bake incomplete'
+        bases_bin={p.name[:-len('.verts.z')] for p in bins}
+        bases_meta={p.name[:-len('.meta.json')] for p in metas}
+        assert bases_bin==bases_meta,'authored binary metadata mismatch'
+        content=[(name,raw) for name,raw in content
+                 if not name.startswith('assets/terrain25d/baked/')]
+        for src in bins+metas:
+            content.append(('assets/terrain25d/baked/'+src.name,src.read_bytes()))
     paths=[key for key,_ in content]
     assert len(set(paths))==len(paths),'duplicate package path'
     output.parent.mkdir(parents=True,exist_ok=True)
@@ -47,4 +59,5 @@ def main(repo,output):
 if __name__=='__main__':
     ap=argparse.ArgumentParser();ap.add_argument('--repo',type=Path,default=Path('.'))
     ap.add_argument('--output',required=True,type=Path)
-    args=ap.parse_args();main(args.repo,args.output)
+    ap.add_argument('--prebaked-dir',type=Path,default=None)
+    args=ap.parse_args();main(args.repo,args.output,args.prebaked_dir)
