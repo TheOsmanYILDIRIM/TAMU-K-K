@@ -39,3 +39,18 @@ assert(independent~=scratch.objects and independent[1]==hit,
   'public nonpooled collect must retain independent result semantics')
 print('R2_25D_OBJECT_POPULATION_OK')
 print('TAMU_OBJECT_POOL_SEMANTICS_OK')
+
+-- Shadow pass already validated reveal readiness: contact pass must not
+-- repeat the potentially costly full-object readiness scan.
+local Sprite=require('objects.terrain25d_sprites')
+local reveal_scans=0
+local sprite=setmetatable({
+ provider={objects_fully_revealed=function()
+   reveal_scans=reveal_scans+1;return true
+ end},contact_batch={},contact_objects=0,
+ contact_cache={zoom=1,w=720,h=1100,objects={{hit.id,hit.x,hit.y,hit.kind,hit.radius}}},
+ contact_calls=0,contact_reuses=0},Sprite)
+sprite:draw_contacts({},camera,720,1100,{hit},true)
+assert(reveal_scans==0 and sprite.contact_reuses==1,
+ 'contact pass must reuse shadow reveal readiness without rescanning')
+print('TAMU_SHADOW_CONTACT_READINESS_REUSE_OK')
