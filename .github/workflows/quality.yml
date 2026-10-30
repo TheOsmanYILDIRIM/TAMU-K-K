@@ -143,6 +143,35 @@ jobs:
           export XDG_DATA_HOME="$RUNNER_TEMP/tamu-cpu-400"
           mkdir -p "$XDG_DATA_HOME"
           SDL_AUDIODRIVER=dummy TAMU_PERF_PHASE_TRACE=1 TAMU_CPU_400_BENCH=1 OSMAN_25D_SUN_HOUR=10.5 timeout 180s xvfb-run -a love /tmp/tamu-authored-compiled.love 2>&1 | tee /tmp/tamu-cpu-400.log
+          for flavor in unbatched batched; do
+            if [ "$flavor" = "unbatched" ]; then root="$RUNNER_TEMP/tamu-cpu-400-unbatched"; else root="$RUNNER_TEMP/tamu-cpu-400"; fi
+            screenshot="$(find "$root" -name "tamu-terrain-$flavor.png" -print -quit)"
+            test -n "$screenshot" && test -s "$screenshot"
+            cp "$screenshot" "/tmp/tamu-terrain-$flavor.png"
+          done
+          python3 - <<'PY'
+          from PIL import Image
+          old=Image.open('/tmp/tamu-terrain-unbatched.png').convert('RGB')
+          new=Image.open('/tmp/tamu-terrain-batched.png').convert('RGB')
+          assert old.size==new.size and old.width>=320
+          w,h=old.size
+          a,b=old.load(),new.load()
+          changed=total=0
+          delta_sum=0
+          for y in range(250,h-235,2):
+              for x in range(0,w,2):
+                  # Ignore player/idle-animation silhouette around the center.
+                  if abs(x-w/2)<145 and abs(y-h/2)<220: continue
+                  delta=max(abs(a[x,y][ch]-b[x,y][ch]) for ch in range(3))
+                  changed+=delta>12
+                  delta_sum+=delta
+                  total+=1
+          assert total>10000
+          changed_ratio=changed/total
+          mean_delta=delta_sum/total
+          print(f'TAMU_TERRAIN_BATCH_VISUAL changed_ratio={changed_ratio:.6f} mean_rgb_delta={mean_delta:.4f} pixels={total}')
+          assert changed_ratio<=.002 and mean_delta<=.3,'GPU terrain batching altered the static scene'
+          PY
           python3 - <<'PY'
           import re
           from pathlib import Path
@@ -180,6 +209,8 @@ jobs:
             /tmp/tamu-authored-walk.log
             /tmp/tamu-cpu-400.log
             /tmp/tamu-cpu-400-unbatched.log
+            /tmp/tamu-terrain-unbatched.png
+            /tmp/tamu-terrain-batched.png
             /tmp/tamu-authored-binary/
           if-no-files-found: warn
       - name: Rigby JSON fast versus baseline parser on unchanged rig data
