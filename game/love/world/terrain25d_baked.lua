@@ -97,6 +97,36 @@ function M.save_binary(runtime,chunk)
  assert(love.filesystem.write(BAKING..name..'.meta.json',Json.encode(meta)))
  return #compressed
 end
+-- Identical 20-byte vertex layout to save_binary, but accepts CPU-only
+-- authored meshes produced in a love.thread worker (no graphics API).
+function M.pack_cpu(runtime,chunk,doc)
+ assert(doc and doc.meshes and doc.ground_order and doc.overlay_order
+   and doc.bounds,'completed CPU terrain required')
+ local keys={}
+ for key in pairs(doc.meshes) do keys[#keys+1]=key end
+ table.sort(keys)
+ local payload,entries={},Json.array()
+ for _,key in ipairs(keys) do
+   local vertices=doc.meshes[key]
+   local bytes={}
+   for i,v in ipairs(vertices) do
+     bytes[i]=love.data.pack('string','<ffffBBBB',
+       v[1],v[2],v[3],v[4],
+       byte(v[5]),byte(v[6]),byte(v[7]),byte(v[8]))
+   end
+   payload[#payload+1]=table.concat(bytes)
+   entries[#entries+1]={key=key,count=#vertices}
+ end
+ local meta={format='tamu-25d-binary-v1',stamp=stamp(runtime),
+   cx=chunk.cx,cy=chunk.cy,size=chunk.size,
+   bounds=array_copy(doc.bounds),
+   ground_order=array_copy(doc.ground_order),
+   overlay_order={path=array_copy(doc.overlay_order.path),
+     bank=array_copy(doc.overlay_order.bank)},
+   meshes=entries}
+ return {meta=Json.encode(meta),raw=table.concat(payload)}
+end
+function M.cpu_stamp(runtime) return stamp(runtime) end
 local function load_binary(runtime,chunk,prepared)
  local name=ROOT..binary_name(chunk)
  if not prepared and (not love.filesystem.getInfo(name..'.meta.json','file') or
