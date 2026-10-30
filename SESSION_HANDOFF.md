@@ -1,3 +1,12 @@
+## 2026-10-30 — Eşdeğer tam sahne render izolasyon profilleri (CI BEKLİYOR)
+
+- Önceki 24 sabit obje/izole boş dünya FPS kıyaslaması geçersiz kabul edildi: normal tam oyunda 137 nesne, R2 ve gameplay vardı. Kullanıcının Android kanıtında tam oyun ~25 FPS, yalnız izolasyon 60 FPS, chunk yüklemesinde kısa ~51 FPS.
+- core/perf_isolation_boot.lua girişindeki kıyaslama profilleri artık normal tam oyun başlatmasını kullanıyor. Tam oyun/terrain-only/objects-only/Rigby-only/terrain+objects/HUD-off/Rigby-off ile aynı authored dünya, oyun mantığı, kamera ve nesne popülasyonu korunuyor; yalnız draw katmanları filtreleniyor. Boş motor tabanı ayrı kıyaslanamaz baseline.
+- objects/renderer.lua opsiyonel flags nesne ve Rigby çizimini kapatır, nesne toplama ve derinlik sıralaması korunur. main.lua HUD ve terrain draw gate uygular. terrain25d_runtime.lua terrain GPU draw kapalıyken de stream/chunk/asset hazırlığını devam ettirir. DOLAYISIYLA bu modlar yalnız draw-stage ayrımı içindir; kapalı sistemlerin CPU update işi devam eder ve bağımsız no-call testi değildir.
+- Main'e merge yok. Değişikliklerin HEAD/dosya geri okuması dışında Lua5.4/LuaJIT, quality CI, .love üretimi, Android görsel ve A/B testleri doğrulanmadı; yeni CI sonuçları üzerinden kabulü yap. Grafik geçişinde beklenen obje sayısı ve chunk gap sabit tutulmalı.
+
+---
+
 ## 2026-10-30 — İzole gerçek R2 arazi ve kamera hareketi (AÇIK KABUL)
 
 - Performans açılış seçicisindeki terrain ve terrain+objects profilleri statik doku tekrarı yerine gerçek authored R2 + world.stream (render_only_25d) + world.terrain25d_runtime kullanıyor. Gameplay/Rigby/inventory/harvest yaratılmıyor; R2 query/geometry/chunk worker yalnız arazi için gerekli.
