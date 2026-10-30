@@ -50,7 +50,7 @@ function Sprite.new(provider,manifest)
    love.filesystem.getInfo(SHADOW_ROOT..'objects_shadow_manifest.json','file') then
    local raw=love.filesystem.read(SHADOW_ROOT..'objects_shadow_manifest.json')
    local ok,m=pcall(StaticJson.decode,raw or '')
-   if ok and m and m.version==2 and #m.pages>=8 and m.objects then
+   if ok and m and m.version==3 and #m.pages==8 and m.objects then
      static_manifest=m
    end
  end
@@ -286,10 +286,37 @@ end
 -- or appreciable solar motion always rebuilds the original two RGBA layers.
 function Sprite:draw_shadows(g,camera,w,h,objects)
  if self.static_manifest then
-   -- Shadows are baked into each object's time-slot atlas entry. No
-   -- per-object shadow projection or contact pass runs during draw.
+   -- Shadow masks were baked offline from each object's original alpha.
+   -- One low-resolution atlas is drawn below normal full-resolution sprites.
    self.shadow_calls,self.shadow_objects=0,0
-   return 0
+   local sun=self.provider.sun
+   if not sun or sun.cast<=0 then return 0 end
+   local slot=(math.floor(sun.hour/3+.5)*3)%24
+   local name='staticshadow:shadows_'..string.format('%02d',slot)..'.png'
+   local entry=self:batch_for(name)
+   local batch=entry
+   batch:clear()
+   local atlas=self.static_manifest
+   local count=0
+   for _,o in ipairs(objects) do
+     local a,x,y,scale=self:appearance(camera,w,h,o)
+     if a then
+       local index=assert(atlas.objects[a.id],'missing shadow mask '..a.id)
+       if not index.quad then
+         index.quad=love.graphics.newQuad(index.u,index.v,32,32,atlas.width,atlas.height)
+       end
+       batch:setColor(1,1,1,1)
+       batch:add(index.quad,x,y,0,scale*4,scale*4,16,24)
+       count=count+1
+     end
+   end
+   if count>0 then
+     g.setColor(1,1,1,1)
+     g.draw(batch)
+     self.shadow_calls=1
+     self.shadow_objects=count
+   end
+   return self.shadow_calls
  end
  self.shadow_frame=self.shadow_frame+1
  local sun=self.provider.sun
@@ -406,20 +433,6 @@ function Sprite:queue(g,camera,w,h,o,selected)
  local page=a.page
  local quad=a.quad
  local pivot_x,pivot_y=64,124
- if self.static_manifest then
-   local atlas=self.static_manifest
-   local entry=atlas.objects[a.id]
-   assert(entry,'missing static shadow sprite '..tostring(a.id))
-   local hour=self.provider.sun and self.provider.sun.hour or 12
-   local slot=(math.floor(hour/3+.5)*3)%24
-   page='staticshadow:objects_shadow_'..string.format('%02d',slot)..'_'..tostring(entry.page)..'.png'
-   if not entry.quad then
-     entry.quad=love.graphics.newQuad(entry.u,entry.v,entry.width,entry.height,
-       atlas.width,atlas.height)
-   end
-   quad=entry.quad
-   pivot_x,pivot_y=entry.pivot[1],entry.pivot[2]
- end
  if self.current_page and self.current_page~=page then self:flush(g) end
  local batch=self:batch_for(page)
  batch:setColor(1,1,1,progress)
