@@ -37,7 +37,7 @@ end
 local exported,name=Diagnostics.export()
 assert(exported and name=='diagnostics/tamu-export-recent.jsonl')
 local export_lines=0
-for line in files[name]:gmatch('[^\\n]+') do
+for line in files[name]:gmatch('[^\n]+') do
   local v=require('save.json').decode(line)
   assert(v.kind=='frame')
   export_lines=export_lines+1
