@@ -70,6 +70,13 @@ jobs:
           grep -q 'TAMU_25D_27_COMPLETE mode=binary chunks=27' /tmp/tamu-27-binary.log
           test "$(grep -c 'TAMU_25D_BINARY_LOADED' /tmp/tamu-27-binary.log)" -eq 27
           cp "$(find "$XDG_DATA_HOME" -name 'tamu-27-binary.png' -print -quit)" /tmp/tamu-27-binary.png
+          export XDG_DATA_HOME="$RUNNER_TEMP/tamu-walk-coverage"
+          mkdir -p "$XDG_DATA_HOME"
+          TAMU_25D_WALK_PROBE=1 TAMU_25D_COVERAGE_TRACE=1 OSMAN_25D_SUN_HOUR=10.5 timeout 160s xvfb-run -a love game/love 2>&1 | tee /tmp/tamu-walk-coverage.log
+          grep -q 'TAMU_WALK_COVERAGE frames=480 max_missing=0' /tmp/tamu-walk-coverage.log
+          shot="$(find "$XDG_DATA_HOME" -name 'tamu-walk-coverage.png' -print -quit)"
+          test -n "$shot" && test -s "$shot"
+          cp "$shot" /tmp/tamu-walk-coverage.png
           export XDG_DATA_HOME="$RUNNER_TEMP/tamu-27-json"
           mkdir -p "$XDG_DATA_HOME"
           OSMAN_25D_SUN_HOUR=10.5 TAMU_25D_27_COMPARE=1 TAMU_25D_FORCE_JSON=1 OSMAN_25D_BAKE_VERIFY=1 OSMAN_25D_BAKE_LIMIT=27 timeout 300s xvfb-run -a love game/love 2>&1 | tee /tmp/tamu-27-json.log
@@ -111,6 +118,8 @@ jobs:
             /tmp/tamu-27-json.log
             /tmp/tamu-27-binary.png
             /tmp/tamu-27-json.png
+            /tmp/tamu-walk-coverage.log
+            /tmp/tamu-walk-coverage.png
           if-no-files-found: warn
       - name: 25D geometry and real R2 authored mesh (Lua 5.4 / LuaJIT)
         shell: bash
