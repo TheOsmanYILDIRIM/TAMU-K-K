@@ -1289,6 +1289,19 @@ end
 
 -- A worker may still be compressing disposable geometry at shutdown.
 -- Drain only after gameplay has stopped, never inside the frame budget.
+function love.focus(focused)
+ Diagnostics.event('app_focus',{focused=focused==true})
+ if focused then Diagnostics.event('app_resumed') else Diagnostics.flush() end
+end
+function love.visible(visible)
+ Diagnostics.event('app_visibility',{visible=visible==true})
+ if not visible then Diagnostics.flush() end
+end
+function love.lowmemory()
+ Diagnostics.event('android_low_memory',{lua_kib=collectgarbage('count')})
+ Diagnostics.flush()
+ collectgarbage('step',200)
+end
 function love.quit()
  Diagnostics.close()
  if chunk_cache then chunk_cache:close() end
