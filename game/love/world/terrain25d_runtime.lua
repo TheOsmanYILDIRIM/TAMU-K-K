@@ -602,16 +602,21 @@ function Runtime:bake_authored_step()
    print(string.format('TAMU_AUTHORED_BAKE_PLAN chunks=%d cx=%d..%d cy=%d..%d',
      #queue,x0,x1,y0,y1))
  end
- if not self.page_images['atlas_00.png'] then return false end
  local index=self.authored_bake_index
  local queue=self.authored_bake_queue
  if index>#queue then return true end
+ -- The offline authored bake and the runtime worker must use the same
+ -- canonical CPU geometry and byte packing. Do not round-trip through
+ -- newMesh:getVertex: GPU vertex/color quantization may differ.
+ self.authored_cpu=self.authored_cpu or Runtime.cpu_new(self.pilot)
  local chunk=queue[index]
- self:prepare(chunk)
- Baked.save_binary(self,chunk)
- for _,mesh in pairs(chunk._meshes or {}) do
-   if mesh.release then mesh:release() end
- end
+ local prepared=self.authored_cpu:prepare(chunk,nil,true)
+ local bytes=Baked.pack_cpu(self.authored_cpu,chunk,prepared)
+ assert(love.filesystem.createDirectory('25d-bake/'))
+ local base=('25d-bake/c_%d_%d'):format(chunk.cx,chunk.cy)
+ assert(love.filesystem.write(base..'.meta.json',bytes.meta))
+ assert(love.filesystem.write(base..'.verts.z',
+   love.data.compress('string','zlib',bytes.raw,6)))
  self.authored_bake_index=index+1
  if index%10==0 or index==#queue then
    print(string.format('TAMU_AUTHORED_BAKE_PROGRESS done=%d total=%d',
