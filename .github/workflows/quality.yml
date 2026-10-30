@@ -50,6 +50,31 @@ jobs:
           print('TAMU_WARM_RETURN_OK hits='..stream.warm_hits)
           LUA
           done
+      - name: Precompile complete authored R2 polygon area with safety halo
+        if: github.ref_name == 'experiment/25d-binary-vertex-20261030'
+        shell: bash
+        run: |
+          set -euo pipefail
+          export SDL_AUDIODRIVER=dummy
+          export XDG_DATA_HOME="$RUNNER_TEMP/tamu-authored-prebuild"
+          mkdir -p "$XDG_DATA_HOME"
+          TAMU_25D_FULL_AUTHORED_BAKE=1 timeout 900s xvfb-run -a love game/love 2>&1 | tee /tmp/tamu-authored-bake.log
+          grep -q 'TAMU_AUTHORED_BAKE_PLAN chunks=156' /tmp/tamu-authored-bake.log
+          grep -q 'TAMU_AUTHORED_BAKE_OK chunks=156' /tmp/tamu-authored-bake.log
+          mkdir -p /tmp/tamu-authored-binary
+          find "$XDG_DATA_HOME" -name 'c_*.verts.z' -exec cp {} /tmp/tamu-authored-binary/ \;
+          find "$XDG_DATA_HOME" -name 'c_*.meta.json' -exec cp {} /tmp/tamu-authored-binary/ \;
+          test "$(find /tmp/tamu-authored-binary -name '*.verts.z' | wc -l)" -eq 156
+          test "$(find /tmp/tamu-authored-binary -name '*.meta.json' | wc -l)" -eq 156
+      - name: Upload complete authored-region binary GPU cache
+        if: always() && github.ref_name == 'experiment/25d-binary-vertex-20261030'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tamu-authored-r2-binary-cache
+          path: |
+            /tmp/tamu-authored-bake.log
+            /tmp/tamu-authored-binary/
+          if-no-files-found: warn
       - name: Rigby JSON fast versus baseline parser on unchanged rig data
         if: github.ref_name == 'experiment/25d-binary-vertex-20261030'
         shell: bash
