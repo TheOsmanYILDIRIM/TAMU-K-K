@@ -137,6 +137,9 @@ jobs:
               assert 'assets/worldbuild/fisilti_ormani.r2.v1.json' in paths
           print('TAMU_AUTHORED_LOVE_OK binary_chunks=156')
           PY
+          export XDG_DATA_HOME="$RUNNER_TEMP/tamu-cpu-400-unbatched"
+          mkdir -p "$XDG_DATA_HOME"
+          SDL_AUDIODRIVER=dummy TAMU_DISABLE_TERRAIN_BATCH=1 TAMU_CPU_400_BENCH=1 OSMAN_25D_SUN_HOUR=10.5 timeout 180s xvfb-run -a love /tmp/tamu-authored-compiled.love 2>&1 | tee /tmp/tamu-cpu-400-unbatched.log
           export XDG_DATA_HOME="$RUNNER_TEMP/tamu-cpu-400"
           mkdir -p "$XDG_DATA_HOME"
           SDL_AUDIODRIVER=dummy TAMU_PERF_PHASE_TRACE=1 TAMU_CPU_400_BENCH=1 OSMAN_25D_SUN_HOUR=10.5 timeout 180s xvfb-run -a love /tmp/tamu-authored-compiled.love 2>&1 | tee /tmp/tamu-cpu-400.log
@@ -148,6 +151,14 @@ jobs:
           assert match,'missing stable 180-frame CPU benchmark'
           p50,p95,p99=map(float,match.groups())
           print(f'TAMU_400FPS_EQUIVALENT target_p95_ms=2.500 actual_p95_ms={p95:.3f} p50_ms={p50:.3f} p99_ms={p99:.3f}')
+          base=Path('/tmp/tamu-cpu-400-unbatched.log').read_text()
+          pat=r'TAMU_CI_CPU_400 frames=180 p50_ms=([0-9.]+) p95_ms=([0-9.]+) p99_ms=([0-9.]+).*?terrain_calls=([0-9]+)'
+          old=re.search(pat,base)
+          new=re.search(pat,log)
+          assert old and new,'missing comparable terrain draw-call results'
+          before=int(old.group(4));after=int(new.group(4))
+          print(f'TAMU_TERRAIN_BATCH_COMPARISON before={before} after={after} p95_before_ms={float(old.group(2)):.3f} p95_after_ms={float(new.group(2)):.3f}')
+          assert after<before, 'terrain aggregation did not reduce draw calls'
           assert p95<=2.5, 'desktop CPU p95 exceeds 2.5ms (400fps-equivalent) budget'
           PY
           export XDG_DATA_HOME="$RUNNER_TEMP/tamu-authored-walk"
@@ -168,6 +179,7 @@ jobs:
             /tmp/tamu-authored-compiled.love
             /tmp/tamu-authored-walk.log
             /tmp/tamu-cpu-400.log
+            /tmp/tamu-cpu-400-unbatched.log
             /tmp/tamu-authored-binary/
           if-no-files-found: warn
       - name: Rigby JSON fast versus baseline parser on unchanged rig data
