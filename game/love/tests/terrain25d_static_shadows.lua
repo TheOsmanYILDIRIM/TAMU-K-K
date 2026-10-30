@@ -31,7 +31,7 @@ local sprite=setmetatable({
    return sprite_batch
  end
 },Sprite)
-local g={setColor=function() end,draw=function(_,batch)
+local g={setColor=function() end,draw=function(batch)
  if batch==shadow_batch then shadow_draws=shadow_draws+1 end
 end}
 assert(sprite:draw_shadows(g,{},360,780,{object})==1)
