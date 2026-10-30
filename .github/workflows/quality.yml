@@ -127,6 +127,19 @@ jobs:
               assert 'assets/worldbuild/fisilti_ormani.r2.v1.json' in paths
           print('TAMU_AUTHORED_LOVE_OK binary_chunks=156')
           PY
+          export XDG_DATA_HOME="$RUNNER_TEMP/tamu-cpu-200"
+          mkdir -p "$XDG_DATA_HOME"
+          SDL_AUDIODRIVER=dummy TAMU_CPU_200_BENCH=1 OSMAN_25D_SUN_HOUR=10.5 timeout 180s xvfb-run -a love /tmp/tamu-authored-compiled.love 2>&1 | tee /tmp/tamu-cpu-200.log
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          log=Path('/tmp/tamu-cpu-200.log').read_text()
+          match=re.search(r'TAMU_CI_CPU_200 frames=180 p50_ms=([0-9.]+) p95_ms=([0-9.]+) p99_ms=([0-9.]+)',log)
+          assert match,'missing stable 180-frame CPU benchmark'
+          p50,p95,p99=map(float,match.groups())
+          print(f'TAMU_200FPS_EQUIVALENT target_p95_ms=5.000 actual_p95_ms={p95:.3f} p50_ms={p50:.3f} p99_ms={p99:.3f}')
+          assert p95<=5.0, 'desktop CPU p95 exceeds 5ms (200fps-equivalent) budget'
+          PY
           export XDG_DATA_HOME="$RUNNER_TEMP/tamu-authored-walk"
           mkdir -p "$XDG_DATA_HOME"
           SDL_AUDIODRIVER=dummy TAMU_25D_WALK_PROBE=1 timeout 240s xvfb-run -a love /tmp/tamu-authored-compiled.love 2>&1 | tee /tmp/tamu-authored-walk.log
@@ -144,6 +157,7 @@ jobs:
             /tmp/tamu-authored-bake.log
             /tmp/tamu-authored-compiled.love
             /tmp/tamu-authored-walk.log
+            /tmp/tamu-cpu-200.log
             /tmp/tamu-authored-binary/
           if-no-files-found: warn
       - name: Rigby JSON fast versus baseline parser on unchanged rig data
