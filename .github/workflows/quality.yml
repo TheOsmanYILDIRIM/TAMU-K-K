@@ -16,6 +16,16 @@ jobs:
           python -m unittest discover -s scripts/tests -p 'test_terrain25d_assets.py' -v
       - name: Install Lua and real LÖVE test runtime
         run: sudo apt-get update -qq && sudo apt-get install -y lua5.4 luajit love xvfb
+      - name: Real LÖVE off-thread procedural terrain build and GPU upload
+        if: github.ref_name == 'experiment/25d-binary-vertex-20261030'
+        shell: bash
+        run: |
+          set -euo pipefail
+          export XDG_DATA_HOME="$RUNNER_TEMP/tamu-cpu-worker-smoke"
+          mkdir -p "$XDG_DATA_HOME"
+          SDL_AUDIODRIVER=dummy TAMU_25D_CPU_WORKER_PROBE=1 timeout 180s xvfb-run -a love game/love 2>&1 | tee /tmp/tamu-cpu-worker.log
+          grep -q 'TAMU_25D_CPU_WORKER_OK chunks=' /tmp/tamu-cpu-worker.log
+          grep -q 'TAMU_25D_CPU_WORKER_LOADED' /tmp/tamu-cpu-worker.log
       - name: Authored terrain warm residency and return without GPU rebuild
         if: github.ref_name == 'experiment/25d-binary-vertex-20261030'
         shell: bash
