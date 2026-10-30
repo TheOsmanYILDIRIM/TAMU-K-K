@@ -3,7 +3,8 @@
 local Json=require('save.json')
 local M={enabled=false,frame=0,records={},bytes=0,last_flush=0,last_summary=0,
   last_phase=nil,clock=nil,stalled=0,dropped=0,write_ms=0,session='',
-  window={},window_start=0,window_frames=0,window_slow=0,window_phases={}}
+  window={},window_start=0,window_frames=0,window_slow=0,window_phases={},
+  recent={},recent_cursor=0,recent_limit=120,closed=false}
 local function now() return love.timer.getTime() end
 local function safe(n)
   if type(n)~='number' or n~=n or n==math.huge or n==-math.huge then return 0 end
@@ -17,6 +18,10 @@ local function row(kind,fields)
   fields.frame=M.frame
   local ok,encoded=pcall(Json.encode,fields)
   if not ok then M.dropped=M.dropped+1;return end
+  if kind=='frame' then
+    M.recent_cursor=M.recent_cursor%M.recent_limit+1
+    M.recent[M.recent_cursor]=encoded
+  end
   M.records[#M.records+1]=encoded..'\n'
   M.bytes=M.bytes+#encoded+1
 end
@@ -36,7 +41,11 @@ function M.flush()
   local start=now()
   rotate()
   local ok=love.filesystem.append(trace_path(),table.concat(M.records))
-  if not ok then M.enabled=false;return end
+  if not ok then
+    -- Never crash gameplay because telemetry storage is read-only or full.
+    M.dropped=M.dropped+#M.records;M.records={};M.bytes=0
+    M.enabled=false;return false
+  end
   M.records={};M.bytes=0;M.last_flush=now()
   M.write_ms=safe((M.last_flush-start)*1000)
 end
@@ -46,6 +55,9 @@ function M.start()
     (android or os.getenv('TAMU_DIAGNOSTICS')=='1')
   if not M.enabled then return end
   love.filesystem.createDirectory('diagnostics')
+  M.records={};M.bytes=0;M.recent={};M.recent_cursor=0
+  M.frame=0;M.window={};M.window_phases={};M.window_frames=0
+  M.window_slow=0;M.stalled=0;M.dropped=0;M.closed=false
   M.started=now();M.last_flush=M.started;M.last_summary=M.started;M.window_start=M.started
   M.file_index=0
   M.session=os.date('!%Y%m%dT%H%M%SZ')..'-'..tostring(math.floor(M.started*1000))
@@ -59,7 +71,26 @@ function M.start()
 end
 function M.event(name,fields)
   if not M.enabled then return end
-  fields=fields or {};fields.name=name;row('event',fields)
+  -- Do not mutate caller-owned tables; keep event fields restricted to scalars.
+  local data={name=tostring(name):sub(1,64)}
+  for k,v in pairs(fields or {}) do
+    if type(k)=='string' and #k<=48 and
+      (type(v)=='number' or type(v)=='boolean') then data[k]=v end
+  end
+  row('event',data)
+end
+-- Explicit on-device export. It never transmits data or touches save files.
+function M.export()
+  if not M.enabled then return false,'disabled' end
+  M.flush()
+  local lines={}
+  for i=1,M.recent_limit do
+    local idx=(M.recent_cursor+i-1)%M.recent_limit+1
+    if M.recent[idx] then lines[#lines+1]=M.recent[idx] end
+  end
+  local name='diagnostics/tamu-export-recent.jsonl'
+  local ok,err=love.filesystem.write(name,table.concat(lines,'\n')..'\n')
+  return ok,name or err
 end
 function M.begin(dt)
   if not M.enabled then return end
@@ -176,7 +207,8 @@ function M.draw_done(extra)
   if M.bytes>=64*1024 or t-M.last_flush>=2 then M.flush() end
 end
 function M.close()
-  if not M.enabled then return end
+  if not M.enabled or M.closed then return end
+  M.closed=true
   summarize_window(now(),{})
   row('session_end',{frames=M.frame,slow_frames=M.stalled,dropped=M.dropped})
   M.flush()
