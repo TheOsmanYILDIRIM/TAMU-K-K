@@ -1035,6 +1035,8 @@ function love.draw()
       runtime25d and runtime25d.visible or 0))
     io.stdout:flush()
   end
+  PerfHud.benchmark_sample(0,PerfHud.update_ms,
+    (love.timer.getTime()-perf_begin)*1000,runtime25d,stats)
   draw_postchecks(perf_begin)
 end
 safe_area=function()
