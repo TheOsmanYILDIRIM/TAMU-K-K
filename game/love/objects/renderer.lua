@@ -203,6 +203,13 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_ove
   end
   table.sort(order,Depth.before)
   if perf_clock then Diagnostics.measure("depth_sort_ms",(perf_clock()-perf_at)*1000);perf_at=perf_clock() end
+  if type(object_override)=="table" then
+    object_override.skip_gpu_draw=flags.skip_object_gpu==true
+    if flags.skip_object_gpu then
+      assert(object_override.static_manifest,
+        'GPU-submit test requires prebaked static shadow atlas')
+    end
+  end
   local g=love.graphics
   g.push("all")
   if type(object_override)=="table" and flags.objects~=false then
