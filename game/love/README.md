@@ -235,3 +235,23 @@ this packaged path. Fallback without a manifest still uses legacy shadows.
 CI validates shadow page count, dimensions, and embedded manifest. Actual
 Android visual and performance acceptance are still open. The 3-hour shadow
 slots deliberately step rather than continuously animate.
+
+## Startup render isolation (experimental)
+
+A lightweight choice screen loads BEFORE any original gameplay modules.
+Seven profiles: full game, character only, terrain-texture only, objects only,
+terrain+objects, character+objects, empty engine baseline. The first four
+isolated visual profiles use ONLY the requested authored textures/rig; no
+procedural world, stream, gameplay, physics, workers, saves, or ecology are
+initialized. Terrain-only is a **static repeated material preview** rather
+than the full R2 terrain mesh, and objects-only is a fixed 24-object atlas
+scene. These are controlled visual baselines, not a faithful version of the
+normal authored world. Independent layers each use one static SpriteBatch.
+
+Full game initializes the original runtime only AFTER selection. The
+GitHub CI runtime has its existing behavior preserved (CI=true), with
+TAMU_ISOLATION_BOOT=1 to explicitly test the selector or
+TAMU_ISOLATION_BOOT=0 to bypass locally. Desktop number keys 1–7 select modes;
+mobile taps select them. For GPU-clean A/B comparisons restart the app
+between modes. No profile result is a real Android FPS result until device
+tested. Regression: game/love/tests/perf_isolation_boot.lua.
