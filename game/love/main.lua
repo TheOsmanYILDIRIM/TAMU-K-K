@@ -564,9 +564,10 @@ function love.update(dt)
   if terrain25d_smoke or terrain25d_compare then camera.x,camera.y=704,128
   elseif not debug_view and not creative.active then camera.x,camera.y=player.x,player.y end
   if coverage_walk_enabled and coverage_walk.started then
-    -- Deterministic camera traversal at the normal 96 world-unit/s walk pace.
-    -- Renderer-only CI probe: no player/save/world state is mutated.
-    camera.x=camera.x+math.min(dt,.05)*96
+    -- Move the camera AFTER ordinary follow, or follow erases the probe.
+    -- CI-only camera traversal; player, collision and saves are unchanged.
+    coverage_walk.distance=(coverage_walk.distance or 0)+math.min(dt,.05)*96
+    camera.x=camera.x+coverage_walk.distance
   end
   stats=stream:update(camera,w,h)
   -- Mobile object candidates must be prepared outside love.draw. R2's
@@ -900,8 +901,8 @@ function love.draw()
           coverage_walk.frames,missing,camera.x))
       end
       if coverage_walk.frames>=480 then
-        print(string.format('TAMU_WALK_COVERAGE frames=%d max_missing=%d',
-          coverage_walk.frames,coverage_walk.missing_max))
+        print(string.format('TAMU_WALK_COVERAGE frames=%d max_missing=%d distance=%.3f',
+          coverage_walk.frames,coverage_walk.missing_max,coverage_walk.distance or 0))
         love.graphics.captureScreenshot('tamu-walk-coverage.png')
         io.stdout:flush()
         love.event.quit()
