@@ -670,10 +670,10 @@ function Runtime:enqueue_binary(chunks)
 end
 -- Stable-view render-only aggregation. The original meshes remain authoritative
 -- and owned by Stream. Aggregates preserve the exact pass and page ordering.
-local function same_chunks(a,b)
+local function same_chunks(a,b,meshes)
  if not a or #a~=#b then return false end
  for i,c in ipairs(a) do
-   if c~=b[i] or c._25d_meshes~=b[i]._25d_meshes then return false end
+   if c~=b[i] or c._25d_meshes~=meshes[i] then return false end
  end
  return true
 end
@@ -747,10 +747,14 @@ function Runtime:update_ground_batch(draw_chunks,now)
    end
  end
  local previous=self.ground_batch_view
- if not same_chunks(previous,draw_chunks) then
+ if not same_chunks(previous,draw_chunks,self.ground_batch_meshes or {}) then
    self:invalidate_ground_batch()
    self.ground_batch_view={}
-   for i,c in ipairs(draw_chunks) do self.ground_batch_view[i]=c end
+   self.ground_batch_meshes={}
+   for i,c in ipairs(draw_chunks) do
+     self.ground_batch_view[i]=c
+     self.ground_batch_meshes[i]=c._25d_meshes
+   end
    self.ground_batch_stable=0
    return nil
  end
@@ -797,6 +801,7 @@ function Runtime:invalidate_ground_batch()
  self.ground_batch_staging=nil
  self.ground_batch_job=nil
  self.ground_batch_view=nil
+ self.ground_batch_meshes=nil
  self.ground_batch_stable=0
 end
 function Runtime:draw(stream,camera,w,h)
