@@ -995,7 +995,15 @@ function Runtime:draw(stream,camera,w,h)
  if active_shader then g.setShader() end
  g.setColor(1,1,1,1)
  g.pop()
- self:prune_pages(stream,chunks)
+ -- Pruning scans every resident chunk and its texture pages. Performing
+ -- this traversal at 60 Hz creates CPU/GC work even for a static world.
+ -- Throttle to 2 Hz; all pages remain pinned by resident mesh ownership.
+ -- The delayed release is bounded and does not affect visible terrain.
+ self.page_prune_elapsed=(self.page_prune_elapsed or 0)+(love.timer and love.timer.getDelta and love.timer.getDelta() or 1/60)
+ if self.page_prune_elapsed>=.5 then
+   self.page_prune_elapsed=0
+   self:prune_pages(stream,chunks)
+ end
  self.visible,self.draw_calls=visible,calls
  return visible
 end
