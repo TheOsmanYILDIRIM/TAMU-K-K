@@ -19,19 +19,22 @@ local function row(kind,fields)
   M.records[#M.records+1]=encoded..'\n'
   M.bytes=M.bytes+#encoded+1
 end
+local function trace_path()
+  return 'diagnostics/tamu-trace-'..tostring(M.file_index or 0)..'.jsonl'
+end
 local function rotate()
   local fs=love.filesystem
-  local info=fs.getInfo('diagnostics/tamu-trace.jsonl')
-  if not info or info.size<6*1024*1024 then return end
-  fs.remove('diagnostics/tamu-trace-2.jsonl')
-  fs.rename('diagnostics/tamu-trace-1.jsonl','diagnostics/tamu-trace-2.jsonl')
-  fs.rename('diagnostics/tamu-trace.jsonl','diagnostics/tamu-trace-1.jsonl')
+  local info=fs.getInfo(trace_path())
+  if not info or info.size<4*1024*1024 then return end
+  -- Constant-time ring rotation, without a 4MB rename/copy in love.draw.
+  M.file_index=((M.file_index or 0)+1)%3
+  fs.remove(trace_path())
 end
 function M.flush()
   if not M.enabled or #M.records==0 then return end
   local start=now()
   rotate()
-  local ok=love.filesystem.append('diagnostics/tamu-trace.jsonl',table.concat(M.records))
+  local ok=love.filesystem.append(trace_path(),table.concat(M.records))
   if not ok then M.enabled=false;return end
   M.records={};M.bytes=0;M.last_flush=now()
   M.write_ms=safe((M.last_flush-start)*1000)
@@ -43,6 +46,7 @@ function M.start()
   if not M.enabled then return end
   love.filesystem.createDirectory('diagnostics')
   M.started=now();M.last_flush=M.started;M.last_summary=M.started
+  M.file_index=0
   M.session=os.date('!%Y%m%dT%H%M%SZ')..'-'..tostring(math.floor(M.started*1000))
   local w,h=love.graphics.getDimensions()
   local pw,ph=love.graphics.getPixelDimensions()
