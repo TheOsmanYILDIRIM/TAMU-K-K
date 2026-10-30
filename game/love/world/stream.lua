@@ -75,17 +75,29 @@ function Stream:needed(camera,width,height)
   end end
   table.sort(candidates,less)
   if self.render_only_25d then
-    -- The inverse-isometric screen rectangle includes many chunks that
-    -- cannot intersect the actual diamond. Keep only candidates inside
-    -- a modest prefetch halo, ordered by distance to the camera.
-    local required={}
-    local pad=72*camera.zoom+16
+    -- Strict draw priority: include EVERY screen-intersecting chunk before
+    -- allocating the bounded off-screen prefetch halo. The old centre-distance
+    -- truncation could drop visible corners at portrait/zoom-out viewports.
+    local visible,halo={},{}
+    local visible_pad=12
+    local prefetch_pad=math.max(72*camera.zoom+16,size*camera.zoom)
     for _,c in ipairs(candidates) do
-      if overlaps_view(c.cx,c.cy,size,camera,width,height,pad) then
-        required[#required+1]=c
+      if overlaps_view(c.cx,c.cy,size,camera,width,height,visible_pad) then
+        visible[#visible+1]=c
+      elseif overlaps_view(c.cx,c.cy,size,camera,width,height,prefetch_pad) then
+        halo[#halo+1]=c
       end
     end
-    while #required>self.max_loaded do required[#required]=nil end
+    -- Never pretend bounded memory can cover an unbounded visible viewport.
+    -- Draw-time diagnostics and mobile acceptance test must detect this.
+    local required=visible
+    for _,c in ipairs(halo) do
+      if #required>=self.max_loaded then break end
+      required[#required+1]=c
+    end
+    self.visible_required_count=#visible
+    self.coverage_over_budget=#visible>self.max_loaded and
+      (#visible-self.max_loaded) or 0
     return required
   end
   if self.viewport_cover then
