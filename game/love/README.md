@@ -238,20 +238,20 @@ slots deliberately step rather than continuously animate.
 
 ## Startup render isolation (experimental)
 
-A lightweight choice screen loads BEFORE any original gameplay modules.
-Seven profiles: full game, character only, terrain-texture only, objects only,
-terrain+objects, character+objects, empty engine baseline. The first four
-isolated visual profiles use ONLY the requested authored textures/rig; no
-procedural world, stream, gameplay, physics, workers, saves, or ecology are
-initialized. Terrain-only is a **static repeated material preview** rather
-than the full R2 terrain mesh, and objects-only is a fixed 24-object atlas
-scene. These are controlled visual baselines, not a faithful version of the
-normal authored world. Independent layers each use one static SpriteBatch.
+A lightweight selector loads before any original gameplay modules. Seven
+profiles: full game, Rigby-only, **authored R2 terrain-only**, objects-only,
+R2 terrain+objects, character+objects, and empty-engine baseline.
 
-Full game initializes the original runtime only AFTER selection. The
-GitHub CI runtime has its existing behavior preserved (CI=true), with
-TAMU_ISOLATION_BOOT=1 to explicitly test the selector or
-TAMU_ISOLATION_BOOT=0 to bypass locally. Desktop number keys 1–7 select modes;
-mobile taps select them. For GPU-clean A/B comparisons restart the app
-between modes. No profile result is a real Android FPS result until device
-tested. Regression: game/love/tests/perf_isolation_boot.lua.
+R2 terrain modes instantiate the existing authored R2 query, real 25D terrain
+renderer and chunk streamer, with their actual baked-cache/worker paths.
+They do not create the object renderer, Rigby or gameplay update loop unless
+those layers were selected. Objects-only is still a controlled 24-object
+sprite atlas baseline rather than the original procedural ecology; do not
+mistake this mode for a full-world object benchmark.
+
+All isolated profiles accept single-finger drag, mouse drag, two-finger pinch,
+wheel zoom and WASD/arrow camera movement. For accurate A/B comparison, fully
+restart the app before switching profiles. Full game loads original modules
+after its selection; CI=true keeps the previous direct production entrypoint,
+and TAMU_ISOLATION_BOOT=1 forces the selector for test runs. Device FPS,
+camera/visual checks and regression acceptance still require testing.
