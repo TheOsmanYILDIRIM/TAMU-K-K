@@ -6,6 +6,7 @@ local options={
  {id='compare_terrain',label='TAM SAHNE - YALNIZ ARAZI'},
  {id='compare_objects',label='TAM SAHNE - YALNIZ OBJELER'},
  {id='compare_objects_opaque',label='TAM SAHNE - OPak OBJE TESTI'},
+ {id='compare_objects_prepare',label='OBJE CPU HAZIRLIK / GPU CIZIM YOK'},
  {id='compare_rig',label='TAM SAHNE - YALNIZ RIGBY'},
  {id='compare_terrain_objects',label='TAM SAHNE - ARAZI + OBJELER'},
  {id='compare_nohud',label='TAM SAHNE - HUD KAPALI'},
