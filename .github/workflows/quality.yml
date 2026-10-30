@@ -42,6 +42,8 @@ jobs:
           cd game/love
           lua5.4 tests/diagnostics.lua
           luajit tests/diagnostics.lua
+          lua5.4 tests/terrain25d_static_shadows.lua
+          luajit tests/terrain25d_static_shadows.lua
           cd ../..
           luac5.4 -p game/love/conf.lua
           luac5.4 -p game/love/player/rigby_visual.lua
@@ -56,7 +58,7 @@ jobs:
           luajit -b game/love/main.lua /tmp/tamu-main-check.ljc
           luajit -b game/love/world/terrain25d_binary_worker.lua /tmp/tamu-worker-check.ljc
           python3 -m py_compile scripts/package_tamu_love.py
-          python3 -m py_compile scripts/analyze_tamu_diagnostics.py
+          python3 -m py_compile scripts/analyze_tamu_diagnostics.py scripts/build_tamu_static_shadow_atlases.py
           cd game/love
           lua5.4 tests/rigby_runtime.lua
           luajit tests/rigby_runtime.lua
