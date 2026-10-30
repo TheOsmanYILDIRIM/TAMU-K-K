@@ -289,6 +289,14 @@ end
 function love.load()
   boot_started=love.timer.getTime()
   Diagnostics.start()
+  if Diagnostics.enabled and type(love.errorhandler)=='function' then
+    local original_errorhandler=love.errorhandler
+    love.errorhandler=function(message)
+      Diagnostics.event('fatal_error',{message=tostring(message):sub(1,400)})
+      Diagnostics.close()
+      return original_errorhandler(message)
+    end
+  end
   -- Compare Android physical-pixel workload with Xvfb's logical viewport.
   local logical_w,logical_h=love.graphics.getDimensions()
   local physical_w,physical_h=love.graphics.getPixelDimensions()
