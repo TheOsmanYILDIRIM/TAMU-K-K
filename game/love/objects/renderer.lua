@@ -177,7 +177,8 @@ function R.collect(world,stream,object_override,scratch)
   end
   return list
 end
-function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_override)
+function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_override,flags)
+  flags=flags or {objects=true,rig=true}
   local perf_clock=Diagnostics.enabled and love.timer.getTime
   local perf_at=perf_clock and perf_clock() or 0
   local rig_elapsed_ms=0
@@ -208,7 +209,7 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_ove
   if perf_clock then Diagnostics.measure("depth_sort_ms",(perf_clock()-perf_at)*1000);perf_at=perf_clock() end
   local g=love.graphics
   g.push("all")
-  if type(object_override)=="table" then
+  if type(object_override)=="table" and flags.objects~=false then
     object_override:begin_frame()
     -- Render projected source-alpha shadows below ALL Y-sorted sprites and
     -- the player, so an afternoon shadow never paints over a closer tree.
@@ -227,8 +228,8 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_ove
     end
   end
   for _,entry in ipairs(order) do
-    if entry.player then
-      if type(object_override)=="table" then object_override:flush(g) end
+    if entry.player and flags.rig~=false then
+      if type(object_override)=="table" and flags.objects~=false then object_override:flush(g) end
       local rig_start=perf_clock and perf_clock()
       player_sprite(g,camera,w,h,player,visual)
       if rig_start then
@@ -236,9 +237,9 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_ove
         rig_elapsed_ms=rig_elapsed_ms+elapsed
         Diagnostics.measure("rigby_ms",elapsed)
       end
-    elseif type(object_override)=="table" then
+    elseif not entry.player and flags.objects~=false and type(object_override)=="table" then
       object_override:queue(g,camera,w,h,entry.object,entry.id==selected_id)
-    else
+    elseif not entry.player and flags.objects~=false then
       (object_override or object_sprite)(g,camera,w,h,entry.object,entry.id==selected_id)
     end
   end
@@ -249,7 +250,7 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_ove
       (perf_clock()-perf_at)*1000-rig_elapsed_ms))
   end
   -- Preserve the flying axe only for the backed-up plasma mode.
-  if use_plasma and harvesting and harvesting.active then
+  if flags.rig~=false and use_plasma and harvesting and harvesting.active then
     local source=world:get(harvesting.active.object_id)
     if source and source.kind=="tree" then
       if not axe_image then axe_image=love.graphics.newImage("assets/axe_121227.png") end
