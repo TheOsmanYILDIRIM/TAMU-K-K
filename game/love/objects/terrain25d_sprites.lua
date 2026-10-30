@@ -112,7 +112,7 @@ function Sprite:flush(g)
      shader:send('radial',0)
      g.setShader(shader)
    end
-   g.draw(batch)
+   if not self.skip_gpu_draw then g.draw(batch) end
    if self.pending_reveal and shader then g.setShader() end
    batch:clear();self.pending=0;self.current_page=nil
    self.pending_reveal=false
@@ -312,8 +312,8 @@ function Sprite:draw_shadows(g,camera,w,h,objects)
    end
    if count>0 then
      g.setColor(1,1,1,1)
-     g.draw(batch)
-     self.shadow_calls=1
+     if not self.skip_gpu_draw then g.draw(batch) end
+     self.shadow_calls=self.skip_gpu_draw and 0 or 1
      self.shadow_objects=count
    end
    return self.shadow_calls
