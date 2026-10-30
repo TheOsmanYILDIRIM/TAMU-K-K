@@ -645,6 +645,13 @@ function Runtime:enqueue_binary(chunks)
    self.binary_inflight=0
    return
  end
+ -- A fast-moving camera must not accumulate decompressed meshes that are
+ -- no longer candidates for upload. Keep the pending request cap at 12.
+ local wanted={}
+ for _,c in ipairs(chunks) do wanted[c.key]=true end
+ for key in pairs(self.binary_ready) do
+   if not wanted[key] then self.binary_ready[key]=nil end
+ end
  local requests=love.thread.getChannel('tamu25d:binary:requests')
  for _,c in ipairs(chunks) do
    if self.binary_inflight>=self.binary_max_inflight then break end
