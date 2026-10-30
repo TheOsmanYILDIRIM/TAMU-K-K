@@ -227,9 +227,15 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_ove
       visual.facing=Direction.from_world(source.x-player.x,source.y-player.y,player.facing)
     end
   end
+  -- Diagnostic only. Disable GPU alpha blending for the same original
+  -- object geometry/count/ordering. Transparent texels will overwrite the
+  -- background; this is intentionally NOT a production visual mode.
+  -- Shadows above are measured unchanged; Rigby is off in this profile.
+  if flags.opaque_objects then g.setBlendMode('replace') end
   for _,entry in ipairs(order) do
     if entry.player and flags.rig~=false then
       if type(object_override)=="table" and flags.objects~=false then object_override:flush(g) end
+  if flags.opaque_objects then g.setBlendMode('alpha') end
       local rig_start=perf_clock and perf_clock()
       player_sprite(g,camera,w,h,player,visual)
       if rig_start then
