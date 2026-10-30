@@ -44,6 +44,8 @@ jobs:
           luajit tests/diagnostics.lua
           lua5.4 tests/terrain25d_static_shadows.lua
           luajit tests/terrain25d_static_shadows.lua
+          lua5.4 tests/perf_isolation_boot.lua
+          luajit tests/perf_isolation_boot.lua
           cd ../..
           luac5.4 -p game/love/conf.lua
           luac5.4 -p game/love/player/rigby_visual.lua
