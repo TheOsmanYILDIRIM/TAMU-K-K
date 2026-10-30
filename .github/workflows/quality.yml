@@ -150,6 +150,21 @@ jobs:
           python3 -m pip install pillow
           python3 scripts/package_tamu_love.py --repo . --prebaked-dir /tmp/tamu-authored-binary --output /tmp/tamu-authored-compiled.love
           python3 - <<'PY'
+          import json,zipfile
+          from io import BytesIO
+          from PIL import Image
+          with zipfile.ZipFile('/tmp/tamu-authored-compiled.love') as z:
+              root='assets/terrain25d/static_shadow/'
+              m=json.loads(z.read(root+'objects_shadow_manifest.json'))
+              assert m['version']==3 and m['resolution']==32
+              assert len(m['pages'])==8 and len(m['objects'])==60
+              for page in m['pages']:
+                  raw=z.read(root+page['filename'])
+                  image=Image.open(BytesIO(raw))
+                  assert image.width<=256 and image.height<=256 and image.mode=='RGBA'
+              print('TAMU_LOWRES_SHADOW_PACKAGE_OK pages=8 tiles=60 resolution=32')
+          PY
+          python3 - <<'PY'
           import zipfile
           with zipfile.ZipFile('/tmp/tamu-authored-compiled.love') as z:
               assert z.testzip() is None
