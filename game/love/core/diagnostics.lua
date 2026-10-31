@@ -165,6 +165,11 @@ function M.draw_done(extra)
     chunks=extra.chunks or 0,objects=extra.objects or 0,
     missing=extra.missing or 0,pending=extra.pending or 0,
     shadow_rebuilds=extra.shadow_rebuilds or 0,shadow_reuses=extra.shadow_reuses or 0,
+    object_cache_rebuilds=extra.object_cache_rebuilds or 0,
+    object_cache_reuses=extra.object_cache_reuses or 0,
+    mesh_uploads=extra.mesh_uploads or 0,
+    mesh_prepare_ms=safe(extra.mesh_prepare_ms or 0),
+    mesh_resumes=extra.mesh_resumes or 0,
     contact_rebuilds=extra.contact_rebuilds or 0,contact_reuses=extra.contact_reuses or 0,
     trace_write_ms=M.write_ms}
   -- True dt includes frame pacing and presentation; update+draw is
@@ -193,6 +198,18 @@ function M.draw_done(extra)
   end
   local shadow_delta=sample.shadow_rebuilds-(M.last_shadow_rebuilds or sample.shadow_rebuilds)
   if shadow_delta>0 then row('shadow_rebuilt',{count=shadow_delta,objects=sample.objects}) end
+  local object_delta=sample.object_cache_rebuilds-
+    (M.last_object_cache_rebuilds or sample.object_cache_rebuilds)
+  if object_delta>0 then
+    row('object_cache_rebuilt',{count=object_delta,objects=sample.objects,
+      mesh_uploads=sample.mesh_uploads})
+  end
+  M.last_object_cache_rebuilds=sample.object_cache_rebuilds
+  if sample.mesh_uploads>0 then
+    row('mesh_upload',{count=sample.mesh_uploads,
+      prepare_ms=sample.mesh_prepare_ms,resumes=sample.mesh_resumes,
+      missing=sample.missing})
+  end
   M.last_missing=sample.missing;M.last_pending=sample.pending
   M.last_shadow_rebuilds=sample.shadow_rebuilds
   if M.dt>=34 or draw_ms>=25 or (M.update_ms or 0)>=12 then
@@ -201,7 +218,10 @@ function M.draw_done(extra)
     row('slow_frame',{suspect=culprit,suspect_ms=culprit_ms,
       dt_ms=M.dt,frame_ms=sample.frame_ms,draw_ms=draw_ms,update_ms=M.update_ms,
       phases=M.phases or {},drawcalls=sample.drawcalls,objects=sample.objects,
-      shadow_rebuilds=sample.shadow_rebuilds,contact_rebuilds=sample.contact_rebuilds})
+      shadow_rebuilds=sample.shadow_rebuilds,contact_rebuilds=sample.contact_rebuilds,
+      object_cache_rebuilds=sample.object_cache_rebuilds,
+      mesh_uploads=sample.mesh_uploads,mesh_prepare_ms=sample.mesh_prepare_ms,
+      mesh_resumes=sample.mesh_resumes})
   end
   if t-M.last_summary>=5 then
     summarize_window(t,gpu)
