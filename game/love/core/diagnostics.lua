@@ -26,6 +26,7 @@ local function row(kind,fields)
   M.records[#M.records+1]=encoded..'\n'
   M.bytes=M.bytes+#encoded+1
 end
+local finish_frame
 local function trace_path()
   return 'diagnostics/tamu-trace-'..tostring(M.file_index or 0)..'.jsonl'
 end
@@ -97,6 +98,7 @@ function M.start()
   M.started=now();M.last_flush=M.started;M.last_summary=M.started;M.window_start=M.started
   M.file_index=0
   M.writer=nil;M.writer_req=nil;M.writer_ack=nil
+  M.pending_sample=nil;M.pending_gpu=nil
   M.session=os.date('!%Y%m%dT%H%M%SZ')..'-'..tostring(math.floor(M.started*1000))
   if love.thread and love.thread.newThread and love.thread.getChannel then
     local ok=pcall(function()
@@ -140,6 +142,10 @@ end
 -- Explicit on-device export. It never transmits data or touches save files.
 function M.export()
   if not M.enabled then return false,'disabled' end
+  if M.pending_sample then
+    finish_frame(M.pending_sample,M.pending_gpu,now(),nil)
+    M.pending_sample=nil;M.pending_gpu=nil
+  end
   M.flush()
   local lines={}
   for i=1,M.recent_limit do
@@ -152,6 +158,11 @@ function M.export()
 end
 function M.begin(dt)
   if not M.enabled then return end
+  -- The arriving dt measures the preceding completed frame, not this one.
+  if M.pending_sample then
+    finish_frame(M.pending_sample,M.pending_gpu,now(),safe(dt*1000))
+    M.pending_sample=nil;M.pending_gpu=nil
+  end
   M.frame=M.frame+1;M.frame_start=now();M.dt=safe(dt*1000)
   M.phases={};M.mark=now()
 end
@@ -210,7 +221,7 @@ function M.draw_done(extra)
   local t=now()
   local draw_ms=safe((t-(M.draw_start or t))*1000)
   local gpu=love.graphics.getStats and love.graphics.getStats() or {}
-  local sample={dt_ms=M.dt,update_ms=M.update_ms or 0,draw_ms=draw_ms,
+  local sample={update_ms=M.update_ms or 0,draw_ms=draw_ms,
     drawcalls=gpu.drawcalls or 0,drawcalls_batched=gpu.drawcallsbatched or 0,
     shader_switches=gpu.shaderswitches or 0,texture_mib=safe((gpu.texturememory or 0)/1048576),
     lua_kib=safe(collectgarbage('count')),phases=M.phases or {},
@@ -224,15 +235,21 @@ function M.draw_done(extra)
     mesh_resumes=extra.mesh_resumes or 0,
     contact_rebuilds=extra.contact_rebuilds or 0,contact_reuses=extra.contact_reuses or 0,
     trace_write_ms=M.write_ms}
-  -- True dt includes frame pacing and presentation; update+draw is
-  -- not a GPU timer, so keep both measurements explicitly separate.
-  local frame_ms=math.max(M.dt or 0,(M.update_ms or 0)+draw_ms)
+  M.pending_sample=sample
+  M.pending_gpu=gpu
+end
+finish_frame=function(sample,gpu,t,dt_ms)
+  -- Vsync/presentation dt is confirmed on the following love.update.
+  -- Session's last frame is CPU-only, never marked as a confirmed dt.
+  sample.dt_ms=dt_ms
+  sample.dt_confirmed=dt_ms~=nil
+  local frame_ms=math.max(dt_ms or 0,sample.update_ms+sample.draw_ms)
   local samples=M.window
   samples[#samples+1]=frame_ms
   M.window_frames=M.window_frames+1
   if frame_ms>16.667 then M.window_over16=(M.window_over16 or 0)+1 end
   if frame_ms>33.333 then M.window_over33=(M.window_over33 or 0)+1 end
-  for name,ms in pairs(M.phases or {}) do
+  for name,ms in pairs(sample.phases or {}) do
     local rec=M.window_phases[name] or {sum=0,max=0}
     rec.sum=rec.sum+ms
     if ms>rec.max then rec.max=ms end
@@ -264,12 +281,12 @@ function M.draw_done(extra)
   end
   M.last_missing=sample.missing;M.last_pending=sample.pending
   M.last_shadow_rebuilds=sample.shadow_rebuilds
-  if M.dt>=34 or draw_ms>=25 or (M.update_ms or 0)>=12 then
+  if (dt_ms or 0)>=34 or sample.draw_ms>=25 or sample.update_ms>=12 then
     M.stalled=M.stalled+1;M.window_slow=M.window_slow+1
-    local culprit,culprit_ms=worst_phase(M.phases)
+    local culprit,culprit_ms=worst_phase(sample.phases)
     row('slow_frame',{suspect=culprit,suspect_ms=culprit_ms,
-      dt_ms=M.dt,frame_ms=sample.frame_ms,draw_ms=draw_ms,update_ms=M.update_ms,
-      phases=M.phases or {},drawcalls=sample.drawcalls,objects=sample.objects,
+      dt_ms=dt_ms,frame_ms=sample.frame_ms,draw_ms=sample.draw_ms,
+      update_ms=sample.update_ms,phases=sample.phases or {},drawcalls=sample.drawcalls,objects=sample.objects,
       shadow_rebuilds=sample.shadow_rebuilds,contact_rebuilds=sample.contact_rebuilds,
       object_cache_rebuilds=sample.object_cache_rebuilds,
       mesh_uploads=sample.mesh_uploads,mesh_prepare_ms=sample.mesh_prepare_ms,
@@ -287,6 +304,10 @@ end
 function M.close()
   if not M.enabled or M.closed then return end
   M.closed=true
+  if M.pending_sample then
+    finish_frame(M.pending_sample,M.pending_gpu,now(),nil)
+    M.pending_sample=nil;M.pending_gpu=nil
+  end
   summarize_window(now(),{})
   row('session_end',{frames=M.frame,slow_frames=M.stalled,dropped=M.dropped})
   M.flush(true)

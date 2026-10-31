@@ -116,4 +116,17 @@ do
  love.filesystem.append=old_append;love.thread=old_thread
 end
 print('TAMU_DIAGNOSTICS_ASYNC_QUEUE_OK')
+-- Next-update dt must be attributed to the previous update/draw sample.
+do
+ local frames_seen=0
+ for line in (files['diagnostics/tamu-trace-0.jsonl'] or ''):gmatch('[^\n]+') do
+   local v=Json.decode(line)
+   if v.kind=='frame' then
+     frames_seen=frames_seen+1
+     assert(v.dt_confirmed~=nil,'frame dt provenance missing')
+   end
+ end
+ assert(frames_seen>0)
+end
+print('TAMU_DIAGNOSTICS_FRAME_ALIGNMENT_OK')
 
