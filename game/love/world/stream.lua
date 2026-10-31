@@ -115,44 +115,18 @@ function Stream:needed(camera,width,height)
         local y=(c.cy+.5)*size-looky
         return x*x+y*y
       end
-      -- Rank by the precise distance until each chunk's conservative
-      -- projected bounds FIRST meet the moving viewport. Four coarse
-      -- forecast buckets could rank a farther edge before the next 7-cell
-      -- diagonal strip even though all fell into the same bucket.
-      local projected_dx,projected_dy=Iso.project(direction.x,direction.y)
-      local vx,vy=-projected_dx*camera.zoom,-projected_dy*camera.zoom
-      local edge=size*math.sqrt(.5)*camera.zoom
-      local function first_entry(c)
-        local sx,sy=Iso.project(c.cx*size-camera.x,c.cy*size-camera.y)
-        sx=width*.5+sx*camera.zoom
-        sy=height*.5+sy*camera.zoom
-        local earliest,latest=0,math.huge
-        local function clip(first,last,v,lo,hi)
-          if math.abs(v)<1e-10 then
-            if last<lo or first>hi then earliest=math.huge end
-            return
-          end
-          local a,b=(lo-last)/v,(hi-first)/v
-          if a>b then a,b=b,a end
-          earliest=math.max(earliest,a)
-          latest=math.min(latest,b)
-        end
-        clip(sx-edge,sx+edge,vx,-visible_pad,width+visible_pad)
-        clip(sy-edge,sy,vy,-visible_pad,height+visible_pad)
-        return earliest<=latest and earliest or math.huge
-      end
-      local arrivals={}
-      for _,c in ipairs(halo) do arrivals[c.key]=first_entry(c) end
       table.sort(halo,function(a,b)
-        local pa,pb=arrivals[a.key],arrivals[b.key]
-        if pa~=pb then return pa<pb end
         local va,vb=lookscore(a),lookscore(b)
         if va~=vb then return va<vb end
         return less(a,b)
       end)
     end
     -- Keep all screen-visible cells, even when max_loaded is exceeded.
-    local required=visible
+    -- Never append halo to the screen-visible array: Lua tables alias.
+    -- Coverage diagnostics and the render readiness gate must count only
+    -- chunks intersecting the viewport, not prefetched off-screen cells.
+    local required={}
+    for i,c in ipairs(visible) do required[i]=c end
     -- Keep a bounded forward staging buffer even at tall portrait zooms.
     -- The old max_loaded=80 left just three halo slots when 77 chunks
     -- intersected the viewport, so 6-7 new diagonal chunks arrived cold.
