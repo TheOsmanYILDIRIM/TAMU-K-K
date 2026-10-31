@@ -49,15 +49,44 @@ function Instance:sample(direction,action,time,looped,offsets)
   self.rig:evaluate(clip,time,looped,offsets)
   return self
 end
+-- CPU pose evaluation may produce identical attachment vertices on
+-- successive samples. Avoid redundant driver uploads, without approximating
+-- coordinates or changing any socket/bone/animation semantics.
+local function same_vertices(a,b)
+  if not a or #a~=#b then return false end
+  for i=1,#a do
+    local x,y=a[i],b[i]
+    if #x~=#y then return false end
+    for j=1,#x do if x[j]~=y[j] then return false end end
+  end
+  return true
+end
+local function remember_vertices(vertices)
+  local copy={}
+  for i,v in ipairs(vertices) do
+    local row={}
+    for j=1,#v do row[j]=v[j] end
+    copy[i]=row
+  end
+  return copy
+end
 function Instance:prepare()
   self.active=self.rig:quads()
+  self.last_uploads=0
+  self.mesh_vertices=self.mesh_vertices or {}
   for _,q in ipairs(self.active) do
     local key=q.slot..'/'..q.attachment;local mesh=self.meshes[key]
     if not mesh then
       mesh=love.graphics.newMesh(q.vertices,'triangles','stream')
       mesh:setVertexMap(q.triangles);mesh:setTexture(texture(q.image))
       self.meshes[key]=mesh
-    else mesh:setVertices(q.vertices) end
+      self.mesh_vertices[key]=remember_vertices(q.vertices)
+      self.last_uploads=self.last_uploads+1
+    elseif not same_vertices(self.mesh_vertices[key],q.vertices) then
+      mesh:setVertices(q.vertices)
+      self.mesh_vertices[key]=remember_vertices(q.vertices)
+      self.last_uploads=self.last_uploads+1
+    end
     q.gpu_mesh=mesh
   end
 end
