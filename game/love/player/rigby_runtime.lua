@@ -70,13 +70,16 @@ local function key_index(keys,t)
   end
   return hi
 end
+-- Shared accessor avoids allocating a closure for every keyed channel sample.
+local function sample_value(k,c)
+  return c and type(k.value)=="table" and k.value[c] or k.value
+end
 function R.sample(keys,t,c)
   if not keys or #keys==0 then return nil end
-  local function val(k) return c and type(k.value)=="table" and k.value[c] or k.value end
-  if t<=keys[1].time then return val(keys[1]) end
+  if t<=keys[1].time then return sample_value(keys[1],c) end
   local at=key_index(keys,t);local a,b=keys[at],keys[at+1]
-  if not b then return val(a) end
-  local v,w=val(a),val(b)
+  if not b then return sample_value(a,c) end
+  local v,w=sample_value(a,c),sample_value(b,c)
   if type(v)~="number" then return v end
   return mix(v,w,R.ease(a.curve,(t-a.time)/(b.time-a.time),c))
 end
