@@ -31,6 +31,8 @@ def main():
     if glb_h<=0: raise RuntimeError("Invalid GLB proportions")
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
+    # Remove source GLB actions: they must never be assigned to the Mixamo FBX rig.
+    for old in list(bpy.data.actions): bpy.data.actions.remove(old)
     bpy.ops.import_scene.fbx(filepath=str(repo/"Walking.fbx"),automatic_bone_orientation=False)
     rigs=[o for o in bpy.context.scene.objects if o.type=="ARMATURE"]
     if not rigs: raise RuntimeError("Walking FBX has no animated armature")
