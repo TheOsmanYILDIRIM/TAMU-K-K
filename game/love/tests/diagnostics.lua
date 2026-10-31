@@ -65,6 +65,16 @@ for line in data:gmatch('[^\n]+') do
  end
 end
 assert(starts==1 and ends==1 and frames==90 and summaries>=1)
+-- Shutdown has no following dt. Its CPU-only row must not bias percentiles.
+local confirmed,unconfirmed,summary_count=0,0,nil
+for line in data:gmatch('[^\n]+') do
+ local v=Json.decode(line)
+ if v.kind=='frame' then
+  if v.dt_confirmed then confirmed=confirmed+1 else unconfirmed=unconfirmed+1 end
+ elseif v.kind=='window_summary' then summary_count=v.count end
+end
+assert(confirmed==89 and unconfirmed==1 and summary_count==confirmed,
+ 'shutdown CPU-only frame polluted dt distribution')
 assert(spikes==0,'slow threshold must use update/draw or dt, not sum')
 assert(#data>1000 and #data<1024*1024)
 -- A slow mobile draw must be independently reported.
