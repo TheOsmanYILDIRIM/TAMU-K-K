@@ -1,3 +1,13 @@
+## 2026-10-31 — Frame pacing: yürürken kısa FPS düşüşü (kod düzeltmesi; Android doğrulaması açık)
+
+- Kullanıcı gerçek Android'de sabitken 58–63 FPS, yürürken 50–60 FPS, çok kısa süreli ~30 FPS ölçtü. Bu ölçümler loglardan değil kullanıcı cihazından; nedeni kesin kanıtlanmadı.
+- Son GitHub CI #41180926047: kaynak Lua testleri geçti; p50=5.168ms, p95=7.297ms, p99=10.564ms masaüstü CPU; kalite işi, mobil 60 FPS kabul ölçütü olmayan eski 2.5ms/400FPS-eşdeğeri eşikten başarısız. Aynı çalışmanın ilk 10 kare logu yükleme döneminde kare başına üç `TAMU_25D_BINARY_LOADED` örneği ve `object_batches=2` gösteriyor.
+- `world/terrain25d_runtime.lua`: hareketli kamerada `upload_cap=1`, sabit ve bake sahnesinde mevcut throughput korunuyor. `mesh_prepare_ms`, `mesh_resumes_per_frame`, `uploads_per_frame` izleniyor.
+- `objects/terrain25d_sprites.lua`: obje statik batch yeniden kurma/yeniden kullanım sayaçları eklendi. `main.lua` ve `core/diagnostics.lua` bu metrikleri slow_frame ve `mesh_upload` / `object_cache_rebuilt` JSONL olaylarına bağlıyor. Tanılama cihazın mevcut save alanında kalır; otomatik GitHub'a yüklenmez.
+- Test menüsüne yeni mod eklenmedi; yalnız mevcut `quality.yml` manuel Supabase kontrolü üzerinden tetiklenmeli. Değişiklik sonrası Android kare zamanı ve gerçek cihaz kabulü açık; `main`e merge yapılmadı.
+
+---
+
 ## 2026-10-31 — Kod incelemesiyle obje gölgesi yeniden kullanım düzeltmesi (CI/Android kabulü açık)
 
 - Kullanıcı test profillerini çoğaltmak yerine kaynak kod üzerinden gerçek optimizasyon istedi. Eski 30 FPS gözlemlerine göre CPU/driver dağılımı sayısal olarak kesinleşmedi.
