@@ -10,13 +10,13 @@ local p=R2.new({read=function(name)
 end})
 local out={}
 local seen={}
-for cy=-1,2 do
- for cx=-1,2 do
+for cy=-6,5 do
+ for cx=-4,8 do
   local list=p.objects:objects_in({
    min_x=cx*256,min_y=cy*256,max_x=(cx+1)*256,max_y=(cy+1)*256
   },true)
   for _,o in ipairs(list) do
-   if not seen[o.id] and o.x>=-256 and o.x<768 and o.y>=-256 and o.y<768 then
+   if not seen[o.id] and o.x>=-1024 and o.x<2304 and o.y>=-1536 and o.y<1536 then
     seen[o.id]=true
     local sx,sy=Iso.project(o.x,o.y,p.topography:height(o.x,o.y)*.35)
     out[#out+1]={id=o.id,x=o.x,y=o.y,sx=sx,sy=sy,kind=o.kind,radius=o.radius,
