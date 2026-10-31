@@ -68,6 +68,15 @@ jobs:
           out=pathlib.Path('assets/terrain25d')
           for name in ('atlas_00.png','atlas_01.png','manifest.json'):
               (out/name).write_bytes(z.read('assets/terrain25d/'+name))
+          rig=pathlib.Path('assets/osman_rig/images')
+          rig.mkdir(parents=True,exist_ok=True)
+          for name in ('front_leg_L.png','front_leg_R.png','front_torso.png',
+                       'front_arm_L.png','front_arm_R.png','front_head.png',
+                       'back_leg_L.png','back_leg_R.png','back_torso.png',
+                       'back_arm_L.png','back_arm_R.png','back_head.png'):
+              (rig/name).write_bytes(z.read('assets/osman_rig/images/'+name))
+          assert len(list(rig.glob('*.png')))==12
+          print('TAMU_ORIGINAL_OSMAN_PNG_OK count=12')
           shadows=pathlib.Path('assets/terrain25d/static_shadow')
           shadows.mkdir(parents=True,exist_ok=True)
           for n in ('objects_shadow_manifest.json','shadows_12.png'):
