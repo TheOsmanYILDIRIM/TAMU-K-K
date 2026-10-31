@@ -1,0 +1,114 @@
+name: TAMU 45-degree two-view Blender bake
+on:
+  push:
+    branches: [experiment/25d-two-view-3d-20261031]
+    paths:
+      - .github/workflows/tamu-two-view-blender-bake.yml
+      - scripts/bake_3d_profile_character.py
+      - 'Adventurer by Quaternius - 5EGWBMpuXq.glb'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: tamu-two-view-bake-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  bake:
+    if: github.repository == 'TheOsmanYILDIRIM/TAMU-K-K' && github.ref == 'refs/heads/experiment/25d-two-view-3d-20261031'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - name: Checkout exact experiment revision
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Install Blender, Pillow, Lua, LuaJIT
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends blender python3-pil lua5.4 luajit
+          blender --version | head -n 2
+      - name: Render animated 45-degree front/back atlas
+        shell: bash
+        run: |
+          set -euo pipefail
+          blender -b -t 2 --python-exit-code 7 --python scripts/bake_3d_profile_character.py -- --repo . --frames 8 --width 128 --height 192 --fps 12
+      - name: Verify image, four rows, frames, source hashes and alpha pivots
+        shell: bash
+        run: |
+          set -euo pipefail
+          /usr/bin/python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          from PIL import Image
+          root = Path("game/love/assets/character_side_bake")
+          img_path = root / "atlas.png"
+          m = json.loads((root / "manifest.json").read_text())
+          src = Path(m["source"])
+          checksum = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+          assert src.name == "Adventurer by Quaternius - 5EGWBMpuXq.glb"
+          assert checksum(src) == m["source_sha256"]
+          assert checksum(img_path) == m["atlas_sha256"]
+          assert m["version"] == 1 and m["camera_pitch_degrees"] == 45
+          assert m["bottom_center_pivot"] is True
+          assert m["rows"] == {"front_idle":0,"front_walk":1,"back_idle":2,"back_walk":3}
+          assert m["views"] == {"SE":["front",False],"SW":["front",True],"NE":["back",False],"NW":["back",True]}
+          assert m["frames"] == 8 and m["fps"] == 12
+          with Image.open(img_path) as img:
+              img.load()
+              assert img.mode == "RGBA", img.mode
+              w,h,n = m["width"],m["height"],m["frames"]
+              assert img.size == (w*n,h*4),img.size
+              for row in range(4):
+                  unique = set()
+                  for frame in range(n):
+                      tile = img.crop((frame*w,row*h,(frame+1)*w,(row+1)*h))
+                      bbox = tile.getchannel("A").getbbox()
+                      assert bbox and bbox[0]>0 and bbox[1]>0 and bbox[2]<w and bbox[3]<h, (row,frame,bbox)
+                      unique.add(hashlib.sha256(tile.tobytes()).hexdigest())
+                  if row in (1,3):
+                      assert len(unique)>1, f"walk has no animation, row={row}"
+              print("TAMU_3D_ATLAS_VALIDATED",img.size,checksum(img_path))
+          PY
+      - name: Check Lua sprite mapping and renderer
+        shell: bash
+        run: |
+          set -euo pipefail
+          luac5.4 -p game/love/player/side_baked_visual.lua
+          luac5.4 -p game/love/objects/renderer.lua
+          luajit -b game/love/player/side_baked_visual.lua "$RUNNER_TEMP/tamu-side-avatar.ljc"
+          cd game/love
+          lua5.4 tests/side_baked_visual.lua
+          luajit tests/side_baked_visual.lua
+      - name: Upload verified atlas artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tamu-3d-two-view-verified-atlas
+          path: |
+            game/love/assets/character_side_bake/atlas.png
+            game/love/assets/character_side_bake/manifest.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Commit generated binary only on unchanged experiment HEAD
+        shell: bash
+        env:
+          TARGET_BRANCH: ${{ github.ref_name }}
+          BASE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          test "$TARGET_BRANCH" = "experiment/25d-two-view-3d-20261031"
+          git fetch origin "$TARGET_BRANCH"
+          if [ "$(git rev-parse FETCH_HEAD)" != "$BASE_SHA" ]; then
+            echo "Experiment branch advanced while baking; preserving artifact without overwrite."
+            exit 3
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add game/love/assets/character_side_bake/atlas.png game/love/assets/character_side_bake/manifest.json
+          if git diff --cached --quiet; then
+            echo "Atlas unchanged"; exit 0
+          fi
+          git commit -m "assets(tamu): 45-degree Quaternius two-view animated atlas"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+          echo TAMU_3D_ATLAS_COMMITTED
