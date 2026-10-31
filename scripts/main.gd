@@ -25,8 +25,9 @@ var actor_facing_back := false
 func _make_avatar() -> void:
     avatar = Node2D.new()
     avatar.name = "OsmanNativeParts"
-    avatar.z_index = 4
-    add_child(avatar)
+    avatar.z_index = 0
+    # Player and authored objects share one Godot native Y-sorted layer.
+    object_layer.add_child(avatar)
     for part in ["leg_L","leg_R","torso","arm_L","arm_R","head"]:
         var sprite := Sprite2D.new()
         sprite.name = part
