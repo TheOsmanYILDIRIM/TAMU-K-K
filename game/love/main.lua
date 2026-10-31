@@ -1122,6 +1122,11 @@ function love.draw()
     missing=runtime25d and runtime25d.missing_visible,pending=stats and stats.pending,
     shadow_rebuilds=sprite25d_draw and sprite25d_draw.shadow_rebuilds,
     shadow_reuses=sprite25d_draw and sprite25d_draw.shadow_reuses,
+    object_cache_rebuilds=sprite25d_draw and sprite25d_draw.object_cache_rebuilds,
+    object_cache_reuses=sprite25d_draw and sprite25d_draw.object_cache_reuses,
+    mesh_uploads=runtime25d and runtime25d.uploads_per_frame,
+    mesh_prepare_ms=runtime25d and runtime25d.mesh_prepare_ms,
+    mesh_resumes=runtime25d and runtime25d.mesh_resumes_per_frame,
     contact_rebuilds=sprite25d_draw and sprite25d_draw.contact_rebuilds,
     contact_reuses=sprite25d_draw and sprite25d_draw.contact_reuses})
   PerfHud.benchmark_sample(0,PerfHud.update_ms,
