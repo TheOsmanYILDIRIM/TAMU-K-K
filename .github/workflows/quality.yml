@@ -1,11 +1,8 @@
 name: quality
-# Run the expensive validation only when CI_START.txt is changed to "başlat".
+# Manual dispatch only; TAMU CI starts from the authenticated Supabase control.
 on:
-  push:
-    branches: [main]
-    paths:
-      - CI_START.txt
   workflow_dispatch:
+
 jobs:
   gate:
     runs-on: ubuntu-latest
@@ -16,11 +13,7 @@ jobs:
       - id: check
         shell: bash
         run: |
-          if [ "$(cat CI_START.txt)" = "başlat" ]; then
-            echo "start=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "start=false" >> "$GITHUB_OUTPUT"
-          fi
+          echo "start=true" >> "$GITHUB_OUTPUT"
   test:
     needs: gate
     if: needs.gate.outputs.start == 'true'
