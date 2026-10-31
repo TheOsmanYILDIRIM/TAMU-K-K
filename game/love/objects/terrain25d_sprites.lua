@@ -303,7 +303,7 @@ function Sprite:draw_shadows(g,camera,w,h,objects)
    local cache=self.static_shadow_cache
    if stable and cache and cache.page==name and cache.batch==batch
       and same_scene(cache,camera,w,h,objects) then
-     self.shadow_reuses=self.shadow_reuses+1
+     self.shadow_reuses=(self.shadow_reuses or 0)+1
      self.shadow_objects=cache.count
      if cache.count>0 and not self.skip_gpu_draw then
        g.setColor(1,1,1,1)
@@ -312,7 +312,7 @@ function Sprite:draw_shadows(g,camera,w,h,objects)
      end
      return self.shadow_calls
    end
-   self.shadow_rebuilds=self.shadow_rebuilds+1
+   self.shadow_rebuilds=(self.shadow_rebuilds or 0)+1
    batch:clear()
    local atlas=self.static_manifest
    local count=0
@@ -382,7 +382,7 @@ function Sprite:draw_shadows(g,camera,w,h,objects)
    end
  end
  if reuse then
-   self.shadow_reuses=self.shadow_reuses+1
+   self.shadow_reuses=(self.shadow_reuses or 0)+1
    self.shadow_objects=cache.count
    g.setColor(1,1,1,1)
    for _,page in ipairs(cache.pages) do
@@ -394,7 +394,7 @@ function Sprite:draw_shadows(g,camera,w,h,objects)
    self:draw_contacts(g,camera,w,h,objects,stable)
    return self.shadow_calls
  end
- self.shadow_rebuilds=self.shadow_rebuilds+1
+ self.shadow_rebuilds=(self.shadow_rebuilds or 0)+1
  for _,entry in pairs(self.shadow_batches) do
    entry.batch:clear()
    entry.count=0
