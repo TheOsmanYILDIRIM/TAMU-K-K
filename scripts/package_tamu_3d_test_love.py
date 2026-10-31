@@ -17,7 +17,7 @@ BOOT = b'if false and not _G.TAMU_ISOLATION_SELECTED and'
 RIG = (b'local CoreVisual=(os.getenv("TAMU_BAKED_3D_AVATAR")=="1")\n'
        b'  and require("player.side_baked_visual") or require("player.rigby_visual")')
 BAKED = b'local CoreVisual=require("player.side_baked_visual")'
-SMOKE = b'''
+SMOKE = '''
 -- Opt-in CI-only LÖVE render smoke; mobile behavior has no environment dependency.
 if os.getenv("TAMU_BAKED_DEMO_SMOKE")=="1" then
   local draw_game=love.draw
@@ -33,7 +33,10 @@ if os.getenv("TAMU_BAKED_DEMO_SMOKE")=="1" then
     end
   end
 end
-'''
+'''.encode('utf-8')
+
+SCALE_OLD = b'(68/manifest.height)'
+SCALE_TEST = b'(168/manifest.height)'
 
 def replace_once(raw, a, b):
     if raw.count(a)!=1:
@@ -67,6 +70,9 @@ def main():
             main_src=replace_once(main_src,SOURCE,BOOT) + SMOKE
             modified['main.lua']=main_src
             modified['objects/renderer.lua']=replace_once(z.read('objects/renderer.lua'),RIG,BAKED)
+            # Cropped GLB pixels occupy only ~65px of each 192px tile; calibrate test visual size.
+            modified['player/side_baked_visual.lua']=replace_once(
+                z.read('player/side_baked_visual.lua'),SCALE_OLD,SCALE_TEST)
             out.parent.mkdir(parents=True,exist_ok=True)
             with zipfile.ZipFile(out,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=7) as dest:
                 for item in z.infolist():
@@ -81,6 +87,7 @@ def main():
         assert z.testzip() is None
         assert len(z.namelist())==len(set(z.namelist()))
         assert z.read('objects/renderer.lua').count(BAKED)==1
+        assert SCALE_TEST in z.read('player/side_baked_visual.lua')
         assert z.read('main.lua').startswith(b'-- No gameplay')
         assert BOOT in z.read('main.lua')
         assert z.read('assets/character_side_bake/atlas.png')==atlas.read_bytes()
