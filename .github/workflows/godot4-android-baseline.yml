@@ -82,6 +82,25 @@ jobs:
           assert count==16
           print('TAMU_EXACT_ASSET_GATE_OK chunks=16')
           PY
+      - name: Export canonical R2 ecology objects using original Lua world logic
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lua5.4 >/dev/null
+          mkdir -p /tmp/tamu-love
+          unzip -q "$(find /tmp/tamu-canonical -name tamu-authored-compiled.love -print -quit)" -d /tmp/tamu-love
+          cp game/love/tests/export_godot_population.lua /tmp/tamu-love/tests/export_godot_population.lua
+          (cd /tmp/tamu-love && lua5.4 tests/export_godot_population.lua)
+          cp /tmp/tamu-love/chunks/r2_objects.json chunks/r2_objects.json
+          python3 - <<'PY'
+          import json
+          data=json.load(open('chunks/r2_objects.json'))
+          ids=[o['id'] for o in data['objects']]
+          assert len(ids)==len(set(ids)) and len(ids)>10
+          assert all(-256<=o['x']<768 and -256<=o['y']<768 for o in data['objects'])
+          print('TAMU_R2_OBJECT_PARITY_OK',len(ids))
+          PY
       - name: Native Godot scene and screenshot smoke (Xvfb)
         shell: bash
         env:
@@ -123,4 +142,5 @@ jobs:
             build/TAMU_Godot_Baseline.apk
             screenshots/terrain-parity.png
             screenshots/run.log
+            chunks/r2_objects.json
           if-no-files-found: warn
