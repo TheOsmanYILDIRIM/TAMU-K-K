@@ -311,6 +311,13 @@ function Sprite:draw_shadows(g,camera,w,h,objects)
    local stable=not self.provider.objects_fully_revealed
      or self.provider:objects_fully_revealed(objects)
    local cache=self.static_shadow_cache
+   -- For the same immutable object set, no need to rebuild merely because
+   -- the sun slot changed and later returned. Cache each atlas slot separately.
+   local slot_cache=self.static_shadow_slots and self.static_shadow_slots[name]
+   if stable and slot_cache and slot_cache.batch==batch
+      and same_scene(slot_cache,camera,w,h,objects) then
+     cache=slot_cache
+   end
    if stable and cache and cache.page==name and cache.batch==batch
       and same_scene(cache,camera,w,h,objects) then
      self.shadow_reuses=(self.shadow_reuses or 0)+1
@@ -354,8 +361,11 @@ function Sprite:draw_shadows(g,camera,w,h,objects)
      cache.batch=batch
      cache.count=count
      self.static_shadow_cache=cache
+     self.static_shadow_slots=self.static_shadow_slots or {}
+     self.static_shadow_slots[name]=cache
    else
      self.static_shadow_cache=nil
+     self.static_shadow_slots=nil
    end
    return self.shadow_calls
  end
