@@ -91,6 +91,11 @@ Doğrulanmış rapor bağlantısı: [SESSION_HANDOFF.md#SOHBET-K](https://github
 - Artifact tamu-godot-android-baseline ID 13056458568, ZIP SHA256 7d8130fd3f0ef8cc0aafbba2d4fadbd4769b6efd3d700797c2910925cc5ddee4. Extracted Android arm64 APK SHA256 a5e68cc7946f4646bb4c0e953bd3c4602938665874c7dbbb621e9b14ed74fc06, zip CRC clean, contains AndroidManifest.xml and lib/arm64-v8a/libgodot_android.so; not device-tested.
 - OPEN: Godot parity source zip from conversation is local only and not committed to repo; exact terrain mesh, texture atlases, object placement, Rigby, shadows, Godot native streaming benchmark and Android A/B comparison not included in baseline APK. Do not mark user parity request complete.
 
+### 2026-11-01 — Godot exact terrain visual CI; full parity withheld
+- Code SHA 2f617211bd3b76b950af62d54063a446c95beadd: scripts/main.gd renders TAMU original 16 compiled chunks (unmodified vertex/UV/colors) with native Godot ArrayMesh/MeshInstance2D. GitHub Actions retrieves LÖVE binary and atlas from prior CI artifact 41234831527, executes Xvfb scene, captures PNG, checks nonflat image before Android APK export. Original experiment branch remains untouched.
+- CI https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41242157674 success for terrain smoke and APK; artifact 13057103922 digest sha256 7e6b3726cb4151526835873ac99a179302360befa6d87be14e6cd56831508ebf. Actual PNG `screenshots/terrain-parity.png` opened and reviewed: ground textured/iso surface visible, but zero gameplay objects, character and shadows. Thus full visual parity FAILS. No APK provided to user per explicit requirement.
+- OPEN P0: equivalent authored R2 object placement, vegetation, original atlas UV mapping, dynamic Osman Rigby character/animations, shadows/occlusion/reveal, real gameplay interactions. Need dedicated automated scene parity checks (not merely non-flat screenshot) plus native Android device/frame-time test before final APK acceptance. Existing action only establishes terrain visual smoke + build, not full-game equivalence.
+
 ---
 
 
