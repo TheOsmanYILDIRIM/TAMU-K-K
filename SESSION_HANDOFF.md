@@ -367,6 +367,17 @@ Bu bölüm için sağlayıcı yeniden açma ve blob/commit SHA sonucu rapor yaz�
 - **Sonraki hedef:** erişilebilir Lua5.4/LuaJIT + LÖVE/Xvfb ortamında `game/love/tests/{diagnostics,stage5_hud_layout,creative_build,core_stat_progression,terrain25d_object_population}.lua` hedefli testlerini ve mevcut Stage6 smoke'u P0 yürüyüş kapısından bağımsız koştur; çıkan tekrarlanabilir hatayı yalnız SOHBET-I sahipliğinde CAS ile düzelt ve test/readback kanıtı sun.
 - **Beyin:** `agy-vault/main` kanonik `oyun-25d-runtime-renderer-integration-20261028` rev14 `active` okundu; resmî DirectSync güncellemesi/receipt yürütülmedi. Kod commit SHA `N/A`, test/artefakt `N/A`; yalnız mevcut SOHBET-I raporunun `report_only` güncellemesidir.
 
+
+### 2026-10-31 — SOHBET-I P1 pacing ölçümü kod düzeltmesi
+
+- **Durum:** `in_progress` / CI sonucu `pending_unverified`. Önceki engel raporu korunmuştur.
+- **Bulgu:** `core/diagnostics.lua:finish_frame` son oturum karesini `dt_confirmed=false` işaretlese de CPU-only `frame_ms` değerini `window` p50/p95/p99 ve 16.667/33.333 sayaçlarına katıyordu; böylece mobil VSYNC pacing dağılımı kirlenebiliyordu.
+- **Kod değişikliği:** `076cf0eb25001afbda795293908a62b05ab0f1be` — `dt_ms~=nil` değilse son frame'in JSONL `frame` kaydı korunuyor, ancak onaysız kare pacing histogramına / aşım sayaçlarına eklenmiyor. `game/love/core/diagnostics.lua` readback blob `12c01e2d37e477e70cb0546098ab7c35102b2f11`.
+- **Regresyon testi:** `085b9b220338e0728fbf8215934dc3866a628aed` — mevcut `game/love/tests/diagnostics.lua` içine 90 frame için 89 confirmed / 1 unconfirmed ve `window_summary.count==confirmed` assertion eklendi. Readback blob `899bc35a427016549b9b7676c441b80e5948a0c5`. Yerel Lua/LuaJIT bulunmadığı için test **henüz koşulmadı**.
+- **CI dispatch:** Supabase `control_private.tamu_dispatch_quality()` çağrısı mevcut `quality.yml` için `job_id=316dc5a0-8a44-4d3b-ab4f-064747d36c37` verdi; job sağlayıcı readback `status=success`, `result.accepted=true`, branch `experiment/25d-binary-vertex-20261030`. **Bu yalnız dispatch kabulüdür; GitHub run/test başarısı henüz doğrulanmadı.** Yeni workflow yaratılmadı; `main`/terrain/Rigby/Stage6/save/atlas/yedek değiştirilmedi.
+- **Açık/engel:** CI yeni run ID ve Lua/LuaJIT/LÖVE/Xvfb fiili sonucu; diagnostics worker gerçek shutdown/backpressure, alpha/Y-depth, HUD safe-area, Creative lazy atlas, Stage6 save/reopen, Android p95/p99 ve FPS kabulü. Sonraki hedef yeni quality run'ı ve bağımsız P0-dışı regresyonları doğrulamak; kanıtlanan regresyonları yalnız SOHBET-I kapsamında düzeltmek.
+- **Kanonik Beyin:** task rev14 `active` önceki okumadan biliniyor; bu aşamada DirectSync task-update veya receipt **uygulanmadı**.
+
 ---
 
 ## [SOHBET-J | TAMU Kalan Performans] — EşRota ikinci dalga raporu
