@@ -303,6 +303,16 @@ func _process(delta: float) -> void:
     if frame_no % 120 == 0:
         print("TAMU_GODOT_FRAME frame=", frame_no, " loaded=", loaded, " fps=", Engine.get_frames_per_second())
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and frame_no == 45:
+        var visible_faults := 0
+        for stem in object_visuals_by_chunk:
+            for node in object_visuals_by_chunk[stem]:
+                if node.visible != chunk_nodes.has(stem):
+                    visible_faults += 1
+        if visible_faults > 0:
+            push_error("TAMU_OBJECT_TERRAIN_REVEAL_FAILED faults=" + str(visible_faults))
+            get_tree().quit(7)
+            return
+        print("TAMU_OBJECT_TERRAIN_REVEAL_OK objects=", object_count, " visible_chunks=", loaded)
         var image := get_viewport().get_texture().get_image()
         var error := image.save_png("user://tamu-godot-visual.png")
         if error != OK or loaded < 16 or total_cached < 100 or vertices < 1000 or object_count < 10 or avatar_parts.size() != 6:
