@@ -88,6 +88,11 @@ func _load_objects() -> void:
             variants[fam].append(item)
     for fam in variants:
         variants[fam].sort_custom(func(a,b): return a["id"] < b["id"])
+    object_layer = Node2D.new()
+    object_layer.name = "CanonicalR2Objects"
+    object_layer.z_index = 2
+    object_layer.y_sort_enabled = true
+    add_child(object_layer)
     var atlas: Texture2D = load("res://assets/terrain25d/atlas_01.png")
     var size := atlas.get_size()
     for o in data["objects"]:
@@ -119,18 +124,19 @@ func _load_objects() -> void:
         sprite.texture = tex
         sprite.centered = true
         sprite.position = Vector2(float(o["sx"]), float(o["sy"]))
-        sprite.z_index = 2
+        sprite.z_index = 0
         var scales := {"oak":1.04,"broadleaf":1.12,"conifer":1.20,"dead_tree":0.94,
             "boulder":0.44,"rock_cluster":0.50,"rock_spire":0.53,
             "shrub":0.30,"reeds":0.28,"stump":0.26,"fallen_log":0.41,"water_rocks":0.38}
         var scale_value := float(scales.get(family, 0.5)) * (0.96 + float(h % 9) * 0.01)
         sprite.scale = Vector2.ONE * scale_value
         sprite.offset = Vector2(0.0, -60.0)
-        add_child(sprite)
+        object_layer.add_child(sprite)
         object_count += 1
     print("TAMU_CANONICAL_OBJECTS_LOADED count=", object_count)
 
 var object_count: int = 0
+var object_layer: Node2D
 
 func _process(delta: float) -> void:
     frame_no += 1
