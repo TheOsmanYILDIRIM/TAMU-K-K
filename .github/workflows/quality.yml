@@ -1,9 +1,11 @@
 name: quality
-# Keep main protected, and validate the authorized performance experiment.
-# Same-branch concurrency cancels older commits when a new revision is pushed.
+# The expensive test runs only when CI_START.txt changes.
+# Set its entire contents to "başlat" to run; "dur" skips the test.
 on:
   push:
     branches: [main, experiment/25d-binary-vertex-20261030]
+    paths:
+      - CI_START.txt
   workflow_dispatch:
 # Preserve existing branch test coverage, but never spend Actions minutes on
 # outdated commits when several changes land on the same branch quickly.
@@ -11,7 +13,23 @@ concurrency:
   group: quality-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      start: ${{ steps.check.outputs.start }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        shell: bash
+        run: |
+          if [ "$(tr -d '\\r\\n' < CI_START.txt)" = "başlat" ]; then
+            echo "start=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "start=false" >> "$GITHUB_OUTPUT"
+          fi
   test:
+    needs: gate
+    if: needs.gate.outputs.start == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
