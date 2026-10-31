@@ -1,3 +1,12 @@
+## 2026-10-31 — Kod incelemesiyle obje gölgesi yeniden kullanım düzeltmesi (CI/Android kabulü açık)
+
+- Kullanıcı test profillerini çoğaltmak yerine kaynak kod üzerinden gerçek optimizasyon istedi. Eski 30 FPS gözlemlerine göre CPU/driver dağılımı sayısal olarak kesinleşmedi.
+- `objects/terrain25d_sprites.lua` statik 32×32 gölge atlasını her kare `batch:clear()` ve `batch:add()` ile yeniden hazırlıyordu; üretimdeki gereksiz tekrar kaldırıldı.
+- Aynı nesneler, dünya koordinatları, görüntü alanı ve zoom ile aynı 3 saatlik güneş slotunda, yalnız kamera kayıyorsa `static_shadow_cache` ve `draw_camera_batch` kullanılır. İlk batch tüm ilgili nesneleri, kamera pan sırasında görünür hâle gelebilecek dış ekran nesneleri dâhil oluşturur. Sis/reveal tamamlanmamışsa eski gölgeyi tekrar kullanmaz.
+- Commit `30e6b7578d0976766f5467c821b08e74ce3a1d01`; SHA ve dosya geri okuması doğrulandı. Gerçek LÖVE/Android testleri çalıştırılmadı; FPS iyileşmesi kanıtlanmadı. `main` değiştirilmedi. Açık sonraki optimizasyon: sabit obje SpriteBatch hazırlığı ve derinlik sıralama tekrarı, ancak Rigby ile dünya-depth örtüşmesi korunmalı.
+
+---
+
 ## 2026-10-30 — LÖVE paket temizliği / kaynak arşivi (KISMİ, TEST BEKLİYOR)
 
 - Kullanıcının gözlemi: eşdeğer opak obje modu da ~30 FPS; alpha blending tek başına darboğaz değil.
