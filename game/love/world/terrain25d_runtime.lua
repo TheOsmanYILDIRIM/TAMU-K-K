@@ -840,6 +840,21 @@ function Runtime:draw(stream,camera,w,h)
  local chunks=stream:visible()
  self:poll_binary_results()
  self:enqueue_binary(chunks)
+ -- WALK_PROBE: distinguish CPU-ready arrival from GPU upload selection.
+ -- This instrumentation is inactive outside the existing probe environment.
+ local walk_probe=os.getenv('TAMU_25D_WALK_PROBE')=='1'
+ if walk_probe then
+   self.walk_probe_frame=(self.walk_probe_frame or 0)+1
+   self.walk_ready_since=self.walk_ready_since or {}
+   for key in pairs(self.binary_ready) do
+     if not self.walk_ready_since[key] then
+       self.walk_ready_since[key]=self.walk_probe_frame
+     end
+   end
+   for key in pairs(self.walk_ready_since) do
+     if not self.binary_ready[key] then self.walk_ready_since[key]=nil end
+   end
+ end
  self.stream=stream
  self.current_camera=camera
  local image_ready=self:poll_compact_images()
@@ -881,6 +896,11 @@ function Runtime:draw(stream,camera,w,h)
              waiting=false
            else
              loaded=Baked.load_ready(self,c,result)
+             if walk_probe then
+               print(string.format('TAMU_WALK_GPU_UPLOAD frame=%d key=%s ready_since=%s loaded=%s visible=%s',
+                 self.walk_probe_frame,c.key,tostring(self.walk_ready_since[c.key]),
+                 tostring(loaded),tostring((stream.visible_required_keys or {})[c.key]==true)))
+             end
              if loaded and result.generated then
                self.worker_generated=(self.worker_generated or 0)+1
                print('TAMU_25D_CPU_WORKER_LOADED key='..c.key)
@@ -921,6 +941,20 @@ function Runtime:draw(stream,camera,w,h)
        until resumes>=resume_cap or (deadline and clock()>=deadline)
        if resumes>=resume_cap then break end
      end
+   end
+ end
+ if walk_probe then
+   local selected={}
+   for _,c in ipairs(chunks) do
+     if (stream.visible_required_keys or {})[c.key] and not c._25d_meshes then
+       selected[#selected+1]=c.key..':ready='..
+         tostring(self.binary_ready[c.key]~=nil)..':since='..
+         tostring(self.walk_ready_since[c.key])
+     end
+   end
+   if #selected>0 then
+     print(string.format('TAMU_WALK_GPU_WAIT frame=%d uploads=%d cap=%d missing=%s',
+       self.walk_probe_frame,uploads,upload_cap,table.concat(selected,',')))
    end
  end
  self.uploads_per_frame=uploads
