@@ -6,12 +6,20 @@ local Sprite=require('objects.terrain25d_sprites')
 local original={id='oak-A',page='atlas_01.png',quad='source'}
 local object={id='tree-1',x=10,y=20,kind='tree',radius=8}
 local shadow_batch={
- clear=function() end,setColor=function() end,
+ clear=function() end,setColor=function() end,release=function() end,
  add=function(_,quad,x,y,angle,sx,sy,ox,oy)
    assert(ox==16 and oy==24 and sx==4.4 and sy==4.4)
    assert(type(quad)=='table')
  end
 }
+love.graphics.newImage=function(path)
+ assert(path=='assets/terrain25d/static_shadow/shadows_12.png',path)
+ return 'shadow-image'
+end
+love.graphics.newSpriteBatch=function(image)
+ assert(image=='shadow-image')
+ return shadow_batch
+end
 local sprite_batch={
  setColor=function() end,
  add=function(_,quad,_,_,_,_,_,ox,oy)
