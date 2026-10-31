@@ -9,12 +9,34 @@ var frame_no: int = 0
 var elapsed: float = 0.0
 var marker: Label
 var drag: bool = false
+var total_cached: int = 0
+var chunk_nodes: Dictionary = {}
+var world_bounds := Rect2(-4096.0, -4096.0, 32768.0, 32768.0)
+const MAX_LOADED_PER_FRAME := 1
+
+func _chunk_distance(stem: String) -> float:
+    var parts := stem.split("_")
+    if parts.size() != 3:
+        return INF
+    return Vector2(float(parts[1]) * 256.0, float(parts[2]) * 256.0).distance_squared_to(Vector2(0.0, 0.0))
+
 
 func _ready() -> void:
     terrain_atlas = load("res://assets/terrain25d/atlas_00.png")
-    for cx in range(-1, 3):
-        for cy in range(-1, 3):
-            pending.append("c_%d_%d" % [cx, cy])
+    var idx = JSON.parse_string(FileAccess.get_file_as_string("res://chunks/index.json"))
+    if idx is not Dictionary or not idx.has("bounds"):
+        push_error("Authored map index missing")
+        get_tree().quit(5)
+        return
+    var b: Dictionary = idx["bounds"]
+    if int(b["min_x"]) != -4096 or int(b["max_x"]) != 28672 or int(b["min_y"]) != -4096 or int(b["max_y"]) != 28672:
+        push_error("Full map bounds mismatch")
+        get_tree().quit(6)
+        return
+    for stem in idx["available"]:
+        pending.append(str(stem))
+    pending.sort_custom(func(a,b): return _chunk_distance(a) < _chunk_distance(b))
+    total_cached = pending.size()
     var camera := Camera2D.new()
     camera.name = "Camera2D"
     camera.enabled = true
@@ -38,6 +60,10 @@ func _load_chunk(stem: String) -> void:
     var buf := StreamPeerBuffer.new()
     buf.big_endian = false
     buf.data_array = raw
+    var group := Node2D.new()
+    group.name = stem
+    add_child(group)
+    chunk_nodes[stem] = group
     for surf in meta["meshes"]:
         var count := int(surf["count"])
         var points := PackedVector2Array()
@@ -66,7 +92,7 @@ func _load_chunk(stem: String) -> void:
         instance.mesh = mesh
         instance.texture = terrain_atlas
         instance.z_index = 0 if str(surf["key"]).begins_with("!") else 1
-        add_child(instance)
+        group.add_child(instance)
         vertices += count
     assert(buf.get_position() == raw.size())
     loaded += 1
@@ -161,13 +187,13 @@ func _process(delta: float) -> void:
     elapsed += delta
     if not pending.is_empty():
         _load_chunk(pending.pop_front())
-    marker.text = "TAMU | Godot 4 terrain parity\n%d / 16 chunks | %d verts\nFPS %d | frame %.2f ms" % [loaded, vertices, Engine.get_frames_per_second(), delta * 1000.0]
+    marker.text = "TAMU | Godot 4 terrain parity\n%d / 16 chunks | %d verts\nFPS %d | frame %.2f ms" % [loaded, total_cached, vertices, Engine.get_frames_per_second(), delta * 1000.0]
     if frame_no % 120 == 0:
         print("TAMU_GODOT_FRAME frame=", frame_no, " loaded=", loaded, " fps=", Engine.get_frames_per_second())
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and frame_no == 45:
         var image := get_viewport().get_texture().get_image()
         var error := image.save_png("user://tamu-godot-visual.png")
-        if error != OK or loaded != 16 or vertices < 1000 or object_count < 10:
+        if error != OK or loaded < 16 or total_cached < 100 or vertices < 1000 or object_count < 10:
             push_error("TAMU_VISUAL_GATE_FAILED " + str(error))
             get_tree().quit(3)
         else:
