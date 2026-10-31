@@ -85,6 +85,12 @@ Doğrulanmış rapor bağlantısı: [SESSION_HANDOFF.md#SOHBET-K](https://github
 - CI https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41234831527 completed SUCCESS at code SHA 38f1d502 (gate/test). Artifact 13055013585, SHA256 36e2196fe26982c834959db82fb53e85498bc7e06bbeea768edb6322b7bba2ea. Outer ZIP and inner LOVE testzip passed, 550 entries, feature/test present.
 - OPEN: This is scene-set caching, not a fully independent per-chunk object GPU bundle. New chunk combinations still rebuild; Android FPS/tremor not measured. Main and Avenox DirectSync task not changed.
 
+### Godot Android APK GitHub Actions feasibility — 2026-10-31
+- Isolated branch: experiment/godot4-android-apk-20261031. Existing root Godot 4.6 project is only the 12x12 BoxMesh scaffold; NOT asset/terrain/Rigby parity. Do not compare FPS against LÖVE as gameplay equivalent.
+- Added Android debug export preset, .github/workflows/godot4-android-baseline.yml and Linux CI ETC2/ASTC import setting. First CI #41239046852 and #41239173426 and #41239353422 failed Android export; last CI https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41239484758 completed success at code SHA 3ae49e10a4534404be0cfab2bad0ffe5dd31fb8b.
+- Artifact tamu-godot-android-baseline ID 13056458568, ZIP SHA256 7d8130fd3f0ef8cc0aafbba2d4fadbd4769b6efd3d700797c2910925cc5ddee4. Extracted Android arm64 APK SHA256 a5e68cc7946f4646bb4c0e953bd3c4602938665874c7dbbb621e9b14ed74fc06, zip CRC clean, contains AndroidManifest.xml and lib/arm64-v8a/libgodot_android.so; not device-tested.
+- OPEN: Godot parity source zip from conversation is local only and not committed to repo; exact terrain mesh, texture atlases, object placement, Rigby, shadows, Godot native streaming benchmark and Android A/B comparison not included in baseline APK. Do not mark user parity request complete.
+
 ---
 
 
