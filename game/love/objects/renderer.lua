@@ -5,7 +5,8 @@ local R={metrics={collect_calls=0,cold_queries=0,cold_query_ms=0,
  cold_query_max_ms=0,collect_last_ms=0,collect_max_ms=0,
  prepared_chunks=0,prepare_last_ms=0,prepare_max_ms=0}}
 -- Rigby is the only production avatar; no legacy plasma fallback.
-local CoreVisual=require("player.rigby_visual")
+local CoreVisual=(os.getenv('TAMU_BAKED_3D_AVATAR')=='1')
+  and require('player.side_baked_visual') or require('player.rigby_visual')
 local Direction=require("player.direction")
 local function player_sprite(g,camera,w,h,player,visual_context)
   return CoreVisual.draw(g,camera,w,h,player,visual_context)
