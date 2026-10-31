@@ -5,6 +5,7 @@ on:
     paths:
       - .github/workflows/tamu-two-view-blender-bake.yml
       - scripts/bake_3d_profile_character.py
+      - scripts/package_tamu_3d_test_love.py
       - 'Adventurer by Quaternius - 5EGWBMpuXq.glb'
   workflow_dispatch:
 permissions:
@@ -27,7 +28,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends blender python3-numpy python3-pil lua5.4 luajit
+          sudo apt-get install -y --no-install-recommends blender python3-numpy python3-pil lua5.4 luajit love xvfb
           blender --version | head -n 2
       - name: Render animated 45-degree front/back atlas
         shell: bash
@@ -112,3 +113,32 @@ jobs:
           git commit -m "assets(tamu): 45-degree Quaternius two-view animated atlas"
           git push origin "HEAD:refs/heads/$TARGET_BRANCH"
           echo TAMU_3D_ATLAS_COMMITTED
+
+      - name: Package isolated 3D avatar full-game .love
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile scripts/package_tamu_3d_test_love.py
+          python3 scripts/package_tamu_3d_test_love.py --repo . --output ci-output/TAMU-3D-Avatar-TEST.love
+          luac5.4 -p game/love/objects/renderer.lua game/love/main.lua
+          test -s ci-output/TAMU-3D-Avatar-TEST.love
+      - name: Real LÖVE/Xvfb boot and avatar render screenshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          export XDG_DATA_HOME="$RUNNER_TEMP/tamu-3d-game"
+          mkdir -p "$XDG_DATA_HOME"
+          SDL_AUDIODRIVER=dummy TAMU_BAKED_DEMO_SMOKE=1 timeout 125s xvfb-run -a love ci-output/TAMU-3D-Avatar-TEST.love 2>&1 | tee "$RUNNER_TEMP/tamu-3d-game.log"
+          grep -q 'TAMU_3D_GAME_REAL_LOVE_OK' "$RUNNER_TEMP/tamu-3d-game.log"
+          find "$XDG_DATA_HOME" -name 'tamu-3d-game-smoke.png' -size +0c -exec cp {} ci-output/tamu-3d-game-smoke.png \;
+          test -s ci-output/tamu-3d-game-smoke.png
+          echo TAMU_3D_GAME_SCREENSHOT_OK
+      - name: Upload special playable full-game 3D avatar .love
+        uses: actions/upload-artifact@v4
+        with:
+          name: tamu-special-3d-avatar-love
+          path: |
+            ci-output/TAMU-3D-Avatar-TEST.love
+            ci-output/tamu-3d-game-smoke.png
+          if-no-files-found: error
+          retention-days: 30
