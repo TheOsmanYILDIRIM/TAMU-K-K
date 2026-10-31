@@ -356,6 +356,17 @@ Bu bölüm için sağlayıcı yeniden açma ve blob/commit SHA sonucu rapor yaz�
 - **Açık kabul:** mevcut `tests/diagnostics.lua`, `tests/terrain25d_object_population.lua`, `tests/creative_build.lua`, Stage6 ve gerçek LÖVE/Xvfb alpha/depth/safe-area regresyonları P0'dan bağımsız koşulmalı. Android'de `dt_confirmed`, `dropped`, `trace_write_ms`, 16.667/33.333ms pacing, selection/depth/Creative görüntüsü ayrıca doğrulanmalı. Masaüstü p95 Android FPS kanıtı değildir.
 - **Sonuç:** `review_requested`; genel regresyon PASS, Stage6 güvenliği ve Android 60 FPS kabulü **verilmedi**. Kullanıcı bu kayıt bağlantısını koordinatöre taşıyacak.
 
+
+### 2026-10-31 — SOHBET-I P1 uygulama oturumu / engel ve readback
+
+- **Durum:** `blocked / pending_unverified` — bu oturumda yeni kod commit'i veya gerçek regresyon test sonucu yok. Önceki rapor korunmuştur. İlk HEAD `e78e8364c15a3b49bebd8634199974a94d87f231`, paralel ajanların yeni commitleri saptanınca güncel handoff blob yeniden okunmuştur.
+- **Kaynak doğrulaması:** `core/diagnostics.lua` blob `64113bb6903e34b8e628c096677480b06c746100`; `tests/diagnostics.lua` blob `1e20d076cbc110fde1b6a7cfcead5d5f852019b6`; Stage5 HUD blob `92d839bf09a9b4e0427945daaf81def0179f1787`, Creative HUD blob `587490318e7f0d0897afc29121315badf81e844e`, stat HUD blob `0a7bd35b06a6e22cc8a54b0642f17d57d0789f8d`. İlgili testlerin kaynak metinleri okundu, **yürütülmedi**.
+- **CI:** [#41194049897](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41194049897) gate `success`, test `failure` P0 authored R2 precompile; takip eden Stage5/Stage6/Creative/LÖVE testleri `skipped`. Manuel dispatch yapılmadı.
+- **Test ortamı engeli:** erişilen konteynerde `lua5.4`, `luajit`, `love` yok; `git ls-remote` GitHub DNS çözümleme hatası verdi. Bağımsız Lua/LuaJIT ve LÖVE/Xvfb çalıştırılmış gibi gösterilmedi. Tahmine dayalı kod değişikliği yapılmadı.
+- **Açık regresyonlar:** diagnostics shutdown/backpressure ve dt son kare; alpha/Y-depth/setDrawRange; saved Creative atlas; HUD safe-area/fontScale; Stage6 iki süreç save/reopen. Android FPS iyileşti iddiası yok; kullanıcı save/atlas/yedekleri korunuyor.
+- **Sonraki hedef:** erişilebilir Lua5.4/LuaJIT + LÖVE/Xvfb ortamında `game/love/tests/{diagnostics,stage5_hud_layout,creative_build,core_stat_progression,terrain25d_object_population}.lua` hedefli testlerini ve mevcut Stage6 smoke'u P0 yürüyüş kapısından bağımsız koştur; çıkan tekrarlanabilir hatayı yalnız SOHBET-I sahipliğinde CAS ile düzelt ve test/readback kanıtı sun.
+- **Beyin:** `agy-vault/main` kanonik `oyun-25d-runtime-renderer-integration-20261028` rev14 `active` okundu; resmî DirectSync güncellemesi/receipt yürütülmedi. Kod commit SHA `N/A`, test/artefakt `N/A`; yalnız mevcut SOHBET-I raporunun `report_only` güncellemesidir.
+
 ---
 
 ## [SOHBET-J | TAMU Kalan Performans] — EşRota ikinci dalga raporu
