@@ -366,3 +366,38 @@ print("TERRAIN25D_SUN_SHADOW_OK morning=8 noon=12 evening=17 night=23")
 print("TERRAIN25D_RUNTIME_OK uploads="..uploads.." released="..released..
   " pages="..rt.catalog_counts.pages.." assets="..rt.catalog_counts.packed..
   " decoded="..decoded.." generated="..created)
+-- Stale requests may not block visible chunks or falsely satisfy a new key.
+do
+ local old_thread=love.thread
+ local channels={}
+ local function channel(name)
+   if not channels[name] then
+     local c={items={}}
+     function c:push(v) self.items[#self.items+1]=v end
+     function c:pop() return table.remove(self.items,1) end
+     function c:clear() self.items={} end
+     channels[name]=c
+   end
+   return channels[name]
+ end
+ love.thread={getChannel=channel}
+ local wr=setmetatable({binary_worker={getError=function() return nil end},
+   binary_pending={},binary_ready={},binary_inflight=0,binary_max_inflight=2},
+   getmetatable(rt))
+ wr:enqueue_binary({{key='0:0',cx=0,cy=0},{key='1:0',cx=1,cy=0}})
+ local obsolete=channel('tamu25d:binary:requests'):pop()
+ assert(obsolete.ticket,'request ticket missing')
+ wr:enqueue_binary({{key='2:0',cx=2,cy=0},{key='3:0',cx=3,cy=0}})
+ assert(wr.binary_inflight==2 and wr.binary_pending['2:0'] and
+   wr.binary_pending['3:0'] and not wr.binary_pending['0:0'],
+   'stale requests blocked visible chunks')
+ local first=channel('tamu25d:binary:requests'):pop()
+ assert(first.cx==2 and first.cy==0,'visible request priority lost')
+ channel('tamu25d:binary:ready'):push({key='0:0',ticket=obsolete.ticket})
+ channel('tamu25d:binary:ready'):push({key='2:0',ticket=first.ticket})
+ wr:poll_binary_results()
+ assert(not wr.binary_ready['0:0'] and wr.binary_ready['2:0']
+   and wr.binary_inflight==1,'stale worker reply accepted')
+ love.thread=old_thread
+end
+print('TAMU_BINARY_PRIORITY_CANCELLATION_OK')

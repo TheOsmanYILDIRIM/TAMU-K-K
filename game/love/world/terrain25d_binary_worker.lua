@@ -62,10 +62,12 @@ while true do
     math.abs(job.cx)<100000 and math.abs(job.cy)<100000
     and job.cx%1==0 and job.cy%1==0 then
    local ok,item=pcall(get,job)
-   if ok then results:push(item)
+   if ok then
+     item.ticket=job.ticket
+     results:push(item)
    else
      results:push({key=tostring(job.cx)..':'..tostring(job.cy),
-       missing=true,error=tostring(item)})
+       ticket=job.ticket,missing=true,error=tostring(item)})
    end
  end
 end

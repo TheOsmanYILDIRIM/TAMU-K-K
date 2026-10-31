@@ -631,7 +631,8 @@ function Runtime:poll_binary_results()
  for i=1,8 do
    local item=ready:pop()
    if not item then break end
-   if self.binary_pending[item.key] then
+   -- A previously cancelled worker result cannot fulfill a newer request.
+   if item.ticket and self.binary_pending[item.key]==item.ticket then
      self.binary_pending[item.key]=nil
      self.binary_inflight=math.max(0,self.binary_inflight-1)
      self.binary_ready[item.key]=item
@@ -650,21 +651,33 @@ function Runtime:enqueue_binary(chunks)
    self.binary_inflight=0
    return
  end
- -- A fast-moving camera must not accumulate decompressed meshes that are
- -- no longer candidates for upload. Keep the pending request cap at 12.
+ -- Visible chunks are first in Stream:needed. Cancel queued offscreen
+ -- work that is no longer wanted instead of starving the newest viewport
+ -- behind the fixed in-flight cap. In-progress worker replies use tickets.
  local wanted={}
  for _,c in ipairs(chunks) do wanted[c.key]=true end
  for key in pairs(self.binary_ready) do
    if not wanted[key] then self.binary_ready[key]=nil end
  end
  local requests=love.thread.getChannel('tamu25d:binary:requests')
+ local stale=false
+ for key in pairs(self.binary_pending) do
+   if not wanted[key] then stale=true;break end
+ end
+ if stale then
+   requests:clear()
+   self.binary_pending={}
+   self.binary_inflight=0
+ end
  for _,c in ipairs(chunks) do
    if self.binary_inflight>=self.binary_max_inflight then break end
    if not c._25d_meshes and not c._25d_prepare_job and
       not self.binary_pending[c.key] and not self.binary_ready[c.key] then
-     self.binary_pending[c.key]=true
+     self.binary_ticket=(self.binary_ticket or 0)+1
+     local ticket=self.binary_ticket
+     self.binary_pending[c.key]=ticket
      self.binary_inflight=self.binary_inflight+1
-     requests:push({cx=c.cx,cy=c.cy})
+     requests:push({cx=c.cx,cy=c.cy,ticket=ticket})
    end
  end
 end
