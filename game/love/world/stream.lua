@@ -115,27 +115,36 @@ function Stream:needed(camera,width,height)
         local y=(c.cy+.5)*size-looky
         return x*x+y*y
       end
-      -- A centre-distance halo can miss the next diagonal screen edge.
-      -- Prioritise cells by the FIRST near-future viewport they intersect,
-      -- then retain the existing stable distance order within each cohort.
-      local future={}
-      for _,step in ipairs({.25,.5,1,2}) do
-        future[#future+1]={x=camera.x+direction.x*size*step,
-          y=camera.y+direction.y*size*step,zoom=camera.zoom}
-      end
-      local first_entry={}
-      for _,c in ipairs(halo) do
-        local priority=#future+1
-        for i,view in ipairs(future) do
-          if overlaps_view(c.cx,c.cy,size,view,width,height,visible_pad) then
-            priority=i
-            break
+      -- Rank by the precise distance until each chunk's conservative
+      -- projected bounds FIRST meet the moving viewport. Four coarse
+      -- forecast buckets could rank a farther edge before the next 7-cell
+      -- diagonal strip even though all fell into the same bucket.
+      local projected_dx,projected_dy=Iso.project(direction.x,direction.y)
+      local vx,vy=-projected_dx*camera.zoom,-projected_dy*camera.zoom
+      local edge=size*math.sqrt(.5)*camera.zoom
+      local function first_entry(c)
+        local sx,sy=Iso.project(c.cx*size-camera.x,c.cy*size-camera.y)
+        sx=width*.5+sx*camera.zoom
+        sy=height*.5+sy*camera.zoom
+        local earliest,latest=0,math.huge
+        local function clip(first,last,v,lo,hi)
+          if math.abs(v)<1e-10 then
+            if last<lo or first>hi then earliest=math.huge end
+            return
           end
+          local a,b=(lo-last)/v,(hi-first)/v
+          if a>b then a,b=b,a end
+          earliest=math.max(earliest,a)
+          latest=math.min(latest,b)
         end
-        first_entry[c.key]=priority
+        clip(sx-edge,sx+edge,vx,-visible_pad,width+visible_pad)
+        clip(sy-edge,sy,vy,-visible_pad,height+visible_pad)
+        return earliest<=latest and earliest or math.huge
       end
+      local arrivals={}
+      for _,c in ipairs(halo) do arrivals[c.key]=first_entry(c) end
       table.sort(halo,function(a,b)
-        local pa,pb=first_entry[a.key],first_entry[b.key]
+        local pa,pb=arrivals[a.key],arrivals[b.key]
         if pa~=pb then return pa<pb end
         local va,vb=lookscore(a),lookscore(b)
         if va~=vb then return va<vb end

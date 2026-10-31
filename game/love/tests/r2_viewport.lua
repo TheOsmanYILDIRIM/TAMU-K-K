@@ -128,36 +128,43 @@ do
  moving.x=moving.x+2
  local items=s:needed(moving,720,1100)
  assert(s._25d_prefetch_dir and s._25d_prefetch_dir.x>.9)
- local last_priority,last_score=nil,nil
- local future={}
- for _,step in ipairs({.25,.5,1,2}) do
-   future[#future+1]={x=moving.x+256*step,y=moving.y,zoom=moving.zoom}
- end
- local function priority(c)
-   for j,view in ipairs(future) do
-     local px,py=Iso.project(c.cx*256-view.x,c.cy*256-view.y)
-     local edge=256*math.sqrt(.5)*view.zoom
-     local sx,sy=360+px*view.zoom,550+py*view.zoom
-     if sx+edge>=-12 and sx-edge<=732 and
-       sy+edge>=-12 and sy<=1112 then return j end
+ local last_distance,last_score=nil,nil
+ local z=moving.zoom
+ local edge=256*math.sqrt(.5)*z
+ local dx,dy=Iso.project(1,0)
+ local vx,vy=-dx*z,-dy*z
+ local function first_arrival(c)
+   local px,py=Iso.project(c.cx*256-moving.x,c.cy*256-moving.y)
+   local sx,sy=360+px*z,550+py*z
+   local earliest,latest=0,math.huge
+   local function clip(first,last,v,lo,hi)
+     if math.abs(v)<1e-10 then
+       if last<lo or first>hi then earliest=math.huge end
+       return
+     end
+     local a,b=(lo-last)/v,(hi-first)/v
+     if a>b then a,b=b,a end
+     earliest=math.max(earliest,a);latest=math.min(latest,b)
    end
-   return #future+1
+   clip(sx-edge,sx+edge,vx,-12,732)
+   clip(sy-edge,sy,vy,-12,1112)
+   return earliest<=latest and earliest or math.huge
  end
  local halo_count=0
  for _,c in ipairs(items) do
    if not s.visible_required_keys[c.key] then
      halo_count=halo_count+1
-     local rank=priority(c)
+     local distance=first_arrival(c)
      local x=(c.cx+.5)*256-(moving.x+512)
      local y=(c.cy+.5)*256-moving.y
      local score=x*x+y*y
-     if last_priority then
-       assert(rank>=last_priority,'next-screen prefetch priority lost')
-       if rank==last_priority then
+     if last_distance then
+       assert(distance>=last_distance,'earliest visible halo lost priority')
+       if distance==last_distance then
          assert(score>=last_score,'forward halo tie-break lost')
        end
      end
-     last_priority,last_score=rank,score
+     last_distance,last_score=distance,score
    end
  end
  assert(halo_count>0 and #items<=math.max(80,s.visible_required_count+24),
