@@ -113,7 +113,6 @@ jobs:
             git commit -m "assets(tamu): 45-degree Quaternius two-view animated atlas"
             git push origin "HEAD:refs/heads/$TARGET_BRANCH"
           fi
-          fi
           echo TAMU_3D_ATLAS_COMMITTED
 
       - name: Setup modern Python for existing creative asset packager
