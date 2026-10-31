@@ -2,6 +2,15 @@ package.path="./?.lua;./?/init.lua;"..package.path
 local Query=require("world.world_query")
 local Adapter=require("world.collision_adapter")
 local Collision=require("physics.collision")
+local W=require("physics.world_query")
+-- Repeated CCD queries must not allocate a second obstacle array.
+local reused={{x=3,y=2,w=4,h=5}}
+local provider={obstacles=function() return reused end}
+assert(W.obstacles(provider,0,0,10,10)==reused,"obstacle array was copied")
+assert(not pcall(function() W.obstacles(provider,0/0,0,10,10) end),"NaN bound accepted")
+local malformed={obstacles=function() return {[1]=reused[1],extra=true} end}
+assert(not pcall(function() W.obstacles(malformed,0,0,10,10) end),"non-array obstacle accepted")
+
 local Controller=require("player.controller")
 local Path=require("navigation.pathfinder")
 local q=Query.new(20261015)
