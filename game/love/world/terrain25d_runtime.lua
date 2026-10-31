@@ -826,11 +826,15 @@ function Runtime:draw(stream,camera,w,h)
  local budget=self.bake_mode and .03 or (moving and self.build_time_budget or
    self.build_time_budget_idle)
  local deadline=clock and now+budget
+ -- Avoid uploading several new GPU meshes in one moving-camera frame.
+ -- Keep the existing upload throughput during baking and stationary scenes.
+ local upload_cap=self.bake_mode and self.build_budget
+   or (moving and math.min(1,self.build_budget) or self.build_budget)
  local uploads,resumes=0,0
  local resume_cap=self.bake_mode and 800 or
    (moving and self.moving_resume_cap or self.idle_resume_cap)
  for _,c in ipairs(chunks) do
-   if image_ready and not c._25d_meshes and uploads<self.build_budget
+   if image_ready and not c._25d_meshes and uploads<upload_cap
        and (not deadline or clock()<deadline) then
      local job=c._25d_prepare_job
      local loaded=false
