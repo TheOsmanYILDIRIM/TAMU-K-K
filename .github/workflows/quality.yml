@@ -1,7 +1,29 @@
 name: quality
-on: [push]
+# Run the expensive validation only when CI_START.txt is changed to "başlat".
+on:
+  push:
+    branches: [main]
+    paths:
+      - CI_START.txt
+  workflow_dispatch:
 jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      start: ${{ steps.check.outputs.start }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        shell: bash
+        run: |
+          if [ "$(cat CI_START.txt)" = "başlat" ]; then
+            echo "start=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "start=false" >> "$GITHUB_OUTPUT"
+          fi
   test:
+    needs: gate
+    if: needs.gate.outputs.start == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
