@@ -522,6 +522,15 @@ end
 -- Static world objects share one approved atlas page. Reuse two persistent
 -- batches split at the player's Y-depth; only the player moves between them.
 -- This is intentionally disabled while the chunk reveal is animating.
+-- Exact ordered scene signature: saves a previously built GPU batch when a
+-- camera revisits the same stable chunk set. Never reorder Y-depth objects.
+local function object_scene_key(camera,w,h,objects)
+ local parts={tostring(camera.zoom),tostring(w),tostring(h)}
+ for _,o in ipairs(objects) do
+   parts[#parts+1]=table.concat({o.id,o.x,o.y,o.kind,o.radius},':')
+ end
+ return table.concat(parts,'|')
+end
 function Sprite:prepare_cached_objects(camera,w,h,order)
  if not self.provider.compact_ready or
     not self.provider.objects_fully_revealed then return false end
@@ -535,9 +544,13 @@ function Sprite:prepare_cached_objects(camera,w,h,order)
    if self.object_static_cache then self.object_static_cache.valid=false end
    return false
  end
- local cache=self.object_static_cache
+ local key=object_scene_key(camera,w,h,objects)
+ self.object_scene_cache=self.object_scene_cache or {}
+ local cache=self.object_scene_cache[key]
  if cache and cache.valid~=false and
     same_scene(cache,camera,w,h,objects) then
+   self.object_static_cache=cache
+   cache.last_seen=self.frame or 0
    -- Object ordering is invariant while only player depth slot changes.
    cache.split=cache.prefix[player_slot-1] or 0
    self.object_cache_reuses=(self.object_cache_reuses or 0)+1
@@ -553,7 +566,6 @@ function Sprite:prepare_cached_objects(camera,w,h,order)
    if cache and cache.batch then cache.batch:release() end
    cache={image=image,
      batch=love.graphics.newSpriteBatch(image,self.limit*4,'dynamic')}
-   self.object_static_cache=cache
  end
  local batch=cache.batch
  batch:clear();batch:setColor(1,1,1,1)
@@ -581,7 +593,24 @@ function Sprite:prepare_cached_objects(camera,w,h,order)
  cache.prefix=prefix;cache.count=count
  cache.split=prefix[player_slot-1] or 0
  cache.valid=true
+ cache.last_seen=self.frame or 0
+ self.object_scene_cache[key]=cache
  self.object_static_cache=cache
+ -- An explicit upper bound keeps GPU batches from accumulating indefinitely.
+ local size=0
+ for _ in pairs(self.object_scene_cache) do size=size+1 end
+ if size>6 then
+   local oldest_key,oldest_frame
+   for k,v in pairs(self.object_scene_cache) do
+     if v~=cache and (not oldest_frame or v.last_seen<oldest_frame) then
+       oldest_key,oldest_frame=k,v.last_seen
+     end
+   end
+   if oldest_key then
+     self.object_scene_cache[oldest_key].batch:release()
+     self.object_scene_cache[oldest_key]=nil
+   end
+ end
  return true
 end
 function Sprite:draw_selection(g,camera,w,h,o)
