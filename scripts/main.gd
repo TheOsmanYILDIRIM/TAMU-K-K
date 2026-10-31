@@ -53,7 +53,7 @@ func _update_avatar() -> void:
     avatar_parts["arm_L"].position = Vector2(-16, -35)
     avatar_parts["arm_R"].position = Vector2(16, -35)
     for part in avatar_parts:
-        avatar_parts[part].scale = Vector2(0.42,0.42)
+        avatar_parts[part].scale = Vector2(0.28,0.28)
 
 
 func _chunk_distance(stem: String) -> float:
@@ -241,6 +241,8 @@ func _process(delta: float) -> void:
         avatar_parts["leg_L"].rotation = 0.0
         avatar_parts["leg_R"].rotation = 0.0
     _update_avatar()
+    if direction.length_squared() > 0.01:
+        $Camera2D.position = $Camera2D.position.lerp(avatar.position, minf(delta * 4.0, 1.0))
     if not pending.is_empty():
         _load_chunk(pending.pop_front())
     marker.text = "TAMU | Godot 4 terrain parity\n%d / 16 chunks | %d verts\nFPS %d | frame %.2f ms" % [loaded, total_cached, vertices, Engine.get_frames_per_second(), delta * 1000.0]
