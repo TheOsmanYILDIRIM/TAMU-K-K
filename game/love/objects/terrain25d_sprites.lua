@@ -453,6 +453,78 @@ function Sprite:draw_shadows(g,camera,w,h,objects)
  self:draw_contacts(g,camera,w,h,objects,stable)
  return self.shadow_calls
 end
+-- Static world objects share one approved atlas page. Reuse two persistent
+-- batches split at the player's Y-depth; only the player moves between them.
+-- This is intentionally disabled while the chunk reveal is animating.
+function Sprite:prepare_cached_objects(camera,w,h,order)
+ if not self.provider.compact_ready or
+    not self.provider.objects_fully_revealed then return false end
+ local objects={}
+ local player_slot=0
+ for i,entry in ipairs(order) do
+   if entry.player then player_slot=i
+   else objects[#objects+1]=entry.object end
+ end
+ if player_slot==0 or not self.provider:objects_fully_revealed(objects) then
+   self.object_static_cache=nil
+   return false
+ end
+ local cache=self.object_static_cache
+ if cache and cache.player_slot==player_slot and
+    same_scene(cache,camera,w,h,objects) then
+   return true
+ end
+ -- A changed object membership or relative Y-depth requires a rebuild.
+ local image=self.provider:page('atlas_01.png')
+ if not cache or cache.image~=image then
+   if cache then
+     for _,batch in ipairs(cache.batches) do batch:release() end
+   end
+   cache={image=image,batches={
+     love.graphics.newSpriteBatch(image,self.limit*2,"dynamic"),
+     love.graphics.newSpriteBatch(image,self.limit*2,"dynamic")}}
+   self.object_static_cache=cache
+ end
+ for _,batch in ipairs(cache.batches) do
+   batch:clear()
+   batch:setColor(1,1,1,1)
+ end
+ local count={0,0}
+ for i,entry in ipairs(order) do
+   if not entry.player then
+     -- Include sprites currently outside the viewport: the cached geometry
+     -- remains correct when the camera moves without a world change.
+     local a,x,y,scale=self:appearance(camera,w,h,entry.object,true)
+     if a then
+       assert(a.page=='atlas_01.png','mixed object atlas pages')
+       local side=i<player_slot and 1 or 2
+       cache.batches[side]:add(a.quad,x,y,0,scale,scale,64,124)
+       count[side]=count[side]+1
+     end
+   end
+ end
+ cache.x,cache.y=camera.x,camera.y
+ cache.zoom,cache.w,cache.h=camera.zoom,w,h
+ cache.objects={}
+ for i,o in ipairs(objects) do
+   cache.objects[i]={o.id,o.x,o.y,o.kind,o.radius}
+ end
+ cache.player_slot=player_slot
+ cache.count=count
+ self.object_static_cache=cache
+ return true
+end
+function Sprite:draw_cached_objects(g,camera,w,h,side)
+ local cache=assert(self.object_static_cache,'no prepared object batch')
+ if cache.count[side]==0 or self.skip_gpu_draw then return end
+ local tint=self.provider.sun and self.provider.sun.tint
+ if tint then g.setColor(tint[1],tint[2],tint[3],1)
+ else g.setColor(1,1,1,1) end
+ draw_camera_batch(g,cache.batches[side],cache,camera,w,h)
+ self.batches=self.batches+1
+ self.visible=self.visible+cache.count[side]
+end
+
 function Sprite:queue(g,camera,w,h,o,selected)
  local a,x,y,scale,family=self:appearance(camera,w,h,o)
  if not a then self.culled=self.culled+1;return end
