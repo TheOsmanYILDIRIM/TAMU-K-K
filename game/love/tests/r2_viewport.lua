@@ -128,17 +128,46 @@ do
  moving.x=moving.x+2
  local items=s:needed(moving,720,1100)
  assert(s._25d_prefetch_dir and s._25d_prefetch_dir.x>.9)
- local last=nil
- for i,c in ipairs(items) do
+ local last_distance,last_score=nil,nil
+ local z=moving.zoom
+ local edge=256*math.sqrt(.5)*z
+ local dx,dy=Iso.project(1,0)
+ local vx,vy=-dx*z,-dy*z
+ local function first_arrival(c)
+   local px,py=Iso.project(c.cx*256-moving.x,c.cy*256-moving.y)
+   local sx,sy=360+px*z,550+py*z
+   local earliest,latest=0,math.huge
+   local function clip(first,last,v,lo,hi)
+     if math.abs(v)<1e-10 then
+       if last<lo or first>hi then earliest=math.huge end
+       return
+     end
+     local a,b=(lo-last)/v,(hi-first)/v
+     if a>b then a,b=b,a end
+     earliest=math.max(earliest,a);latest=math.min(latest,b)
+   end
+   clip(sx-edge,sx+edge,vx,-12,732)
+   clip(sy-edge,sy,vy,-12,1112)
+   return earliest<=latest and earliest or math.huge
+ end
+ local halo_count=0
+ for _,c in ipairs(items) do
    if not s.visible_required_keys[c.key] then
+     halo_count=halo_count+1
+     local distance=first_arrival(c)
      local x=(c.cx+.5)*256-(moving.x+512)
      local y=(c.cy+.5)*256-moving.y
      local score=x*x+y*y
-     if last then assert(score>=last,'forward halo lost priority') end
-     last=score
+     if last_distance then
+       assert(distance>=last_distance,'earliest visible halo lost priority')
+       if distance==last_distance then
+         assert(score>=last_score,'forward halo tie-break lost')
+       end
+     end
+     last_distance,last_score=distance,score
    end
  end
- assert(last and #items<=math.max(80,s.visible_required_count+24),
+ assert(halo_count>0 and #items<=math.max(80,s.visible_required_count+24),
    'opt-in forward halo missing or bounded staging cap exceeded')
  -- Halo cells must be wanted/preloaded without inflating visible coverage.
  -- Before this regression, required=visible aliased the same Lua table and
