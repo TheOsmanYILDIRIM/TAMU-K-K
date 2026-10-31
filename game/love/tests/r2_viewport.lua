@@ -138,7 +138,8 @@ do
      last=score
    end
  end
- assert(last and #items<=80,'opt-in halo missing or memory cap ignored')
+ assert(last and #items<=math.max(80,s.visible_required_count+24),
+   'opt-in forward halo missing or bounded staging cap exceeded')
 end
 print('TAMU_25D_FORWARD_HALO_PRIORITY_OK')
 

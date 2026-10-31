@@ -123,8 +123,12 @@ function Stream:needed(camera,width,height)
     end
     -- Keep all screen-visible cells, even when max_loaded is exceeded.
     local required=visible
+    -- Keep a bounded forward staging buffer even at tall portrait zooms.
+    -- The old max_loaded=80 left just three halo slots when 77 chunks
+    -- intersected the viewport, so 6-7 new diagonal chunks arrived cold.
+    local residency_cap=math.max(self.max_loaded,#visible+24)
     for _,c in ipairs(halo) do
-      if #required>=self.max_loaded then break end
+      if #required>=residency_cap then break end
       required[#required+1]=c
     end
     local visible_keys={}
