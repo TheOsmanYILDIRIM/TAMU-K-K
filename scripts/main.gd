@@ -13,6 +13,48 @@ var total_cached: int = 0
 var chunk_nodes: Dictionary = {}
 var world_bounds := Rect2(-4096.0, -4096.0, 32768.0, 32768.0)
 const MAX_LOADED_PER_FRAME := 1
+var avatar: Node2D
+var actor_world := Vector2(64.0, 128.0)
+var actor_speed := 96.0
+var avatar_parts: Dictionary = {}
+var avatar_motion := 0.0
+var actor_facing_back := false
+
+func _make_avatar() -> void:
+    avatar = Node2D.new()
+    avatar.name = "OsmanNativeParts"
+    avatar.z_index = 4
+    add_child(avatar)
+    for part in ["leg_L","leg_R","torso","arm_L","arm_R","head"]:
+        var sprite := Sprite2D.new()
+        sprite.name = part
+        sprite.centered = true
+        sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+        avatar.add_child(sprite)
+        avatar_parts[part] = sprite
+    _set_actor_facing(false)
+    _update_avatar()
+
+func _set_actor_facing(back: bool) -> void:
+    if actor_facing_back == back and avatar_parts["head"].texture != null:
+        return
+    actor_facing_back = back
+    var prefix := "back" if back else "front"
+    for part in avatar_parts:
+        avatar_parts[part].texture = load("res://assets/osman_rig/images/%s_%s.png" % [prefix,part])
+
+func _update_avatar() -> void:
+    avatar.position = Vector2((actor_world.x-actor_world.y)*0.70710678118,
+        (actor_world.x+actor_world.y)*0.35355339059)
+    avatar_parts["leg_L"].position = Vector2(-7, -10)
+    avatar_parts["leg_R"].position = Vector2(7, -10)
+    avatar_parts["torso"].position = Vector2(0, -33)
+    avatar_parts["head"].position = Vector2(0, -66)
+    avatar_parts["arm_L"].position = Vector2(-16, -35)
+    avatar_parts["arm_R"].position = Vector2(16, -35)
+    for part in avatar_parts:
+        avatar_parts[part].scale = Vector2(0.42,0.42)
+
 
 func _chunk_distance(stem: String) -> float:
     var parts := stem.split("_")
@@ -47,6 +89,7 @@ func _ready() -> void:
     marker.add_theme_color_override("font_color", Color.WHITE)
     add_child(marker)
     _load_objects()
+    _make_avatar()
     print("TAMU_GODOT_TERRAIN_START chunks=", pending.size())
 
 func _load_chunk(stem: String) -> void:
@@ -185,6 +228,19 @@ var object_layer: Node2D
 func _process(delta: float) -> void:
     frame_no += 1
     elapsed += delta
+    var direction := Input.get_vector("ui_left","ui_right","ui_up","ui_down")
+    if direction.length_squared() > 0.01:
+        actor_world += direction * actor_speed * delta
+        actor_world.x = clampf(actor_world.x,world_bounds.position.x,world_bounds.end.x)
+        actor_world.y = clampf(actor_world.y,world_bounds.position.y,world_bounds.end.y)
+        _set_actor_facing(direction.y < 0.0)
+        avatar_motion += delta * 10.0
+        avatar_parts["leg_L"].rotation = sin(avatar_motion)*0.16
+        avatar_parts["leg_R"].rotation = -sin(avatar_motion)*0.16
+    else:
+        avatar_parts["leg_L"].rotation = 0.0
+        avatar_parts["leg_R"].rotation = 0.0
+    _update_avatar()
     if not pending.is_empty():
         _load_chunk(pending.pop_front())
     marker.text = "TAMU | Godot 4 terrain parity\n%d / 16 chunks | %d verts\nFPS %d | frame %.2f ms" % [loaded, total_cached, vertices, Engine.get_frames_per_second(), delta * 1000.0]
@@ -193,11 +249,11 @@ func _process(delta: float) -> void:
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and frame_no == 45:
         var image := get_viewport().get_texture().get_image()
         var error := image.save_png("user://tamu-godot-visual.png")
-        if error != OK or loaded < 16 or total_cached < 100 or vertices < 1000 or object_count < 10:
+        if error != OK or loaded < 16 or total_cached < 100 or vertices < 1000 or object_count < 10 or avatar_parts.size() != 6:
             push_error("TAMU_VISUAL_GATE_FAILED " + str(error))
             get_tree().quit(3)
         else:
-            print("TAMU_VISUAL_CAPTURE_OK chunks=", loaded, " vertices=", vertices, " objects=", object_count)
+            print("TAMU_VISUAL_CAPTURE_OK chunks=", loaded, " vertices=", vertices, " objects=", object_count, " avatar_parts=", avatar_parts.size())
             get_tree().quit()
 
 func _unhandled_input(event: InputEvent) -> void:
