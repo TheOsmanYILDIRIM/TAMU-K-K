@@ -27,7 +27,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends blender python3-pil lua5.4 luajit
+          sudo apt-get install -y --no-install-recommends blender python3-numpy python3-pil lua5.4 luajit
           blender --version | head -n 2
       - name: Render animated 45-degree front/back atlas
         shell: bash
