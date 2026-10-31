@@ -466,15 +466,20 @@ function Sprite:prepare_cached_objects(camera,w,h,order)
    else objects[#objects+1]=entry.object end
  end
  if player_slot==0 or not self.provider:objects_fully_revealed(objects) then
-   self.object_static_cache=nil
+   if self.object_static_cache then self.object_static_cache.valid=false end
    return false
  end
  local cache=self.object_static_cache
- if cache and cache.player_slot==player_slot and
+ if cache and cache.valid~=false and cache.player_slot==player_slot and
     same_scene(cache,camera,w,h,objects) then
    return true
  end
  -- A changed object membership or relative Y-depth requires a rebuild.
+ -- The immutable batch owns this texture for the renderer lifetime.
+ if not self.object_atlas_pinned then
+   self.provider:pin_page('atlas_01.png')
+   self.object_atlas_pinned=true
+ end
  local image=self.provider:page('atlas_01.png')
  if not cache or cache.image~=image then
    if cache then
@@ -510,6 +515,7 @@ function Sprite:prepare_cached_objects(camera,w,h,order)
    cache.objects[i]={o.id,o.x,o.y,o.kind,o.radius}
  end
  cache.player_slot=player_slot
+ cache.valid=true
  cache.count=count
  self.object_static_cache=cache
  return true
