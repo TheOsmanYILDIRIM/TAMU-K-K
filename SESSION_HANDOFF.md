@@ -507,3 +507,15 @@ SOHBET-G'nin uygulanmış worker ticket/FIFO, visible/halo alias, `upload_cap=1`
 - **Açık collision kabulü:** `tests/integration.lua` içindeki yeni no-copy, NaN ve dense-array assertions, CI yürüyüşü erken sonlandığından bağımsız yürütme kanıtına sahip değil. `WORLD_PLAYER_INTEGRATION_OK` veya `WORLD_PLAYER_EDGE_OK` çıktısı bu koşuda yok. Collision CCD determinism PASS iddiası yapılmadı.
 - **Kapsam/sıradaki iş:** Yeni J kod değişikliği yapılmadı; mevcut J commitleri `93e5a720`, `9b0cf9e0`, `09818c15` korunuyor. Mevcut runner ile ayrı `lua5.4 tests/integration.lua` ve `luajit tests/integration.lua` çalıştırılmalı; 4 yön, socket, harvest ve gerçek LÖVE görsel eşdeğerliği ayrıca açık. Android FPS ölçülmedi. Ek workflow/dispatch açılmadı, main'e dokunulmadı.
 - **İşlem:** `report_only` / `revision_guard=cas` / `provider_reopen`; diğer ajan bölümleri değiştirilmedi. Avenox Beyin görevine bu raporla senkron yazılmadı.
+
+---
+
+## [SOHBET-3D | TAMU iki profilli 3D karakter deneyi] — 2026-10-31
+
+- **Deney dalı:** `experiment/25d-profile-baked-3d-20261031`. Başlangıç HEAD `4629c1a94359ed89aa79272ea60e202ff7ba97e6` (o an en güncel `experiment/25d-binary-vertex-20261030`); kod commit `fe177aef6c0998c3c087ef0dccb6fae483f99655`. `main` ve performans dalı değiştirilmedi.
+- **Kaynak 3D model:** kökteki `Adventurer by Quaternius - 5EGWBMpuXq.glb` (repo blob `883c51939efbe9e57f481941d8e0d158e7f811f7`), Poly Pizza model sayfasında CC0. `Walking.fbx` kaynakta korunur, bu betik tarafından henüz retarget edilmez.
+- **Yöntem:** `scripts/bake_3d_profile_character.py` Blender ile 45° ortografik, ön-yandan/arka-yandan iki kamera ve yürüyüş/idle örneklerinden alfa atlası + kaynak SHA256 içeren `manifest.json` üretir. `game/love/player/side_baked_visual.lua` SE/SW=front, NE/NW=back, SW/NW=flip ile dört izometrik yönü iki kaynak profilden çıkarır. Pivottan itibaren dünya Y-depth, çarpışma, envanter, hasat, Stage6 ve kamera koduna dokunulmaz.
+- **Aktivasyon:** yalnız `TAMU_BAKED_3D_AVATAR=1`; normal karakter Rigby2D'dir. Baked PNG/manifest olmadan opt-in açık hata verir, sessiz placeholder veya eski sprite'a fallback yoktur.
+- **Kod doğrulaması:** GitHub'da dört hedef dosya blob-SHA geri okundu, commit/HEAD doğrulandı. Yerel eşdeğer kaynak taslağında `python -m py_compile`, `texlua` Lua parse ve `TAMU_SIDE_BAKED_4DIR_MIRROR_OK` yön eşlemesi testi geçti; testler uzak commit'in çalıştırılmış CI kanıtı değildir.
+- **Açık / kanıtlanmamış:** Bu VM'de Blender ve LÖVE ikilisi yok; GLB fiilî import/animasyon klibi, `atlas.png`, `manifest.json`, runtime visual screenshot, gerçek LÖVE smoke/Android FPS, su kesiti ve tool animasyon görselliği **çalıştırılmadı/doğrulanmadı**. Blender/Actions sonucu olmadan karakter deneyi tamamlandı sayılmaz.
+- **Sonraki kabul:** Blender render çıktısını gerçekten üret; atlas alpha/pivot/ön-arka/ayna karelerini görsel doğrula; LÖVE 11.x ve Android'de yeni opt-in modu çalıştırıp yön, y-depth, gölge, su, hasat, FPS ve save regresyonunu test et. Hata çıkarsa yalnız yeni deney dalında düzelt. Main'e merge yok. Avenox Beyin resmi DirectSync task/receipt güncellemesi bu oturumda yapılmadı; GitHub handoff bunun yerine geçmez.
