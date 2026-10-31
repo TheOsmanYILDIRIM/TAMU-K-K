@@ -49,6 +49,14 @@ Doğrulanmış rapor bağlantısı: [SESSION_HANDOFF.md#SOHBET-K](https://github
 - **Açık:** Chunk geçişinde statik obje/gölge titremesi için per-chunk kalıcı world-space render batch mimarisi uygulanmadı. Gölge attachment, Y-depth, seçili obje, reveal, güneş slotu ve save regresyonu doğrulanmadan render cache genişletilmemeli. Bu teslim 60 FPS veya sıfır takılma garantisi değildir; Android FPS p95/p99 ve missing=0 yeniden ölçülmeli. Avenox Beyin resmî DirectSync write-back yapılmadı; task rev14/active olarak gözlendi.
 
 
+### 2026-10-31 — Rigby selective GPU upload, test edilmiş kısmi teslim
+
+- Android loglarında sahne sabitken Rigby çizim aşaması ~0,3–4ms arasında dalgalanıyor; bu tek başına GPU yükleme kök nedenini ispatlamaz.
+- Kod: `player/rigby_visual.lua` birebir aynı attachment vertex koordinatlarını yeniden `mesh:setVertices` ile GPU'ya göndermiyor; yeni attachment ilk yükleme normal, değişen pozlar normal güncelleniyor. Commit [ea0a9710](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/commit/ea0a97103adba30407bbfed7ce9abceaaa39f278).
+- Var olan `tests/rigby_visual.lua` içindeki aynı idle pozun iki kere hazırlanmasında tekrar upload olmaması testi eklendi. Commit [c05b79f3](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/commit/c05b79f3006d2d8ce83c6c09d75972141e644f8c).
+- [Quality #41230452958](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41230452958) son kod HEAD'de `success`; artifact `tamu-authored-r2-binary-cache` ID `13053766217`, SHA256 `07948d8bb3c42589862958512d51746623961315fdca1281d952cf2ad9892322`. İndirilen artifact ZIP ve 550 girdili .love `testzip` başarılı; .love içinde yeni kod doğrulandı.
+- **AÇIK:** İstenen chunk bazlı dünya-koordinatlı sabit obje/gölge önbelleği **henüz uygulanmadı**; Android titreme ve gölge yerleşimi test edilmedi. Rigby değişikliğinin Android FPS kazancı kanıtlanmadı; vertex karşılaştırma maliyeti de cihazda ölçülmedi. 60FPS sabitlik ve görüntü kabulü bekliyor. Avenox Beyin görevine DirectSync yazımı yapılmadı.
+
 ---
 
 
