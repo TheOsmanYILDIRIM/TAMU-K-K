@@ -43,6 +43,28 @@ print('TAMU_OBJECT_POOL_SEMANTICS_OK')
 -- Shadow pass already validated reveal readiness: contact pass must not
 -- repeat the potentially costly full-object readiness scan.
 local Sprite=require('objects.terrain25d_sprites')
+-- Parametric bundle invariant: negative cells and same-ID re-materialization
+-- must project to identical world positions across chunk boundaries.
+do
+ local camera={project=function(_,x,y,w,h)
+   return x*1.4-y*.7+w*.5, x*.35+y*.6+h*.5
+ end}
+ for _,xy in ipairs({{-257,-1},{-256,0},{-1,-1},{0,0},
+                      {255,255},{256,256},{512,-512}}) do
+   local x,y=xy[1],xy[2]
+   local o={id='fixed',x=x,y=y}
+   local key,ox,oy=Sprite.chunk_key(o)
+   assert(x-ox>=0 and x-ox<256 and y-oy>=0 and y-oy<256,
+     'chunk local coordinate outside 256-unit cell '..key)
+   local px,py=Sprite.project_chunk_local(camera,720,1100,o)
+   local ex,ey=camera:project(x,y,720,1100)
+   assert(px==ex and py==ey,'bundle projection shifted a fixed object')
+   local clone={id='fixed',x=x,y=y,cx=math.floor(x/256),cy=math.floor(y/256)}
+   local qx,qy=Sprite.project_chunk_local(camera,720,1100,clone)
+   assert(px==qx and py==qy,'chunk reload shifted object identity')
+ end
+end
+print('TAMU_CHUNK_LOCAL_OBJECT_SHADOW_PROJECTION_OK')
 local reveal_scans=0
 local sprite=setmetatable({
  provider={objects_fully_revealed=function()
