@@ -108,15 +108,25 @@ function Stream:needed(camera,width,height)
     end
     local direction=self._25d_prefetch_dir
     if direction then
-      local lookx=camera.x+direction.x*size*2
-      local looky=camera.y+direction.y*size*2
+      -- Upload the next screen-edge entrants before more distant forward
+      -- halo. The previous two-chunk look point could place imminent
+      -- screen entrants behind offscreen meshes despite GPU-ready results.
+      -- Predict only a few frames; do not increase the upload budget.
+      local ahead=math.min(size*.5,math.max(distance,0)*5)
+      local future={x=camera.x+direction.x*ahead,
+        y=camera.y+direction.y*ahead,zoom=camera.zoom}
+      local lookx,looky=future.x,future.y
       local function lookscore(c)
+        local entering=overlaps_view(c.cx,c.cy,size,future,
+          width,height,visible_pad)
         local x=(c.cx+.5)*size-lookx
         local y=(c.cy+.5)*size-looky
-        return x*x+y*y
+        return entering and 0 or 1,x*x+y*y
       end
       table.sort(halo,function(a,b)
-        local va,vb=lookscore(a),lookscore(b)
+        local ea,va=lookscore(a)
+        local eb,vb=lookscore(b)
+        if ea~=eb then return ea<eb end
         if va~=vb then return va<vb end
         return less(a,b)
       end)
