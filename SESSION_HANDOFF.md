@@ -78,6 +78,13 @@ Doğrulanmış rapor bağlantısı: [SESSION_HANDOFF.md#SOHBET-K](https://github
 - İlk [CI #41233775649](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41233775649) `failure`: 480 walk `max_missing=1` (yeni obje testlerinin başarısızlığı değil); son [CI #41233876569](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41233876569) kod HEAD `b518e0b8`, `completed/success`: `TAMU_WALK_COVERAGE frames=480 max_missing=0`, `TAMU_CHUNK_BUNDLE_IDENTITY_OK`, `TAMU_CHUNK_LOCAL_OBJECT_SHADOW_PROJECTION_OK`, `TAMU_OBJECT_PLAYER_SLOT_RANGE_OK`, statik gölge testleri. Artifact `tamu-authored-r2-binary-cache` ID `13055126295`, SHA256 `4691e76514bcad7b26708b896a346c9f9ec538621036e62137d16288ddb532dc`. Artifact ZIP ve içteki 550 dosyalı `.love` bağımsız `testzip` geçti, kod içerikleri geri okundu.
 - **AÇIK / TAM KABUL YOK:** Terrain GPU mesh ve statik obje GPU SpriteBatch'leri tek birleşik chunk render bundle'a taşınmadı; mevcut Y-depth-aware global object SpriteBatch hâlen scene-set değişiminde rebuild olur. Parametrik CPU kayıtları ve chunk bazlı gölge batch çekirdeği uygulanmıştır. Reveal ve Y-depth mevcut regression suite'te geçti, fakat gerçek Android görsel titreme ve FPS p95/p99 kabul edilmedi. Main'e merge yapılmadı; Beyin DirectSync task güncellemesi yapılmadı.
 
+### 2026-10-31 — Ordered Object GPU Scene Cache
+
+- Bounded exact ordered scene-set GPU SpriteBatch cache (max 6). On A->B->A chunk-set return, reuse old batch without rebuild; unchanged object identity, position, Y-depth prefix split. Code commit 66778c3ed33d254099655fc6e6953a79af829c0d.
+- Existing object population regression adds GPU A->B->A revisit assertion. Test commit 38f1d502bf353535f9132f5f22a7b725a745a344.
+- CI https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41234831527 completed SUCCESS at code SHA 38f1d502 (gate/test). Artifact 13055013585, SHA256 36e2196fe26982c834959db82fb53e85498bc7e06bbeea768edb6322b7bba2ea. Outer ZIP and inner LOVE testzip passed, 550 entries, feature/test present.
+- OPEN: This is scene-set caching, not a fully independent per-chunk object GPU bundle. New chunk combinations still rebuild; Android FPS/tremor not measured. Main and Avenox DirectSync task not changed.
+
 ---
 
 
