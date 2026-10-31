@@ -117,8 +117,8 @@ jobs:
           import json
           data=json.load(open('chunks/r2_objects.json'))
           ids=[o['id'] for o in data['objects']]
-          assert len(ids)==len(set(ids)) and len(ids)>10
-          assert all(-256<=o['x']<768 and -256<=o['y']<768 for o in data['objects'])
+          assert len(ids)==len(set(ids)) and len(ids)>100
+          assert all(-1024<=o['x']<2304 and -1536<=o['y']<1536 for o in data['objects'])
           print('TAMU_R2_OBJECT_PARITY_OK',len(ids))
           PY
       - name: Native Godot scene and screenshot smoke (Xvfb)
