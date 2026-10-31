@@ -321,6 +321,17 @@ Bir sonraki **uygulama** sohbeti mevcut WALK_PROBE altında GPU upload selection
 
 Bu bölüm için sağlayıcı yeniden açma ve blob/commit SHA sonucu rapor yazımı sonrasında doğrulanır. Rapor yazıldı diye P0 düzelmiş veya Android testi geçmiş sayılmaz.
 
+### 2026-10-31 — SOHBET-H uygulama / WALK_PROBE GPU sıra tanısı (P0 açık)
+
+- **Durum:** `in_progress` / `pending_unverified`; **max_missing=0 kanıtlanmadı**. Başlangıç HEAD `e78e8364c15a3b49bebd8634199974a94d87f231`. Yalnız yetkili deney dalına yazıldı.
+- **Kapsam ve neden:** Mevcut SOHBET-H frame=7, key=-1:-3, worker_ready=1 örneği GPU yükleme bütçesi sıralamasını tek başına kanıtlamıyor. Öncelikle mevcut `TAMU_25D_WALK_PROBE=1` akışında CPU-ready zamanı ile GPU seçim/yükleme sonucunu ilişkilendirecek tanı eklendi.
+- **Değişiklik:** `game/love/world/terrain25d_runtime.lua` içine yalnız aktif WALK_PROBE sırasında `TAMU_WALK_GPU_UPLOAD` (frame/key/ready_since/loaded/visible) ve `TAMU_WALK_GPU_WAIT` (frame/upload_cap/kalan eksik görünür hazır işleri) logları kondu. Üretim sırasında bu tanı kapalıdır; `upload_cap=1`, CPU fallback, yükleme sırası, halo kapasitesi ve görsel pipeline değiştirilmedi.
+- **Commit:** [`46ec0399ad33065b1f5eb214d7e036e0c5f5e7ce`](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/commit/46ec0399ad33065b1f5eb214d7e036e0c5f5e7ce). Kod dosyası sağlayıcıdan tekrar açıldı; blob SHA `623190628508c664ee244a27f7fd1b03e0415d20`. Commit sonrası dal HEAD aynı commit olarak doğrulandı.
+- **Test/CI/artefakt:** Mevcut tarihsel CI [#41194049897](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41194049897) `failure`, `max_missing=1`; **bu yeni commit için CI, LuaJIT, LÖVE/Xvfb veya Android testi çalıştırılmadı**. Workflow/dispatch açılmadı. Kod kaynağı geri okundu; sentaks ve yürütme kabulü doğrulanmadı.
+- **Kanonik Beyin:** `agy-vault/main` mevcut görev `oyun-25d-runtime-renderer-integration-20261028` rev14/`active` okundu. Resmî DirectSync motor işlemi/receipt tamamlanmadığından Beyin yazımı yapılmadı; bu rapor onun yerine geçmez.
+- **Engel / açık iş:** Log çıktısı olmadan mevcut upload slotunu hangi key'in tükettiği kesinleşmiyor; bu aşamada yeniden sıralama spekülatif olur. Yürüyüşü mevcut test ortamında bu loglarla çalıştır, `-1:-3` için hazır olma ve seçilme karelerini karşılaştır, ardından gerekçeli minimal sıralama düzeltmesini uygula. 480 kare için `max_missing=0`, x/y/diyagonal/ters yön regresyonu ve bütçe ölçümü şart. P2/P3 henüz başlatılmadı; Android FPS bilinmiyor.
+- **Rapor:** Yalnız mevcut H bölümü; `report_only`, blob-SHA CAS, diğer ajan alanları korunacak. Rapor geri-okuma blob SHA'sı commit sonrası ayrıca doğrulanır.
+
 ## [SOHBET-I | TAMU Regresyon Denetimi] — EşRota ikinci dalga
 
 - **Durum:** `review_requested`; salt okunur bağımsız kod incelemesi, **regresyon kabulü açık**. İncelenen başlangıç HEAD `59b3fcf94f6d5a02c840a1198a05c73c89fa99d8`; rapor CAS anındaki HEAD `f0319d15df1bd7d47bb8d736ae6a616afce841ee`. Değişen başka bölümler korundu.
