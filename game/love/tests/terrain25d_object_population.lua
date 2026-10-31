@@ -80,4 +80,46 @@ do
  love.graphics=old_graphics
 end
 print('TAMU_SELECTED_OBJECT_CACHE_OVERLAY_OK')
+-- Moving the player through Y-depth must not rebuild immutable object meshes.
+do
+ local old_g=love.graphics
+ local buffer={data={},range={}}
+ function buffer:clear() self.data={} end
+ function buffer:setColor() end
+ function buffer:add(quad) self.data[#self.data+1]=quad end
+ function buffer:setDrawRange(start,count) self.range={start,count} end
+ function buffer:release() end
+ love.graphics={newSpriteBatch=function() return buffer end}
+ local provider={compact_ready=true,
+   objects_fully_revealed=function() return true end,
+   pin_page=function() end,page=function() return 'image' end}
+ local cached=setmetatable({provider=provider,limit=8,
+   object_cache_rebuilds=0,object_cache_reuses=0},Sprite)
+ function cached:appearance(_,_,_,o)
+   return {page='atlas_01.png',quad=o.id},o.x,o.y,1
+ end
+ local a,b={id='a',x=10,y=10,kind='tree',radius=8},
+   {id='b',x=20,y=20,kind='tree',radius=8}
+ local ea,eb,ep={object=a},{object=b},{player=true}
+ local cam={x=0,y=0,zoom=1,
+   project=function(_,x,y) return x,y end}
+ assert(cached:prepare_cached_objects(cam,100,100,{ea,ep,eb}))
+ assert(cached.object_cache_rebuilds==1 and cached.object_static_cache.split==1)
+ assert(cached:prepare_cached_objects(cam,100,100,{ep,ea,eb}))
+ assert(cached.object_cache_rebuilds==1 and cached.object_cache_reuses==1
+   and cached.object_static_cache.split==0,'player movement rebuilt object cache')
+ assert(cached:prepare_cached_objects(cam,100,100,{ea,eb,ep}))
+ assert(cached.object_static_cache.split==2)
+ local drawn={}
+ local g={setColor=function() end,push=function() end,pop=function() end,
+   translate=function() end,draw=function()
+     drawn[#drawn+1]={buffer.range[1],buffer.range[2]}
+   end}
+ cached:draw_cached_objects(g,cam,100,100,1)
+ cached:draw_cached_objects(g,cam,100,100,2)
+ assert(#drawn==1 and drawn[1][1]==1 and drawn[1][2]==2,
+   'static range changed depth order')
+ love.graphics=old_g
+end
+print('TAMU_OBJECT_PLAYER_SLOT_RANGE_OK')
 
