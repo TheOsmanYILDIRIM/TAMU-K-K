@@ -930,7 +930,11 @@ function Runtime:draw(stream,camera,w,h)
                print('TAMU_25D_CPU_WORKER_LOADED key='..c.key)
              end
            end
-         elseif self.binary_pending[c.key] then
+         else
+           -- The worker queue may be full, so this chunk can be neither
+           -- pending nor ready yet. Never start an expensive full authored
+           -- geometry coroutine on the render thread while the worker lives.
+           -- enqueue_binary will submit it as capacity becomes available.
            waiting=true
          end
        else
