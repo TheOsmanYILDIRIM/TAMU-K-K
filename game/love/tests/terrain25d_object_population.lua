@@ -64,6 +64,19 @@ do
    assert(px==qx and py==qy,'chunk reload shifted object identity')
  end
 end
+-- Fixed chunk bundle must retain a stable record; authored changes are explicit.
+do
+ local p=setmetatable({families={oak={{id='oak-A'}}},bundles={},frame=1},Sprite)
+ local o={id='stable',x=-1,y=256,kind='tree',radius=8}
+ local a=p:bundle_for(o)
+ local b=p:bundle_for({id='stable',x=-1,y=256,kind='tree',radius=8})
+ assert(a==b and a.origin_x==-256 and a.origin_y==256
+   and a.local_x==255 and a.local_y==0,'bundle origin unstable')
+ local moved=p:bundle_for({id='stable',x=0,y=256,kind='tree',radius=8})
+ assert(moved~=a and moved.origin_x==0 and moved.local_x==0,
+   'explicit world change must invalidate chunk-local record')
+end
+print('TAMU_CHUNK_BUNDLE_IDENTITY_OK')
 print('TAMU_CHUNK_LOCAL_OBJECT_SHADOW_PROJECTION_OK')
 local reveal_scans=0
 local sprite=setmetatable({
