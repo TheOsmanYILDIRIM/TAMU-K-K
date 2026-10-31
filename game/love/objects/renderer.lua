@@ -225,9 +225,21 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_ove
   if flags.object_shadow_cpu_only then g.pop();return #all end
   local static_cached=type(object_override)=="table"
     and flags.objects~=false and not flags.opaque_objects
-    and not flags.skip_object_gpu and not selected_id
+    and not flags.skip_object_gpu
     and object_override.prepare_cached_objects
     and object_override:prepare_cached_objects(camera,w,h,order) or false
+  -- The selected outline is separate from cached immutable object textures.
+  local selected_object,selected_side
+  if static_cached and selected_id then
+    local side=1
+    for _,entry in ipairs(order) do
+      if entry.player then side=2
+      elseif entry.id==selected_id then
+        selected_object,selected_side=entry.object,side
+        break
+      end
+    end
+  end
   -- Only the legacy plasma mode uses autonomous tools. The rig follows the
   -- approved harvest clip and exposes the right-hand socket for future items.
   local visual=clear_map(draw_pool.visual)
@@ -246,7 +258,12 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_ove
   if flags.opaque_objects then g.setBlendMode('replace') end
   for _,entry in ipairs(order) do
     if entry.player then
-      if static_cached then object_override:draw_cached_objects(g,camera,w,h,1) end
+      if static_cached then
+          object_override:draw_cached_objects(g,camera,w,h,1)
+          if selected_side==1 then
+            object_override:draw_selection(g,camera,w,h,selected_object)
+          end
+        end
       if flags.rig~=false then
         if type(object_override)=="table" and flags.objects~=false and not static_cached then object_override:flush(g) end
         if flags.opaque_objects then g.setBlendMode('alpha') end
@@ -266,7 +283,12 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_ove
       (object_override or object_sprite)(g,camera,w,h,entry.object,entry.id==selected_id)
     end
   end
-  if static_cached then object_override:draw_cached_objects(g,camera,w,h,2) end
+  if static_cached then
+    object_override:draw_cached_objects(g,camera,w,h,2)
+    if selected_side==2 then
+      object_override:draw_selection(g,camera,w,h,selected_object)
+    end
+  end
   if type(object_override)=="table" and not static_cached then object_override:flush(g) end
   if perf_clock then
     -- Exclusive sprite queue/flush time: omit player Rigby draw and shadows.

@@ -522,6 +522,14 @@ function Sprite:prepare_cached_objects(camera,w,h,order)
  self.object_static_cache=cache
  return true
 end
+function Sprite:draw_selection(g,camera,w,h,o)
+  local a,x,y=self:appearance(camera,w,h,o)
+  if not a then return false end
+  local z=camera.zoom
+  g.setColor(1,.82,.3,.9);g.setLineWidth(2)
+  g.ellipse('line',x,y,o.radius*z*1.5,o.radius*z*.8)
+  return true
+end
 function Sprite:draw_cached_objects(g,camera,w,h,side)
  local cache=assert(self.object_static_cache,'no prepared object batch')
  if cache.count[side]==0 or self.skip_gpu_draw then return end

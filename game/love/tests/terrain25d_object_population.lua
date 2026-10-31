@@ -54,3 +54,30 @@ sprite:draw_contacts({},camera,720,1100,{hit},true)
 assert(reveal_scans==0 and sprite.contact_reuses==1,
  'contact pass must reuse shadow reveal readiness without rescanning')
 print('TAMU_SHADOW_CONTACT_READINESS_REUSE_OK')
+-- Selection must not bypass the static cache or alter Y-depth ordering.
+do
+ local old_graphics=love.graphics
+ love.graphics={push=function() end,pop=function() end}
+ local seen={cached=0,selection=0}
+ local override={provider={compact=true,object_chunks={chunk}}}
+ function override:begin_frame() end
+ function override:draw_shadows() end
+ function override:prepare_cached_objects()
+   seen.cached=seen.cached+1;return true
+ end
+ function override:draw_cached_objects() end
+ function override:draw_selection(_,_,_,_,o)
+   assert(o==hit,'selected object changed identity')
+   seen.selection=seen.selection+1
+ end
+ for _=1,3 do
+   local count=Renderer.draw(world,stream,camera,720,1100,
+     {x=90,y=90},hit.id,nil,override,{objects=true,rig=false})
+   assert(count==1,'selected object disappeared')
+ end
+ assert(seen.cached==3 and seen.selection==3,
+   'selection bypassed cached drawing')
+ love.graphics=old_graphics
+end
+print('TAMU_SELECTED_OBJECT_CACHE_OVERLAY_OK')
+
