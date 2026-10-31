@@ -332,6 +332,17 @@ Bu bölüm için sağlayıcı yeniden açma ve blob/commit SHA sonucu rapor yaz�
 - **Engel / açık iş:** Log çıktısı olmadan mevcut upload slotunu hangi key'in tükettiği kesinleşmiyor; bu aşamada yeniden sıralama spekülatif olur. Yürüyüşü mevcut test ortamında bu loglarla çalıştır, `-1:-3` için hazır olma ve seçilme karelerini karşılaştır, ardından gerekçeli minimal sıralama düzeltmesini uygula. 480 kare için `max_missing=0`, x/y/diyagonal/ters yön regresyonu ve bütçe ölçümü şart. P2/P3 henüz başlatılmadı; Android FPS bilinmiyor.
 - **Rapor:** Yalnız mevcut H bölümü; `report_only`, blob-SHA CAS, diğer ajan alanları korunacak. Rapor geri-okuma blob SHA'sı commit sonrası ayrıca doğrulanır.
 
+### 2026-10-31 — SOHBET-H GPU-ready öncelik düzeltmesi (kabul açık)
+
+- **Durum:** `pending_unverified`; yalnız H'nin kod sahipliği `world/terrain25d_runtime.lua` değiştirildi. Başlangıç HEAD `d238431482fea2c18f6015546db77725d3ea17ec`; diğer ajanların G/I/J kayıtları ve kaynakları korunuyor.
+- **Somut kod bulgusu:** Eski draw döngüsü görünür/halo listesini tek sırada işliyor; CPU coroutine işi deadline veya resume bütçesini tüketirse `binary_ready` durumundaki chunk'ın GPU yüklemesi aynı karede seçilmeyebiliyor. Önceki WALK_PROBE frame=7 kanıtı bu ihtimalle tutarlı, kesin kök nedeni veya yeni çözümün kabulünü tek başına kanıtlamıyor.
+- **Minimal kod:** Hazır ve eksiksiz binary sonuçları `visible_ready → halo_ready → diğerleri` sırasıyla GPU hazırlama döngüsüne sunuluyor. `Stream:visible()` listesi mutasyona uğramıyor; mevcut visible/halo kendi sırasını koruyor. GPU upload cap=1, deadline, fallback, atlas, cache ve bake davranışı değiştirilmedi.
+- **Commit:** [`e00f63480a94a94992a4924be9447cf8c51909ce`](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/commit/e00f63480a94a94992a4924be9447cf8c51909ce); kod readback blob SHA `06e1aee6edec407d412ce4ab2fcfc637be0d3258`; commit HEAD ile doğrulandı.
+- **Test/CI:** Bu ortamda Lua5.4/LuaJIT/LÖVE yürütücüsü yok; hedefli regresyon ve gerçek WALK_PROBE **çalıştırılamadı**. GitHub eklentisinde yeni workflow dispatch aracı yok; Supabase özel job kuyruğunun doğrulanmış enqueue/invoke sözleşmesi ve yetkisi yok. Bu nedenle yeni quality CI tetiklenmedi. Eski [CI #41194049897](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41194049897) `failure/max_missing=1`, yeni commit için kanıt sayılmaz.
+- **Avenox Beyin:** Kanonik rev14/`active` görev mevcut; resmi DirectSync semantik task update/receipt uygulanmadı, kalıcı Beyin güncellemesi iddia edilmiyor.
+- **Açık/engel:** Yeni kod için 480 kare WALK_PROBE `max_missing=0`; x/y/diyagonal/ters kamera yönleri ve worker race, upload deadline/resume maliyeti, Lua/LÖVE regresyonu koşulmalı. Başarısız olursa güncel logla H kapsamındaki algoritma yeniden düzeltilmeli. P2/P3 ve Android FPS kabulü açık. `main`, Stage6, yedekler, PNG atlasları, workflow değiştirilmedi.
+- **Rapor:** `report_only`, CAS; diğer bölümler korunuyor, readback blob SHA gönderimden sonra doğrulanır.
+
 ## [SOHBET-I | TAMU Regresyon Denetimi] — EşRota ikinci dalga
 
 - **Durum:** `review_requested`; salt okunur bağımsız kod incelemesi, **regresyon kabulü açık**. İncelenen başlangıç HEAD `59b3fcf94f6d5a02c840a1198a05c73c89fa99d8`; rapor CAS anındaki HEAD `f0319d15df1bd7d47bb8d736ae6a616afce841ee`. Değişen başka bölümler korundu.
