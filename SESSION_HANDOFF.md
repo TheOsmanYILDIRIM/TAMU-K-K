@@ -1,3 +1,55 @@
+
+## [SOHBET-G | TAMU Performans Uygulama] — EşRota raporu
+
+- **Durum:** `review_requested` — P0 kabul başarısız, Android cihaz kanıtı yok; tamamlandı/verified değildir.
+- **Proje / kaynak:** `TheOsmanYILDIRIM/TAMU-K-K`; yalnız `experiment/25d-binary-vertex-20261030`. `main` değişmedi.
+- **Başlangıç:** `425f97b9bf58761f20e632ee03bfa5407702af5d`; **kod teslim HEAD:** `79714288975d4a2b197bcb68b1bafb6fb5e4ee46`.
+- **Zaman (UTC):** 2026-10-31 09:42.
+- **Sahiplik / EşRota:** tek yazıcı SOHBET-G; `scoped_write` kod, `report_only` bu bölüm. Kanal: `github:TheOsmanYILDIRIM/TAMU-K-K@experiment/25d-binary-vertex-20261030:SESSION_HANDOFF.md#SOHBET-G`; `revision_guard=cas`, `readback=provider_reopen`, otomatik bildirim yok.
+- **Kayıt hedefi / revizyon:** yalnız mevcut `SESSION_HANDOFF.md`; yazımdan sonra GitHub'da yeniden açılarak rapor commit'i ve blob SHA teslim mesajında doğrulanacak.
+- **Kanonik Beyin:** `TheOsmanYILDIRIM/agy-vault/main:tasks/oyun-25d-runtime-renderer-integration-20261028.md` rev14, `active` başlangıçta okundu. Resmî DirectSync yazma sözleşmesi bu oturumda işletilemediği için **Beyin'e yazılmadı**; GitHub raporu Beyin senkronu değildir.
+
+### Yeni bulgular, önce/sonra kod kanıtı
+
+| Öncelik ve gerçek bulgu | Önce → sonra (kod kanıtı) | Commit / dosyalar | Doğrulama ve risk |
+|---|---|---|---|
+| **P0 — Worker sıra baskısı:** kamera değişse bile `binary_pending` eski işleri tutup 12 istek sınırını doldurabiliyor | `Runtime:enqueue_binary` sadece eski `binary_ready` temizliyordu → artık stale request kanalı temizleniyor, her iş `ticket` taşıyor ve `poll_binary_results` yalnız geçerli ticket kabul ediyor. Worker sonucu aynı ticket ile döndürüyor. 1 GPU upload/kare korunuyor | `e0fca2e46bd0c8d1343ee41ac181ddb895af49ab`; `world/terrain25d_runtime.lua`, `world/terrain25d_binary_worker.lua`, `tests/terrain25d_runtime.lua` | Kaynak geri okundu; mevcut Lua testine iptal/ABA regresyonu eklendi. CI yürüyüşü **max_missing=6**, tek başına çözmedi |
+| **P0 — Görünür küme ve halo:** 80 toplam residency slotu, geniş gerçek görünür sette 77 chunk varken sadece üç halo slotu bırakıyor | `Stream:needed` mevcut uzaklık sıralaması → kamera hareket yönünde halo önceliği, daha geniş aday taraması ve `max(80, visible+24)` sınırlı ön hazırlık kapasitesi; görünürlerin tamamı önce tutuluyor. Yarım mesh gösterilmiyor | `9e0cacf55e6d19cd5898298f4e78b294a0b10d6c`, `79714288975d4a2b197bcb68b1bafb6fb5e4ee46`; `world/stream.lua`, `tests/r2_viewport.lua` | **Başarısız:** CI #41189436053 max_missing=7, #41189613196 max_missing=7. Sonuncu 480 kare / distance=621.553. CPU/bellek maliyeti ve gerçek görünür küme sınırı yeniden değerlendirilmeli; bu hipotez **kabul edilmedi** |
+| **P1 — Eşzamanlı loglama:** `M.flush` LÖVE ana thread üzerinde `love.filesystem.append` çağırıyordu | 4 girişlik bounded `love.thread` Channel ve `core/diagnostics_worker.lua`; dolu kuyrukta `dropped` artırma; worker `ack`, hata kontrolü ve `close` sırasında `!stop`/`wait` | `c4b66a1c6fba6af8b0a26e67e240278d2d6decdc`; `core/diagnostics.lua`, **yeni üretim modülü** `core/diagnostics_worker.lua`, mevcut `tests/diagnostics.lua` | Lua5.4/LuaJIT mocked queue testinde `TAMU_DIAGNOSTICS_ASYNC_QUEUE_OK`. Gerçek Android depolama/backpressure, worker ömrü ve dosya çıkarımı **doğrulanmadı** |
+| **P1 — Yanlış kareye dt:** draw_done güncel `update_ms/draw_ms` ile önceki `dt`yi birleştiriyordu | `M.draw_done` geçerli frame örneğini saklıyor; *sonraki* `M.begin(dt)` önceki frame'i `finish_frame` ile sonlandırıyor. Son çerçeve CPU-only ve `dt_confirmed=false`; JSONL `frame`, `slow_frame`, `window_summary` türleri korunuyor | `b6cad2681248fe8c56cee764f5cab1aa85b71f4b`; `core/diagnostics.lua`, `tests/diagnostics.lua` | Lua5.4/LuaJIT `TAMU_DIAGNOSTICS_FRAME_ALIGNMENT_OK`; 16.667ms pencere sayacı var. Gerçek cihaz frame pacing/Android FPS ayrı kabul |
+| **P1 — Seçim önbelleği:** `renderer.lua` `not selected_id` koşulu ile bütün statik objeleri her seçili karede tekrar kuyruğa alıyordu | Koşul kaldırıldı; `Sprite:draw_selection` seçili objenin halkasını player öncesi/sonrası doğru Y-depth katmanında ayrı çiziyor | `dd56c0278a7babe8690f52150bee2cdc23b8bb3e`; `objects/renderer.lua`, `objects/terrain25d_sprites.lua`, `tests/terrain25d_object_population.lua` | Kod/commit geri okundu; görsel seçim, alfa, hasat ve cihaz karşılaştırması **açık** |
+| **P1 — Player slot:** iki ayrı `SpriteBatch` ve `cache.player_slot` eşitliği nedeniyle oyuncu ağaçların önünden arkasına geçince tüm batch yeniden kuruluyordu | Tek değişmez batch + `SpriteBatch:setDrawRange(start,count)`; prefix görünür sprite sayaçlarıyla player öncesi/sonrası eşdeğer sıra. Obje kimliği/pozisyonu değişirse yeniden oluşturma korunuyor | `3c8e38947fa28b6e583f4915dd295e69f48202ce`; `objects/terrain25d_sprites.lua`, `tests/terrain25d_object_population.lua` | LÖVE 11.x draw range API uygun; kaynak testi eklendi. İlgili CI adımı P0 yürüyüşte durduğu için bu sürümde **çalışmadı**; cihaz Y-depth ve alpha görsel kıyası açık |
+| **P3 — Creative boş sahne:** açılışta `CreativeRenderer.new` atlası ve batch'i hemen yaratıyordu; boş sahnede `visible`, clear/flush/draw çalışıyordu | `R.new` hafif; `ensure_assets` yalnız ilk görünür yapı veya preview ile çağrılıyor. `model.items` boşsa erken dönüş; var olan yerleştirilmiş yapılar Creative kapalıyken de görünür tutuluyor | `9667f03322c1c7be225c18e8dae5425f41f3e540`; `systems/creative_build_renderer.lua`, `tests/creative_build.lua` | Kaynak testi eklendi; Creative test adımı P0 sonrasında olduğundan yeni CI'de koşulmadı. Yüklü save/startup somut görüntüsü açık |
+
+### Tekrar edilmedi / korunmuş mevcut işler
+
+21→2 terrain drawcall, 1/kare hareketli GPU mesh upload cap, object/shadow pan cache, 32px gölge atlası, iki atlas sayfası, düşük DPI, Rigby 30Hz, opaque/alpha denemeleri, JSONL mevcut şeması, paket temizliği ve desktop p95=2.5ms bilgilendirme eşiği **önceden yapılmış olarak kabul edildi**. `main`, Stage6/save/yedekler, Rigby kaynak görselleri, Stage6 altyapısı ve authored atlaslar değiştirilmedi. Yeni görev/takip dosyası, yeni test modu ve workflow eklenmedi.
+
+### Test, CI ve artefakt kanıtı
+
+- Başlangıç P0 başarısızlık: [CI #41183440151](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41183440151), `max_missing=6` (eski `f5589962`).
+- İlk müdahale kontrolü: [CI #41189085513](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41189085513) (`b6cad268`): gate başarılı; Lua/JSONL testleri çalıştı; `TAMU_WALK_COVERAGE frames=480 max_missing=6`, sonuç **failure**.
+- Yönlü ön hazırlık: [CI #41189436053](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41189436053) (`9e0cacf`): gate başarılı, `max_missing=7`, **failure**.
+- Son HEAD: [CI #41189613196](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41189613196) (`79714288`): gate başarılı, `TAMU_AUTHORED_LOVE_OK binary_chunks=156`; mevcut `.love` arşivi Python `zipfile.testzip() is None` testinden geçti; `max_missing=7`, **failure**. Desktop CPU p95=3.819ms bir **Android FPS ölçümü değildir**.
+- Son CI artefaktı: [tamu-authored-r2-binary-cache](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41189613196/artifacts/13037869827), artifact ID `13037869827`, arşiv SHA256 `68dbb3132d369e3e521d560d5f60edeb9ce5909ef80a740aab43117f59eed668`; ZIP GitHub Actions'ta üretildi/yüklendi. Yerel cihazda paket çalıştırma, görsel ve artefaktın bağımsız yeniden indirilip test edilmesi bu sohbetten doğrulanmadı.
+- Luac/LuaJIT, LÖVE/Xvfb **CI'de geçilen adımlar kadar** doğrulandı. Quality'nin sonraki object/Creative/Stage6/diğer testleri P0 adımı başarısız kaldığı için tamamlandı sayılmadı. Gerçek Android cihaz FPS/JSONL, Rigby attachment, alfa/yön ve uzun süreli disk I/O **doğrulanmadı**.
+
+### Açık işler, engeller, ikinci EşRota dalgası kontrol listesi
+
+1. **P0 BLOCKED — kabul kapısı:** Son yürüyüşte `max_missing=7` (hedef `0`). Görünür/görünmez kesin kesişim (AABB fazla sayım riski), 77 görünür chunk, ön hazırlık kümesi, yükleme önceliği, stale jobs, GPU `newMesh/setVertices` sürelerini ayrı sayaçlarla yeniden analiz et. Düşük bütçeli Android bellek ve frametime etkisini ölçmeden staging kapasitesini üretime kabul etme; `upload_cap=1` otomatik artırılmasın.
+2. **P1 doğrulama:** Yeni selected overlay ve player_slot `setDrawRange` sırasının alpha/shadow/harvest/selection davranışını ve mevcut `tests/terrain25d_object_population.lua` / `tests/creative_build.lua` testlerini P0'dan bağımsız **mevcut** test düzeninde çalıştırıp görsel kıyasla; henüz çalıştırılmadı.
+3. **P1 Android telemetry:** `diagnostics/tamu-trace-*.jsonl` aktar; `dt_confirmed`, 16.667/33.333ms, `trace_write_ms`, `dropped`, `mesh_uploads`, `object_cache_rebuilt` olaylarını korele et; asenkron writer kapanışını/dolmayı cihazda sınayarak FPS hakkında karar ver.
+4. **P2 Terrain batch — uygulanmadı:** `terrain25d_runtime.lua` aggregate rebuild `mesh:getVertex` başına Lua tablo tahsislerini binary vertex spans kullanarak kaldırma adayını incele; atlas, renk, layer, pass sırası ve LÖVE/Xvfb birebir kontrolü olmadan değiştirme.
+5. **P2 Rigby — uygulanmadı:** yön/skin vertex hesaplarını, çoklu mesh draw maliyetini, hasatta 30Hz bypass davranışını ve attachment/alpha deformasyonunu mevcut Rigby testleriyle incele; tahmini kazanımı doğrulanmadan yapma.
+6. **P3 Gameplay/Assets — kısmen açık:** HUD layout churn, collision allocation/sort ve atlas worker timeout'taki senkron image yaratımı değişmedi. Açılışta zaten var olan Creative parçaları/save, Stage6 ve paketleme tam regresyonu gözden geçir.
+7. **Kayıt/senkron:** Beyin rev14 görevini yalnız resmî DirectSync sözleşmesi ve revision-CAS ile senkronla; bu sohbetten doğrudan vault düzenlemesi yapılmadı. Başka ajanın bu raporu veya branch HEAD'i haber verilmeden değiştirmediğini ikinci dalga başında yeniden oku.
+
+### Koordinatöre teslim
+
+Kod ve rapor GitHub yetkili dalında. Koordinatör ikinci araştırma dalgasını yalnız bu raporu ve üç CI başarısızlığını okuyup güncel HEAD'i tekrar doğruladıktan sonra açmalı. Otomatik bildirim veya Android performans başarısı iddiası yok. **Raporun gerçek GitHub geri okuma SHA'sı sohbet tesliminde verilir.**
+
+---
+
 ## 2026-10-31 — Devam: CI desktop 400 FPS hedefi mobil kabulden ayrıldı (AÇIK)
 
 - Yetkili dal HEAD başlangıçta `019729f0dc1818c0c2be85ff52cacf8ec209a191` olarak doğrulandı. `.github/workflows/quality.yml` içindeki eski `p95<=2.5ms` masaüstü eşdeğer-400FPS assert'i, ölçümü ve drawcall karşılaştırma kontrollerini koruyan fakat başarısızlığı `TAMU_DESKTOP_CPU_BUDGET_WARNING` olarak raporlayan bilgilendirme koşuluna çevrildi. Bunun Android 60 FPS kabulüyle ilgisi yoktur.
