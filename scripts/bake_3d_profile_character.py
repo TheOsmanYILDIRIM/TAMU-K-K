@@ -156,7 +156,8 @@ def main():
         view, label, index = name.rsplit("_", 2)
         row = rows[f"{view}_{label}"]
         for y in range(content_h):
-            dst_y = row * args.height + dy + y
+            # Blender Image.pixels is bottom-up, while PNG/LÖVE atlas rows are top-down.
+            dst_y = (3 - row) * args.height + dy + y
             dst = (dst_y * atlas_width + int(index) * args.width + dx) * 4
             src = ((y + ymin) * args.width + xmin) * 4
             packed[dst:dst + content_w * 4] = data[src:src + content_w * 4]
