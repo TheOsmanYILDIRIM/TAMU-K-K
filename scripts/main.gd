@@ -118,8 +118,8 @@ func _load_objects() -> void:
         var sprite := Sprite2D.new()
         sprite.texture = tex
         sprite.centered = true
-        sprite.position = Vector2(float(o["x"]), float(o["y"]))
-        sprite.z_index = clampi(int(float(o["y"]) / 16.0), -4096, 4096)
+        sprite.position = Vector2(float(o["sx"]), float(o["sy"]))
+        sprite.z_index = 2
         var scales := {"oak":1.04,"broadleaf":1.12,"conifer":1.20,"dead_tree":0.94,
             "boulder":0.44,"rock_cluster":0.50,"rock_spire":0.53,
             "shrub":0.30,"reeds":0.28,"stump":0.26,"fallen_log":0.41,"water_rocks":0.38}
