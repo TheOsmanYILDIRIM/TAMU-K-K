@@ -878,7 +878,31 @@ function Runtime:draw(stream,camera,w,h)
  local mesh_prepare_started=clock and clock()
  local resume_cap=self.bake_mode and 800 or
    (moving and self.moving_resume_cap or self.idle_resume_cap)
- for _,c in ipairs(chunks) do
+ -- GPU-ready binary chunks get the existing upload slot before expensive
+ -- cooperative CPU preparation. Preserve visible-first Stream order inside
+ -- each tier; never mutate Stream's authoritative visible/chunk array.
+ local upload_order=chunks
+ if self.binary_worker and not self.bake_mode and image_ready then
+   local visible_ready,halo_ready,rest={},{},{}
+   local required=stream.visible_required_keys or {}
+   for _,chunk in ipairs(chunks) do
+     if not chunk._25d_meshes and not chunk._25d_prepare_job
+         and self.binary_ready[chunk.key] and
+         not self.binary_ready[chunk.key].missing then
+       local target=required[chunk.key] and visible_ready or halo_ready
+       target[#target+1]=chunk
+     else
+       rest[#rest+1]=chunk
+     end
+   end
+   upload_order={}
+   for _,group in ipairs({visible_ready,halo_ready,rest}) do
+     for _,chunk in ipairs(group) do
+       upload_order[#upload_order+1]=chunk
+     end
+   end
+ end
+ for _,c in ipairs(upload_order) do
    if image_ready and not c._25d_meshes and uploads<upload_cap
        and (not deadline or clock()<deadline) then
      local job=c._25d_prepare_job
