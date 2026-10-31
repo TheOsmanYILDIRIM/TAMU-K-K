@@ -534,3 +534,11 @@ SOHBET-G'nin uygulanmış worker ticket/FIFO, visible/halo alias, `upload_cap=1`
 ### 2026-10-31 — Tam oyun 3B karakter özel .love (CI doğrulaması bekliyor)
 - Mevcut `scripts/package_tamu_love.py` taban alınarak `scripts/package_tamu_3d_test_love.py` ile yalnız **dağıtım ZIP'inde** Rigby yerine `player.side_baked_visual` seçilir ve açılış izolasyon ekranı atlanır. Depo oyun kaynakları, kayıtlar ve varsayılan Rigby korunur.
 - Mevcut Blender workflow'unda tam oyun `.love`, `TAMU_BAKED_DEMO_SMOKE=1` LÖVE/Xvfb gerçek render testi, ekran görüntüsü ve indirilebilir artifact eklenir. Sonuç CI # ile ayrıca geri okunacak; Android cihaz, oynanış, FPS kanıtı değildir.
+
+### 2026-10-31 — 3B özel tam-oyun .love gerçek Actions teslimi
+
+- **CI:** [Actions #41235119369](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41235119369) `completed/success`, tüm Blender, kaynak SHA, Lua yön/ayna, özel tam-oyun .love üretimi, LÖVE/Xvfb gerçek boot/18 draw, PNG screenshot ve artifact adımları başarılı.
+- **Artifact:** `tamu-special-3d-avatar-love` ID `13054809659`, provider ZIP digest `sha256:aa6687c447fd5096c079977241bf99b3bd940711021a70fe033986f1eacef142`. Bağımsız indirilen ZIP `testzip() is None`, içindeki `TAMU-3D-Avatar-TEST.love` **11,574,094 bytes**, SHA256 `bbae84c3b587dbe855ed0e6b027cda0b4cf4aa0ce9b94a278b31221be223b0c5`, `testzip() is None`, **243 dosya**. İçeride gerçek baked atlas SHA ve iki yönlü görsel zorlaması doğrulandı; kaynak karakter ve normal Rigby değişmedi.
+- **Görsel inceleme:** Gerçek LÖVE/Xvfb screenshot'ta karakter ve portrait HUD görünüyor, test paketindeki yükseltilmiş karakter ölçeği uygulanmış. İlk 8. kare ekranında dünya terrain akışı henüz tamamlanmamış (HUD `Eksik 14/18`); *tam dünya görsel/parite ve performans kabulü değildir*. Android yürüyüş/Y-depth, su, hasat, FPS, açılışta terrain ilerleme ve GLB kostüm kalitesi cihaz üzerinde ayrıca test edilmeli.
+- **Kaynak:** `scripts/package_tamu_3d_test_love.py`, yalnız test ZIP'inde `main.lua` isolation preamble ve `objects/renderer.lua` avatar seçimi değiştirir. Gerçek kaynak `game/love/main.lua`, `objects/renderer.lua`, Stage6/save ve `main` değiştirilmedi.
+- **Sınır:** Avenox Beyin'e resmî DirectSync task/receipt yazımı yapılmadı; bu GitHub handoff kanıtı kanonik Beyin semantik güncellemesi değildir.
