@@ -57,7 +57,7 @@ function Sprite.new(provider,manifest)
  return setmetatable({provider=provider,families=fam,
    static_manifest=static_manifest,static_images={},
    batches_by_page={},shadow_batches={},shadow_frame=0,
-   shadow_cache=nil,shadow_rebuilds=0,shadow_reuses=0,
+   shadow_cache=nil,static_shadow_cache=nil,shadow_rebuilds=0,shadow_reuses=0,
    contact_batch=nil,contact_cache=nil,contact_calls=0,
    contact_objects=0,contact_rebuilds=0,contact_reuses=0,
    frame=0,current_page=nil,shadow_calls=0,shadow_objects=0,
@@ -127,7 +127,7 @@ function Sprite:flush(g)
 end
 -- Identical approved sprite family, variant, scale and culling in the
 -- opaque sprite pass and alpha-silhouette shadow prepass.
-function Sprite:appearance(camera,w,h,o)
+function Sprite:appearance(camera,w,h,o,skip_cull)
  -- The compact object atlas is decoded off-thread; never trigger a
  -- synchronous newImage fallback while the worker is still loading it.
  if self.provider.compact and not self.provider.compact_ready then return nil end
@@ -149,8 +149,8 @@ function Sprite:appearance(camera,w,h,o)
  local a=choices[1+hash(o.id)%n]
  local x,y=camera:project(o.x,o.y,w,h)
  local scale=Sprite.scale_for(family,z,o.id)
- if x+64*scale<0 or x-64*scale>w or
-    y+8*scale<0 or y-124*scale>h then return nil end
+ if not skip_cull and (x+64*scale<0 or x-64*scale>w or
+    y+8*scale<0 or y-124*scale>h) then return nil end
  return a,x,y,scale,family
 end
 -- Actual sprite RGBA alpha becomes a projected ground silhouette.
@@ -286,20 +286,40 @@ end
 -- or appreciable solar motion always rebuilds the original two RGBA layers.
 function Sprite:draw_shadows(g,camera,w,h,objects)
  if self.static_manifest then
-   -- Shadow masks were baked offline from each object's original alpha.
-   -- One low-resolution atlas is drawn below normal full-resolution sprites.
+   -- Immutable, full-chunk shadow geometry is built once and reused on
+   -- camera pans. Never bake viewport culling into a reusable screen batch:
+   -- objects outside the original viewport may enter it after a pan.
    self.shadow_calls,self.shadow_objects=0,0
    local sun=self.provider.sun
-   if not sun or sun.cast<=0 then return 0 end
+   if not sun or sun.cast<=0 then
+     self.static_shadow_cache=nil
+     return 0
+   end
    local slot=(math.floor(sun.hour/3+.5)*3)%24
    local name='staticshadow:shadows_'..string.format('%02d',slot)..'.png'
-   local entry=self:batch_for(name)
-   local batch=entry
+   local batch=self:batch_for(name) -- touch page every frame to retain its pin
+   local stable=not self.provider.objects_fully_revealed
+     or self.provider:objects_fully_revealed(objects)
+   local cache=self.static_shadow_cache
+   if stable and cache and cache.page==name and cache.batch==batch
+      and same_scene(cache,camera,w,h,objects) then
+     self.shadow_reuses=self.shadow_reuses+1
+     self.shadow_objects=cache.count
+     if cache.count>0 and not self.skip_gpu_draw then
+       g.setColor(1,1,1,1)
+       draw_camera_batch(g,batch,cache,camera,w,h)
+       self.shadow_calls=1
+     end
+     return self.shadow_calls
+   end
+   self.shadow_rebuilds=self.shadow_rebuilds+1
    batch:clear()
    local atlas=self.static_manifest
    local count=0
    for _,o in ipairs(objects) do
-     local a,x,y,scale=self:appearance(camera,w,h,o)
+     -- Match the existing revelation rules while avoiding viewport clipping.
+     -- Offscreen objects stay in the batch for exact camera-pan reuse.
+     local a,x,y,scale=self:appearance(camera,w,h,o,true)
      if a then
        local index=assert(atlas.objects[a.id],'missing shadow mask '..a.id)
        if not index.quad then
@@ -310,11 +330,22 @@ function Sprite:draw_shadows(g,camera,w,h,objects)
        count=count+1
      end
    end
-   if count>0 then
+   self.shadow_objects=count
+   if count>0 and not self.skip_gpu_draw then
      g.setColor(1,1,1,1)
-     if not self.skip_gpu_draw then g.draw(batch) end
-     self.shadow_calls=self.skip_gpu_draw and 0 or 1
-     self.shadow_objects=count
+     g.draw(batch)
+     self.shadow_calls=1
+   end
+   -- Fog/reveal changes can alter shadow visibility without changing IDs.
+   -- Cache only when all current objects are fully revealed.
+   if stable then
+     cache=scene_snapshot(camera,w,h,objects)
+     cache.page=name
+     cache.batch=batch
+     cache.count=count
+     self.static_shadow_cache=cache
+   else
+     self.static_shadow_cache=nil
    end
    return self.shadow_calls
  end
