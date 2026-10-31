@@ -82,3 +82,38 @@ for line in (files['diagnostics/tamu-trace-0.jsonl'] or ''):gmatch('[^\n]+') do
 end
 assert(count>=1)
 print('TAMU_DIAGNOSTICS_JSONL_OK frames='..frames..' slow_events='..count)
+-- LÖVE's asynchronous path must never synchronously append during draw.
+do
+ local old_thread=love.thread
+ local channels={}
+ local function ch(name)
+   if not channels[name] then
+     local c={items={}}
+     function c:clear() self.items={} end
+     function c:getCount() return #self.items end
+     function c:push(v) self.items[#self.items+1]=v end
+     function c:pop() return table.remove(self.items,1) end
+     channels[name]=c
+   end
+   return channels[name]
+ end
+ local waits=0
+ love.thread={getChannel=ch,newThread=function()
+   return {start=function() end,getError=function() return nil end,
+     wait=function() waits=waits+1 end}
+ end}
+ local old_append=love.filesystem.append
+ love.filesystem.append=function() error('main-thread append forbidden') end
+ Diagnostics.start()
+ for i=1,15 do
+   clock=clock+.08;Diagnostics.begin(.08);Diagnostics.update_done()
+   Diagnostics.draw_begin();clock=clock+.01;Diagnostics.draw_done()
+   Diagnostics.flush()
+ end
+ assert(Diagnostics.dropped>0,'bounded worker queue did not backpressure')
+ Diagnostics.close()
+ assert(waits==1,'writer did not close cleanly')
+ love.filesystem.append=old_append;love.thread=old_thread
+end
+print('TAMU_DIAGNOSTICS_ASYNC_QUEUE_OK')
+
