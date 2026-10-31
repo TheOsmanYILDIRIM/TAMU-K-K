@@ -61,3 +61,29 @@ local n=c.level;assert(h:action("creative_level_up",c) and c.level==math.min(3,n
 assert(h:action("creative_toggle",c) and not c.active)
 assert(not c:place())
 print("TAMU_CREATIVE_CORE_OK 13 catalog, preview, placement, collision, undo, 3D height, touch HUD")
+-- Empty normal gameplay must never load the optional Creative atlas.
+-- Existing authored construction remains visible while Creative is off.
+do
+ local Renderer=require('systems.creative_build_renderer')
+ local renderer=Renderer.new()
+ assert(not renderer.initialized and not renderer.image)
+ local empty=C.new(world)
+ local unloaded=renderer:draw(empty,camera,360,360)
+ assert(unloaded==0 and not renderer.initialized,
+   'empty Creative state allocated GPU textures')
+ local old_love=love
+ local geometry=0
+ love={filesystem={read=function() return nil end},graphics={
+   push=function() end,pop=function() end,setColor=function() end,
+   polygon=function() geometry=geometry+1 end,
+   rectangle=function() geometry=geometry+1 end}}
+ local placed={items={one=true},active=false,
+   visible=function() return {{shape='foundation',x=0,y=0,z=0}} end}
+ local view={zoom=1,project=function() return 180,180 end}
+ assert(renderer:draw(placed,view,360,360)==1 and geometry==1
+   and renderer.initialized and renderer.fallback,
+   'existing Creative construction hidden by empty fast-path')
+ love=old_love
+end
+print('TAMU_CREATIVE_EMPTY_LAZY_ATLAS_OK')
+
