@@ -398,6 +398,34 @@ do
  wr:poll_binary_results()
  assert(not wr.binary_ready['0:0'] and wr.binary_ready['2:0']
    and wr.binary_inflight==1,'stale worker reply accepted')
+ -- Changing only one halo request must preserve valid queued tickets.
+ channel('tamu25d:binary:requests'):clear()
+ local keep=setmetatable({binary_worker={getError=function() return nil end},
+   binary_pending={},binary_ready={},binary_inflight=0,binary_max_inflight=3},
+   getmetatable(rt))
+ keep:enqueue_binary({
+   {key='10:0',cx=10,cy=0},{key='11:0',cx=11,cy=0},
+   {key='12:0',cx=12,cy=0}
+ })
+ local queue=channel('tamu25d:binary:requests')
+ local prior=keep.binary_pending['11:0']
+ local prior2=keep.binary_pending['12:0']
+ keep:enqueue_binary({
+   {key='11:0',cx=11,cy=0},{key='12:0',cx=12,cy=0},
+   {key='13:0',cx=13,cy=0}
+ })
+ assert(keep.binary_pending['11:0']==prior and
+   keep.binary_pending['12:0']==prior2 and
+   keep.binary_inflight==3 and not keep.binary_pending['10:0'],
+   'valid worker tickets lost during partial halo cancellation')
+ local one,two,three=queue:pop(),queue:pop(),queue:pop()
+ assert(one.cx==11 and one.ticket==prior and
+   two.cx==12 and two.ticket==prior2 and three.cx==13 and
+   queue:pop()==nil,'surviving worker FIFO order or new priority lost')
+ channel('tamu25d:binary:ready'):push({key='11:0',ticket=prior})
+ keep:poll_binary_results()
+ assert(keep.binary_ready['11:0'] and keep.binary_inflight==2,
+   'surviving worker result not accepted')
  love.thread=old_thread
 end
 print('TAMU_BINARY_PRIORITY_CANCELLATION_OK')

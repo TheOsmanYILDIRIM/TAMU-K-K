@@ -665,9 +665,25 @@ function Runtime:enqueue_binary(chunks)
    if not wanted[key] then stale=true;break end
  end
  if stale then
-   requests:clear()
-   self.binary_pending={}
-   self.binary_inflight=0
+   -- A disappearing halo cell must not cancel unrelated visible work.
+   -- Drain only queued requests; worker-owned requests remain tracked
+   -- by their tickets until poll_binary_results validates them.
+   local keep={}
+   while true do
+     local item=requests:pop()
+     if not item then break end
+     local key=tostring(item.cx)..':'..tostring(item.cy)
+     if wanted[key] and self.binary_pending[key]==item.ticket then
+       keep[#keep+1]=item
+     end
+   end
+   for _,item in ipairs(keep) do requests:push(item) end
+   local count=0
+   for key in pairs(self.binary_pending) do
+     if wanted[key] then count=count+1
+     else self.binary_pending[key]=nil end
+   end
+   self.binary_inflight=count
  end
  for _,c in ipairs(chunks) do
    if self.binary_inflight>=self.binary_max_inflight then break end
