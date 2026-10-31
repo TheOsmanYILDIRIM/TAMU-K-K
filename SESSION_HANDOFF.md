@@ -57,6 +57,12 @@ Doğrulanmış rapor bağlantısı: [SESSION_HANDOFF.md#SOHBET-K](https://github
 - [Quality #41230452958](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41230452958) son kod HEAD'de `success`; artifact `tamu-authored-r2-binary-cache` ID `13053766217`, SHA256 `07948d8bb3c42589862958512d51746623961315fdca1281d952cf2ad9892322`. İndirilen artifact ZIP ve 550 girdili .love `testzip` başarılı; .love içinde yeni kod doğrulandı.
 - **AÇIK:** İstenen chunk bazlı dünya-koordinatlı sabit obje/gölge önbelleği **henüz uygulanmadı**; Android titreme ve gölge yerleşimi test edilmedi. Rigby değişikliğinin Android FPS kazancı kanıtlanmadı; vertex karşılaştırma maliyeti de cihazda ölçülmedi. 60FPS sabitlik ve görüntü kabulü bekliyor. Avenox Beyin görevine DirectSync yazımı yapılmadı.
 
+### 2026-10-31 — Android cached scene pixel lock (kısmi görsel stabilizasyon)
+
+- `objects/terrain25d_sprites.lua` içindeki ortak `draw_camera_batch` dönüşümü Android'de fiziksel pixel grid'e yuvarlandı. Sabit objelerin, cached contact ve static/dynamic shadow batch'lerinin kamera pan esnasında aynı translasyonu kullanması korunur. Kod commit [b31b5d25](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/commit/b31b5d25ee8ce1a0c615a99a07725119f3ad225e).
+- CI [#41231294354](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41231294354) gate ve test başarı, artifact ID `13052864878` SHA256 `47d7513fc2e58b31dcbba8555d09c3e619f37a6850a8a227d66eca78e560f768`; ZIP testzip, 550 girdili .love testzip ve yeni kod içeriği bağımsız doğrulandı.
+- **Açık:** Bu, chunk bazlı world-space kalıcı batch mimarisinin yerine geçmez. Camera pan'de cached/uncached geçiş farkı, zoom, reveal, GPU yükü, gerçek Android titreme ve 60FPS p95/p99 görsel/fonksiyonel kabulü doğrulanmadı. Pixel-grid snapping tek başına chunk girişinde önce görünmeyen objenin belirmesini veya günışığı slot geçişlerini engellemez. Beyin DirectSync güncellemesi yapılmadı.
+
 ---
 
 
