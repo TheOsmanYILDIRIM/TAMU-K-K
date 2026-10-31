@@ -117,3 +117,28 @@ opts.canvas_cache=false
 Terrain.draw(scene,cam2,691,1536,opts)
 assert(draws.releases==3,"disabling cached terrain must release framebuffer")
 print("R2_CANVAS_INVALIDATION_OK still/move/mesh/pending/resize/dpi/disable")
+-- Opt-in terrain residency must put future camera halo ahead of the
+-- behind-camera halo, without altering legacy cap or visible coverage.
+do
+ local s=Stream.new(query,{size=256,step=8,max_loaded=80,
+   render_only_25d=true})
+ local moving=Camera.new()
+ moving.x,moving.y,moving.zoom=64,128,1.7
+ s:needed(moving,720,1100)
+ moving.x=moving.x+2
+ local items=s:needed(moving,720,1100)
+ assert(s._25d_prefetch_dir and s._25d_prefetch_dir.x>.9)
+ local last=nil
+ for i,c in ipairs(items) do
+   if not s.visible_required_keys[c.key] then
+     local x=(c.cx+.5)*256-(moving.x+512)
+     local y=(c.cy+.5)*256-moving.y
+     local score=x*x+y*y
+     if last then assert(score>=last,'forward halo lost priority') end
+     last=score
+   end
+ end
+ assert(last and #items<=80,'opt-in halo missing or memory cap ignored')
+end
+print('TAMU_25D_FORWARD_HALO_PRIORITY_OK')
+

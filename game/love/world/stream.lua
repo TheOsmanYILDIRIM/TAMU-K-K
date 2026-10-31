@@ -71,7 +71,7 @@ function Stream:needed(camera,width,height)
      "camera required")
   local size=self.chunker.size
   local min_x,min_y,max_x,max_y=view_range(camera,width,height,size,
-    self.render_only_25d and 2 or 1)
+    self.render_only_25d and 3 or 1)
   local candidates={}
   for cy=min_y,max_y do for cx=min_x,max_x do
     local midx,midy=(cx+0.5)*size,(cy+0.5)*size
@@ -87,7 +87,7 @@ function Stream:needed(camera,width,height)
     -- truncation could drop visible corners at portrait/zoom-out viewports.
     local visible,halo={},{}
     local visible_pad=12
-    local prefetch_pad=math.max(72*camera.zoom+16,size*camera.zoom)
+    local prefetch_pad=math.max(72*camera.zoom+16,size*camera.zoom*1.6)
     for _,c in ipairs(candidates) do
       if overlaps_view(c.cx,c.cy,size,camera,width,height,visible_pad) then
         visible[#visible+1]=c
@@ -95,8 +95,33 @@ function Stream:needed(camera,width,height)
         halo[#halo+1]=c
       end
     end
-    -- Never pretend bounded memory can cover an unbounded visible viewport.
-    -- Draw-time diagnostics and mobile acceptance test must detect this.
+    -- Choose the bounded halo towards camera motion, not by distance
+    -- behind the player. The next viewport edge can reveal six diagonal
+    -- terrain chunks in one frame; preload those before they become visible.
+    local prev=self._25d_prefetch_camera
+    local dx=prev and camera.x-prev.x or 0
+    local dy=prev and camera.y-prev.y or 0
+    self._25d_prefetch_camera={x=camera.x,y=camera.y}
+    local distance=math.sqrt(dx*dx+dy*dy)
+    if distance>0.05 then
+      self._25d_prefetch_dir={x=dx/distance,y=dy/distance}
+    end
+    local direction=self._25d_prefetch_dir
+    if direction then
+      local lookx=camera.x+direction.x*size*2
+      local looky=camera.y+direction.y*size*2
+      local function lookscore(c)
+        local x=(c.cx+.5)*size-lookx
+        local y=(c.cy+.5)*size-looky
+        return x*x+y*y
+      end
+      table.sort(halo,function(a,b)
+        local va,vb=lookscore(a),lookscore(b)
+        if va~=vb then return va<vb end
+        return less(a,b)
+      end)
+    end
+    -- Keep all screen-visible cells, even when max_loaded is exceeded.
     local required=visible
     for _,c in ipairs(halo) do
       if #required>=self.max_loaded then break end
