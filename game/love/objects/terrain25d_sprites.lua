@@ -472,8 +472,10 @@ function Sprite:prepare_cached_objects(camera,w,h,order)
  local cache=self.object_static_cache
  if cache and cache.valid~=false and cache.player_slot==player_slot and
     same_scene(cache,camera,w,h,objects) then
+   self.object_cache_reuses=(self.object_cache_reuses or 0)+1
    return true
  end
+ self.object_cache_rebuilds=(self.object_cache_rebuilds or 0)+1
  -- A changed object membership or relative Y-depth requires a rebuild.
  -- The immutable batch owns this texture for the renderer lifetime.
  if not self.object_atlas_pinned then
