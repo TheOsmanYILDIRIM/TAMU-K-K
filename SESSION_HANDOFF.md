@@ -1,3 +1,11 @@
+## 2026-10-31 — Devam: CI desktop 400 FPS hedefi mobil kabulden ayrıldı (AÇIK)
+
+- Yetkili dal HEAD başlangıçta `019729f0dc1818c0c2be85ff52cacf8ec209a191` olarak doğrulandı. `.github/workflows/quality.yml` içindeki eski `p95<=2.5ms` masaüstü eşdeğer-400FPS assert'i, ölçümü ve drawcall karşılaştırma kontrollerini koruyan fakat başarısızlığı `TAMU_DESKTOP_CPU_BUDGET_WARNING` olarak raporlayan bilgilendirme koşuluna çevrildi. Bunun Android 60 FPS kabulüyle ilgisi yoktur.
+- Kod commit: `f5589962a1f2fb60f8a0cab532b769a06e12878f`; dosya blob `49223f9abac75de20f98298ddf4754d082ff5a78` geri okundu. Yeni manuel quality dispatch Supabase yönetici RPC tarafından kabul edildi; GitHub run [41183440151](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41183440151) aynı SHA üzerinde oluştu, son görülen durum queued. CI başarı, derlenmiş .love, ZIP içeriği ve Android cihaz FPS henüz kabul edilmedi.
+- Android JSONL aktarımı olmadığı için `slow_frame`, `mesh_upload`, `object_cache_rebuilt` ile gerçek spike korelasyonu henüz hesaplanamadı. Cihazdaki `diagnostics/tamu-trace-*.jsonl` ile p50/p95/p99 ve olay eşleşmesi sonraki adımdır. Mevcut `upload_cap=1` ve object cache tanılama koduna yeniden dokunulmadı; main'e merge yok.
+
+---
+
 ## 2026-10-31 — Devir: Android frame pacing ve CI sonucu (AÇIK)
 
 - **Proje:** TAMU / `TheOsmanYILDIRIM/TAMU-K-K`. Yetkili dal: `experiment/25d-binary-vertex-20261030`. Bu devir öncesi HEAD: `66a1aea28441c30234d3c4f1a1f75294c99f7e15`. `main` kontrol HEAD: `91ef74cacfb98716ac628a47f52a910681320abd` — bu oturumda main'e dokunulmadı.
