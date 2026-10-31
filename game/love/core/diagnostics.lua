@@ -244,11 +244,15 @@ finish_frame=function(sample,gpu,t,dt_ms)
   sample.dt_ms=dt_ms
   sample.dt_confirmed=dt_ms~=nil
   local frame_ms=math.max(dt_ms or 0,sample.update_ms+sample.draw_ms)
-  local samples=M.window
-  samples[#samples+1]=frame_ms
-  M.window_frames=M.window_frames+1
-  if frame_ms>16.667 then M.window_over16=(M.window_over16 or 0)+1 end
-  if frame_ms>33.333 then M.window_over33=(M.window_over33 or 0)+1 end
+  -- Last shutdown frame lacks a confirmed dt; keep the trace row but
+  -- exclude its CPU-only duration from presentation pacing percentiles.
+  if dt_ms~=nil then
+    local samples=M.window
+    samples[#samples+1]=frame_ms
+    M.window_frames=M.window_frames+1
+    if frame_ms>16.667 then M.window_over16=(M.window_over16 or 0)+1 end
+    if frame_ms>33.333 then M.window_over33=(M.window_over33 or 0)+1 end
+  end
   for name,ms in pairs(sample.phases or {}) do
     local rec=M.window_phases[name] or {sum=0,max=0}
     rec.sum=rec.sum+ms
