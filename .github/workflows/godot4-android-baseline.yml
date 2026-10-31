@@ -90,6 +90,7 @@ jobs:
           sudo apt-get install -y -qq lua5.4 >/dev/null
           mkdir -p /tmp/tamu-love
           unzip -q "$(find /tmp/tamu-canonical -name tamu-authored-compiled.love -print -quit)" -d /tmp/tamu-love
+          mkdir -p /tmp/tamu-love/chunks
           cp game/love/tests/export_godot_population.lua /tmp/tamu-love/tests/export_godot_population.lua
           (cd /tmp/tamu-love && lua5.4 tests/export_godot_population.lua)
           cp /tmp/tamu-love/chunks/r2_objects.json chunks/r2_objects.json
