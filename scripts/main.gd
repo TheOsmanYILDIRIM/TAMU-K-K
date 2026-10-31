@@ -11,6 +11,8 @@ var marker: Label
 var drag: bool = false
 var total_cached: int = 0
 var chunk_nodes: Dictionary = {}
+var available_chunks: Dictionary = {}
+var chunk_vertices: Dictionary = {}
 var world_bounds := Rect2(-4096.0, -4096.0, 32768.0, 32768.0)
 const MAX_LOADED_PER_FRAME := 1
 var avatar: Node2D
@@ -63,6 +65,36 @@ func _chunk_distance(stem: String) -> float:
     return Vector2(float(parts[1]) * 256.0, float(parts[2]) * 256.0).distance_squared_to(Vector2(0.0, 0.0))
 
 
+# Native screen-space camera with bounded chunk residency. Geometry
+# remains the exact authored source; camera panning never rebuilds vertices.
+func _refresh_streaming_requests() -> void:
+    var wanted: Dictionary = {}
+    var cx := floori(actor_world.x / 256.0)
+    var cy := floori(actor_world.y / 256.0)
+    for y in range(cy-4, cy+5):
+        for x in range(cx-4, cx+5):
+            var name := "c_%d_%d" % [x,y]
+            if available_chunks.has(name):
+                wanted[name] = true
+                if not chunk_nodes.has(name) and not pending.has(name):
+                    pending.append(name)
+    pending = pending.filter(func(name): return wanted.has(name))
+    pending.sort_custom(func(a,b): return _chunk_distance_to_actor(a) < _chunk_distance_to_actor(b))
+    for name in chunk_nodes.keys():
+        if not wanted.has(name):
+            var old: Node2D = chunk_nodes[name]
+            old.queue_free()
+            loaded -= 1
+            vertices -= int(chunk_vertices.get(name,0))
+            chunk_vertices.erase(name)
+            chunk_nodes.erase(name)
+
+func _chunk_distance_to_actor(stem: String) -> float:
+    var parts := stem.split("_")
+    if parts.size() != 3:
+        return INF
+    return Vector2((float(parts[1]) + 0.5) * 256.0, (float(parts[2]) + 0.5) * 256.0).distance_squared_to(actor_world)
+
 func _ready() -> void:
     terrain_atlas = load("res://assets/terrain25d/atlas_00.png")
     var idx = JSON.parse_string(FileAccess.get_file_as_string("res://chunks/index.json"))
@@ -76,9 +108,10 @@ func _ready() -> void:
         get_tree().quit(6)
         return
     for stem in idx["available"]:
-        pending.append(str(stem))
-    pending.sort_custom(func(a,b): return _chunk_distance(a) < _chunk_distance(b))
-    total_cached = pending.size()
+        available_chunks[str(stem)] = true
+    total_cached = available_chunks.size()
+    assert(total_cached == 156)
+    _refresh_streaming_requests()
     var camera := Camera2D.new()
     camera.name = "Camera2D"
     camera.enabled = true
@@ -104,6 +137,7 @@ func _load_chunk(stem: String) -> void:
     buf.big_endian = false
     buf.data_array = raw
     var group := Node2D.new()
+    var chunk_count := 0
     group.name = stem
     add_child(group)
     chunk_nodes[stem] = group
@@ -137,7 +171,9 @@ func _load_chunk(stem: String) -> void:
         instance.z_index = 0 if str(surf["key"]).begins_with("!") else 1
         group.add_child(instance)
         vertices += count
+        chunk_count += count
     assert(buf.get_position() == raw.size())
+    chunk_vertices[stem] = chunk_count
     loaded += 1
 
 func _load_objects() -> void:
@@ -243,9 +279,11 @@ func _process(delta: float) -> void:
     _update_avatar()
     if direction.length_squared() > 0.01:
         $Camera2D.position = $Camera2D.position.lerp(avatar.position, minf(delta * 4.0, 1.0))
+    if frame_no % 20 == 0:
+        _refresh_streaming_requests()
     if not pending.is_empty():
         _load_chunk(pending.pop_front())
-    marker.text = "TAMU | Godot 4 terrain parity\n%d / 16 chunks | %d verts\nFPS %d | frame %.2f ms" % [loaded, total_cached, vertices, Engine.get_frames_per_second(), delta * 1000.0]
+    marker.text = "TAMU Godot R2 / authored area\n%d active / %d available | %d verts\nFPS %d | frame %.2f ms" % [loaded, total_cached, vertices, Engine.get_frames_per_second(), delta * 1000.0]
     if frame_no % 120 == 0:
         print("TAMU_GODOT_FRAME frame=", frame_no, " loaded=", loaded, " fps=", Engine.get_frames_per_second())
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and frame_no == 45:
