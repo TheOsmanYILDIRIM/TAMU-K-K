@@ -68,6 +68,10 @@ jobs:
           out=pathlib.Path('assets/terrain25d')
           for name in ('atlas_00.png','atlas_01.png','manifest.json'):
               (out/name).write_bytes(z.read('assets/terrain25d/'+name))
+          shadows=pathlib.Path('assets/terrain25d/static_shadow')
+          shadows.mkdir(parents=True,exist_ok=True)
+          for n in ('objects_shadow_manifest.json','shadows_12.png'):
+              (shadows/n).write_bytes(z.read('assets/terrain25d/static_shadow/'+n))
           binaries=next(root.rglob('c_0_0.meta.json')).parent
           count=0
           for cx in range(-1,3):
