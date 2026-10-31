@@ -965,6 +965,7 @@ local function render_flags()
   if mode=='compare_norig' then return true,true,false,true end
   return true,true,true,true
 end
+local diag_copy_message,diag_copy_until=nil,0
 function love.draw()
   local terrain_on,objects_on,rig_on,hud_on=render_flags()
   Diagnostics.draw_begin()
@@ -1148,6 +1149,20 @@ function love.draw()
       runtime25d and runtime25d.visible or 0))
     io.stdout:flush()
   end
+  if love.system and love.system.getOS and love.system.getOS()=='Android' then
+    local sx,sy,sw=safe_area()
+    local bx,by=sx+sw-118,sy+8
+    g.setColor(.06,.12,.18,.86)
+    g.rectangle('fill',bx,by,110,34,6,6)
+    g.setColor(1,1,1,1)
+    g.print('COPY LOG',bx+12,by+9)
+    if diag_copy_message and love.timer.getTime()<diag_copy_until then
+      g.setColor(.06,.12,.18,.9)
+      g.rectangle('fill',sx+8,sy+48,math.min(sw-16,310),42,5,5)
+      g.setColor(1,1,1,1)
+      g.print(diag_copy_message,sx+14,sy+59)
+    end
+  end
   Diagnostics.phase("hud_ui")
   Diagnostics.draw_done({chunks=stats and stats.loaded,objects=object_count,
     missing=runtime25d and runtime25d.missing_visible,pending=stats and stats.pending,
@@ -1212,10 +1227,28 @@ local function interact_nearest()
   end
   if best then select_object(best) else route_status="Move closer to a resource" end
 end
+local function copy_diagnostics()
+  local ok,path=Diagnostics.export()
+  if not ok then return false,'Log export failed' end
+  local raw=love.filesystem.read(path)
+  if not raw or #raw==0 then return false,'Log empty' end
+  if not (love.system and love.system.setClipboardText) then
+    return false,'Clipboard unavailable'
+  end
+  local copied=pcall(love.system.setClipboardText,raw)
+  if not copied then return false,'Clipboard blocked' end
+  return true,'Log copied! Paste in ChatGPT'
+end
 local function press(id,x,y)
   fingers[id]={x=x,y=y,origin_x=x,origin_y=y,move=false}
   local sx,sy,sw,sh=safe_area()
   local safe={x=sx,y=sy,w=sw,h=sh}
+  if love.system and love.system.getOS and love.system.getOS()=='Android'
+      and x>=sx+sw-118 and x<=sx+sw-8
+      and y>=sy+8 and y<=sy+42 then
+    fingers[id].diag_copy=true
+    return
+  end
   if runtime25d then
     local tx,ty,tw,th=sun_test_bounds()
     if x>=tx and x<=tx+tw and y>=ty and y<=ty+th then
@@ -1278,6 +1311,14 @@ end
 local function release(id,x,y)
   local p=fingers[id];if not p then return end
   if p.joystick then joystick:release(id)
+  elseif p.diag_copy then
+    local sx,sy,sw=safe_area()
+    if x>=sx+sw-118 and x<=sx+sw-8 and y>=sy+8 and y<=sy+42 then
+      local ok,msg=copy_diagnostics()
+      diag_copy_message=msg
+      diag_copy_until=love.timer.getTime()+5
+      print('TAMU_DIAGNOSTICS_CLIPBOARD '..(ok and 'OK' or 'FAILED'))
+    end
   elseif p.sun_test then
     local tx,ty,tw,th=sun_test_bounds()
     if x>=tx and x<=tx+tw and y>=ty and y<=ty+th then cycle_test_sun() end
