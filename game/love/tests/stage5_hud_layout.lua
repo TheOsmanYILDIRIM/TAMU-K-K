@@ -6,6 +6,8 @@ for _,wh in ipairs(sizes) do
   local hud=Hud.new();hud.open=true
   local safe={x=0,y=0,w=w,h=h}
   local buttons=hud:layout(safe)
+  assert(hud:layout(safe)==buttons,
+    "unchanged safe-area should reuse Stage5 geometry")
   local panel,bar
   local count=0
   for _,b in ipairs(buttons) do
@@ -24,6 +26,8 @@ for _,wh in ipairs(sizes) do
   assert(panel and bar and panel.y+panel.h<bar.y,
     "panel overlaps lower hotbar at "..w.."x"..h)
   hud.open=false;hud.placing=true
+  assert(hud:layout(safe)~=buttons,
+    "Stage5 mode change must invalidate cached controls")
   local confirm
   for _,b in ipairs(hud:layout(safe)) do if b.id=="confirm" then confirm=b end end
   assert(confirm and hud:hit(confirm.x+10,confirm.y+10,safe)=="confirm")

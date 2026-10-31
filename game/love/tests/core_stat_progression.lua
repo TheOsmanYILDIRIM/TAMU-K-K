@@ -87,6 +87,8 @@ for _,size in ipairs({{320,700},{360,780},{392,850},{720,1100}}) do
   local safe={x=0,y=0,w=size[1],h=size[2]}
   local hud=Hud.new()
   local layout=hud:layout(safe)
+  assert(hud:layout(safe)==layout,
+    "stat layout must reuse immutable viewport geometry")
   assert(layout.toggle.x>=0 and layout.toggle.x+layout.toggle.w<=safe.w)
   assert(layout.panel.y+layout.panel.h<=safe.h)
   local a=layout.toggle

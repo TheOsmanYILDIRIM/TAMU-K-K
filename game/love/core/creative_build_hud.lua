@@ -6,18 +6,28 @@ local function button(out,id,x,y,w,h,label)
 end
 function H:layout(s,creative)
  local x,y,w,h=s.x,s.y,s.w,s.h
+ local cached=self._layout_cache
+ if cached and cached.x==x and cached.y==y and cached.w==w and cached.h==h
+    and cached.active==creative.active and cached.page==creative.page then
+   return cached.buttons
+ end
  local out={}
  button(out,"creative_toggle",x+w-123,y+60,112,37,
    creative.active and "CLOSE BUILD" or "CREATIVE")
- if not creative.active then return out end
+ if not creative.active then
+  self._layout_cache={x=x,y=y,w=w,h=h,active=creative.active,
+    page=creative.page,buttons=out}
+  return out
+ end
  local left=x+8;local width=math.min(w-16,420)
  local top=y+144
  local rowh=math.max(31,math.min(40,(h-370)/5))
  local colw=(width-12)/2
  -- Two compact columns, at most 10 labels per page.
+ local menu=creative.menu()
  for k=1,10 do
   local index=(creative.page-1)*10+k
-  local part=creative.menu()[index]
+  local part=menu[index]
   if part then
    local col=(k-1)%2;local row=math.floor((k-1)/2)
    button(out,"creative_item:"..index,left+col*(colw+4),top+row*(rowh+3),colw,rowh,
@@ -36,6 +46,8 @@ function H:layout(s,creative)
  button(out,"creative_undo",left+3*(qw+4),actionY,qw,35,"UNDO")
  actionY=actionY+39
  button(out,"creative_place",left,actionY,width,40,"PLACE / BUILD")
+ self._layout_cache={x=x,y=y,w=w,h=h,active=creative.active,
+   page=creative.page,buttons=out}
  return out
 end
 function H:hit(px,py,s,creative)
