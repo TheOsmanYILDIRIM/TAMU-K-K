@@ -15,7 +15,7 @@ assert(A.pose(.3,core,target,.12).phase=="strike")
 assert(A.pose(.8,core,target,.12).phase=="recover")
 -- Isolated renderer-spy asserts no tool selection can mutate harvesting state.
 local tools,axes,images={},0,0
-package.loaded["player.core_visual"]={
+package.loaded["player.rigby_visual"]={
   draw=function(g,camera,w,h,player,ctx) tools[#tools+1]=ctx.tool or "none" end
 }
 package.loaded["player.axe_strike"]={
@@ -27,12 +27,9 @@ for _,method in ipairs({"push","pop","setColor","ellipse","rectangle","polygon",
 end
 g.newImage=function(path) assert(path=="assets/axe_121227.png");images=images+1;return {} end
 love={graphics=g}
--- This contract exercises the retained plasma renderer explicitly.
--- Live-rig coverage is separate in rigby_runtime/rigby_visual and engine smoke.
-local getenv=os.getenv
-os.getenv=function(key) if key=="TAMU_USE_PLASMA" then return "1" end;return getenv(key) end
+-- This spy checks the production Rigby tool intent without loading rig assets.
+-- Rig pose/socket behavior remains covered by the dedicated Rigby tests.
 local R=require("objects.renderer")
-os.getenv=getenv
 local fixtures={
   tree={id="tree",kind="tree",def_id="tree",x=2,y=2,radius=10,cx=0,cy=0},
   rock={id="rock",kind="rock",def_id="rock",x=20,y=20,radius=10,cx=0,cy=0},
@@ -56,11 +53,11 @@ local function draw(active,expected,axeCount)
   end
 end
 draw(nil,"none",0)
-draw({object_id="tree",elapsed=.45},"none",1)
-draw({object_id="tree",elapsed=.49},"none",2)
-draw({object_id="rock",elapsed=.49},"pickaxe",2)
+draw({object_id="tree",elapsed=.45},"axe",0)
+draw({object_id="tree",elapsed=.49},"axe",0)
+draw({object_id="rock",elapsed=.49},"pickaxe",0)
 local stance=A.pose(0,core,target,.08)
 assert(math.abs(stance.x-core.x)<=35,"tool idle handle reach too large")
 assert(math.abs(stance.y-core.y)<=25,"tool idle handle height too large")
-assert(images==1,"axe PNG must be cached and rock must not load axe")
-print("CORE_TOOL_INTEGRATION_OK tree axe stroke, rock pickaxe, cached PNG, no harvest state edits")
+assert(images==0,"Rigby renderer must not load legacy axe PNG")
+print("RIGBY_TOOL_INTEGRATION_OK tree axe, rock pickaxe, no legacy PNG, no harvest state edits")
