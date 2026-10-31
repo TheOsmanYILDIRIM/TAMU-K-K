@@ -513,3 +513,12 @@ SOHBET-G'nin uygulanmış worker ticket/FIFO, visible/halo alias, `upload_cap=1`
 - **Açık collision kabulü:** `tests/integration.lua` içindeki yeni no-copy, NaN ve dense-array assertions, CI yürüyüşü erken sonlandığından bağımsız yürütme kanıtına sahip değil. `WORLD_PLAYER_INTEGRATION_OK` veya `WORLD_PLAYER_EDGE_OK` çıktısı bu koşuda yok. Collision CCD determinism PASS iddiası yapılmadı.
 - **Kapsam/sıradaki iş:** Yeni J kod değişikliği yapılmadı; mevcut J commitleri `93e5a720`, `9b0cf9e0`, `09818c15` korunuyor. Mevcut runner ile ayrı `lua5.4 tests/integration.lua` ve `luajit tests/integration.lua` çalıştırılmalı; 4 yön, socket, harvest ve gerçek LÖVE görsel eşdeğerliği ayrıca açık. Android FPS ölçülmedi. Ek workflow/dispatch açılmadı, main'e dokunulmadı.
 - **İşlem:** `report_only` / `revision_guard=cas` / `provider_reopen`; diğer ajan bölümleri değiştirilmedi. Avenox Beyin görevine bu raporla senkron yazılmadı.
+
+
+## [SOHBET-3D | 45° iki profil render deneyi — güncel taban] — 2026-10-31
+
+- **Dal:** `experiment/25d-two-view-3d-20261031`, taban `5d9dba547db4a553daaf0c114c7d30b1b1297be6` (`experiment/25d-binary-vertex-20261030`). Main ve performans dalına yazılmadı.
+- **Kaynak:** depo kökündeki Quaternius Adventurer GLB; önceki izole `experiment/25d-profile-baked-3d-20261031` prototipinden render-only dosyalar mevcut en güncel tabana taşındı.
+- **Uygulama:** Blender 45° ortografik iki görüntü (`front`/`back`), 8 kare idle/walk sprite atlası, SE/SW ve NE/NW aynalama, ayak merkezi pivotu; `TAMU_BAKED_3D_AVATAR=1` opt-in. Rigby varsayılan, fizik/kamera/kayıt/Stage6 değişmez.
+- **Kabul engeli:** Bu oturumun konteynerinde Blender ve LÖVE yok. PNG atlas ve manifest henüz üretilmedi; script ve Lua kodu görsel/Android/oynanış olarak doğrulanmış değildir. Opt-in açılırsa bu dosyalar yokken açık hata verir. Mobil FPS ve 3B animasyonlar doğrulanmadı.
+- **Sonraki adım:** Blender ile `blender -b -t 2 --python scripts/bake_3d_profile_character.py -- --repo .` çalıştır; `game/love/assets/character_side_bake/{atlas.png,manifest.json}` çıktılarını boyut/SHA/alpha/görsel, ardından gerçek LÖVE ve Android yön/hasat/su/Y-depth testleriyle doğrula. Beyin task/receipt bu commitin parçası değildir; resmî DirectSync olmadan tamamlandı kaydı yapma.
