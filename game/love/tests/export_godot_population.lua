@@ -31,15 +31,9 @@ local file=assert(io.open('chunks/r2_objects.json','wb'))
 file:write('{"seed":20261018,"objects":[')
 for i,o in ipairs(out) do
  if i>1 then file:write(',') end
- assert(o.id:match('^[%w:_%-%./]+
-file:close()
-print('TAMU_CANONICAL_OBJECT_EXPORT_OK count='..#out)
-) and o.kind:match('^[%w_%-]+
-file:close()
-print('TAMU_CANONICAL_OBJECT_EXPORT_OK count='..#out)
-))
+ assert(o.id:match('^[%w:_./%-]+$') and o.kind:match('^[%w_%-]+$'))
  file:write(string.format('{"id":"%s","x":%.8f,"y":%.8f,"sx":%.8f,"sy":%.8f,"kind":"%s","radius":%.8f,"cx":%d,"cy":%d}',
-  o.id,o.x,o.y,o.sx,o.sy,o.kind,o.radius,o.cx,o.cy))
+   o.id,o.x,o.y,o.sx,o.sy,o.kind,o.radius,o.cx,o.cy))
 end
 file:write(']}')
 file:close()
