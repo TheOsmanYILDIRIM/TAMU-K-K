@@ -74,17 +74,23 @@ jobs:
               (shadows/n).write_bytes(z.read('assets/terrain25d/static_shadow/'+n))
           binaries=next(root.rglob('c_0_0.meta.json')).parent
           count=0
-          for cx in range(-1,3):
-              for cy in range(-1,3):
-                  stem=f'c_{cx}_{cy}'
-                  meta=json.loads((binaries/(stem+'.meta.json')).read_text())
-                  raw=zlib.decompress((binaries/(stem+'.verts.z')).read_bytes())
-                  assert len(raw)==20*sum(x['count'] for x in meta['meshes'])
-                  pathlib.Path('chunks',stem+'.verts').write_bytes(raw)
-                  pathlib.Path('chunks',stem+'.json').write_text(json.dumps(meta,separators=(',',':')))
-                  count+=1
-          assert count==16
-          print('TAMU_EXACT_ASSET_GATE_OK chunks=16')
+          index=[]
+          for meta_path in sorted(binaries.glob('c_*.meta.json')):
+              stem=meta_path.name[:-10]
+              meta=json.loads(meta_path.read_text())
+              raw=zlib.decompress((binaries/(stem+'.verts.z')).read_bytes())
+              assert len(raw)==20*sum(x['count'] for x in meta['meshes'])
+              pathlib.Path('chunks',stem+'.verts').write_bytes(raw)
+              pathlib.Path('chunks',stem+'.json').write_text(json.dumps(meta,separators=(',',':')))
+              index.append(stem)
+              count+=1
+          assert count>=100, f'Expected authored cache >100 chunks, got {count}'
+          world=json.loads(z.read('assets/worldbuild/osman_overworld.v2.json'))
+          bounds=world['bounds']
+          assert (bounds['max_x']-bounds['min_x'])//256==128
+          assert (bounds['max_y']-bounds['min_y'])//256==128
+          pathlib.Path('chunks/index.json').write_text(json.dumps({'available':index,'bounds':bounds},separators=(',',':')))
+          print('TAMU_EXACT_ASSET_GATE_OK chunks=', count,'design_grid=128x128')
           PY
       - name: Export canonical R2 ecology objects using original Lua world logic
         shell: bash
@@ -148,4 +154,5 @@ jobs:
             screenshots/terrain-parity.png
             screenshots/run.log
             chunks/r2_objects.json
+            chunks/index.json
           if-no-files-found: warn
