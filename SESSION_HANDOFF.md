@@ -48,6 +48,29 @@
 
 Kod ve rapor GitHub yetkili dalında. Koordinatör ikinci araştırma dalgasını yalnız bu raporu ve üç CI başarısızlığını okuyup güncel HEAD'i tekrar doğruladıktan sonra açmalı. Otomatik bildirim veya Android performans başarısı iddiası yok. **Raporun gerçek GitHub geri okuma SHA'sı sohbet tesliminde verilir.**
 
+
+### 2026-10-31 — SOHBET-G devam / P0 canlı kuyruk ve gelecekteki ekran ön hazırlığı
+
+- **Durum:** `review_requested` / **P0 kabul başarısız**. İlk çalışma HEAD `bb937ddf7fe3b171e38b5d0b5b6eb7ffeee4c626`; devam kod HEAD `4af26a5e1a5f026e3181994bc611a8c8432c7830`. Yalnız `experiment/25d-binary-vertex-20261030` yazıldı; `main`, Stage6/save, texture atlasları, Rigby kaynak görselleri ve mevcut yedekler korunuyor.
+- **Kanonik görev:** `agy-vault/main:tasks/oyun-25d-runtime-renderer-integration-20261028.md` rev14, `active` okunarak doğrulandı. Bu turda resmî Beyin motorunun semantik yazım/receipt akışı tamamlanmadığı için vault görevi **güncellenmedi**. Bu Markdown, Beyin task-update/receipt yerine geçmez.
+- **EşRota sahipliği:** tek SOHBET-G yazıcısı, kod `scoped_write`, bu dosyada rapor `report_only`; yeni görev/workflow/rapor dosyası oluşturulmadı.
+
+| Bulgu | Önce → sonra / somut kod kanıtı | Commit, dosya ve test | Kabul |
+|---|---|---|---|
+| P0: Bir halo işi eskidiğinde **tüm** `binary_pending` ve request Channel temizleniyordu; geçerli sıra/ticket tekrar üretiliyordu | `Runtime:enqueue_binary` içindeki `requests:clear(); self.binary_pending={}` → yalnız eski anahtarların kaldırılması, kuyruktaki geçerli ticket'ların FIFO korunması, `binary_inflight` yeniden sayımı | [`682fa058`](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/commit/682fa058e9dcd96affee44dc9c98773793acab06); `game/love/world/terrain25d_runtime.lua` (blob `af0874ac9d4fb641207b2bec6f0110a0bbeab14a`), `game/love/tests/terrain25d_runtime.lua` (blob `1277d5b78a6a97a911a26990b74d2516b0e3d150`), geçerli-ticket/FIFO regresyonu | CI [#41192291392](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41192291392): Lua/sözdizimi/worker adımları geçti, yürüyüş **max_missing=7, failure**. Kod düzeltmesi P0 kabul kanıtı değildir |
+| P0: Halo uzaklığı, yaklaşan ekranın tüm ön kenarını doğrudan önceliklendirmiyordu | `Stream:needed` içindeki yalnız ileri nokta `lookscore` sırası → 0.25/0.5/1/2 chunk uzaklıktaki gelecekteki viewport'a ilk kesişen halo kümesini önceleme; mevcut mesafe sırasını eşit grup içinde koruma | [`4af26a5e`](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/commit/4af26a5e1a5f026e3181994bc611a8c8432c7830); `game/love/world/stream.lua` (blob `651a8366ae4a6f3d4918517b23a18e334e2f4c24`), mevcut `game/love/tests/r2_viewport.lua` (blob `44efa1dd7ffb222840a1ca33e3c65ac161c56a52`) güncellendi | CI [#41192683940](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41192683940) **failure, max_missing=7**. Yeni viewport testi, CI P0 adımından önce bağımsız yürütülmedi; bu testin geçtiği iddia edilmiyor |
+
+**Doğrulama ayrımı:** İki GitHub commit/HEAD/hedef blob geri okundu, `force` kullanılmadı. CI #41192683940 `gate=success`, Lua 5.4/LuaJIT Rigby ve terrain batch testleri ile syntax ve worker/Xvfb kontrol adımları başarılı; statik terrain görsel karşılaştırması `changed_ratio=0.000000`, `mean_rgb_delta=0.0000` (79.125 piksel). `TAMU_WALK_COVERAGE frames=480 max_missing=7 distance=1062.485`; x≈274.78, 529.90, 785.96, 1041.43 noktasında yedi görünür chunk aynı karede eksik. `quality.yml` sonraki Stage5/6, Creative, HUD, object smoke adımları P0 hatası nedeniyle **çalışmadı**. Masaüstü `p95=7.876ms` (batched CPU) Android FPS değildir. `upload_cap=1` hareket halinde değiştirilmedi; yarım chunk gösterme eklenmedi.
+- **Paket:** CI #41192683940 ürettiği `tamu-authored-r2-binary-cache` artifact ID [13038949958](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41192683940/artifacts/13038949958), API digest `sha256:ecf1723903ba9fe31d938874d8caa05dc459b8d628d38a3b1f17baedabd81d64`, size `16503612` byte. CI'de `.love` arşivi için `zipfile.testzip() is None` assertion adımı geçti; ZIP'in dışarı indirilip bağımsız tekrar açılması ve Android'de çalışması **doğrulanmadı**.
+- **P1/P2/P3 durumu:** Önceki handoff'taki asenkron diagnostics/frame alignment, object selection/player slot ve boş Creative sahne düzeltmeleri korundu; yeni commitlerde değiştirilmedi. P2 terrain aggregate `mesh:getVertex` tablo tahsisi, Rigby skin/upload ve P3 HUD/collision/image timeout incelemeleri **açık**. Android JSONL, görünür Y-depth/alpha/attachment karşılaştırmaları ve gerçek FPS yok.
+
+**İkinci dalga kontrol listesi (kabul edilmemiş hipotezler ayrı):**
+1. P0 ilk eksik karede 7 **chunk anahtarı** için önceki kare `Stream:needed` görünür/halo listesi, worker pending/ready/ticket, chunk `_25d_meshes`, GPU `newMesh/setVertices` zamanını mevcut `TAMU_25D_WALK_PROBE` altında izole et; görünür AABB'nin gerçek geometri kesişimiyle eşdeğerliğini doğrula.
+2. İstek seçim sırası, halo eviction, 12 in-flight slot, başlangıçtaki 77 görünür + yalnız 24 halo bütçesi ve worker sonucu GPU'ya yükleme sırası ayrı ölçülsün. Yeni bellek/CPU ölçümü olmadan halo kapasitesi veya 1 upload/kare sınırı körlemesine büyütülmesin.
+3. P0 `max_missing=0` kanıtlanmadan veya P1 visual/telemetry doğrulanmadan gerçek Android performansı hakkında başarı ilan etme; sonraki aşamadaki mevcut testler ve Stage6/save korunmalı.
+4. Kanonik Beyin rev14 görevi ancak resmî yazım sözleşmesinde revision-CAS, kaynak ve receipt geri okumasıyla güncellenebilir. Şu an Beyin yazımı **engelli/açık**; otomatik EşRota bildirimi yok.
+
+
 ---
 
 ## 2026-10-31 — Devam: CI desktop 400 FPS hedefi mobil kabulden ayrıldı (AÇIK)
