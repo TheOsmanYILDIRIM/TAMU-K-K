@@ -7,6 +7,8 @@ local options={
  {id='compare_objects',label='TAM SAHNE - YALNIZ OBJELER'},
  {id='compare_objects_opaque',label='TAM SAHNE - OPak OBJE TESTI'},
  {id='compare_objects_prepare',label='OBJE CPU HAZIRLIK / GPU CIZIM YOK'},
+ {id='compare_objects_collect',label='OBJE TOPLA + SIRALA / RENDER YOK'},
+ {id='compare_objects_shadow_cpu',label='OBJE GOLGE CPU / GPU YOK'},
  {id='compare_rig',label='TAM SAHNE - YALNIZ RIGBY'},
  {id='compare_terrain_objects',label='TAM SAHNE - ARAZI + OBJELER'},
  {id='compare_nohud',label='TAM SAHNE - HUD KAPALI'},
