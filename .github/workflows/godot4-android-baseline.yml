@@ -40,7 +40,9 @@ jobs:
           "$SDK/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK" "platform-tools" "build-tools;35.0.1" "platforms;android-35" "ndk;28.1.13356709" "cmake;3.10.2.4988404"
           mkdir -p "$HOME/.config/godot" "$HOME/.local/share/godot" build
           keytool -genkeypair -keystore "$RUNNER_TEMP/tamu-debug.keystore" -alias androiddebugkey -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 365 -dname "CN=TAMU Debug,O=OSMAN,C=TR"
-          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$RUNNER_TEMP/tamu-debug.keystore" >> "$GITHUB_ENV"
+          mkdir -p "$HOME/.local/share/godot/keystores"
+          cp "$RUNNER_TEMP/tamu-debug.keystore" "$HOME/.local/share/godot/keystores/debug.keystore"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$HOME/.local/share/godot/keystores/debug.keystore" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
           cat > "$HOME/.config/godot/editor_settings-4.6.tres" <<EOF
@@ -55,7 +57,7 @@ jobs:
           set -euo pipefail
           godot --headless --editor --path . --import --quit
           cat "$HOME/.config/godot/editor_settings-4.6.tres"
-          godot --headless --path . --export-debug Android build/TAMU_Godot_Baseline.apk
+          godot --headless --verbose --path . --export-debug Android build/TAMU_Godot_Baseline.apk
           test -s build/TAMU_Godot_Baseline.apk
           unzip -t build/TAMU_Godot_Baseline.apk | tail -1
           sha256sum build/TAMU_Godot_Baseline.apk
