@@ -546,3 +546,7 @@ SOHBET-G'nin uygulanmış worker ticket/FIFO, visible/halo alias, `upload_cap=1`
 ### 2026-10-31 — Düz yan profil dönüşümü
 - Kullanıcının düz profil talebine göre Blender kamera elevation=0°, sprite 2 satır side_idle/side_walk; 45° açı **yalnız oyun dünyası/kamera projeksiyonunda**. NE/SE aynı profil, NW/SW yatay aynalama. 
 - Deney branch'inde mevcut dosyalara müdahale; ana dal, oyun fiziği, kayıt değişmez. Actions CI, gerçek paket ve Android kabul durumunu ayrıca doğrula.
+
+### 2026-11-01 — Walking.fbx gerçek iskelet poz referansı
+- Kod: `scripts/render_fbx_walk_pose_sheet.py` Blender'da repo GLB karakterinin boy oranlarını ve `Walking.fbx` animasyon armature pose'unu kullanarak 8 ayrı düz yandan (0°) iskelet pozunu render eder. Mevcut workflow'da 4×2 tek PNG sheet ve kaynak/çerçeve metadata artifact olarak paketlenir.
+- FBX rig ile GLB bone retarget edildiği **iddia edilmez**: kaynak hareket FBX armature, karakter GLB geometrisinden yalnız ölçek/oran kalibrasyonu. CI ve gerçek görüntü doğrulaması bekleniyor.

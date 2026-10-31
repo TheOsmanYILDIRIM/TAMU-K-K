@@ -6,6 +6,8 @@ on:
       - .github/workflows/tamu-two-view-blender-bake.yml
       - scripts/bake_3d_profile_character.py
       - scripts/package_tamu_3d_test_love.py
+      - scripts/render_fbx_walk_pose_sheet.py
+      - 'Walking.fbx'
       - 'Adventurer by Quaternius - 5EGWBMpuXq.glb'
   workflow_dispatch:
 permissions:
@@ -121,6 +123,49 @@ jobs:
           python-version: '3.12'
       - name: Install Pillow 12 (get_flattened_data API)
         run: python3 -m pip install 'Pillow>=12.0,<13'
+      - name: Render 8 true FBX walk skeleton frames using GLB proportions
+        shell: bash
+        run: |
+          set -euo pipefail
+          blender -b -t 2 --python-exit-code 7 --python scripts/render_fbx_walk_pose_sheet.py -- --repo . --output ci-output/walk-reference
+          python3 - <<'PY'
+          from PIL import Image,ImageDraw
+          from pathlib import Path
+          import json,hashlib
+          root=Path('ci-output/walk-reference')
+          meta=json.loads((root/'pose_metadata.json').read_text())
+          assert meta['source_motion']=='Walking.fbx'
+          assert meta['camera_profile_degrees']==0
+          assert len(meta['frames'])==8
+          sheet=Image.new('RGB',(1024,768),'white')
+          draw=ImageDraw.Draw(sheet)
+          digests=[]
+          for i in range(8):
+              path=root/f'frame_{i+1:02d}.png'
+              with Image.open(path) as frame:
+                  frame.load()
+                  assert frame.size==(256,384)
+                  rgba=frame.convert('RGBA')
+                  assert rgba.getchannel('A').getbbox()
+                  bg=Image.new('RGBA',rgba.size,'white')
+                  bg.alpha_composite(rgba)
+                  sheet.paste(bg.convert('RGB'),((i%4)*256,(i//4)*384))
+                  digests.append(hashlib.sha256(rgba.tobytes()).hexdigest())
+              draw.text(((i%4)*256+12,(i//4)*384+10),str(i+1),fill=(12,12,12))
+          assert len(set(digests))>=6, 'Walk frames lack meaningful variation'
+          out=Path('ci-output/TAMU-Walking-FBX-8-Pose-Reference.png')
+          sheet.save(out)
+          print('TAMU_FBX_SKELETON_SHEET_OK',out,hashlib.sha256(out.read_bytes()).hexdigest())
+          PY
+      - name: Upload FBX-derived animation pose reference
+        uses: actions/upload-artifact@v4
+        with:
+          name: tamu-walking-fbx-8-pose-reference
+          path: |
+            ci-output/TAMU-Walking-FBX-8-Pose-Reference.png
+            ci-output/walk-reference/pose_metadata.json
+          if-no-files-found: error
+          retention-days: 30
       - name: Package isolated 3D avatar full-game .love
         shell: bash
         run: |
