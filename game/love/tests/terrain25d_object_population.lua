@@ -157,5 +157,35 @@ do
    'static range changed depth order')
  love.graphics=old_g
 end
+-- Return to a prior immutable scene after visiting another chunk set.
+do
+ local g0=love.graphics
+ local created=0
+ love.graphics={newSpriteBatch=function()
+   created=created+1
+   return {clear=function() end,setColor=function() end,add=function() end,
+     release=function() end}
+ end}
+ local provider={compact_ready=true,
+   objects_fully_revealed=function() return true end,
+   pin_page=function() end,page=function() return 'image' end}
+ local test=setmetatable({provider=provider,limit=8,frame=0,
+   object_cache_rebuilds=0,object_cache_reuses=0},Sprite)
+ function test:appearance(_,_,_,o)
+   return {page='atlas_01.png',quad=o.id},o.x,o.y,1
+ end
+ local cam={x=0,y=0,zoom=1,project=function(_,x,y) return x,y end}
+ local p={player=true}
+ local a={object={id='a',x=2,y=3,kind='tree',radius=8}}
+ local b={object={id='b',x=258,y=3,kind='tree',radius=8}}
+ assert(test:prepare_cached_objects(cam,100,100,{a,p}))
+ assert(test:prepare_cached_objects(cam,100,100,{b,p}))
+ assert(test:prepare_cached_objects(cam,100,100,{a,p}))
+ assert(created==2 and test.object_cache_rebuilds==2
+   and test.object_cache_reuses==1,
+   'revisiting chunk scene recreated GPU batch')
+ love.graphics=g0
+end
+print('TAMU_OBJECT_SCENE_REVISIT_GPU_CACHE_OK')
 print('TAMU_OBJECT_PLAYER_SLOT_RANGE_OK')
 
