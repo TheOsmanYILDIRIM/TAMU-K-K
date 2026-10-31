@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bake the repo's CC0 Quaternius Adventurer GLB into two 45-degree views.
+"""Bake the repo's Quaternius Adventurer as a single TRUE SIDE PROFILE.
 Run: blender -b -t 2 --python scripts/bake_3d_profile_character.py -- --repo .
 """
 import argparse
@@ -102,10 +102,9 @@ def main():
     area_light("Key", (1.4, -2.2, 3), 500)
     area_light("Fill", (-1.7, 1.1, 1.8), 250)
 
-    # Elevation exactly 45 deg: vertical = sqrt(horizontal_x^2+horizontal_y^2).
-    # Front/back share the X side. Reflection gives the other two quadrants.
-    views = {"front": Vector((1, -1, math.sqrt(2))),
-             "back": Vector((1, 1, math.sqrt(2)))}
+    # Horizontal camera elevation 0 degrees: actual side-profile, not isometric.
+    # Four world directions use this same side art; left orientation is mirrored.
+    views = {"side": Vector((1, 0, 0))}
     rows, rendered = {}, []
     with tempfile.TemporaryDirectory(prefix="tamu-3d-bake-") as tmp:
         for view, offset in views.items():
@@ -151,7 +150,7 @@ def main():
     if content_w > args.width - 4 or content_h > args.height - 4:
         raise SystemExit("Character exceeds frame; increase scale/canvas or ortho size")
     atlas_width = args.width * args.frames
-    atlas_height = args.height * 4
+    atlas_height = args.height * 2
     packed = array("f", [0]) * (atlas_width * atlas_height * 4)
     dx = (args.width - content_w) // 2
     dy = 3  # Blender pixel rows are bottom-up; shared bottom-center foot pivot.
@@ -160,7 +159,7 @@ def main():
         row = rows[f"{view}_{label}"]
         for y in range(content_h):
             # Blender Image.pixels is bottom-up, while PNG/LÖVE atlas rows are top-down.
-            dst_y = (3 - row) * args.height + dy + y
+            dst_y = (1 - row) * args.height + dy + y
             dst = (dst_y * atlas_width + int(index) * args.width + dx) * 4
             src = ((y + ymin) * args.width + xmin) * 4
             packed[dst:dst + content_w * 4] = data[src:src + content_w * 4]
@@ -173,16 +172,17 @@ def main():
     atlas.file_format = "PNG"
     atlas.save()
     manifest = {
-        "version": 1, "source": source.name,
+        "version": 2, "source": source.name,
         "source_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
         "atlas": png.name,
         "atlas_sha256": hashlib.sha256(png.read_bytes()).hexdigest(),
         "width": args.width, "height": args.height,
         "frames": args.frames, "fps": args.fps,
         "rows": rows,
-        "views": {"SE": ["front", False], "SW": ["front", True],
-                  "NE": ["back", False], "NW": ["back", True]},
-        "camera_pitch_degrees": 45, "bottom_center_pivot": True,
+        "views": {"SE": ["side", False], "SW": ["side", True],
+                  "NE": ["side", False], "NW": ["side", True]},
+        "camera_pitch_degrees": 0, "world_camera_pitch_degrees": 45,
+        "bottom_center_pivot": True,
     }
     (output / "manifest.json").write_text(json.dumps(manifest, sort_keys=True, indent=2) + "\n")
     print("TAMU_3D_BAKE_OK", png, png.stat().st_size, manifest["atlas_sha256"])

@@ -1,4 +1,4 @@
--- Two-view Quaternius Adventurer 3D bake (opt in; render-only).
+-- Horizontal 0-degree side-profile bake in 45-degree isometric LÖVE world.
 local Json = require('save.json')
 local V = {}
 local ROOT = 'assets/character_side_bake/'
@@ -9,21 +9,20 @@ local function prepare()
   local raw = love.filesystem.read(ROOT .. 'manifest.json')
   assert(raw, 'TAMU_BAKED_3D_AVATAR=1 needs Blender-generated atlas/manifest; see scripts/bake_3d_profile_character.py')
   local m = Json.decode(raw)
-  assert(m.version == 1 and m.bottom_center_pivot == true and m.camera_pitch_degrees == 45,
+  assert(m.version == 2 and m.bottom_center_pivot == true and m.camera_pitch_degrees == 0 and m.world_camera_pitch_degrees == 45,
     'Invalid 3D two-view bake contract')
   assert(type(m.frames)=='number' and m.frames>=1 and m.frames<=16 and
     type(m.fps)=='number' and m.fps>0 and type(m.width)=='number' and
     m.width>0 and type(m.height)=='number' and m.height>0,
     'Invalid 3D two-view bake dimensions')
-  assert(m.rows and m.rows.front_idle==0 and m.rows.front_walk==1 and
-    m.rows.back_idle==2 and m.rows.back_walk==3, 'Invalid two-view row order')
+  assert(m.rows and m.rows.side_idle==0 and m.rows.side_walk==1, 'Invalid two-view row order')
   local path = ROOT .. 'atlas.png'
   assert(love.filesystem.getInfo(path), 'Missing baked 3D atlas: ' .. path)
   local img = love.graphics.newImage(path)
   local iw, ih = img:getDimensions()
-  assert(iw == m.width*m.frames and ih == m.height*4, 'Atlas dimensions mismatch')
+  assert(iw == m.width*m.frames and ih == m.height*2, 'Atlas dimensions mismatch')
   local qs = {}
-  for row = 0, 3 do
+  for row = 0, 1 do
     qs[row] = {}
     for frame = 0, m.frames-1 do
       qs[row][frame] = love.graphics.newQuad(frame*m.width, row*m.height,
@@ -35,7 +34,7 @@ local function prepare()
 end
 
 function V.select(facing, moving, time)
-  local sides={SE={0,false},SW={0,true},NE={2,false},NW={2,true}}
+  local sides={SE={0,false},SW={0,true},NE={0,false},NW={0,true},E={0,false},W={0,true},N={0,false},S={0,false}}
   local pair=assert(sides[facing or 'SE'], 'Expected diagonal facing')
   local count=manifest and manifest.frames or 8
   local fps=manifest and manifest.fps or 12

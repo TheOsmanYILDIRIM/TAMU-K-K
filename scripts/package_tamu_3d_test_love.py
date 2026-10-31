@@ -53,7 +53,7 @@ def main():
     atlas=root/'game/love/assets/character_side_bake/atlas.png'
     manifest=root/'game/love/assets/character_side_bake/manifest.json'
     meta=json.loads(manifest.read_text())
-    assert meta['camera_pitch_degrees']==45 and meta['bottom_center_pivot'] is True
+    assert meta['camera_pitch_degrees']==0 and meta['world_camera_pitch_degrees']==45 and meta['bottom_center_pivot'] is True
     assert hashlib.sha256(atlas.read_bytes()).hexdigest()==meta['atlas_sha256']
     with TemporaryDirectory(prefix='tamu-baked-demo-') as tmp:
         base=Path(tmp)/'base.love'
@@ -78,8 +78,8 @@ def main():
                 for item in z.infolist():
                     dest.writestr(item,modified.get(item.filename,z.read(item.filename)))
                 dest.writestr('TAMU_3D_TEST_README.txt',
-                    'TAMU two-view 3D avatar test; R2 gameplay enabled.\\n'
-                    'Front/back rendered at 45 degrees; left/right mirrored.\\n'
+                    'TAMU single-side-profile 3D avatar test; R2 gameplay enabled.\\n'
+                    'Side profile rendered horizontally at 0 degrees; 45-degree world, left/right mirrored.\\n'
                     'Controls: mobile joystick, WASD, pinch zoom, inventory.\\n'
                     'Experimental avatar is forced only inside this .love.\\n'
                     'No production files, saves, or default Rigby are replaced.\\n')

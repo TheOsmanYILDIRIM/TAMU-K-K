@@ -542,3 +542,7 @@ SOHBET-G'nin uygulanmış worker ticket/FIFO, visible/halo alias, `upload_cap=1`
 - **Görsel inceleme:** Gerçek LÖVE/Xvfb screenshot'ta karakter ve portrait HUD görünüyor, test paketindeki yükseltilmiş karakter ölçeği uygulanmış. İlk 8. kare ekranında dünya terrain akışı henüz tamamlanmamış (HUD `Eksik 14/18`); *tam dünya görsel/parite ve performans kabulü değildir*. Android yürüyüş/Y-depth, su, hasat, FPS, açılışta terrain ilerleme ve GLB kostüm kalitesi cihaz üzerinde ayrıca test edilmeli.
 - **Kaynak:** `scripts/package_tamu_3d_test_love.py`, yalnız test ZIP'inde `main.lua` isolation preamble ve `objects/renderer.lua` avatar seçimi değiştirir. Gerçek kaynak `game/love/main.lua`, `objects/renderer.lua`, Stage6/save ve `main` değiştirilmedi.
 - **Sınır:** Avenox Beyin'e resmî DirectSync task/receipt yazımı yapılmadı; bu GitHub handoff kanıtı kanonik Beyin semantik güncellemesi değildir.
+
+### 2026-10-31 — Düz yan profil dönüşümü
+- Kullanıcının düz profil talebine göre Blender kamera elevation=0°, sprite 2 satır side_idle/side_walk; 45° açı **yalnız oyun dünyası/kamera projeksiyonunda**. NE/SE aynı profil, NW/SW yatay aynalama. 
+- Deney branch'inde mevcut dosyalara müdahale; ana dal, oyun fiziği, kayıt değişmez. Actions CI, gerçek paket ve Android kabul durumunu ayrıca doğrula.

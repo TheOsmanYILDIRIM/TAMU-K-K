@@ -30,12 +30,12 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends blender python3-numpy python3-pil lua5.4 luajit love xvfb
           blender --version | head -n 2
-      - name: Render animated 45-degree front/back atlas
+      - name: Render animated true side-profile atlas
         shell: bash
         run: |
           set -euo pipefail
           blender -b -t 2 --python-exit-code 7 --python scripts/bake_3d_profile_character.py -- --repo . --frames 8 --width 128 --height 192 --fps 12
-      - name: Verify image, four rows, frames, source hashes and alpha pivots
+      - name: Verify image, two rows, frames, source hashes and alpha pivots
         shell: bash
         run: |
           set -euo pipefail
@@ -51,24 +51,24 @@ jobs:
           assert src.name == "Adventurer by Quaternius - 5EGWBMpuXq.glb"
           assert checksum(src) == m["source_sha256"]
           assert checksum(img_path) == m["atlas_sha256"]
-          assert m["version"] == 1 and m["camera_pitch_degrees"] == 45
+          assert m["version"] == 2 and m["camera_pitch_degrees"] == 0 and m["world_camera_pitch_degrees"] == 45
           assert m["bottom_center_pivot"] is True
-          assert m["rows"] == {"front_idle":0,"front_walk":1,"back_idle":2,"back_walk":3}
-          assert m["views"] == {"SE":["front",False],"SW":["front",True],"NE":["back",False],"NW":["back",True]}
+          assert m["rows"] == {"side_idle":0,"side_walk":1}
+          assert m["views"] == {"SE":["side",False],"SW":["side",True],"NE":["side",False],"NW":["side",True]}
           assert m["frames"] == 8 and m["fps"] == 12
           with Image.open(img_path) as img:
               img.load()
               assert img.mode == "RGBA", img.mode
               w,h,n = m["width"],m["height"],m["frames"]
-              assert img.size == (w*n,h*4),img.size
-              for row in range(4):
+              assert img.size == (w*n,h*2),img.size
+              for row in range(2):
                   unique = set()
                   for frame in range(n):
                       tile = img.crop((frame*w,row*h,(frame+1)*w,(row+1)*h))
                       bbox = tile.getchannel("A").getbbox()
                       assert bbox and bbox[0]>0 and bbox[1]>0 and bbox[2]<w and bbox[3]<h, (row,frame,bbox)
                       unique.add(hashlib.sha256(tile.tobytes()).hexdigest())
-                  if row in (1,3):
+                  if row == 1:
                       assert len(unique)>1, f"walk has no animation, row={row}"
               print("TAMU_3D_ATLAS_VALIDATED",img.size,checksum(img_path))
           PY
@@ -108,10 +108,12 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add game/love/assets/character_side_bake/atlas.png game/love/assets/character_side_bake/manifest.json
           if git diff --cached --quiet; then
-            echo "Atlas unchanged"; exit 0
+            echo "Atlas unchanged";
+          else
+            git commit -m "assets(tamu): 45-degree Quaternius two-view animated atlas"
+            git push origin "HEAD:refs/heads/$TARGET_BRANCH"
           fi
-          git commit -m "assets(tamu): 45-degree Quaternius two-view animated atlas"
-          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+          fi
           echo TAMU_3D_ATLAS_COMMITTED
 
       - name: Setup modern Python for existing creative asset packager
@@ -142,7 +144,7 @@ jobs:
       - name: Upload special playable full-game 3D avatar .love
         uses: actions/upload-artifact@v4
         with:
-          name: tamu-special-3d-avatar-love
+          name: tamu-special-side-profile-love
           path: |
             ci-output/TAMU-3D-Avatar-TEST.love
             ci-output/tamu-3d-game-smoke.png
