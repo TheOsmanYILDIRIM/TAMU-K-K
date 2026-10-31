@@ -50,7 +50,9 @@ def main():
     print("TAMU_GLB_PROPORTIONS",glb_h,glb_w)
     print("TAMU_FBX_ACTION",action.name,first,last)
     scene=bpy.context.scene
-    scene.render.engine="BLENDER_EEVEE_NEXT" if bpy.app.version[0]>=4 and bpy.app.version[1]>=2 else "BLENDER_EEVEE"
+    scene.render.engine="CYCLES"  # CPU headless runner; Eevee needs libEGL
+    scene.cycles.samples=4
+    for layer in scene.view_layers: layer.cycles.use_denoising=False
     scene.render.resolution_x=256;scene.render.resolution_y=384
     scene.render.resolution_percentage=100
     scene.render.image_settings.file_format="PNG"
