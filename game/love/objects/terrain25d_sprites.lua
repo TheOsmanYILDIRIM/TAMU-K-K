@@ -305,67 +305,80 @@ function Sprite:draw_shadows(g,camera,w,h,objects)
      self.static_shadow_cache=nil
      return 0
    end
+   -- One world-cell batch per immutable object group. Entering a new
+   -- chunk only builds that chunk; unchanged neighbours retain GPU geometry.
+   -- Shadows share their source object's world coordinate and camera matrix.
    local slot=(math.floor(sun.hour/3+.5)*3)%24
-   local name='staticshadow:shadows_'..string.format('%02d',slot)..'.png'
-   local batch=self:batch_for(name) -- touch page every frame to retain its pin
+   local name='shadows_'..string.format('%02d',slot)..'.png'
    local stable=not self.provider.objects_fully_revealed
      or self.provider:objects_fully_revealed(objects)
-   local cache=self.static_shadow_cache
-   -- For the same immutable object set, no need to rebuild merely because
-   -- the sun slot changed and later returned. Cache each atlas slot separately.
-   local slot_cache=self.static_shadow_slots and self.static_shadow_slots[name]
-   if stable and slot_cache and slot_cache.batch==batch
-      and same_scene(slot_cache,camera,w,h,objects) then
-     cache=slot_cache
+   self.shadow_chunk_cache=self.shadow_chunk_cache or {}
+   self.shadow_chunk_images=self.shadow_chunk_images or {}
+   local image=self.shadow_chunk_images[name]
+   if not image then
+     image=love.graphics.newImage(SHADOW_ROOT..name)
+     image:setFilter('linear','linear')
+     self.shadow_chunk_images[name]=image
    end
-   if stable and cache and cache.page==name and cache.batch==batch
-      and same_scene(cache,camera,w,h,objects) then
-     self.shadow_reuses=(self.shadow_reuses or 0)+1
-     self.shadow_objects=cache.count
+   local groups,keys={},{}
+   for _,o in ipairs(objects) do
+     local cx,cy=math.floor(o.x/256),math.floor(o.y/256)
+     local key=cx..':'..cy
+     if not groups[key] then groups[key]={};keys[#keys+1]=key end
+     groups[key][#groups[key]+1]=o
+   end
+   table.sort(keys)
+   for _,key in ipairs(keys) do
+     local group=groups[key]
+     local cache_key=name..':'..key
+     local cache=self.shadow_chunk_cache[cache_key]
+     local reuse=stable and cache and cache.image==image
+       and same_scene(cache,camera,w,h,group)
+     if not reuse then
+       self.shadow_rebuilds=(self.shadow_rebuilds or 0)+1
+       if cache and cache.batch then cache.batch:release() end
+       local batch=love.graphics.newSpriteBatch(image,math.max(1,#group),'dynamic')
+       local count=0
+       for _,o in ipairs(group) do
+         local a,x,y,scale=self:appearance(camera,w,h,o,true)
+         if a then
+           local index=assert(self.static_manifest.objects[a.id],
+             'missing shadow mask '..a.id)
+           if not index.quad then
+             index.quad=love.graphics.newQuad(index.u,index.v,32,32,
+               self.static_manifest.width,self.static_manifest.height)
+           end
+           batch:setColor(1,1,1,1)
+           batch:add(index.quad,x,y,0,scale*4,scale*4,16,24)
+           count=count+1
+         end
+       end
+       cache=scene_snapshot(camera,w,h,group)
+       cache.batch,cache.image,cache.count=batch,image,count
+       cache.last_seen=self.shadow_chunk_frame or 0
+       if stable then self.shadow_chunk_cache[cache_key]=cache end
+     else
+       self.shadow_reuses=(self.shadow_reuses or 0)+1
+     end
+     self.shadow_objects=self.shadow_objects+cache.count
      if cache.count>0 and not self.skip_gpu_draw then
        g.setColor(1,1,1,1)
-       draw_camera_batch(g,batch,cache,camera,w,h)
-       self.shadow_calls=1
+       if reuse then draw_camera_batch(g,cache.batch,cache,camera,w,h)
+       else g.draw(cache.batch) end
+       self.shadow_calls=self.shadow_calls+1
      end
-     return self.shadow_calls
+     if not stable then cache.batch:release() end
    end
-   self.shadow_rebuilds=(self.shadow_rebuilds or 0)+1
-   batch:clear()
-   local atlas=self.static_manifest
-   local count=0
-   for _,o in ipairs(objects) do
-     -- Match the existing revelation rules while avoiding viewport clipping.
-     -- Offscreen objects stay in the batch for exact camera-pan reuse.
-     local a,x,y,scale=self:appearance(camera,w,h,o,true)
-     if a then
-       local index=assert(atlas.objects[a.id],'missing shadow mask '..a.id)
-       if not index.quad then
-         index.quad=love.graphics.newQuad(index.u,index.v,32,32,atlas.width,atlas.height)
-       end
-       batch:setColor(1,1,1,1)
-       batch:add(index.quad,x,y,0,scale*4,scale*4,16,24)
-       count=count+1
+   -- Bounded lifetime for chunks left behind; keep recent neighbours hot.
+   self.shadow_chunk_frame=(self.shadow_chunk_frame or 0)+1
+   for key,cache in pairs(self.shadow_chunk_cache) do
+     if groups[key:match('^[^:]+:(.+)$')] and
+        key:sub(1,#name+1)==name..':' then
+       cache.last_seen=self.shadow_chunk_frame
+     elseif self.shadow_chunk_frame-(cache.last_seen or 0)>120 then
+       cache.batch:release()
+       self.shadow_chunk_cache[key]=nil
      end
-   end
-   self.shadow_objects=count
-   if count>0 and not self.skip_gpu_draw then
-     g.setColor(1,1,1,1)
-     g.draw(batch)
-     self.shadow_calls=1
-   end
-   -- Fog/reveal changes can alter shadow visibility without changing IDs.
-   -- Cache only when all current objects are fully revealed.
-   if stable then
-     cache=scene_snapshot(camera,w,h,objects)
-     cache.page=name
-     cache.batch=batch
-     cache.count=count
-     self.static_shadow_cache=cache
-     self.static_shadow_slots=self.static_shadow_slots or {}
-     self.static_shadow_slots[name]=cache
-   else
-     self.static_shadow_cache=nil
-     self.static_shadow_slots=nil
    end
    return self.shadow_calls
  end
