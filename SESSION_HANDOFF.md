@@ -320,3 +320,28 @@ Bir sonraki **uygulama** sohbeti mevcut WALK_PROBE altında GPU upload selection
 ### Koordinatöre teslim
 
 Bu bölüm için sağlayıcı yeniden açma ve blob/commit SHA sonucu rapor yazımı sonrasında doğrulanır. Rapor yazıldı diye P0 düzelmiş veya Android testi geçmiş sayılmaz.
+
+## [SOHBET-I | TAMU Regresyon Denetimi] — EşRota ikinci dalga
+
+- **Durum:** `review_requested`; salt okunur bağımsız kod incelemesi, **regresyon kabulü açık**. İncelenen başlangıç HEAD `59b3fcf94f6d5a02c840a1198a05c73c89fa99d8`; rapor CAS anındaki HEAD `f0319d15df1bd7d47bb8d736ae6a616afce841ee`. Değişen başka bölümler korundu.
+- **Sahiplik/kanal:** `github:TheOsmanYILDIRIM/TAMU-K-K@experiment/25d-binary-vertex-20261030:SESSION_HANDOFF.md#SOHBET-I`; `report_only`, `revision_guard=cas`, `readback_method=provider_reopen`. Kod, CI, Beyin, görev ve workflow değiştirilmedi.
+- **CI:** [#41194049897](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41194049897), test edilen `ff55a993d6b065ca8df12dd47305d01809b6c2b3`: `gate=success`, `test=failure`, `Precompile complete authored R2 polygon area with safety halo` adımı başarısız; bu sonuç sonraki object/Creative/Stage6 testleri ve yeni HEAD için geçiş kanıtı değildir.
+
+### Kaynak ve regresyon matrisi
+
+| Alan | Somut kaynak ve test | Denetim kararı |
+|---|---|---|
+| Diagnostics async writer / backpressure | `game/love/core/diagnostics.lua:56-87,89-117,304-319`, `core/diagnostics_worker.lua:8-29`, `tests/diagnostics.lua:85-118`. Normal `flush` 4 girişlik dolu kuyrukta drop sayıyor; üretimde thread append kullanıyor. | **Kaynakta doğrulandı, Android açık.** `flush(true)` doluluk sınırını atlıyor, `close()` `writer:wait()` yapıyor: shutdown baskısı ve worker hatası/kayıp kayıt gerçek cihazda doğrulanmalı. Açık kullanıcı export'u senkron `filesystem.write` yapar; her karelik writer değildir. |
+| dt alignment | `core/diagnostics.lua:159-167,218-260,284-302`; `tests/diagnostics.lua`. `draw_done` örneği sonraki `begin(dt)` ile kesinleniyor. Son frame `dt_confirmed=false`. | **Kod mantığı uygun**, ancak gerçek VSYNC/Android FPS ölçümü yok. Doğrulanmamış son kare pacing yüzdeliklerine katılmamalı. |
+| Selection + player depth + setDrawRange | `objects/renderer.lua`, `objects/terrain25d_sprites.lua:459-541`, `tests/terrain25d_object_population.lua:57-124`. Seçim ayrı overlay; statik batch prefix/split ile oyuncu öncesi/sonrası çiziliyor. | **Mock cache/range testleri mevcut**, gerçek LÖVE GPU, alpha occlusion, equal-depth, selection/harvest/depletion, contact/shadow görsel kıyası **açık**. |
+| Creative lazy atlas | `systems/creative_build_renderer.lua:6-51,73-105`; `tests/creative_build.lua:68-92`. Boş durumda atlas yüklenmez, ilk görünür/preview durumunda yüklenir; Creative kapalı olsa da mevcut yapılar çizilir. | **Mock lazy/fallback testi mevcut**; gerçek GPU ilk atlas upload gecikmesi ve saved yapı görüntüsü açık. |
+| HUD cache / safe-area | `core/creative_build_hud.lua:7-51`; `tests/creative_build.lua:53-65`. x/y/w/h, active, page değişikliği cache'i geçersiz kılar. | **Mock geometri kanıtı var**; Android 320–360dp, 392–411dp, 19.5:9/20:9, 1.3 font scale matrisinde gerçek cihaz kanıtı yok. |
+| Stage6 / alpha / depth | `main.lua:38-77`: R2 session-only ile explicit Stage6 bayrakları birlikte reddedilir. | **Kaynakta koruma görüldü**, Stage6 save/reopen ve alpha/silhouette/depth görüntü regresyonlarının bu HEAD'de geçtiğine dair kanıt yok. |
+
+### Doğrulama, engel ve koordinatöre teslim
+
+- İnceleme yalnız mevcut repo içeriği + CI metadata üzerinden yapıldı; **yeni test çalıştırılmadı**. Test dosyalarının bulunması testlerin başarıyla çalıştığı anlamına gelmez.
+- SOHBET-G'nin terrain batching, halo, ticket/FIFO, shadow cache, atlas ve diğer optimizasyonları yeni keşif sayılmadı.
+- **Açık kabul:** mevcut `tests/diagnostics.lua`, `tests/terrain25d_object_population.lua`, `tests/creative_build.lua`, Stage6 ve gerçek LÖVE/Xvfb alpha/depth/safe-area regresyonları P0'dan bağımsız koşulmalı. Android'de `dt_confirmed`, `dropped`, `trace_write_ms`, 16.667/33.333ms pacing, selection/depth/Creative görüntüsü ayrıca doğrulanmalı. Masaüstü p95 Android FPS kanıtı değildir.
+- **Sonuç:** `review_requested`; genel regresyon PASS, Stage6 güvenliği ve Android 60 FPS kabulü **verilmedi**. Kullanıcı bu kayıt bağlantısını koordinatöre taşıyacak.
+
