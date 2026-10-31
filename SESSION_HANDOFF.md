@@ -1,3 +1,47 @@
+## [SOHBET-K | TAMU Entegrasyon ve Son Kabul] — EşRota uygulama raporu
+
+- **Durum:** `review_requested` — masaüstü CI/regresyon kapıları başarılı; gerçek Android, görsel, bellek/VRAM ve FPS kabulü açık.
+- **Proje / kaynak:** `TheOsmanYILDIRIM/TAMU-K-K`, yalnız `experiment/25d-binary-vertex-20261030`.
+- **Başlangıç HEAD:** `a6856cda2525e582eb37d954e8b0eaba69f9ac31`.
+- **Son test edilmiş kod HEAD:** `d3a044ea9305202db6fb2d7d85f9a9c7eb915d5f`.
+- **Zaman (UTC):** 2026-10-31 17:27 (CI son artefaktının doğrulanmış zamanı).
+- **Sahiplik:** `execution_mode=implementation`, `conflict_resolution=merged_single_writer`, `minimum_viable_agents=1`, yalnız izinli dal/kod kapsamı ve bu rapor bölümü; H/I/J kaynak raporlarına dokunulmadı.
+- **Kayıt hedefi:** `SESSION_HANDOFF.md#SOHBET-K`; Contents API blob SHA koruması, GitHub sağlayıcıdan geri açma ve son HEAD kontrolü.
+- **Rapor sürümü / geri okuma:** commit sonrası dosya SHA ile ayrı doğrulanır.
+
+### Yeni bulgular ve kanıt
+
+| Bulgu | Gerçek kanıt | Mekanizma ve minimal değişiklik | Test / durum |
+|---|---|---|---|
+| **P0 ilk görünür chunk GPU beklemesi** | [CI #41206688479](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41206688479): `TAMU_WALK_COVERAGE frames=480 max_missing=2`; `TAMU_WALK_CAUSE` ile eksik `-1:-3`, `3:1` CPU worker hazır, GPU slot bekliyordu | `stream.lua` halo sırası eski iki-chunk uzak merkeze göre yapılıyordu; öngörülen yakın viewport kesişen adayları öne alan, **upload cap değiştirmeyen** sınırlı öncelik düzeltmesi. [Kod commit de31d202](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/commit/de31d202a0653c2ac5b79215b2e326008ef390d1), blob `29672fc7eb30fe013a257c5b0896cc9e1b7e5062` | [quality #41224440746](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41224440746): **480 kare max_missing=0, distance=1099.287**. Yön/zoom dışındaki Android viewportlar ayrıca gerçek cihazda doğrulanmadı |
+| **Obje regresyon test fixture sayaç eksikliği** | #41224122179 `terrain25d_sprites.lua:540`, `nil batches`; üretim constructor/begin_frame sayaçları zaten başlatıyor | Sadece mevcut `tests/terrain25d_object_population.lua` fixture'ına `batches=0,visible=0`; [commit 57ad9543](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/commit/57ad954309f677324eadbdd13ed0f00fa3794d0a) | Lua5.4 + LuaJIT `TAMU_OBJECT_PLAYER_SLOT_RANGE_OK` ve `TAMU_SELECTED_OBJECT_CACHE_OVERLAY_OK` |
+| **Eski tool testi kaldırılmış plasma renderer'a bağlıydı** | #41224281665 `player/rigby_visual.lua:12` — `love.filesystem=nil`; `core_tool_integration` yanlış modülü stub'lıyordu | Sadece var olan testi production Rigby `player.rigby_visual` aracına uyarladı, ağaç=axe/kaya=pickaxe, eski PNG yüklemesi yok ve hasat state'i değişmez; [commit d3a044ea](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/commit/d3a044ea9305202db6fb2d7d85f9a9c7eb915d5f) | Lua5.4 + LuaJIT `RIGBY_TOOL_INTEGRATION_OK`, gerçek Rigby pose/socket testleri ayrıca CI'da başarılı |
+
+### Tekrar edilmemesi gereken geçmiş çalışmalar
+
+SOHBET-G/H/I/J rapor ve commitleri korunmuştur. H'nin visible/GPU-ready önceliği, I'nin pacing `dt_confirmed` düzeltmesi, J'nin world-query alias güvenlik düzeni ve önceki diagnostics/Creative/Rigby optimizasyonları yeniden yazılmadı. Yeni workflow, yeni test modu, yeni TASKS veya rapor dosyası açılmadı. Worker kapasitesi veya hareket halindeki 1 upload/kare limiti körlemesine artırılmadı.
+
+### Yapılanlar / yapılmayanlar
+
+- **Kod:** yalnız `game/love/world/stream.lua`; **test fixture:** yalnız `game/love/tests/terrain25d_object_population.lua`, `game/love/tests/core_tool_integration.lua`. Commits: `de31d202` → `57ad9543` → `d3a044ea`; mevcut dal dışında kod yazılmadı, eski commit force/reset/revert edilmedi.
+- **CI:** Son HEAD `d3a044ea` üzerinde [quality #41224440746](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41224440746) `completed/success`; gate/test job başarılı, failing step yok. Lua5.4/LuaJIT, gerçek LÖVE/Xvfb, 480 kare yürüyüş, terrain/atlas, diagnostics JSONL mock, nesne depth/range/selection, Creative, stat/HUD, Stage5/Stage6 save/reopen (`LOVE_STAGE6_REOPEN_OK revision=4`), collision/Rigby/hasat kontratları geçti. `LOVE_INTEGRATION_SMOKE_OK frames=20 chunks=56 objects=117`. Masaüstü batched CPU `p95=7.544ms`, 2.5ms eski hedefe ilişkin uyarı **Android FPS değildir**; drawcall 21→2 olarak ayrı CI kanıtı.
+- **Paket:** CI `.love` üretti, workflow'un `zipfile.testzip() is None` ve 156 baked `.verts.z` varlığı kapısı başarılı. `tamu-authored-r2-binary-cache` artifact **ID 13051691107**, **16,506,415 byte**, provider ZIP digest `sha256:73767266c1e2a0bbc90eb89b16270fa958f0778966ed2e6be1d0aec2008bb4aa`. İkinci `core-stat-progression-smoke` **ID 13051721125**, digest `sha256:959b1cff932d57afdcbafded1df9ff9e3603196729d4b1c5d06a41afd541af45`. Artefaktlar bağımsız indirilip yeniden açılmadı; workflow içi ZIP kontrolü ile GitHub sağlayıcı digest'i farklı kanıtlardır.
+- **Beyin:** `agy-vault/main` HEAD `5c6bfef372e2272cda36e40f8a50cb0526a80389`, mevcut `tasks/oyun-25d-runtime-renderer-integration-20261028.md` **rev14/active** okundu. Bu oturumda resmi v3.12.0 DirectSync motorunun hedef vault üzerinde güvenli işlem/receipt + CAS write-back zinciri tamamlanmadığından **Beyin'e yazılmadı**, görev `done` yapılmadı.
+- **Android:** Gerçek Android/JSONL export ve donanım üzerinde p50/p95/p99 FPS, GPU/VRAM/termal, görsel/Y-depth ve safe-area/fontScale kabulü **doğrulanmadı**. Masaüstü smoke Android cihaz doğrulaması değildir.
+
+### Açık işler, engeller ve sonraki adım
+
+1. Koordinatör, son `.love` artifact'ını gerçek Android cihazda çalıştırıp sabit/yürüyüş/dönüş/zoom JSONL, FPS p50/p95/p99 ve görünür eksik chunk=0 kanıtını toplamalı; alpha, socket, HUD safe-area, Creative, Stage6 kapat/aç ve bellek/termal davranışı görsel + cihaz düzeyinde kontrol etmeli.
+2. Avenox Beyin rev14 `active` görevi yalnız resmî DirectSync motor, güncel revision, CAS, receipt ve geri okuma sonrası ilerletilebilir. Mükerrer görev yaratılmadı.
+3. P2 getVertex/selektif Rigby mesh upload ve P3 worker/atlas/collision fallback için yeni ölçülmüş darboğaz yok; kapsam büyütülmedi, performans kazanımı ileri sürülmedi.
+4. Main merge/yayın/nihai Android kabulü **açık**; bu rapor yalnız masaüstü entegrasyon kapısını doğrular.
+
+### Koordinatöre teslim
+
+Doğrulanmış rapor bağlantısı: [SESSION_HANDOFF.md#SOHBET-K](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/blob/experiment/25d-binary-vertex-20261030/SESSION_HANDOFF.md). Kullanıcı koordinatör sohbetinde raporu yeniden açıp gerçek Android kabulünü yönetmeli; otomatik ajan bildirimi yok.
+
+---
+
 
 ## [SOHBET-G | TAMU Performans Uygulama] — EşRota raporu
 
