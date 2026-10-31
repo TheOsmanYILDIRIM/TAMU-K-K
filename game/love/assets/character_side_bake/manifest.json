@@ -1,37 +1,36 @@
 {
   "atlas": "atlas.png",
-  "atlas_sha256": "20f07c4c92313547eb12e7c61bf928cf3adf2f6d61dc4f74566726508f7726b3",
+  "atlas_sha256": "853152acd83ad8b53c02a65ccdaaab4090a55abe9c73a163464a90561abf3dca",
   "bottom_center_pivot": true,
-  "camera_pitch_degrees": 45,
+  "camera_pitch_degrees": 0,
   "fps": 12,
   "frames": 8,
   "height": 192,
   "rows": {
-    "back_idle": 2,
-    "back_walk": 3,
-    "front_idle": 0,
-    "front_walk": 1
+    "side_idle": 0,
+    "side_walk": 1
   },
   "source": "Adventurer by Quaternius - 5EGWBMpuXq.glb",
   "source_sha256": "4a8639cd8eee9d8a150464edc25eb0536ced464790704a64e40c8620d99f66db",
-  "version": 1,
+  "version": 2,
   "views": {
     "NE": [
-      "back",
+      "side",
       false
     ],
     "NW": [
-      "back",
+      "side",
       true
     ],
     "SE": [
-      "front",
+      "side",
       false
     ],
     "SW": [
-      "front",
+      "side",
       true
     ]
   },
-  "width": 128
+  "width": 128,
+  "world_camera_pitch_degrees": 45
 }
