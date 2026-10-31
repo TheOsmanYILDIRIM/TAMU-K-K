@@ -367,7 +367,10 @@ function Sprite:draw_shadows(g,camera,w,h,objects)
        else g.draw(cache.batch) end
        self.shadow_calls=self.shadow_calls+1
      end
-     if not stable then cache.batch:release() end
+     if not stable then
+       self.shadow_chunk_cache[cache_key]=nil
+       cache.batch:release()
+     end
    end
    -- Bounded lifetime for chunks left behind; keep recent neighbours hot.
    self.shadow_chunk_frame=(self.shadow_chunk_frame or 0)+1
