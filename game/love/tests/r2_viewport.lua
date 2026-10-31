@@ -128,17 +128,39 @@ do
  moving.x=moving.x+2
  local items=s:needed(moving,720,1100)
  assert(s._25d_prefetch_dir and s._25d_prefetch_dir.x>.9)
- local last=nil
- for i,c in ipairs(items) do
+ local last_priority,last_score=nil,nil
+ local future={}
+ for _,step in ipairs({.25,.5,1,2}) do
+   future[#future+1]={x=moving.x+256*step,y=moving.y,zoom=moving.zoom}
+ end
+ local function priority(c)
+   for j,view in ipairs(future) do
+     local px,py=Iso.project(c.cx*256-view.x,c.cy*256-view.y)
+     local edge=256*math.sqrt(.5)*view.zoom
+     local sx,sy=360+px*view.zoom,550+py*view.zoom
+     if sx+edge>=-12 and sx-edge<=732 and
+       sy+edge>=-12 and sy<=1112 then return j end
+   end
+   return #future+1
+ end
+ local halo_count=0
+ for _,c in ipairs(items) do
    if not s.visible_required_keys[c.key] then
+     halo_count=halo_count+1
+     local rank=priority(c)
      local x=(c.cx+.5)*256-(moving.x+512)
      local y=(c.cy+.5)*256-moving.y
      local score=x*x+y*y
-     if last then assert(score>=last,'forward halo lost priority') end
-     last=score
+     if last_priority then
+       assert(rank>=last_priority,'next-screen prefetch priority lost')
+       if rank==last_priority then
+         assert(score>=last_score,'forward halo tie-break lost')
+       end
+     end
+     last_priority,last_score=rank,score
    end
  end
- assert(last and #items<=math.max(80,s.visible_required_count+24),
+ assert(halo_count>0 and #items<=math.max(80,s.visible_required_count+24),
    'opt-in forward halo missing or bounded staging cap exceeded')
 end
 print('TAMU_25D_FORWARD_HALO_PRIORITY_OK')

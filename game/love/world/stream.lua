@@ -115,7 +115,28 @@ function Stream:needed(camera,width,height)
         local y=(c.cy+.5)*size-looky
         return x*x+y*y
       end
+      -- A centre-distance halo can miss the next diagonal screen edge.
+      -- Prioritise cells by the FIRST near-future viewport they intersect,
+      -- then retain the existing stable distance order within each cohort.
+      local future={}
+      for _,step in ipairs({.25,.5,1,2}) do
+        future[#future+1]={x=camera.x+direction.x*size*step,
+          y=camera.y+direction.y*size*step,zoom=camera.zoom}
+      end
+      local first_entry={}
+      for _,c in ipairs(halo) do
+        local priority=#future+1
+        for i,view in ipairs(future) do
+          if overlaps_view(c.cx,c.cy,size,view,width,height,visible_pad) then
+            priority=i
+            break
+          end
+        end
+        first_entry[c.key]=priority
+      end
       table.sort(halo,function(a,b)
+        local pa,pb=first_entry[a.key],first_entry[b.key]
+        if pa~=pb then return pa<pb end
         local va,vb=lookscore(a),lookscore(b)
         if va~=vb then return va<vb end
         return less(a,b)
