@@ -40,6 +40,15 @@ SOHBET-G/H/I/J rapor ve commitleri korunmuştur. H'nin visible/GPU-ready önceli
 
 Doğrulanmış rapor bağlantısı: [SESSION_HANDOFF.md#SOHBET-K](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/blob/experiment/25d-binary-vertex-20261030/SESSION_HANDOFF.md). Kullanıcı koordinatör sohbetinde raporu yeniden açıp gerçek Android kabulünü yönetmeli; otomatik ajan bildirimi yok.
 
+### 2026-10-31 — Android JSONL kaynaklı P0 terrain fallback düzeltmesi (kısmi)
+
+- Android kullanıcısı JSONL frame 2499–2618 aralığında `mesh_prepare_ms` 30–49ms, `mesh_resumes=1`, `mesh_uploads=0`, `missing=3–5` ve 11–40 FPS örnekleri sağladı. Android GPU süresi doğrudan ölçülmedi.
+- Kaynakta worker kapasitesi doluyken `binary_pending[c.key]` olmayan chunk için main thread `self:prepare()` coroutine fallback'i başlıyordu; tek `coroutine.resume` maliyeti frame budget'ı aşıyordu. Aktif worker varsa henüz kuyruğa girmemiş chunk artık main thread'de hazırlanmaz, mevcut worker kuyruğu ve GPU upload limiti korunur. Worker arızası için mevcut legacy fallback korunur.
+- Kod commit [3b347653](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/commit/3b347653bfed491c2e697f5aee2e82be5810141a), `world/terrain25d_runtime.lua` blob `9feed40a661b303ee06c3c8c7c1395879e4a345b` geri okundu.
+- Son `quality.yml` [#41229535069](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41229535069) `completed/success`, gate/test başarılı; yeni `.love` artifact ID `13052942536`, provider SHA256 `8ebece1641debbbbf515c93c349e0e8ddc9af465a9f2a8f067eeec1b27b6680e`, bağımsız ZIP testzip ve `.love` 550 dosyalı içerik testzip geçti. Android yeniden test edilmedi.
+- **Açık:** Chunk geçişinde statik obje/gölge titremesi için per-chunk kalıcı world-space render batch mimarisi uygulanmadı. Gölge attachment, Y-depth, seçili obje, reveal, güneş slotu ve save regresyonu doğrulanmadan render cache genişletilmemeli. Bu teslim 60 FPS veya sıfır takılma garantisi değildir; Android FPS p95/p99 ve missing=0 yeniden ölçülmeli. Avenox Beyin resmî DirectSync write-back yapılmadı; task rev14/active olarak gözlendi.
+
+
 ---
 
 
