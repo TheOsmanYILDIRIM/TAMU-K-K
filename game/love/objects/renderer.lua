@@ -223,6 +223,11 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_ove
   end
   -- Shadow SpriteBatch was filled, but no sprite queues or GPU draws run.
   if flags.object_shadow_cpu_only then g.pop();return #all end
+  local static_cached=type(object_override)=="table"
+    and flags.objects~=false and not flags.opaque_objects
+    and not flags.skip_object_gpu and not selected_id
+    and object_override.prepare_cached_objects
+    and object_override:prepare_cached_objects(camera,w,h,order) or false
   -- Only the legacy plasma mode uses autonomous tools. The rig follows the
   -- approved harvest clip and exposes the right-hand socket for future items.
   local visual=clear_map(draw_pool.visual)
@@ -240,23 +245,29 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_ove
   -- Shadows above are measured unchanged; Rigby is off in this profile.
   if flags.opaque_objects then g.setBlendMode('replace') end
   for _,entry in ipairs(order) do
-    if entry.player and flags.rig~=false then
-      if type(object_override)=="table" and flags.objects~=false then object_override:flush(g) end
-  if flags.opaque_objects then g.setBlendMode('alpha') end
-      local rig_start=perf_clock and perf_clock()
-      player_sprite(g,camera,w,h,player,visual)
-      if rig_start then
-        local elapsed=(perf_clock()-rig_start)*1000
-        rig_elapsed_ms=rig_elapsed_ms+elapsed
-        Diagnostics.measure("rigby_ms",elapsed)
+    if entry.player then
+      if static_cached then object_override:draw_cached_objects(g,camera,w,h,1) end
+      if flags.rig~=false then
+        if type(object_override)=="table" and flags.objects~=false and not static_cached then object_override:flush(g) end
+        if flags.opaque_objects then g.setBlendMode('alpha') end
+        local rig_start=perf_clock and perf_clock()
+        player_sprite(g,camera,w,h,player,visual)
+        if rig_start then
+          local elapsed=(perf_clock()-rig_start)*1000
+          rig_elapsed_ms=rig_elapsed_ms+elapsed
+          Diagnostics.measure("rigby_ms",elapsed)
+        end
       end
     elseif not entry.player and flags.objects~=false and type(object_override)=="table" then
-      object_override:queue(g,camera,w,h,entry.object,entry.id==selected_id)
+      if not static_cached then
+        object_override:queue(g,camera,w,h,entry.object,entry.id==selected_id)
+      end
     elseif not entry.player and flags.objects~=false then
       (object_override or object_sprite)(g,camera,w,h,entry.object,entry.id==selected_id)
     end
   end
-  if type(object_override)=="table" then object_override:flush(g) end
+  if static_cached then object_override:draw_cached_objects(g,camera,w,h,2) end
+  if type(object_override)=="table" and not static_cached then object_override:flush(g) end
   if perf_clock then
     -- Exclusive sprite queue/flush time: omit player Rigby draw and shadows.
     Diagnostics.measure("sprite_pipeline_ms",math.max(0,
