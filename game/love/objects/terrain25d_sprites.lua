@@ -54,7 +54,7 @@ function Sprite.new(provider,manifest)
      static_manifest=m
    end
  end
- return setmetatable({provider=provider,families=fam,
+ return setmetatable({provider=provider,families=fam,bundles={},
    static_manifest=static_manifest,static_images={},
    batches_by_page={},shadow_batches={},shadow_frame=0,
    shadow_cache=nil,static_shadow_cache=nil,shadow_rebuilds=0,shadow_reuses=0,
@@ -74,6 +74,11 @@ function Sprite:begin_frame()
        self.static_images[page]=nil
      else self.provider:unpin_page(page) end
      self.batches_by_page[page]=nil
+   end
+ end
+ if self.frame%120==0 then
+   for id,b in pairs(self.bundles or {}) do
+     if self.frame-(b.last_seen or 0)>120 then self.bundles[id]=nil end
    end
  end
  self.pending=0;self.current_page=nil;self.pending_reveal=false
@@ -140,26 +145,46 @@ function Sprite.project_chunk_local(camera,w,h,o)
  -- Camera is authoritative; no chunk-relative camera reset is permitted.
  return camera:project(ox+lx,oy+ly,w,h)
 end
+-- Parametric object record is immutable until the authored identity or
+-- world coordinates actually change. GPU shadow/object paths share this
+-- identity and origin; Y-depth sorting remains authoritative in Renderer.
+function Sprite:bundle_for(o)
+ self.bundles=self.bundles or {}
+ local key,ox,oy=Sprite.chunk_key(o)
+ local b=self.bundles[o.id]
+ if not b or b.x~=o.x or b.y~=o.y or b.kind~=o.kind
+     or b.radius~=o.radius or b.chunk~=key then
+   local h=hash(o.id)
+   local family
+   if o.kind=='tree' then
+     local variety=h%12
+     family=variety==0 and 'broadleaf' or
+       (variety<=2 and 'conifer' or 'oak')
+   elseif o.kind=='rock' then
+     local variety=h%12
+     family=variety==0 and 'rock_spire' or
+       (variety==1 and 'rock_cluster' or 'boulder')
+   else family=self.families[o.kind] and o.kind or 'shrub' end
+   b={id=o.id,x=o.x,y=o.y,kind=o.kind,radius=o.radius,
+      chunk=key,origin_x=ox,origin_y=oy,
+      local_x=o.x-ox,local_y=o.y-oy,hash=h,family=family}
+   self.bundles[o.id]=b
+ end
+ b.last_seen=self.frame or 0
+ return b
+end
 function Sprite:appearance(camera,w,h,o,skip_cull)
  -- The compact object atlas is decoded off-thread; never trigger a
  -- synchronous newImage fallback while the worker is still loading it.
  if self.provider.compact and not self.provider.compact_ready then return nil end
  if self.provider.object_reveal and
    self.provider:object_reveal(o.x,o.y)<=0 then return nil end
- local family
- if o.kind=="tree" then
-   local variety=hash(o.id)%12
-   family=variety==0 and "broadleaf" or
-     (variety<=2 and "conifer" or "oak")
- elseif o.kind=="rock" then
-   local variety=hash(o.id)%12
-   family=variety==0 and "rock_spire" or
-     (variety==1 and "rock_cluster" or "boulder")
- else family=self.families[o.kind] and o.kind or "shrub" end
+ local bundle=self:bundle_for(o)
+ local family=bundle.family
  local choices=self.families[family] or self.families.oak
  local z=camera.zoom
  local n=z<.8 and math.min(#choices,2) or #choices
- local a=choices[1+hash(o.id)%n]
+ local a=choices[1+bundle.hash%n]
  local x,y=Sprite.project_chunk_local(camera,w,h,o)
  local scale=Sprite.scale_for(family,z,o.id)
  if not skip_cull and (x+64*scale<0 or x-64*scale>w or
