@@ -54,6 +54,9 @@ def main():
     scene = bpy.context.scene
     scene.render.engine = "CYCLES"
     scene.cycles.samples = 24
+    # Ubuntu Blender builds may omit OpenImageDenoiser; render without denoising.
+    for layer in scene.view_layers:
+        layer.cycles.use_denoising = False
     scene.render.resolution_x = args.width
     scene.render.resolution_y = args.height
     scene.render.resolution_percentage = 100
