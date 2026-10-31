@@ -13,6 +13,7 @@ var total_cached: int = 0
 var chunk_nodes: Dictionary = {}
 var available_chunks: Dictionary = {}
 var chunk_vertices: Dictionary = {}
+var object_visuals_by_chunk: Dictionary = {}
 var world_bounds := Rect2(-4096.0, -4096.0, 32768.0, 32768.0)
 const MAX_LOADED_PER_FRAME := 1
 var avatar: Node2D
@@ -85,6 +86,7 @@ func _refresh_streaming_requests() -> void:
         if not wanted.has(name):
             var old: Node2D = chunk_nodes[name]
             old.queue_free()
+            _set_chunk_visuals_visible(name, false)
             loaded -= 1
             vertices -= int(chunk_vertices.get(name,0))
             chunk_vertices.erase(name)
@@ -125,6 +127,11 @@ func _ready() -> void:
     _load_objects()
     _make_avatar()
     print("TAMU_GODOT_TERRAIN_START chunks=", pending.size())
+
+func _set_chunk_visuals_visible(stem: String, show: bool) -> void:
+    for node in object_visuals_by_chunk.get(stem, []):
+        if is_instance_valid(node):
+            node.visible = show
 
 func _load_chunk(stem: String) -> void:
     var file := "res://chunks/%s.verts" % stem
@@ -176,6 +183,7 @@ func _load_chunk(stem: String) -> void:
     assert(buf.get_position() == raw.size())
     chunk_vertices[stem] = chunk_count
     loaded += 1
+    _set_chunk_visuals_visible(stem, true)
 
 func _load_objects() -> void:
     var path := "res://chunks/r2_objects.json"
@@ -233,7 +241,11 @@ func _load_objects() -> void:
         var tex := AtlasTexture.new()
         tex.atlas = atlas
         tex.region = area
+        var visual_key := "c_%d_%d" % [int(o["cx"]),int(o["cy"])]
+        if not object_visuals_by_chunk.has(visual_key):
+            object_visuals_by_chunk[visual_key] = []
         var sprite := Sprite2D.new()
+        sprite.visible = false
         sprite.texture = tex
         sprite.centered = true
         sprite.position = Vector2(float(o["sx"]), float(o["sy"]))
@@ -245,6 +257,7 @@ func _load_objects() -> void:
         sprite.scale = Vector2.ONE * scale_value
         sprite.offset = Vector2(0.0, -60.0)
         object_layer.add_child(sprite)
+        object_visuals_by_chunk[visual_key].append(sprite)
         if shadow_manifest is Dictionary and shadow_manifest["objects"].has(a["id"]):
             var shadow_index: Dictionary = shadow_manifest["objects"][a["id"]]
             var shadow_tex := AtlasTexture.new()
@@ -252,10 +265,12 @@ func _load_objects() -> void:
             shadow_tex.region = Rect2(int(shadow_index["u"]), int(shadow_index["v"]), 32, 32)
             var shadow := Sprite2D.new()
             shadow.texture = shadow_tex
+            shadow.visible = false
             shadow.position = sprite.position
             shadow.scale = Vector2.ONE * scale_value * 4.0
             shadow.offset = Vector2(0, -8)
             shadow_layer.add_child(shadow)
+            object_visuals_by_chunk[visual_key].append(shadow)
         object_count += 1
     print("TAMU_CANONICAL_OBJECTS_LOADED count=", object_count)
 
