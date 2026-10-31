@@ -284,3 +284,39 @@ Kullanıcı **görsel HUD yerine ciddi, otomatik analiz edilebilir, bol verili s
 - Önce `AGENTS.md`, `docs/03_OBJECT_MODEL.md`, `docs/09_OPEN_DECISIONS.md` oku.
 - Eski yedeği düzenleme veya sessiz merge etme. `main`de kalıcı world verisi ilk etapta yok, yokmuş gibi davranma.
 - Android FPS, input ve co-op başarılarını gerçek cihaz kanıtı olmadan belirtme.
+
+---
+
+## [SOHBET-H | TAMU Terrain P0] — EşRota ikinci dalga salt okunur araştırma raporu
+
+- **Durum:** `review_requested` — neden zincirinin GPU aşaması doğrulandı; max_missing=0 ve Android kabulü doğrulanmadı.
+- **Proje / kaynak:** `TheOsmanYILDIRIM/TAMU-K-K`, yalnız `experiment/25d-binary-vertex-20261030`.
+- **Başlangıç HEAD (doğrulandı):** `59b3fcf94f6d5a02c840a1198a05c73c89fa99d8` (compare branch = identical).
+- **Zaman (UTC):** 2026-10-31; kesin UTC saat alınmadı.
+- **Sahiplik:** yalnız SOHBET-H bölümü; kod, CI, Beyin, görev, workflow değiştirilmedi.
+- **Rapor hedefi:** `SESSION_HANDOFF.md#SOHBET-H`; `revision_guard=cas`; `readback_method=provider_reopen`; `report_only`.
+- **Ön okuma:** AGENTS.md (`2730a8e17fd1a91ca607e8d4007b6929ceeb2c04`), README.md (`ee6ba8fe72ffaa18998069594a8551bea6d3af0b`), SOHBET-G devri, CI #41194049897 job adımları, ilgili Lua kaynakları.
+
+### Yeni bulgular ve kanıt
+
+| Bulgu | Gerçek kanıt | Mekanizma ve kesinlik | Minimal değişiklik önerisi | Test/kabul ve risk |
+|---|---|---|---|---|
+| **P0 kesin anlık durum:** frame=7 key `-1:-3` yeni görünür, önceki kare resident, worker sonucu hazır fakat GPU mesh yok | SOHBET-G / CI #41194049897: `max_missing=1`, `worker_pending=0`, `worker_ready=1`, `no_previous_resident=0`, `first_visible=1`; `main.lua` 990–1015; `terrain25d_runtime.lua` 903–948 | Sorun bu karede *resident chunk'ın mesh yüklemesini/görünür tamamlanmasını kaçırmasıdır*. Ancak tek karelik snapshot, worker sonucunun **hangi karede** hazır olduğunu veya önceki karede upload bütçesinin hangi key tarafından tüketildiğini göstermediği için yukarı akış kesin kök neden henüz ispatlanmadı. | Öncelikle var olan WALK_PROBE'ye key bazında `ready_since_frame`, `first_visible_frame`, `selected_upload_key`, `upload_cap_hit` ve `deadline_hit` tanısı ekleme önerisi; üretim davranışını değiştirmez | Mevcut CI yürüyüşünde `-1:-3` için ilk ready ve seçilebilir upload karelerini ispatla. Gözlem olmadan 'worker geç kaldı' veya 'tek neden sıralama' deme. |
+| **P0 güçlü sıra hipotezi:** halo CPU ready iken görünür chunk iş yükünün arkasında GPU kuyruğunda bekleyebilir | `stream.lua` 68–144: required dizisi önce tüm visible, sonra bounded halo; `terrain25d_runtime.lua` 838–915: `for c in ipairs(chunks)`, moving `upload_cap=1`, deadline ~2ms; `poll_binary_results` → `enqueue_binary` → upload | Tek GPU upload slotu mevcut görünür ilk eksik chunk'a harcanabilir; daha sonra görünür olacak halo aynı karede yüklenemez. `ready=1` gözlemi hipotezle uyumlu, fakat mevcut log bu özel karede tüketilen upload key'ini vermiyor. | **Koşullu görünürlük-eşiği önceliği:** Mevcut görünürlerin hepsi GPU-ready ve bütçe boşsa, halo içinden bir sonraki kamera viewport'una en erken girecek `binary_ready` chunk'ı seçerek izinli tek upload'u ona ayır. Önce görünür eksikleri tamamla; `upload_cap=1` ve 2ms guard korunur. İlk deneme yalnız mevcut sıra değiştirme + scoped test; bellek kapasitesini artırma. | R2 viewport sınırları hem x/y/diyagonal/ters kamera yönü hem zoom senaryolarında test edilsin. Olumsuz etki: yanlış edge tahmini, halo churn, CPU aşımı. Eski ETA denemesi `max_missing=4` verdi; salt ETA skorunu tekrarlama. |
+| **P0 ölçüm boşluğu:** CPU ready ≠ GPU drawable | `terrain25d_runtime.lua` 874–906: `Baked.load_ready` GPU üretimi, başarısız veya deadline geçişi; 926–944 `missing_visible` ancak `_25d_meshes` sonrası azalıyor | Worker hazır veriyi tek başına çizemez; `binary_ready` → `_25d_meshes` arasındaki geçişi bütçe, öncelik ve aşama kilitleri belirler. | Ayrı tanıda `load_ready` başarı/başarısızlık, süre ve key; görünür hâle gelişten bir kare önce GPU-ready olma durumunu logla. | `max_missing=0` 480 kare yürüyüş, ek uç ve ters-yön fixture'ları; CPU p95/p99, upload sayısı, VRAM artışı ayrıca değerlendirilsin. CI masaüstüdür, Android FPS kanıtı değildir. |
+
+### Tekrar edilmemesi gereken geçmiş çalışmalar
+
+SOHBET-G'nin uygulanmış ticket/FIFO düzeltmesi, visible/halo Lua tablo alias düzeltmesi (77→18, max_missing 7→2), yönlü halo ve `max(80,visible+24)` kapasitesi, başarısız ETA denemesi ve `upload_cap=1` korunuyor. Bunlar yeni keşif veya kabul edilmiş çözüm olarak sunulmuyor. `stream.lua` blob `7874bfe9e02bac18dc1560020835702736ee9edd`; `terrain25d_runtime.lua` blob `af0874ac9d4fb641207b2bec6f0110a0bbeab14a`; `main.lua` blob `80d742be8c66d77c21650ffec38a1b3800aabb67`.
+
+### Yapılanlar / yapılmayanlar
+
+GitHub connector ile AGENTS, README, SESSION_HANDOFF, Stream/Runtime/Main/test kodu açıldı; branch/başlangıç SHA eşitliği doğrulandı. CI #41194049897 job listesi: gate success, test failure, precompile authored R2 safety halo adımı failure; takipteki HUD/Stage5/Stage6 ve başka adımlar skipped. SOHBET-G'nin `max_missing=1` ve `frame=7` metrikleri mevcut tesliminden okundu, bağımsız yeni log/artifact çekimi veya test koşusu yapılmadı. Kod/CI/Beyin/workflow değişikliği yapılmadı. Gerçek Android JSONL yok, masaüstü testler mobil FPS değildir.
+
+### Açık işler, engeller ve sonraki adım
+
+Bir sonraki **uygulama** sohbeti mevcut WALK_PROBE altında GPU upload selection/ready timing kanıtını ekleyip aynı CI yürüyüşünü değerlendirmeli; ancak bu kanıttan sonra yön-bağımsız, yalnız hazır ve bir sonraki görünürlük eşiğine yakın halo'yu seçen minimal algoritmayı deneyip `max_missing=0` göstermeli. Herhangi bir yeni hız/VRAM maliyetini ölçmeden upload cap ve halo kapasitesini büyütmemeli. Kullanıcı bu raporla koordinatöre dönecek; otomatik iletim yok.
+
+### Koordinatöre teslim
+
+Bu bölüm için sağlayıcı yeniden açma ve blob/commit SHA sonucu rapor yazımı sonrasında doğrulanır. Rapor yazıldı diye P0 düzelmiş veya Android testi geçmiş sayılmaz.
