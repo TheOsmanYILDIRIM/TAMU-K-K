@@ -957,6 +957,8 @@ local function render_flags()
   if mode=='compare_objects' then return false,true,false,false end
   if mode=='compare_objects_opaque' then return false,true,false,false end
   if mode=='compare_objects_prepare' then return false,true,false,false end
+  if mode=='compare_objects_collect' then return false,true,false,false end
+  if mode=='compare_objects_shadow_cpu' then return false,true,false,false end
   if mode=='compare_rig' then return false,false,true,false end
   if mode=='compare_terrain_objects' then return true,true,false,false end
   if mode=='compare_nohud' then return true,true,true,false end
@@ -1034,7 +1036,9 @@ function love.draw()
     selected_target,harvesting,sprite25d_draw,
     {objects=objects_on,rig=rig_on,
      opaque_objects=_G.TAMU_RENDER_PROFILE=='compare_objects_opaque',
-     skip_object_gpu=_G.TAMU_RENDER_PROFILE=='compare_objects_prepare'})
+     skip_object_gpu=({compare_objects_prepare=true,compare_objects_shadow_cpu=true})[_G.TAMU_RENDER_PROFILE] or false,
+     object_collect_only=_G.TAMU_RENDER_PROFILE=='compare_objects_collect',
+     object_shadow_cpu_only=_G.TAMU_RENDER_PROFILE=='compare_objects_shadow_cpu'})
   Diagnostics.phase("objects_and_shadows")
   if phase_trace then objects_finished=love.timer.getTime() end
   local ghost
