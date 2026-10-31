@@ -203,6 +203,8 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_ove
   end
   table.sort(order,Depth.before)
   if perf_clock then Diagnostics.measure("depth_sort_ms",(perf_clock()-perf_at)*1000);perf_at=perf_clock() end
+  -- Same collection/depth sort; eliminate all object/shadow renderer setup.
+  if flags.object_collect_only then return #all end
   if type(object_override)=="table" then
     object_override.skip_gpu_draw=flags.skip_object_gpu==true
     if flags.skip_object_gpu then
@@ -219,6 +221,8 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_ove
     object_override:draw_shadows(g,camera,w,h,all)
     if perf_clock then Diagnostics.measure("shadows_ms",(perf_clock()-perf_at)*1000);perf_at=perf_clock() end
   end
+  -- Shadow SpriteBatch was filled, but no sprite queues or GPU draws run.
+  if flags.object_shadow_cpu_only then g.pop();return #all end
   -- Only the legacy plasma mode uses autonomous tools. The rig follows the
   -- approved harvest clip and exposes the right-hand socket for future items.
   local visual=clear_map(draw_pool.visual)
