@@ -2,6 +2,7 @@
 package.path='./?.lua;./?/init.lua;'..package.path
 local JSON=require('save.json')
 local R2=require('world.r2_playable')
+local Iso=require('world.iso')
 local p=R2.new({read=function(name)
  local f=assert(io.open('assets/worldbuild/'..name,'rb'))
  local bytes=f:read('*a');f:close()
@@ -17,7 +18,8 @@ for cy=-1,2 do
   for _,o in ipairs(list) do
    if not seen[o.id] and o.x>=-256 and o.x<768 and o.y>=-256 and o.y<768 then
     seen[o.id]=true
-    out[#out+1]={id=o.id,x=o.x,y=o.y,kind=o.kind,radius=o.radius,
+    local sx,sy=Iso.project(o.x,o.y,p.topography:height(o.x,o.y)*.35)
+    out[#out+1]={id=o.id,x=o.x,y=o.y,sx=sx,sy=sy,kind=o.kind,radius=o.radius,
       cx=math.floor(o.x/256),cy=math.floor(o.y/256)}
    end
   end
