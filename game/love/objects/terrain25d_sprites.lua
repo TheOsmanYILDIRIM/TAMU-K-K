@@ -193,8 +193,18 @@ local function draw_camera_batch(g,batch,cache,camera,w,h)
  -- The old camera centre, projected using the new camera, gives the exact
  -- translation needed by every cached screen-space sprite vertex.
  local x,y=camera:project(cache.x,cache.y,w,h)
+ local dx,dy=x-w*.5,y-h*.5
+ -- Use the same pixel-locked translation for static sprites and shadows.
+ -- Their cached vertices never change while the camera pans.
+ if love.system and love.system.getOS and love.system.getOS()=='Android' then
+   local dpi=love.window and love.window.getDPIScale and love.window.getDPIScale() or 1
+   if dpi>0 then
+     dx=math.floor(dx*dpi+.5)/dpi
+     dy=math.floor(dy*dpi+.5)/dpi
+   end
+ end
  g.push()
- g.translate(x-w*.5,y-h*.5)
+ g.translate(dx,dy)
  g.draw(batch)
  g.pop()
 end
