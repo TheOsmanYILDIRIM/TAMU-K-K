@@ -14,10 +14,10 @@ local shadow_batch={
 }
 love.graphics.newImage=function(path)
  assert(path=='assets/terrain25d/static_shadow/shadows_12.png',path)
- return 'shadow-image'
+ return {setFilter=function() end}
 end
 love.graphics.newSpriteBatch=function(image)
- assert(image=='shadow-image')
+ assert(type(image)=='table' and image.setFilter)
  return shadow_batch
 end
 local sprite_batch={
