@@ -117,15 +117,15 @@ func _load_objects() -> void:
         tex.region = area
         var sprite := Sprite2D.new()
         sprite.texture = tex
-        sprite.centered = false
-        sprite.position = Vector2(float(o["x"]) - 64.0, float(o["y"]) - 124.0)
+        sprite.centered = true
+        sprite.position = Vector2(float(o["x"]), float(o["y"]))
         sprite.z_index = clampi(int(float(o["y"]) / 16.0), -4096, 4096)
         var scales := {"oak":1.04,"broadleaf":1.12,"conifer":1.20,"dead_tree":0.94,
             "boulder":0.44,"rock_cluster":0.50,"rock_spire":0.53,
             "shrub":0.30,"reeds":0.28,"stump":0.26,"fallen_log":0.41,"water_rocks":0.38}
         var scale_value := float(scales.get(family, 0.5)) * (0.96 + float(h % 9) * 0.01)
         sprite.scale = Vector2.ONE * scale_value
-        sprite.offset = Vector2.ZERO
+        sprite.offset = Vector2(0.0, -60.0)
         add_child(sprite)
         object_count += 1
     print("TAMU_CANONICAL_OBJECTS_LOADED count=", object_count)
