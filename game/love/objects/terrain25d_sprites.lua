@@ -127,6 +127,19 @@ function Sprite:flush(g)
 end
 -- Identical approved sprite family, variant, scale and culling in the
 -- opaque sprite pass and alpha-silhouette shadow prepass.
+-- Chunk Render Bundle: immutable world chunk origin + chunk-local coordinates.
+-- Both object sprites and their attached shadows use this projection.
+function Sprite.chunk_key(o)
+ local cx=o.cx or math.floor(o.x/256)
+ local cy=o.cy or math.floor(o.y/256)
+ return cx..':'..cy,cx*256,cy*256
+end
+function Sprite.project_chunk_local(camera,w,h,o)
+ local _,ox,oy=Sprite.chunk_key(o)
+ local lx,ly=o.x-ox,o.y-oy
+ -- Camera is authoritative; no chunk-relative camera reset is permitted.
+ return camera:project(ox+lx,oy+ly,w,h)
+end
 function Sprite:appearance(camera,w,h,o,skip_cull)
  -- The compact object atlas is decoded off-thread; never trigger a
  -- synchronous newImage fallback while the worker is still loading it.
@@ -147,7 +160,7 @@ function Sprite:appearance(camera,w,h,o,skip_cull)
  local z=camera.zoom
  local n=z<.8 and math.min(#choices,2) or #choices
  local a=choices[1+hash(o.id)%n]
- local x,y=camera:project(o.x,o.y,w,h)
+ local x,y=Sprite.project_chunk_local(camera,w,h,o)
  local scale=Sprite.scale_for(family,z,o.id)
  if not skip_cull and (x+64*scale<0 or x-64*scale>w or
     y+8*scale<0 or y-124*scale>h) then return nil end
@@ -193,16 +206,9 @@ local function draw_camera_batch(g,batch,cache,camera,w,h)
  -- The old camera centre, projected using the new camera, gives the exact
  -- translation needed by every cached screen-space sprite vertex.
  local x,y=camera:project(cache.x,cache.y,w,h)
+ -- Exactly the same unrounded projection as the first (uncached) draw.
+ -- Rounding only cached frames caused a position jump on cache transitions.
  local dx,dy=x-w*.5,y-h*.5
- -- Use the same pixel-locked translation for static sprites and shadows.
- -- Their cached vertices never change while the camera pans.
- if love.system and love.system.getOS and love.system.getOS()=='Android' then
-   local dpi=love.window and love.window.getDPIScale and love.window.getDPIScale() or 1
-   if dpi>0 then
-     dx=math.floor(dx*dpi+.5)/dpi
-     dy=math.floor(dy*dpi+.5)/dpi
-   end
- end
  g.push()
  g.translate(dx,dy)
  g.draw(batch)
@@ -322,8 +328,7 @@ function Sprite:draw_shadows(g,camera,w,h,objects)
    end
    local groups,keys={},{}
    for _,o in ipairs(objects) do
-     local cx,cy=math.floor(o.x/256),math.floor(o.y/256)
-     local key=cx..':'..cy
+     local key=Sprite.chunk_key(o)
      if not groups[key] then groups[key]={};keys[#keys+1]=key end
      groups[key][#groups[key]+1]=o
    end
