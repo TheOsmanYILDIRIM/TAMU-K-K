@@ -80,6 +80,26 @@ def main():
     # Scale FBX world measurements to the GLB character's physical height.
     scale=glb_h/max(src_h,1e-6)
     scene.render.film_transparent=True
+    palette={"body":(.95,.24,.24,1),"head":(1,.75,.10,1),"left_arm":(.15,.9,.25,1),"right_arm":(.20,.42,1,1),"left_leg":(1,.55,.10,1),"right_leg":(.9,.16,.75,1)}
+    def color_for_bone(name):
+        n=name.lower()
+        if "head" in n or "neck" in n:return palette["head"]
+        if "left" in n:return palette["left_leg" if "leg" in n or "foot" in n or "toe" in n else "left_arm"]
+        if "right" in n:return palette["right_leg" if "leg" in n or "foot" in n or "toe" in n else "right_arm"]
+        return palette["body"]
+    material_cache={}
+    def color_mat(name):
+        rgba=color_for_bone(name)
+        if rgba not in material_cache:
+            m=bpy.data.materials.new("pose_"+name)
+            m.use_nodes=True
+            nodes=m.node_tree.nodes;nodes.clear()
+            out=nodes.new("ShaderNodeOutputMaterial")
+            e=nodes.new("ShaderNodeEmission")
+            e.inputs["Color"].default_value=rgba
+            m.node_tree.links.new(e.outputs[0],out.inputs["Surface"])
+            material_cache[rgba]=m
+        return material_cache[rgba]
     mat=bpy.data.materials.new("TAMU skeleton black")
     mat.diffuse_color=(.018,.02,.024,1)
     mat.use_nodes=True
@@ -99,15 +119,15 @@ def main():
     camcenter=Vector((0,0,glb_h*.53))
     camera.location=camcenter+view*glb_h*3
     camera.rotation_euler=(camcenter-camera.location).to_track_quat("-Z","Y").to_euler()
-    def segment(a,b,r=.012):
+    def segment(a,b,material,r=.012):
         d=b-a
         if d.length<1e-5: return None
         bpy.ops.mesh.primitive_cylinder_add(vertices=8,radius=r*glb_h,depth=d.length,location=(a+b)*.5)
         obj=bpy.context.object;obj.rotation_euler=d.to_track_quat("Z","Y").to_euler()
-        obj.data.materials.append(mat);return obj
-    def joint(p,r=.018):
+        obj.data.materials.append(material);return obj
+    def joint(p,material,r=.018):
         bpy.ops.mesh.primitive_uv_sphere_add(segments=10,ring_count=6,radius=r*glb_h,location=p)
-        bpy.context.object.data.materials.append(mat)
+        bpy.context.object.data.materials.append(material)
         return bpy.context.object
     metadata=[]
     last_points=None
@@ -128,9 +148,10 @@ def main():
         last_points=current
         render_objects=[]
         for a,b,n in skeleton:
-            z=segment(a,b); 
+            material=color_mat(n)
+            z=segment(a,b,material); 
             if z:render_objects.append(z)
-            render_objects.append(joint(a))
+            render_objects.append(joint(a,material))
         scene.render.filepath=str(dst/f"frame_{i+1:02d}.png")
         bpy.ops.render.render(write_still=True)
         metadata.append({"frame":i+1,"fbx_frame":at,"bones":len(skeleton)})
@@ -139,7 +160,7 @@ def main():
        "source_model":"Adventurer by Quaternius - 5EGWBMpuXq.glb",
        "source_motion":"Walking.fbx",
        "motion_action":action.name,"glb_height":glb_h,
-       "camera_profile_degrees":0,"frames":metadata
+       "camera_profile_degrees":0,"palette":palette,"frames":metadata
     },indent=2))
     print("TAMU_FBX_WALK_8_POSES_OK",len(metadata),dst)
 if __name__=="__main__":main()
