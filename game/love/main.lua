@@ -991,6 +991,28 @@ function love.draw()
       if missing>0 then
         print(string.format('TAMU_WALK_GAP frame=%d missing=%d camera_x=%.2f',
           coverage_walk.frames,missing,camera.x))
+        -- Existing WALK_PROBE only: identify missing residency vs GPU upload.
+        -- No new test mode or gameplay/debug allocations in ordinary play.
+        local keys,not_preloaded,just_visible,pending,ready={},{},{},{},{}
+        for key in pairs(stream.visible_required_keys or {}) do
+          local c=stream.resident[key]
+          if not c or not c._25d_meshes then
+            keys[#keys+1]=key
+            if not (coverage_walk.previous_loaded or {})[key] then
+              not_preloaded[#not_preloaded+1]=key
+            end
+            if not (coverage_walk.previous_visible or {})[key] then
+              just_visible[#just_visible+1]=key
+            end
+            if runtime25d.binary_pending[key] then pending[#pending+1]=key end
+            if runtime25d.binary_ready[key] then ready[#ready+1]=key end
+          end
+        end
+        table.sort(keys)
+        print(string.format(
+          'TAMU_WALK_CAUSE frame=%d zoom=%.3f view=%dx%d size=%d missing=[%s] no_previous_resident=%d first_visible=%d worker_pending=%d worker_ready=%d',
+          coverage_walk.frames,camera.zoom,w,h,stream.chunker.size,
+          table.concat(keys,','),#not_preloaded,#just_visible,#pending,#ready))
       end
       if coverage_walk.frames>=480 then
         print(string.format('TAMU_WALK_COVERAGE frames=%d max_missing=%d distance=%.3f',
@@ -999,6 +1021,15 @@ function love.draw()
         io.stdout:flush()
         love.event.quit()
         return
+      end
+      -- Compare the following frame with this frame's actual residency.
+      coverage_walk.previous_visible={}
+      for key in pairs(stream.visible_required_keys or {}) do
+        coverage_walk.previous_visible[key]=true
+      end
+      coverage_walk.previous_loaded={}
+      for _,c in ipairs(stream:visible()) do
+        coverage_walk.previous_loaded[c.key]=true
       end
     end
   end
