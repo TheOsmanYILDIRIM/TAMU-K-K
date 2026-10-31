@@ -343,6 +343,16 @@ Bu bölüm için sağlayıcı yeniden açma ve blob/commit SHA sonucu rapor yaz�
 - **Açık/engel:** Yeni kod için 480 kare WALK_PROBE `max_missing=0`; x/y/diyagonal/ters kamera yönleri ve worker race, upload deadline/resume maliyeti, Lua/LÖVE regresyonu koşulmalı. Başarısız olursa güncel logla H kapsamındaki algoritma yeniden düzeltilmeli. P2/P3 ve Android FPS kabulü açık. `main`, Stage6, yedekler, PNG atlasları, workflow değiştirilmedi.
 - **Rapor:** `report_only`, CAS; diğer bölümler korunuyor, readback blob SHA gönderimden sonra doğrulanır.
 
+### 2026-10-31 — SOHBET-H VM yerel test teslimi (eski CI artefaktı)
+
+- **Durum:** `pending_unverified`; bu kayıt önceki SOHBET-H VM çalışmasının kullanıcıya teslim edilen sonuçlarını aktarır. **Bu rapor güncellemesi sırasında testler yeniden çalıştırılmadı**. Eski CI artefaktı `13039019225` indirildi; bu artefakt `e00f63480a94a94992a4924be9447cf8c51909ce` sonrası GitHub HEAD'i değildir.
+- **VM test yöntemi:** İndirilen Actions ZIP ve içindeki `.love` paketinin ZIP bütünlüğü başarılı olarak bildirildi; 550 oyun dosyası çıkarıldı. Testler VM'de LuaTeX Lua çalıştırıcısıyla, eski `.love` tabanı ve yerelde uygulanan GPU-ready öncelik değişikliği üzerinde yürütüldü. Bu, gerçek LÖVE GPU/Android cihaz testi değildir; yerel değişiklik GitHub'a ayrıca yazılmadı.
+- **Önceki oturumun bildirdiği PASS:** `tests/terrain25d_runtime.lua`, `tests/r2_viewport.lua`, terrain batching, shore/water/path, static shadows.
+- **Önceki oturumun bildirdiği FAIL:** terrain geometry (eksik worldbuild JSON); object population (`batches` alanı `nil`). Eski artefakt üzerinde gözlendi; güncel dal için aynı hatalar doğrulanmadı.
+- **Açık kabul:** VM'de LÖVE bulunmadığı için 480 kare `WALK_PROBE`, gerçek GPU upload sırası ve `max_missing=0` test edilemedi. Android FPS ve yeni commit'e ait CI geçişi doğrulanmadı. `#41194049897` geçmiş `failure/max_missing=1` ölçümüdür, yeni çözümün kabulü değildir.
+- **Kayıt/sahiplik:** Yalnız mevcut SOHBET-H bölümüne `report_only` CAS güncellemesi; G/I/J içerikleri, `main`, oyun kaynakları ve workflow korunur. GitHub rapor readback blob SHA'sı teslimde belirtilecektir.
+- **Sonraki hedef:** Eksik fixture ile eski paket uyumsuzluğunu güncel kaynaktan ayır; hedefli Lua/LÖVE regresyonu ve 480 kare yürüyüşü güncel `e00f6348` veya daha yeni yetkili dal üzerinde çalıştırarak `max_missing=0` ve bütçe/parite kabulünü kanıtla.
+
 ## [SOHBET-I | TAMU Regresyon Denetimi] — EşRota ikinci dalga
 
 - **Durum:** `review_requested`; salt okunur bağımsız kod incelemesi, **regresyon kabulü açık**. İncelenen başlangıç HEAD `59b3fcf94f6d5a02c840a1198a05c73c89fa99d8`; rapor CAS anındaki HEAD `f0319d15df1bd7d47bb8d736ae6a616afce841ee`. Değişen başka bölümler korundu.
