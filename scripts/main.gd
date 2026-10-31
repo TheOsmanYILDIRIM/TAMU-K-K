@@ -93,6 +93,13 @@ func _load_objects() -> void:
     object_layer.z_index = 2
     object_layer.y_sort_enabled = true
     add_child(object_layer)
+    var shadow_manifest = JSON.parse_string(FileAccess.get_file_as_string("res://assets/terrain25d/static_shadow/objects_shadow_manifest.json"))
+    var shadow_atlas: Texture2D = load("res://assets/terrain25d/static_shadow/shadows_12.png")
+    var shadow_layer := Node2D.new()
+    shadow_layer.name = "CanonicalR2Shadows"
+    shadow_layer.z_index = 2
+    add_child(shadow_layer)
+    object_layer.z_index = 3
     var atlas: Texture2D = load("res://assets/terrain25d/atlas_01.png")
     var size := atlas.get_size()
     for o in data["objects"]:
@@ -132,6 +139,17 @@ func _load_objects() -> void:
         sprite.scale = Vector2.ONE * scale_value
         sprite.offset = Vector2(0.0, -60.0)
         object_layer.add_child(sprite)
+        if shadow_manifest is Dictionary and shadow_manifest["objects"].has(a["id"]):
+            var shadow_index: Dictionary = shadow_manifest["objects"][a["id"]]
+            var shadow_tex := AtlasTexture.new()
+            shadow_tex.atlas = shadow_atlas
+            shadow_tex.region = Rect2(int(shadow_index["u"]), int(shadow_index["v"]), 32, 32)
+            var shadow := Sprite2D.new()
+            shadow.texture = shadow_tex
+            shadow.position = sprite.position
+            shadow.scale = Vector2.ONE * scale_value * 4.0
+            shadow.offset = Vector2(0, -8)
+            shadow_layer.add_child(shadow)
         object_count += 1
     print("TAMU_CANONICAL_OBJECTS_LOADED count=", object_count)
 
