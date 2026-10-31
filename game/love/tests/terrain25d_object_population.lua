@@ -94,7 +94,8 @@ do
    objects_fully_revealed=function() return true end,
    pin_page=function() end,page=function() return 'image' end}
  local cached=setmetatable({provider=provider,limit=8,
-   object_cache_rebuilds=0,object_cache_reuses=0},Sprite)
+   object_cache_rebuilds=0,object_cache_reuses=0,
+   batches=0,visible=0},Sprite)
  function cached:appearance(_,_,_,o)
    return {page='atlas_01.png',quad=o.id},o.x,o.y,1
  end
