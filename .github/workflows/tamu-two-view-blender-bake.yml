@@ -117,6 +117,11 @@ jobs:
           fi
           echo TAMU_3D_ATLAS_COMMITTED
 
+      - name: Render FBX walk poses with system Blender Python
+        shell: bash
+        run: |
+          set -euo pipefail
+          blender -b -t 2 --python-exit-code 7 --python scripts/render_fbx_walk_pose_sheet.py -- --repo . --output ci-output/walk-reference
       - name: Setup modern Python for existing creative asset packager
         uses: actions/setup-python@v5
         with:
@@ -127,7 +132,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          blender -b -t 2 --python-exit-code 7 --python scripts/render_fbx_walk_pose_sheet.py -- --repo . --output ci-output/walk-reference
           python3 - <<'PY'
           from PIL import Image,ImageDraw
           from pathlib import Path
