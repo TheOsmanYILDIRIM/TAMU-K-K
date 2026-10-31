@@ -22,7 +22,7 @@ jobs:
       - id: check
         shell: bash
         run: |
-          if [ "$(tr -d '\\r\\n' < CI_START.txt)" = "başlat" ]; then
+          if [ "$(cat CI_START.txt)" = "başlat" ]; then
             echo "start=true" >> "$GITHUB_OUTPUT"
           else
             echo "start=false" >> "$GITHUB_OUTPUT"
