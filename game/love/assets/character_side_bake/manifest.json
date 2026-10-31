@@ -1,6 +1,6 @@
 {
   "atlas": "atlas.png",
-  "atlas_sha256": "20f07c4c92313547eb12e7c61bf928cf3adf2f6d61dc4f74566726508f7726b3",
+  "atlas_sha256": "da50d91dd02037f5690b427ea3c5c23ffe9e2b6d951e746ef8a915b05732978e",
   "bottom_center_pivot": true,
   "camera_pitch_degrees": 45,
   "fps": 12,
