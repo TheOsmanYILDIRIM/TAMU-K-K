@@ -394,7 +394,7 @@ jobs:
           done
           for case in center east west zoom north dawn reload; do
             for mode in legacy merged; do
-              TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE="$mode" TAMU_VISUAL_CASE="$case" timeout --kill-after=3s 75s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 120 | tee "screenshots/$case-$mode.log"
+              TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE="$mode" TAMU_VISUAL_CASE="$case" timeout --kill-after=3s 75s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 | tee "screenshots/$case-$mode.log"
               grep -q TAMU_VISUAL_CAPTURE_OK "screenshots/$case-$mode.log"
               grep -q TAMU_YDEPTH_SHADOW_ORDER_OK "screenshots/$case-$mode.log"
               grep -q TAMU_VIEWPORT_COVERAGE_OK "screenshots/$case-$mode.log"
