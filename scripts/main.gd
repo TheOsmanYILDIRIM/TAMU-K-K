@@ -1,4 +1,5 @@
 extends Node2D
+const WorldProjection = preload("res://scripts/world_projection.gd")
 # Godot native ArrayMesh terrain; binary geometry and atlas are sourced from
 # the SAME TAMU compiled LÖVE CI artifact, never resampled.
 var terrain_atlas: Texture2D
@@ -243,8 +244,7 @@ func _set_actor_facing(back: bool) -> void:
         avatar_parts[part].texture = load("res://assets/osman_rig/images/%s_%s.png" % [prefix,part])
 
 func _update_avatar() -> void:
-    avatar.position = Vector2((actor_world.x-actor_world.y)*0.70710678118,
-        (actor_world.x+actor_world.y)*0.35355339059)
+    avatar.position = WorldProjection.to_screen(actor_world)
     avatar_parts["leg_L"].position = Vector2(-7, -10)
     avatar_parts["leg_R"].position = Vector2(7, -10)
     avatar_parts["torso"].position = Vector2(0, -33)
@@ -276,9 +276,15 @@ func _chunk_distance_to_actor(stem: String) -> float:
     var parts := stem.split("_")
     if parts.size() != 3:
         return INF
-    return Vector2((float(parts[1]) + 0.5) * 256.0, (float(parts[2]) + 0.5) * 256.0).distance_squared_to(actor_world)
+    return WorldProjection.chunk_center_from_key(stem).distance_squared_to(actor_world)
 
 func _ready() -> void:
+    if OS.get_environment("TAMU_VISUAL_CI") == "1":
+        if not WorldProjection.verify_contract():
+            push_error("TAMU_WORLD_PROJECTION_GATE_FAILED")
+            get_tree().quit(15)
+            return
+        print("TAMU_WORLD_PROJECTION_GATE_OK")
     terrain_atlas = load("res://assets/terrain25d/atlas_00.png")
     var idx = JSON.parse_string(FileAccess.get_file_as_string("res://chunks/index.json"))
     if idx is not Dictionary or not idx.has("bounds"):

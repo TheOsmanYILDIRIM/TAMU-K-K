@@ -1,3 +1,8 @@
+## 2026-11-01 — TAMU engine migration status
+**Primary development target: Godot 4** on `experiment/godot4-android-apk-20261031`. The LÖVE reference remains `experiment/25d-binary-vertex-20261030`; old engine guidance below is preserved as source history, not current migration policy.
+The current Godot APK is a **prototype**, not full gameplay or pixel parity: 156 original authored chunks, 832 stable R2 objects, 40-bone/44-clip source bridge, 30-second solar test, touch joystick, TOPLA trial, HUD/JSONL and ground shadows exist. Weighted Rigby mesh/animation equivalence, gameplay/save migration, actual Android sustained-performance parity are open. The build imports canonical world/rig assets from a pinned LÖVE CI artifact; those binaries are not regenerated here.
+Project architecture, phase gates and evidence: existing `SESSION_HANDOFF.md` section `[GODOT-MIGRATION]`. No main merge without approval.
+
 ## Aktif oyuncu görünümü — 29 Ekim 2026
 **Varsayılan:** Osman canlı Rigby2D kemik/mesh animasyonu (4 izometrik yön, anatomik sağ el, 44 klip). Görselde önceden render edilmiş spritesheet kullanılmaz; yalnız PNG vücut parçaları ağırlıklı mesh'lerle hareket eder. R2 + kompakt atlaslı 2.5D/3N dünya standart kalır. Plazma yedeği `TAMU_USE_PLASMA=1` ile açılır. Canlı karakter ana oyun `player` objesiyle çizilir; hareket, su, hasat, envanter ve save kodu korunur. R2 session-only ve Stage6 kayıt mekanizması ayrı.
 

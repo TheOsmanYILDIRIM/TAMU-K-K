@@ -1,3 +1,11 @@
+## 2026-11-01 — User-approved Godot 4 primary-engine migration (current decision)
+- On `experiment/godot4-android-apk-20261031`, **Godot 4 becomes the primary engine**. Prior LÖVE-only and 3D-reboot statements below are historical for this branch; do not treat them as an instruction to revert this user's decision.
+- Preserve `experiment/25d-binary-vertex-20261030`, main, original map coordinates/heights/IDs/atlases, original Rigby sources, save data, backup branches and user-created assets. No main merge without separate approval.
+- Migrate features through Godot native scenes/nodes, Skeleton2D/AnimationPlayer, mesh, collision, streaming and mobile Control nodes. Do not translate every Lua line. Modules: world/stream/render, character/rig, gameplay, save/migration, UI/telemetry.
+- Source-of-truth coordinates remain Cartesian world x/y (256-unit chunk cells); screen isometric coordinates are renderer-only. No silent legacy save import or world fabrication.
+- Plan and progress belong in the **existing** `SESSION_HANDOFF.md`, not new tracking locations. Existing LÖVE-specific Avenox task remains scoped to its original work; Godot-specific canonical task creation requires separate approval for a new record path.
+- Gate each phase with existing Godot CI import/runtime/PNG/export, focused regression, source parity and separate real-device Android FPS evidence. Debug APK is not the final game.
+
 ## 2026-10-29 — Kullanıcı onaylı Osman karakteri artık varsayılan
 Kullanıcının 29 Ekim tarihli açık talebiyle eski 16 Ekim tarihli 'insansı rig ertelendi' kararı **karakter çizim katmanı için geçersizdir**. Yeni varsayılan `game/love/player/rigby_visual.lua` canlı iskeletli Osman karakteridir. `core_visual.lua`, plazma PNG'leri ve eski gameplay/sistem kayıtları silinmez; `TAMU_USE_PLASMA=1` geri dönüş seçeneğidir. 30 özgün PNG yalnız vücut parçalarıdır, frame atlası değildir. 44 klip, 4 yön, sağlak el soketi. Ana oyun dünya görseli R2/2.5D olarak kalır. Stage6/R2 kayıt sözleşmesi değişmez. CI, gerçek cihaz ve kaynak SHA ayrı kabul kanıtlarıdır.
 
