@@ -72,7 +72,7 @@ static func _stacks(values: Variant) -> Array:
     for s in values:
         if not s is String:
             return []
-        var bits := s.rsplit("=", true, 1)
+        var bits: PackedStringArray = s.rsplit("=", true, 1)
         if bits.size() != 2 or RegEx.create_from_string("^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$").search(bits[0]) == null:
             return []
         if RegEx.create_from_string("^[1-9][0-9]*$").search(bits[1]) == null:
