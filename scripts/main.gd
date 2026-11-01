@@ -22,7 +22,7 @@ var chunk_vertices: Dictionary = {}
 var object_visuals_by_chunk: Dictionary = {}
 var harvestables: Array[Dictionary] = []
 var harvested_count := 0
-var shadow_sprites: Array[Sprite2D] = []
+var shadow_sprites: Array[Polygon2D] = []
 var day_clock := 10.5
 var sun_direction := Vector2.ZERO
 var sun_level := 1.0
@@ -447,18 +447,21 @@ func _load_objects() -> void:
         object_visuals_by_chunk[visual_key].append(sprite)
         var item_record := {"id":id,"kind":kind,"position":Vector2(float(o["x"]),float(o["y"])),"sprite":sprite,"shadow":null,"collected":false}
         harvestables.append(item_record)
-        if shadow_manifest is Dictionary and shadow_manifest["objects"].has(a["id"]):
-            var shadow_index: Dictionary = shadow_manifest["objects"][a["id"]]
-            var shadow_tex := AtlasTexture.new()
-            shadow_tex.atlas = shadow_atlas
-            shadow_tex.region = Rect2(int(shadow_index["u"]), int(shadow_index["v"]), 32, 32)
-            var shadow := Sprite2D.new()
-            shadow.texture = shadow_tex
+        # Native Godot shadow geometry: atlas's tiny low-res alpha should not
+        # make ground shadows invisible. Respect the original object footprint.
+        if kind == "tree" or kind == "rock":
+            var shadow := Polygon2D.new()
+            shadow.name = "GroundShadow"
+            var outline := PackedVector2Array()
+            var radius := 10.0 if kind == "rock" else 20.0
+            for n in range(24):
+                var angle := TAU * float(n) / 24.0
+                outline.append(Vector2(cos(angle)*radius, sin(angle)*radius*0.45))
+            shadow.polygon = outline
+            shadow.color = Color(0.025,0.045,0.04,0.72)
             shadow.visible = false
-            shadow.position = sprite.position
-            shadow.scale = Vector2.ONE * scale_value * 4.0
-            shadow.offset = Vector2(0, -8)
-            shadow.set_meta("base_scale",scale_value*4.0)
+            shadow.position = sprite.position + Vector2(0.0,3.0)
+            shadow.set_meta("base_scale",maxf(0.7,scale_value*2.5))
             shadow_layer.add_child(shadow)
             shadow_sprites.append(shadow)
             item_record["shadow"] = shadow
@@ -511,6 +514,15 @@ func _process(delta: float) -> void:
             push_error("TAMU_SUN_HARVEST_BOOT_GATE_FAILED")
             get_tree().quit(11)
             return
+        var drawn := 0
+        for sh in shadow_sprites:
+            if sh.visible and sh.modulate.a > 0.1 and sh.polygon.size() >= 16:
+                drawn += 1
+        if drawn < 10:
+            push_error("TAMU_SHADOW_VISIBILITY_FAILED visible=" + str(drawn))
+            get_tree().quit(14)
+            return
+        print("TAMU_GROUND_SHADOW_VISIBILITY_OK visible=",drawn)
         print("TAMU_SUN_HARVEST_BOOT_OK shadows=",shadow_sprites.size()," hour=",day_clock)
         if perf_hud == null or not perf_hud.test_gate():
             push_error("TAMU_PERF_HUD_GATE_FAILED")
