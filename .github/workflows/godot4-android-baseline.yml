@@ -366,6 +366,10 @@ jobs:
           grep -q TAMU_CATALOG_BINARY_OK screenshots/run.log
           grep -q TAMU_CONTENT_MOD_BOUNDARY_OK screenshots/run.log
           grep -q TAMU_USER_MOD_BOUNDARY_OK screenshots/run.log
+          # Isolated XDG data tree protects developer user:// from CI fixtures.
+          mkdir -p /tmp/tamu-mod-contract-home
+          XDG_DATA_HOME=/tmp/tamu-mod-contract-home TAMU_ENABLE_MODS=0 godot --headless --path . --script res://scripts/mod_contract_ci.gd | tee screenshots/mod-e2e.log
+          grep -q TAMU_USER_MOD_DISK_E2E_OK screenshots/mod-e2e.log
           grep -q TAMU_TRANSACTION_BOUNDARY_OK screenshots/run.log
           grep -q TAMU_BUILDING_BOUNDARY_OK screenshots/run.log
           grep -q TAMU_GAMEPLAY_DOMAIN_OK screenshots/run.log

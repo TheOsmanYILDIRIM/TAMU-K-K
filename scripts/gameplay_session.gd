@@ -67,11 +67,15 @@ func tick(dt: float, player_pos: Vector2) -> Array[Dictionary]:
 
 func snapshot_domain() -> Dictionary:
     # In-memory snapshot shape only; NOT a Stage6 checkpoint or save migration.
-    return {"catalog_version": catalog.version,
+    return {"catalog_version": catalog.version, "content": catalog.active_content_ids(),
         "inventory": inventory.snapshot(), "building": building.snapshot(),
         "depleted": harvesting.depleted.duplicate(true),
         "harvest_commands": harvesting.commands.duplicate(true),
         "craft_commands": crafting.commands.duplicate(true)}
+
+func validate_snapshot_content(snapshot: Dictionary) -> Dictionary:
+    # Stage 6 restore must call this before publishing any recovered state.
+    return catalog.validate_snapshot_content(snapshot)
 
 func verify_contract() -> bool:
     if not catalog.verify_contract() or not catalog.verify_mod_boundary() or not DomainTransaction.verify_contract():

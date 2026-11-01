@@ -50,6 +50,8 @@ static func parse_toml(src: String) -> Dictionary:
                 return {}
             doc[section].append({})
             continue
+        if s.begins_with("[") or s.contains("]"):
+            return {}
         var at := s.find("=")
         if at <= 0:
             return {}
@@ -112,11 +114,17 @@ static func _docs(doc: Dictionary, ns: String, folder: String) -> Dictionary:
         if not dep is String or not _name(dep) or dep == ns or unique.has(dep):
             return {}
         unique[dep] = true
+    for key in doc.keys():
+        if not key in ["namespace", "version", "catalog_version", "dependencies", "definitions", "recipes"]:
+            return {}
     var defs: Array = []
     var recs: Array = []
     for row in doc.get("definitions", []):
         if not row is Dictionary or not _id(str(row.get("id", "")), ns):
             return {}
+        for key in row.keys():
+            if not key in ["id", "kind", "name_key", "max_stack", "icon"]:
+                return {}
         if str(row.get("kind", "")) != "item" or not row.get("max_stack", null) is int:
             return {}
         if int(row["max_stack"]) < 1 or int(row["max_stack"]) > 9999:
@@ -132,6 +140,9 @@ static func _docs(doc: Dictionary, ns: String, folder: String) -> Dictionary:
     for row in doc.get("recipes", []):
         if not row is Dictionary or not _id(str(row.get("id", "")), ns):
             return {}
+        for key in row.keys():
+            if not key in ["id", "inputs", "outputs", "duration_ticks"]:
+                return {}
         var inputs := _stacks(row.get("inputs", null))
         var outputs := _stacks(row.get("outputs", null))
         if inputs.is_empty() or outputs.is_empty() or not row.get("duration_ticks", null) is int:
@@ -167,7 +178,10 @@ static func apply(catalog: RefCounted, root: String = ROOT) -> bool:
         pending[ns] = payload
     var next_defs: Dictionary = catalog.definitions.duplicate(true)
     var next_recs: Dictionary = catalog.recipes.duplicate(true)
-    var done := {"core": true}
+    var done: Dictionary = catalog.content_packs.duplicate(true)
+    for ns in pending:
+        if done.has(ns):
+            return false
     while not pending.is_empty():
         var advanced := false
         for ns in names:

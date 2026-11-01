@@ -183,6 +183,38 @@ func register_trusted_pack(pack: Resource) -> bool:
     content_packs[pack_name] = true
     return true
 
+func validate_snapshot_content(snapshot: Dictionary) -> Dictionary:
+    # Read-only migration gate; no restore/store is performed here.
+    var meta: Variant = snapshot.get("content", null)
+    if not meta is Dictionary:
+        return {"ok": false, "status": "missing_content_manifest"}
+    var current := active_content_ids()
+    if meta.get("catalog_version", null) != current["catalog_version"]:
+        return {"ok": false, "status": "catalog_version_mismatch"}
+    for field in ["packs", "definitions", "recipes"]:
+        var saved: Variant = meta.get(field, null)
+        if not saved is Array:
+            return {"ok": false, "status": "invalid_content_manifest"}
+        var expected: Array = current[field]
+        if saved != expected:
+            return {"ok": false, "status": "missing_or_changed_mod"}
+    var inv: Variant = snapshot.get("inventory", null)
+    if not inv is Dictionary or not inv.get("slots", null) is Array:
+        return {"ok": false, "status": "invalid_inventory"}
+    for slot in inv["slots"]:
+        if not slot is Dictionary or not definitions.has(str(slot.get("def_id", ""))):
+            return {"ok": false, "status": "unknown_inventory_id"}
+        if int(slot.get("count", 0)) < 1 or int(slot["count"]) > max_stack(str(slot["def_id"])):
+            return {"ok": false, "status": "invalid_stack"}
+    var buildings: Variant = snapshot.get("building", null)
+    if not buildings is Dictionary or not buildings.get("placed", null) is Dictionary:
+        return {"ok": false, "status": "invalid_buildings"}
+    for id in buildings["placed"]:
+        var instance: Variant = buildings["placed"][id]
+        if not instance is Dictionary or not definitions.has(str(instance.get("def_id", ""))):
+            return {"ok": false, "status": "unknown_building_id"}
+    return {"ok": true, "status": "compatible"}
+
 func active_content_ids() -> Dictionary:
     var a: Array = definitions.keys()
     var b: Array = recipes.keys()
