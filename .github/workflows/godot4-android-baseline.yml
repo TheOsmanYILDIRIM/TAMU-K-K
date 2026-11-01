@@ -261,6 +261,35 @@ jobs:
           assert sum(sum(len(v) for v in a['weights']) for a in weighted)==2082
           print('TAMU_RIGBY_WEIGHTED_SOURCE_OK meshes=4 vertices=1624 triangles=2930 influences=2082')
           PY
+      - name: Validate shared canonical gameplay JSON source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib
+          root=pathlib.Path('data/catalog')
+          manifest=json.loads((root/'manifest.json').read_text())
+          assert manifest['catalog_version']==1 and len(manifest['definitions'])==7 and len(manifest['recipes'])==2
+          definitions={}
+          for name in manifest['definitions']:
+              assert name.startswith('definitions/') and '..' not in name
+              doc=json.loads((root/name).read_text())
+              assert doc['id'] not in definitions and doc['schema_version']==1
+              definitions[doc['id']]=doc
+          recipes={}
+          for name in manifest['recipes']:
+              assert name.startswith('recipes/') and '..' not in name
+              doc=json.loads((root/name).read_text())
+              assert doc['schema_version']==1 and doc['id'] not in recipes
+              recipes[doc['id']]=doc
+              for side in ('inputs','outputs'):
+                  assert doc[side] and all(x['def_id'] in definitions and x['count']>0 for x in doc[side])
+          assert definitions['core:oak_tree']['components']['core:harvestable']['duration_ticks']==90
+          assert definitions['core:stone_rock']['components']['core:harvestable']['duration_ticks']==120
+          assert recipes['core:planks_from_log']['duration_ticks']==30
+          assert recipes['core:bench_from_planks']['duration_ticks']==60
+          print('TAMU_CANONICAL_GAMEPLAY_SOURCE_OK definitions=7 recipes=2 same_json=true')
+          PY
       - name: Native Godot scene and screenshot smoke (Xvfb)
         shell: bash
         env:
@@ -331,6 +360,9 @@ jobs:
           grep -q 'TAMU_REGION_LOAD_OK region=fisilti_ormani source_cells=156' screenshots/run.log
           grep -q TAMU_NATIVE_BONE_FK_READY screenshots/run.log
           grep -q TAMU_RIGBY_CURVE_PARITY_OK screenshots/run.log
+          grep -q TAMU_CATALOG_SOURCE_OK screenshots/run.log
+          grep -q TAMU_TRANSACTION_BOUNDARY_OK screenshots/run.log
+          grep -q TAMU_BUILDING_BOUNDARY_OK screenshots/run.log
           grep -q TAMU_GAMEPLAY_DOMAIN_OK screenshots/run.log
           grep -q TAMU_GAMEPLAY_HARVEST_INVENTORY_OK screenshots/run.log
           grep -q TAMU_RIGBY_WEIGHTED_MESH_OK screenshots/run.log
@@ -362,7 +394,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           p=Path('build/tamu-android-content.pck').read_bytes()
-          for name in (b'chunks/index.json',b'chunks/r2_objects.json',b'chunks/source_integrity.json',b'chunks/merged_terrain.json',b'merged_layer_0.verts',b'merged_layer_1.verts',b'assets/osman_rig/rig.json'):
+          for name in (b'chunks/index.json',b'chunks/r2_objects.json',b'chunks/source_integrity.json',b'chunks/merged_terrain.json',b'merged_layer_0.verts',b'merged_layer_1.verts',b'assets/osman_rig/rig.json',b'data/catalog/manifest.json',b'data/catalog/definitions/oak_tree.json',b'data/catalog/recipes/planks_from_log.json'):
               assert name in p, f'ANDROID_ASSET_EXPORT_MISSING: {name!r}'
           print('TAMU_ANDROID_CONTENT_PACK_OK bytes=',len(p))
           PY

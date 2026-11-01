@@ -95,7 +95,7 @@ func _try_harvest() -> void:
     var nearest: Dictionary = {}
     var best := INF
     for item in harvestables:
-        if bool(item.get("collected", false)) or not GameplaySession.DROPS.has(str(item["kind"])):
+        if bool(item.get("collected", false)) or not gameplay.is_harvestable(str(item["kind"])):
             continue
         var limit := GameplaySession.HARVEST_RANGE + float(item["radius"])
         var distance := actor_world.distance_squared_to(item["position"])
@@ -815,7 +815,7 @@ func _process(delta: float) -> void:
                 return
             var target: Dictionary = {}
             for candidate in harvestables:
-                if GameplaySession.DROPS.has(str(candidate["kind"])):
+                if gameplay.is_harvestable(str(candidate["kind"])):
                     target = candidate
                     break
             if target.is_empty():
@@ -832,7 +832,7 @@ func _process(delta: float) -> void:
             for i in range(21):
                 _tick_gameplay(0.1)
             var completed: Dictionary = harvested_by_id[completed_id]
-            var drop: Dictionary = GameplaySession.DROPS[str(completed["kind"])]
+            var drop: Dictionary = gameplay.harvest_drop(str(completed["kind"]))
             if harvested_count != 1 or not bool(completed["collected"]) or completed["sprite"].visible or gameplay.count_item(str(drop["def_id"])) != int(drop["count"]):
                 push_error("TAMU_HARVEST_BUTTON_GATE_FAILED")
                 get_tree().quit(13)
