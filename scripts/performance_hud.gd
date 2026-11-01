@@ -121,7 +121,7 @@ func build_jsonl() -> String:
     var lines := PackedStringArray()
     for entry in samples:
         lines.append(JSON.stringify(entry))
-    return "\\n".join(lines)
+    return "\n".join(lines)
 
 func copy_logs() -> void:
     var payload := build_jsonl()
@@ -135,7 +135,7 @@ func test_gate() -> bool:
     for row in samples:
         if row["schema"] != "tamu.perf.godot.v1" or not row.has("streaming_main_ms"):
             return false
-    var records := build_jsonl().split("\\n", false)
+    var records := build_jsonl().split("\n", false)
     if records.size() != samples.size():
         return false
     var first = JSON.parse_string(records[0])
