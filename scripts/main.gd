@@ -153,6 +153,7 @@ func _tick_gameplay(dt: float) -> void:
                 item["silhouette"].set_meta("tamu_collected", true)
                 item["silhouette"].visible = false
             harvested_count += 1
+            authority.depleted_ids[id] = true
             audio_cues.cue("harvest_complete")
             impact_effects.burst(sprite.position, str(item["kind"]), 14)
             print("TAMU_HARVEST_OK id=", id, " count=", harvested_count,
@@ -499,6 +500,7 @@ func _ready() -> void:
                 if item.has("silhouette"):
                     item["silhouette"].set_meta("tamu_collected", true)
                     item["silhouette"].visible = false
+        authority.depleted_ids = gameplay.depleted.duplicate(true)
         print("TAMU_STAGE6_PRODUCTION_ACTIVE world=",world["id"]," region=",authority.region_id)
         if OS.get_environment("TAMU_PRODUCTION_SMOKE") == "1":
             print("TAMU_STAGE6_PRODUCTION_SMOKE_OK status=",enabled["status"]," identity=",world["status"],

@@ -23,6 +23,14 @@ func _initialize() -> void:
                 passed = passed and before.get("status") == "existing"
             if passed:
                 print("TAMU_R2_AUTHORITY_OK phase=",phase," objects=",a.records.size()," obstacles=",a.boxes.size()," uuid=",before["id"])
+    if passed and phase == "reopen" and not a.boxes.is_empty():
+        var box: Dictionary = a.boxes[0]
+        var before_hits := a.obstacles(float(box["x"]),float(box["y"]),
+            float(box["x"])+float(box["w"]),float(box["y"])+float(box["h"]))
+        a.depleted_ids[str(box["id"])] = true
+        var after_hits := a.obstacles(float(box["x"]),float(box["y"]),
+            float(box["x"])+float(box["w"]),float(box["y"])+float(box["h"]))
+        passed = before_hits.size() > after_hits.size()
     if not passed:
         push_error("TAMU_R2_AUTHORITY_FAILED phase=" + phase)
     quit(0 if passed else 68)

@@ -7,6 +7,7 @@ const WorldProjection = preload("res://scripts/world_projection.gd")
 const Surface = preload("res://scripts/r2_surface.gd")
 var records: Dictionary = {}
 var boxes: Array[Dictionary] = []
+var depleted_ids: Dictionary = {}
 var region_id := ""
 var source_run_id := -1
 var terrain: RefCounted
@@ -88,6 +89,8 @@ func obstacles(x1: float, y1: float, x2: float, y2: float) -> Array:
         return [{"x": 0, "y": 0, "w": INF, "h": INF}]
     var found: Array = []
     for item in boxes:
+        if depleted_ids.has(str(item["id"])):
+            continue
         if item["x"] < x2 and item["x"]+item["w"] > x1 and item["y"] < y2 and item["y"]+item["h"] > y1:
             found.append(item)
     return found
