@@ -121,7 +121,10 @@ func build_jsonl() -> String:
     var lines := PackedStringArray()
     for entry in samples:
         lines.append(JSON.stringify(entry))
-    var payload := "\n".join(lines)
+    return "\\n".join(lines)
+
+func copy_logs() -> void:
+    var payload := build_jsonl()
     DisplayServer.clipboard_set(payload)
     status.text = "Kopyalandı: %d kare / %d karakter" % [samples.size(),payload.length()]
     print("TAMU_PERF_LOG_COPY_OK frames=",samples.size(), " bytes=",payload.to_utf8_buffer().size())
