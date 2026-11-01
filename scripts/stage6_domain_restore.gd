@@ -1,6 +1,11 @@
 extends RefCounted
 const Building = preload("res://scripts/domain_building.gd")
 
+static func _whole(v: Variant) -> bool:
+    if v is int:
+        return true
+    return v is float and is_finite(v) and v == floorf(v) and absf(v) <= 1000000000000.0
+
 static func prepare(catalog: RefCounted, state: Dictionary) -> Dictionary:
     var gate: Dictionary = catalog.validate_snapshot_content(state)
     if not bool(gate.get("ok", false)):
@@ -10,7 +15,7 @@ static func prepare(catalog: RefCounted, state: Dictionary) -> Dictionary:
     var journal: Variant = state.get("journal", null)
     if not journal is Dictionary or journal.get("version", null) != 1:
         return {"ok": false, "status": "invalid_journal"}
-    if not journal.get("world_revision", null) is int or not journal.get("journal_sequence", null) is int:
+    if not _whole(journal.get("world_revision", null)) or not _whole(journal.get("journal_sequence", null)):
         return {"ok": false, "status": "invalid_journal"}
     var commands: Variant = journal.get("applied_commands", null)
     if not commands is Dictionary or commands.size() > 8192 or commands.size() > int(journal["journal_sequence"]):
@@ -29,7 +34,7 @@ static func prepare(catalog: RefCounted, state: Dictionary) -> Dictionary:
     if inv["slots"].size() > 12:
         return {"ok": false, "status": "invalid_slots"}
     for row in inv["slots"]:
-        if not row is Dictionary or not row.get("slot", null) is int or not row.get("count", null) is int:
+        if not row is Dictionary or not _whole(row.get("slot", null)) or not _whole(row.get("count", null)):
             return {"ok": false, "status": "invalid_slot"}
         var index := int(row["slot"]) - 1
         if index < 0 or index >= 12 or slots[index] != null:
@@ -39,7 +44,7 @@ static func prepare(catalog: RefCounted, state: Dictionary) -> Dictionary:
             return {"ok": false, "status": "invalid_slot"}
         slots[index] = {"def_id": def_id, "count": int(row["count"])}
     var building: Dictionary = state["building"]
-    if building.get("version", null) != 1 or not building.get("world_revision", null) is int:
+    if building.get("version", null) != 1 or not _whole(building.get("world_revision", null)):
         return {"ok": false, "status": "invalid_building"}
     var building_rev := int(building["world_revision"])
     if building_rev < 0 or building_rev > int(journal["world_revision"]):
@@ -56,7 +61,7 @@ static func prepare(catalog: RefCounted, state: Dictionary) -> Dictionary:
         var row: Variant = records[id]
         if not id is String or not Building.valid_uuid4(str(id)) or not row is Dictionary:
             return {"ok": false, "status": "invalid_building"}
-        if str(row.get("id", "")) != str(id) or not row.get("rotation", null) is int or not row.get("revision", null) is int:
+        if str(row.get("id", "")) != str(id) or not _whole(row.get("rotation", null)) or not _whole(row.get("revision", null)):
             return {"ok": false, "status": "invalid_building"}
         if int(row["revision"]) < 1 or int(row["revision"]) > building_rev:
             return {"ok": false, "status": "invalid_building"}
