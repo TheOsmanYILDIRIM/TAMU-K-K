@@ -140,11 +140,14 @@ jobs:
             {'beziers',0,{beziers={{0.3,0.1,0.5,0.9},{0.7,0.4,0.9,0.6}}}},
             {'beziers',1,{beziers={{0.3,0.1,0.5,0.9},{0.7,0.4,0.9,0.6}}}}
           }
-          local out=assert(io.open('chunks/rigby_curve_reference.csv','w'))
+          local out=assert(io.open('chunks/rigby_curve_reference.txt','w'))
           for _,entry in ipairs(cases) do
             for _,time in ipairs({0,0.01,0.1,0.15,0.25,0.3,0.45,0.5,0.6,0.75,0.85,0.9,0.99,1.0}) do
               local comp=entry[2]>=0 and entry[2]+1 or nil
-              local expected=10+20*R.ease(entry[3],time,comp)
+              local start=comp and {10,10} or 10
+              local finish=comp and {30,30} or 30
+              local keys={{time=0,value=start,curve=entry[3]},{time=1,value=finish}}
+              local expected=R.sample(keys,time,comp)
               out:write(string.format('%s,%d,%.8f,%.12f\n',entry[1],entry[2],time,expected))
             end
           end
@@ -152,7 +155,7 @@ jobs:
           print('TAMU_LUA_RIGBY_CURVE_REFERENCE_OK samples=70')
           LUA
           )
-          cp /tmp/tamu-love/chunks/rigby_curve_reference.csv chunks/rigby_curve_reference.csv
+          cp /tmp/tamu-love/chunks/rigby_curve_reference.txt chunks/rigby_curve_reference.txt
       - name: Verify exact authored source and generate build-only hash manifest
         shell: bash
         run: |

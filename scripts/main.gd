@@ -365,7 +365,7 @@ func _ready() -> void:
     _load_objects()
     _make_avatar()
     if OS.get_environment("TAMU_VISUAL_CI") == "1":
-        if native_rig == null or not native_rig.verify_curve_reference("res://chunks/rigby_curve_reference.csv"):
+        if native_rig == null or not native_rig.verify_curve_reference("res://chunks/rigby_curve_reference.txt"):
             push_error("TAMU_RIGBY_CURVE_GATE_FAILED")
             get_tree().quit(20)
             return
