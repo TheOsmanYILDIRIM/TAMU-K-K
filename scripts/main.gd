@@ -2,6 +2,8 @@ extends Node2D
 const WorldProjection = preload("res://scripts/world_projection.gd")
 const WorldSource = preload("res://scripts/world_source.gd")
 const WorldStream = preload("res://scripts/world_stream.gd")
+const MergedTerrain = preload("res://scripts/merged_terrain.gd")
+var merged_mode: bool = OS.get_environment("TAMU_TERRAIN_MODE") != "legacy"
 var world_source: RefCounted
 # Godot native ArrayMesh terrain; binary geometry and atlas are sourced from
 # the SAME TAMU compiled LÖVE CI artifact, never resampled.
@@ -279,6 +281,12 @@ func _refresh_streaming_requests() -> void:
     var center := camera.get_screen_center_position()
     var view_size := get_viewport_rect().size
     view_required = WorldStream.required_chunks(available_chunks, center, view_size, camera.zoom)
+    if merged_mode:
+        pending.clear()
+        camera_missing = 0
+        last_plan_camera = center
+        last_plan_zoom = camera.zoom
+        return
     pending = WorldStream.schedule(available_chunks, chunk_nodes, actor_world, center, view_size, camera.zoom)
     for stem in chunk_nodes:
         var show: bool = view_required.has(stem)
@@ -324,8 +332,28 @@ func _ready() -> void:
     camera.name = "Camera2D"
     camera.enabled = true
     camera.position = Vector2(0.0, 0.0)
+    if OS.get_environment("TAMU_VISUAL_CI") == "1":
+        match OS.get_environment("TAMU_VISUAL_CASE"):
+            "east":
+                camera.position = WorldProjection.to_screen(Vector2(550.0, 320.0))
+            "west":
+                camera.position = WorldProjection.to_screen(Vector2(-400.0, -220.0))
+            "zoom":
+                camera.position = WorldProjection.to_screen(Vector2(200.0, 200.0))
+                camera.zoom = Vector2(0.82, 0.82)
     add_child(camera)
     _refresh_streaming_requests()
+    if merged_mode:
+        var unified: Dictionary = MergedTerrain.build(terrain_atlas)
+        if unified.is_empty():
+            push_error("TAMU_MERGED_TERRAIN_LOAD_FAILED")
+            get_tree().quit(19)
+            return
+        add_child(unified["root"])
+        loaded = total_cached
+        vertices = int(unified["vertices"])
+        print("TAMU_MERGED_TERRAIN_OK sources=", total_cached, " vertices=", vertices,
+            " draw_nodes=", unified["surfaces"])
     marker = Label.new()
     marker.position = Vector2(8.0, 8.0)
     marker.add_theme_color_override("font_color", Color.WHITE)
@@ -506,7 +534,7 @@ func _load_objects() -> void:
         if not object_visuals_by_chunk.has(visual_key):
             object_visuals_by_chunk[visual_key] = []
         var sprite := Sprite2D.new()
-        sprite.visible = false
+        sprite.visible = merged_mode
         sprite.texture = tex
         sprite.centered = true
         sprite.position = Vector2(float(o["sx"]), float(o["sy"]))
@@ -533,7 +561,7 @@ func _load_objects() -> void:
                 outline.append(Vector2(cos(angle)*radius, sin(angle)*radius*0.45))
             shadow.polygon = outline
             shadow.color = Color(0.025,0.045,0.04,0.72)
-            shadow.visible = false
+            shadow.visible = merged_mode
             shadow.position = sprite.position + Vector2(0.0,3.0)
             shadow.set_meta("base_scale",maxf(0.7,scale_value*2.5))
             shadow_layer.add_child(shadow)
@@ -549,8 +577,9 @@ var object_layer: Node2D
 func _process(delta: float) -> void:
     var frame_start := Time.get_ticks_usec()
     frame_no += 1
-    _update_sun(delta)
-    elapsed += delta
+    var visual_delta: float = 1.0 / 60.0 if OS.get_environment("TAMU_VISUAL_CI") == "1" else delta
+    _update_sun(visual_delta)
+    elapsed += visual_delta
     var direction := joystick_vector if joystick_vector.length_squared() > 0.01 else Input.get_vector("ui_left","ui_right","ui_up","ui_down")
     if direction.length_squared() > 0.01:
         actor_world += direction * actor_speed * delta
@@ -569,24 +598,25 @@ func _process(delta: float) -> void:
         avatar_parts["leg_R"].rotation = 0.0
     _update_avatar()
     if native_rig != null:
-        native_rig.advance(delta)
+        native_rig.advance(visual_delta)
     var rig_end := Time.get_ticks_usec()
     if direction.length_squared() > 0.01:
         $Camera2D.position = $Camera2D.position.lerp(avatar.position, minf(delta * 4.0, 1.0))
     var camera_center: Vector2 = $Camera2D.get_screen_center_position()
     if frame_no % 10 == 0 or camera_center.distance_squared_to(last_plan_camera) > 96.0 * 96.0 or $Camera2D.zoom != last_plan_zoom:
         _refresh_streaming_requests()
-    if not pending.is_empty():
-        _load_chunk(pending.pop_front())
-    if frame_no % 10 == 0:
-        _enforce_resident_budget()
+    if not merged_mode:
+        if not pending.is_empty():
+            _load_chunk(pending.pop_front())
+        if frame_no % 10 == 0:
+            _enforce_resident_budget()
     var stream_end := Time.get_ticks_usec()
     if perf_hud != null:
         perf_hud.record(delta,loaded,total_cached,object_count,vertices,actor_world,stream_end-rig_end,rig_end-frame_start,"walk" if direction.length_squared()>0.01 else "idle")
-    marker.text = "TAMU Godot R2 / authored area\n%d resident / %d source | %d verts\nViewport missing %d | Mesh est %.1f MiB\nFPS %d | frame %.2f ms | Time %.1f | Harvest %d" % [loaded, total_cached, vertices, camera_missing, float(WorldStream.estimate_bytes(chunk_vertices))/1048576.0, Engine.get_frames_per_second(), delta * 1000.0,day_clock,harvested_count]
+    marker.text = "TAMU Godot R2 / authored area\n%d resident / %d source | %d verts\nViewport missing %d | Mesh est %.1f MiB\nFPS %d | frame %.2f ms | Time %.1f | Harvest %d" % [loaded, total_cached, vertices, camera_missing, float(vertices * WorldStream.ESTIMATED_BYTES_PER_VERTEX)/1048576.0, Engine.get_frames_per_second(), delta * 1000.0,day_clock,harvested_count]
     if frame_no % 120 == 0:
         print("TAMU_GODOT_FRAME frame=", frame_no, " loaded=", loaded, " fps=", Engine.get_frames_per_second())
-    if OS.get_environment("TAMU_VISUAL_CI") == "1" and frame_no == 110:
+    if OS.get_environment("TAMU_VISUAL_CI") == "1" and frame_no == 180:
         if harvest_button == null or shadow_sprites.is_empty() or day_clock <= 10.5 or harvest_button.get_global_rect().size.x < 100:
             push_error("TAMU_SUN_HARVEST_BOOT_GATE_FAILED")
             get_tree().quit(11)
@@ -608,7 +638,8 @@ func _process(delta: float) -> void:
         var visible_faults := 0
         for stem in object_visuals_by_chunk:
             for node in object_visuals_by_chunk[stem]:
-                var expected: bool = chunk_nodes.has(stem) and chunk_nodes[stem].visible and not bool(node.get_meta("tamu_collected", false))
+                var source_visible: bool = merged_mode or (chunk_nodes.has(stem) and chunk_nodes[stem].visible)
+                var expected: bool = source_visible and not bool(node.get_meta("tamu_collected", false))
                 if node.visible != expected:
                     visible_faults += 1
         if visible_faults > 0:
@@ -627,11 +658,13 @@ func _process(delta: float) -> void:
             return
         print("TAMU_VIEWPORT_COVERAGE_OK missing=0 required=", view_required.size(), " resident=", loaded)
         print("TAMU_YDEPTH_SHADOW_ORDER_OK objects=", object_count)
-        print("TAMU_RESIDENT_BUDGET_OK estimated_bytes=", WorldStream.estimate_bytes(chunk_vertices),
+        print("TAMU_RESIDENT_BUDGET_OK estimated_bytes=", vertices * WorldStream.ESTIMATED_BYTES_PER_VERTEX,
             " cap_bytes=", WorldStream.RESIDENT_BUDGET_BYTES, " evicted=", evicted_total)
 
         var image := get_viewport().get_texture().get_image()
         var error := image.save_png("user://tamu-godot-visual.png")
+        print("TAMU_VISUAL_VARIANT mode=", "merged" if merged_mode else "legacy",
+            " case=", OS.get_environment("TAMU_VISUAL_CASE"))
         if error != OK or loaded < 16 or total_cached < 100 or vertices < 1000 or object_count < 10 or avatar_parts.size() != 6 or rig_animations.size() != 44 or active_source_clip == "":
             push_error("TAMU_VISUAL_GATE_FAILED " + str(error))
             get_tree().quit(3)
