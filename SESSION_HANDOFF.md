@@ -124,6 +124,13 @@ Doğrulanmış rapor bağlantısı: [SESSION_HANDOFF.md#SOHBET-K](https://github
 - CI https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41287627773 at code HEAD 310ab66e completed SUCCESS. Log: `TAMU_NATIVE_BONE_FK_READY bones=40 clips=44`, `TAMU_OBJECT_TERRAIN_REVEAL_OK objects=832 visible_chunks=45`, `TAMU_VISUAL_CAPTURE_OK chunks=45 vertices=116622 objects=832 avatar_parts=6`. Native project launch and Android debug APK generation passed, but NOT device-tested.
 - **OPEN:** Rigby cubic Bezier interpolation currently uses explicit linear fallback; inherit/shear modes, attachments, ordered slot visibility, region UV and weighted mesh skinning not yet reproduced. Six-image visible actor preview is not driven by native FK bones; therefore full visual/44-clip parity NOT accepted and APK withheld. Gameplay harvest/craft/build, touch controls, collision and Android FPS remain open. Main and LÖVE experiment branch untouched.
 
+### 2026-11-01 — Godot performance HUD JSONL integrity gate
+
+- Live Godot CanvasLayer performance HUD already existed on current branch: FPS, delta frame, mean, rolling p95/p99 frame time, streaming/main time, rig/main time, loaded/available chunks, objects, vertices, draw calls, static RAM, and buttons `LOG KOPYALA`, `SIFIRLA`, `GİZLE`. Sampling capped at last 1200 frames with in-memory JSONL; Android clipboard uses `DisplayServer.clipboard_set`. Do not duplicate implementation.
+- Updated `scripts/performance_hud.gd` via commit `7a6d27f8687115ae32e0f10cdde4f18fde965032` to reject blank copy payload and JSONL-serialize + parse-back all sampled rows in `test_gate()`; no new documents or task schema created.
+- [GitHub Actions #41288485164](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41288485164) SUCCESS at code SHA `7a6d27f8687115ae32e0f10cdde4f18fde965032`: `TAMU_PERF_JSONL_EXPORT_OK lines=45`, `TAMU_PERF_HUD_GATE_OK frames=45 p95=118.385 p99=148.282`, plus independently present `TAMU_PERF_JSONL_EXPORT_OK rows=45`; runtime and screenshot smoke passed. Desktop Xvfb measurements are NOT Android FPS evidence. Clipboard set/get on physical device not tested.
+- OPEN: Android real-device p95/p99, clipboard paste UX, sampling scenarios for idle/walk/stream and Rigby weighted mesh/full game visual parity. APK delivery remains withheld by original acceptance requirement.
+
 ---
 
 
