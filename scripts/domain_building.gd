@@ -56,16 +56,35 @@ func obstacles(box: Rect2) -> Array:
 func _dry_and_stable(box: Rect2) -> bool:
     if not terrain_sample.is_valid():
         return false
-    for ry in [0.01, 0.5, 0.999]:
-        for rx in [0.01, 0.5, 0.999]:
-            var x: float = box.position.x + box.size.x * float(rx)
-            var y: float = box.position.y + box.size.y * float(ry)
+    # Canonical LÖVE topography_surface.lua: footprint stride <=4, max
+    # build grade .12 and maximum elevation spread .8. Legacy test surface
+    # has no height and retains its independent terrain port.
+    var nx := maxi(1, ceili(box.size.x / 4.0))
+    var ny := maxi(1, ceili(box.size.y / 4.0))
+    if (nx+1)*(ny+1) > 4096:
+        return false
+    var lowest := INF
+    var highest := -INF
+    var checked_height := false
+    for iy in range(ny+1):
+        for ix in range(nx+1):
+            var x := box.position.x + box.size.x * float(ix) / float(nx)
+            var y := box.position.y + box.size.y * float(iy) / float(ny)
             var surface: Variant = terrain_sample.call(x, y)
             if not surface is Dictionary:
                 return false
             if not bool(surface.get("walkable", false)) or str(surface.get("feature", "")) == "water":
                 return false
-    return true
+            if surface.has("height"):
+                var h := float(surface["height"])
+                if not is_finite(h) or float(surface.get("grade", INF)) > 0.12:
+                    return false
+                checked_height = true
+                lowest = minf(lowest, h)
+                highest = maxf(highest, h)
+            elif checked_height:
+                return false
+    return not checked_height or highest-lowest <= 0.8
 
 func _box(def: Dictionary, at: Vector2, rotation: int) -> Rect2:
     var placeable: Dictionary = def["components"]["core:placeable"]

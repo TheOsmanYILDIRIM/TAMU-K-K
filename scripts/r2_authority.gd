@@ -4,10 +4,12 @@ extends RefCounted
 # unverified building footprints fail closed rather than fabricate dry land.
 const ROOT := "res://chunks/"
 const Projection = preload("res://scripts/world_projection.gd")
+const Surface = preload("res://scripts/r2_surface.gd")
 var records: Dictionary = {}
 var boxes: Array[Dictionary] = []
 var region_id := ""
 var source_run_id := -1
+var terrain: RefCounted
 
 func initialize() -> bool:
     for name in ["source_integrity.json", "merged_terrain.json", "index.json", "r2_objects.json"]:
@@ -62,6 +64,9 @@ func initialize() -> bool:
         observed[stem] = true
     if next_records.size() != 832 or observed.is_empty():
         return false
+    terrain = Surface.new()
+    if not terrain.initialize():
+        return false
     records = next_records
     boxes = next_boxes
     region_id = str(region.get("region_id", ""))
@@ -87,7 +92,7 @@ func obstacles(x1: float, y1: float, x2: float, y2: float) -> Array:
             found.append(item)
     return found
 
-func surface(_x: float, _y: float) -> Dictionary:
-    # Authored world polygons contain intent_only features, not verified
-    # topographic/water collision masks. No placement until such a port exists.
-    return {"walkable": false, "feature": "unverified_terrain"}
+func surface(x: float, y: float) -> Dictionary:
+    if terrain == null:
+        return {"walkable": false, "feature": "unverified_terrain"}
+    return terrain.sample(x,y)

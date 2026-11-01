@@ -14,7 +14,11 @@ func _initialize() -> void:
             var tampered: Dictionary = item.duplicate(true)
             tampered["position"] = item["position"] + Vector2(1,0)
             passed = before.get("ok", false) and a.matches_object(item) and not a.matches_object(tampered)
-            passed = passed and not a.surface(float(first["x"]),float(first["y"])).get("walkable",true)
+            var spawn := a.surface(64.0,128.0)
+            var river := a.surface(704.0,128.0)
+            passed = passed and spawn.has("height") and not bool(river.get("walkable", true))
+            passed = passed and str(river.get("feature", "")) == "water"
+            passed = passed and absf(float(spawn.get("height", -1.0)) - 12.830245) < 0.015
             if phase == "reopen":
                 passed = passed and before.get("status") == "existing"
             if passed:
