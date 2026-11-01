@@ -8,6 +8,24 @@ permissions:
   contents: read
   actions: read
 jobs:
+  fx_contract:
+    name: Independent Godot FX and audio contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4.6 and execute isolated FX gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=https://github.com/godotengine/godot-builds/releases/download/4.6-stable
+          curl -fL --retry 3 "$BASE/Godot_v4.6-stable_linux.x86_64.zip" -o /tmp/godot-fx.zip
+          unzip -q /tmp/godot-fx.zip -d /tmp
+          chmod +x /tmp/Godot_v4.6-stable_linux.x86_64
+          sudo install /tmp/Godot_v4.6-stable_linux.x86_64 /usr/local/bin/godot
+          timeout --kill-after=3s 45s godot --headless --path . --script res://scripts/fx_contract_ci.gd 2>&1 | tee fx-contract.log
+          grep -q 'TAMU_FX_CONTRACT_OK voices=8' fx-contract.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Invalid operands|TAMU_FX_CONTRACT_FAILED' fx-contract.log; then exit 1; fi
   apk:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
