@@ -382,8 +382,9 @@ jobs:
           done
           mkdir -p /tmp/tamu-r2-auth-ci
           for phase in create reopen; do
-            XDG_DATA_HOME=/tmp/tamu-r2-auth-ci TAMU_WORLD_PHASE="$phase" godot --headless --path . --script res://scripts/r2_authority_ci.gd | tee "screenshots/r2-$phase.log"
+            XDG_DATA_HOME=/tmp/tamu-r2-auth-ci TAMU_WORLD_PHASE="$phase" timeout --kill-after=3s 25s godot --headless --path . --script res://scripts/r2_authority_ci.gd 2>&1 | tee "screenshots/r2-$phase.log"
             grep -q TAMU_R2_AUTHORITY_OK "screenshots/r2-$phase.log"
+            if grep -Eq 'SCRIPT ERROR:|Parse Error:|Invalid operands|TAMU_R2_AUTHORITY_FAILED' "screenshots/r2-$phase.log"; then exit 1; fi
           done
           mkdir -p /tmp/tamu-prod-stage6-smoke
           for target in initialized restored; do
