@@ -50,20 +50,31 @@ func _harvest() -> bool:
 
 func _craft() -> bool:
     var run = _new_session()
-    if run == null or run.count_item("core:stone") != 2 or run.journal_sequence != 1:
+    if run == null:
         return false
-    if run.checkpoint_credit("durable", "seed:wood", "core:wood_log", 3).get("status") != "committed":
+    print("TAMU_DURABLE_CRAFT_START stone=",run.count_item("core:stone")," seq=",run.journal_sequence)
+    if run.count_item("core:stone") != 2 or run.journal_sequence != 1:
         return false
-    if run.begin_craft("craft:planks", "core:planks_from_log").get("status") != "started":
+    var seed: Dictionary = run.checkpoint_credit("durable", "seed:wood", "core:wood_log", 3)
+    print("TAMU_DURABLE_SEED ",seed)
+    if seed.get("status") != "committed":
+        return false
+    var begin: Dictionary = run.begin_craft("craft:planks", "core:planks_from_log")
+    print("TAMU_DURABLE_PLANK_BEGIN ",begin)
+    if begin.get("status") != "started":
         return false
     for i in range(7):
         run.tick(0.1, Vector2.ZERO)
+    print("TAMU_DURABLE_PLANK_RESULT ",run.count_item("core:wood_plank")," seq=",run.journal_sequence)
     if run.count_item("core:wood_plank") != 4 or run.journal_sequence != 3:
         return false
-    if run.begin_craft("craft:bench", "core:bench_from_planks").get("status") != "started":
+    var bench: Dictionary = run.begin_craft("craft:bench", "core:bench_from_planks")
+    print("TAMU_DURABLE_BENCH_BEGIN ",bench)
+    if bench.get("status") != "started":
         return false
     for i in range(12):
         run.tick(0.1, Vector2.ZERO)
+    print("TAMU_DURABLE_BENCH_RESULT count=",run.count_item("core:workbench")," seq=",run.journal_sequence)
     return run.count_item("core:workbench") == 1 and run.journal_sequence == 4
 
 func _build() -> bool:
