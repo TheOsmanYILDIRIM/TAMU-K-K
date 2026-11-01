@@ -136,6 +136,13 @@ Doğrulanmış rapor bağlantısı: [SESSION_HANDOFF.md#SOHBET-K](https://github
 - CI https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41288170288 at `bf6b01fb1e43165d3aaaa1fa63c316105ebf6223` completed success with TAMU_PERF_HUD_GATE_OK frames=45, p95=116.667, p99=150.0; screenshot 720x1100 opened and panel visually inspected. CI virtual Linux display performance is NOT Android FPS evidence. Last CI https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41288497070 at `41c5e103af28c1648dd88307419406f6070e8b1c` completed success and logs TAMU_PERF_JSONL_EXPORT_OK lines=45 / rows=45, TAMU_PERF_HUD_GATE_OK frames=45; no SCRIPT ERROR. Copy button's output is the tested JSONL serialization path, but a real on-device clipboard tap has not yet been tested.
 - Open: native Android UI tap/copy verification, synchronized LÖVE/Godot comparison sessions with same phone/camera movement and actual p95/p99, full Rigby mesh/skinning and gameplay; full game APK delivery remains gated. Existing main/LÖVE branches unmodified.
 
+### 2026-11-01 — Native Godot in-game performance HUD and copy-log acceptance
+
+- Latest read HEAD e03dfed9c2b25ac1aa675f120379484063a4c9ea. Existing `scripts/performance_hud.gd` already implements in-game FPS/frame/p95/p99/main streaming/main rig/chunk/objects/vertices/draw calls/static memory view, 1200-frame bounded RAM JSONL buffer, LOG KOPYALA, SIFIRLA and GİZLE controls. Reused existing feature; no parallel duplicate.
+- This session explicitly exercised `copy_button.emit_signal('pressed')` in existing `test_gate`, asserted `Kopyalandı:` status, validated line-by-line JSON records. Commit `22faae2d2ccb2fc4b48aca7a0f8d044f13c61357` modifies only existing HUD script.
+- [GitHub Actions #41288614778](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41288614778) completed success at code commit `22faae2d2ccb2fc4b48aca7a0f8d044f13c61357`. Logs: `TAMU_PERF_COPY_BUTTON_GATE_OK rows=45`, `TAMU_PERF_JSONL_EXPORT_OK lines=45`, `TAMU_PERF_HUD_GATE_OK frames=45 p95=133.333 p99=150.0`, `TAMU_VISUAL_CAPTURE_OK chunks=45 vertices=116622 objects=832 avatar_parts=6`. CI screenshot smoke and Android APK export succeed. Xvfb p95/p99 ARE NOT Android FPS, GPU latency isn't directly measured. Device clipboard behavior and visual tap remain unverified.
+- Open: native on-device benchmark for Godot and LÖVE using same scene/settings, genuine tap clipboard paste, Android FPS p95/p99 and GPU/frame-time validation, complete Rigby mesh/playback + gameplay parity. No full APK delivered until visual/functional acceptance.
+
 ---
 
 
