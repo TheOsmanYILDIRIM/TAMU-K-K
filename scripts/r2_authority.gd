@@ -3,6 +3,7 @@ extends RefCounted
 # Terrain water/slope semantics are not contained in the compiled visual meshes:
 # unverified building footprints fail closed rather than fabricate dry land.
 const ROOT := "res://chunks/"
+const Projection = preload("res://scripts/world_projection.gd")
 var records: Dictionary = {}
 var boxes: Array[Dictionary] = []
 var region_id := ""
@@ -45,6 +46,11 @@ func initialize() -> bool:
         var y := float(raw["y"])
         var radius := float(raw["radius"])
         if not is_finite(x) or not is_finite(y) or not is_finite(radius) or radius <= 0.0 or radius > 256.0:
+            return false
+        if floori(x / 256.0) != int(raw["cx"]) or floori(y / 256.0) != int(raw["cy"]):
+            return false
+        var source_screen_x := float(raw["sx"])
+        if not is_finite(source_screen_x) or absf(source_screen_x - Projection.to_screen(Vector2(x,y)).x) > 0.025:
             return false
         var stem := "c_%d_%d" % [int(raw["cx"]), int(raw["cy"])]
         if not index["available"].has(stem):

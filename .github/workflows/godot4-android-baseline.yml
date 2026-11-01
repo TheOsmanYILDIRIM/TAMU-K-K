@@ -323,6 +323,12 @@ jobs:
             XDG_DATA_HOME=/tmp/tamu-r2-auth-ci TAMU_WORLD_PHASE="$phase" godot --headless --path . --script res://scripts/r2_authority_ci.gd | tee "screenshots/r2-$phase.log"
             grep -q TAMU_R2_AUTHORITY_OK "screenshots/r2-$phase.log"
           done
+          mkdir -p /tmp/tamu-prod-stage6-smoke
+          for target in initialized restored; do
+            XDG_DATA_HOME=/tmp/tamu-prod-stage6-smoke TAMU_PRODUCTION_SMOKE=1 TAMU_CATALOG_REQUIRE_BINARY=1 timeout 90s godot --headless --path . --quit-after 300 | tee "screenshots/prod-$target.log"
+            grep -q "TAMU_STAGE6_PRODUCTION_SMOKE_OK status=$target" "screenshots/prod-$target.log"
+            if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_STAGE6_PRODUCTION_GATE_FAILED|TAMU_R2_AUTHORITY_UNAVAILABLE' "screenshots/prod-$target.log"; then exit 1; fi
+          done
           for case in center east west zoom north dawn reload; do
             for mode in legacy merged; do
               TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE="$mode" TAMU_VISUAL_CASE="$case" timeout 90s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 240 | tee "screenshots/$case-$mode.log"

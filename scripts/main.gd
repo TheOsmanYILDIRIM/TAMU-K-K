@@ -469,6 +469,11 @@ func _ready() -> void:
                 if item["shadow"] != null:
                     item["shadow"].visible = false
         print("TAMU_STAGE6_PRODUCTION_ACTIVE world=",world["id"]," region=",authority.region_id)
+        if OS.get_environment("TAMU_PRODUCTION_SMOKE") == "1":
+            print("TAMU_STAGE6_PRODUCTION_SMOKE_OK status=",enabled["status"]," identity=",world["status"],
+                " objects=",authority.records.size()," region=",authority.region_id)
+            get_tree().quit()
+            return
     _make_avatar()
     if OS.get_environment("TAMU_VISUAL_CI") == "1":
         if native_rig == null or not native_rig.verify_curve_reference("res://chunks/rigby_curve_reference.txt"):
