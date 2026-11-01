@@ -27,7 +27,10 @@ func from_definition(doc: Dictionary) -> void:
     max_stack = int(components.get("core:stackable", {}).get("max_count", 1 if entry_kind == "structure" else 0))
     var harvest: Dictionary = components.get("core:harvestable", {})
     harvest_ticks = int(harvest.get("duration_ticks", 0))
-    harvest_drops = harvest.get("drops", []).duplicate(true)
+    harvest_drops.clear()
+    for drop in harvest.get("drops", []):
+        if drop is Dictionary:
+            harvest_drops.append(drop.duplicate(true))
     var world: Dictionary = components.get("core:world_resource", {})
     world_radius = float(world.get("radius", 0.0))
     render_kind = str(world.get("render_kind", ""))
@@ -42,8 +45,14 @@ func from_recipe(doc: Dictionary) -> void:
     entry_id = str(doc.get("id", ""))
     entry_kind = "recipe"
     recipe_ticks = int(doc.get("duration_ticks", 0))
-    recipe_inputs = doc.get("inputs", []).duplicate(true)
-    recipe_outputs = doc.get("outputs", []).duplicate(true)
+    recipe_inputs.clear()
+    for input in doc.get("inputs", []):
+        if input is Dictionary:
+            recipe_inputs.append(input.duplicate(true))
+    recipe_outputs.clear()
+    for output in doc.get("outputs", []):
+        if output is Dictionary:
+            recipe_outputs.append(output.duplicate(true))
     station_tags = PackedStringArray(doc.get("station_tags", []))
 
 func to_document() -> Dictionary:
