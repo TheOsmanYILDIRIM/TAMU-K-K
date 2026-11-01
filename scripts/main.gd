@@ -573,7 +573,7 @@ func _process(delta: float) -> void:
     var rig_end := Time.get_ticks_usec()
     if direction.length_squared() > 0.01:
         $Camera2D.position = $Camera2D.position.lerp(avatar.position, minf(delta * 4.0, 1.0))
-    var camera_center := $Camera2D.get_screen_center_position()
+    var camera_center: Vector2 = $Camera2D.get_screen_center_position()
     if frame_no % 10 == 0 or camera_center.distance_squared_to(last_plan_camera) > 96.0 * 96.0 or $Camera2D.zoom != last_plan_zoom:
         _refresh_streaming_requests()
     if not pending.is_empty():
