@@ -29,8 +29,12 @@ static func _json_only(v: Variant, depth: int = 0) -> bool:
 
 static func _seal(snapshot: Dictionary) -> String:
     var data := JSON.stringify(snapshot, "", true)
+    var normalized: Variant = JSON.parse_string(data)
+    if not normalized is Dictionary:
+        return ""
+    var canonical := JSON.stringify(normalized, "", true)
     var envelope := {"format": "tamu.stage6", "version": VERSION,
-        "sha256": data.sha256_text(), "snapshot": snapshot}
+        "sha256": canonical.sha256_text(), "snapshot": normalized}
     return JSON.stringify(envelope, "", true)
 
 static func _decode(path: String) -> Dictionary:
