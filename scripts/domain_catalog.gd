@@ -33,7 +33,7 @@ func _initialize_binary() -> bool:
         push_error("TAMU_CATALOG_BINARY_RESOURCE_INVALID")
         return false
     var pack: Resource = candidate
-    if pack.namespace != "core" or pack.schema_version != 1 or pack.catalog_version != 1:
+    if pack.pack_namespace != "core" or pack.schema_version != 1 or pack.catalog_version != 1:
         return false
     var manifest: Variant = _read_json(MANIFEST)
     if not manifest is Dictionary or pack.catalog_version != int(manifest.get("catalog_version", -1)):
@@ -84,11 +84,11 @@ func _initialize_binary() -> bool:
 static func _valid_namespace(name: String) -> bool:
     return name != "" and RegEx.create_from_string("^[a-z][a-z0-9_]*$").search(name) != null
 
-static func _valid_content_id(id: String, namespace: String) -> bool:
-    if not _valid_namespace(namespace):
+static func _valid_content_id(id: String, pack_name: String) -> bool:
+    if not _valid_namespace(pack_name):
         return false
     var re := RegEx.create_from_string("^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$")
-    return re.search(id) != null and id.begins_with(namespace + ":")
+    return re.search(id) != null and id.begins_with(pack_name + ":")
 
 static func _validate_documents(defs: Dictionary, recs: Dictionary) -> Dictionary:
     var kinds: Dictionary = {}
@@ -135,8 +135,8 @@ static func _validate_documents(defs: Dictionary, recs: Dictionary) -> Dictionar
 func register_trusted_pack(pack: Resource) -> bool:
     if not pack is ContentPack or pack.schema_version != 1 or pack.catalog_version != version:
         return false
-    var namespace: String = str(pack.namespace)
-    if namespace == "core" or not _valid_namespace(namespace) or content_packs.has(namespace):
+    var pack_name: String = str(pack.pack_namespace)
+    if pack_name == "core" or not _valid_namespace(pack_name) or content_packs.has(pack_name):
         return false
     var next_defs: Dictionary = definitions.duplicate(true)
     var next_recipes: Dictionary = recipes.duplicate(true)
@@ -145,7 +145,7 @@ func register_trusted_pack(pack: Resource) -> bool:
             return false
         var doc: Dictionary = entry.to_document()
         var id := str(doc.get("id", ""))
-        if not _valid_content_id(id, namespace) or next_defs.has(id) or next_recipes.has(id):
+        if not _valid_content_id(id, pack_name) or next_defs.has(id) or next_recipes.has(id):
             return false
         next_defs[id] = doc
     for entry in pack.recipes:
@@ -153,7 +153,7 @@ func register_trusted_pack(pack: Resource) -> bool:
             return false
         var doc: Dictionary = entry.to_document()
         var id := str(doc.get("id", ""))
-        if not _valid_content_id(id, namespace) or next_defs.has(id) or next_recipes.has(id):
+        if not _valid_content_id(id, pack_name) or next_defs.has(id) or next_recipes.has(id):
             return false
         next_recipes[id] = doc
     var kinds: Dictionary = _validate_documents(next_defs, next_recipes)
@@ -162,7 +162,7 @@ func register_trusted_pack(pack: Resource) -> bool:
     definitions = next_defs
     recipes = next_recipes
     object_types = kinds
-    content_packs[namespace] = true
+    content_packs[pack_name] = true
     return true
 
 func active_content_ids() -> Dictionary:
@@ -179,7 +179,7 @@ func verify_mod_boundary() -> bool:
     if not probe.initialize():
         return false
     var pack = ContentPack.new()
-    pack.namespace = "example"
+    pack.pack_namespace = "example"
     var definition = ContentEntry.new()
     definition.from_definition({"schema_version": 1, "id": "example:gem", "kind": "item",
         "name_key": "item.example_gem",
@@ -199,7 +199,7 @@ func verify_mod_boundary() -> bool:
         return false
     var before := JSON.stringify(probe.active_content_ids())
     var spoof = ContentPack.new()
-    spoof.namespace = "cheat"
+    spoof.pack_namespace = "cheat"
     var duplicate = ContentEntry.new()
     duplicate.from_definition({"schema_version": 1, "id": "core:wood_log",
         "kind": "item", "name_key": "spoof",
@@ -210,7 +210,7 @@ func verify_mod_boundary() -> bool:
     if JSON.stringify(probe.active_content_ids()) != before:
         return false
     var missing = ContentPack.new()
-    missing.namespace = "broken"
+    missing.pack_namespace = "broken"
     var broken_recipe = ContentEntry.new()
     broken_recipe.from_recipe({"schema_version": 1, "id": "broken:undefined_item",
         "inputs": [{"def_id": "broken:missing", "count": 1}],

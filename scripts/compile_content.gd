@@ -40,7 +40,7 @@ func _compile() -> bool:
         push_error("TAMU_CONTENT_SOURCE_MANIFEST_INVALID")
         return false
     var pack = Pack.new()
-    pack.namespace = "core"
+    pack.pack_namespace = "core"
     pack.catalog_version = int(manifest["catalog_version"])
     pack.source_hashes["manifest.json"] = FileAccess.get_sha256(SOURCE + "manifest.json")
     var known: Dictionary = {}
