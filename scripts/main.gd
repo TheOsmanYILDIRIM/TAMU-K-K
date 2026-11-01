@@ -27,6 +27,7 @@ var rig_animations: Dictionary = {}
 var actor_direction := "SE"
 var actor_action := "idle"
 var active_source_clip := ""
+var native_rig: Skeleton2D
 
 func _make_avatar() -> void:
     var source = JSON.parse_string(FileAccess.get_file_as_string("res://assets/osman_rig/rig.json"))
@@ -42,11 +43,14 @@ func _make_avatar() -> void:
         push_error("Original 44-clip / 4-direction Rigby contract mismatch")
         get_tree().quit(9)
         return
+    native_rig = load("res://scripts/rigby_fk.gd").new()
+    native_rig.configure(source)
     avatar = Node2D.new()
     avatar.name = "OsmanNativeParts"
     avatar.z_index = 0
     # Player and authored objects share one Godot native Y-sorted layer.
     object_layer.add_child(avatar)
+    avatar.add_child(native_rig)
     for part in ["leg_L","leg_R","torso","arm_L","arm_R","head"]:
         var sprite := Sprite2D.new()
         sprite.name = part
@@ -70,6 +74,8 @@ func _set_actor_clip(direction: String, action: String) -> void:
     actor_direction = direction
     actor_action = action
     active_source_clip = source_name
+    if native_rig != null:
+        native_rig.play_clip(source_name)
     _set_actor_facing(direction == "NW" or direction == "NE")
     avatar.scale.x = -1.0 if direction == "SW" or direction == "NE" else 1.0
 
@@ -331,6 +337,8 @@ func _process(delta: float) -> void:
         avatar_parts["leg_L"].rotation = 0.0
         avatar_parts["leg_R"].rotation = 0.0
     _update_avatar()
+    if native_rig != null:
+        native_rig.advance(delta)
     if direction.length_squared() > 0.01:
         $Camera2D.position = $Camera2D.position.lerp(avatar.position, minf(delta * 4.0, 1.0))
     if frame_no % 20 == 0:
