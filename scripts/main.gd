@@ -503,6 +503,7 @@ func _ready() -> void:
         if OS.get_environment("TAMU_PRODUCTION_SMOKE") == "1":
             print("TAMU_STAGE6_PRODUCTION_SMOKE_OK status=",enabled["status"]," identity=",world["status"],
                 " objects=",authority.records.size()," region=",authority.region_id)
+            set_process(false)
             get_tree().quit()
             return
     _make_avatar()
