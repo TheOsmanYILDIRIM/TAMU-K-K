@@ -117,6 +117,13 @@ Doğrulanmış rapor bağlantısı: [SESSION_HANDOFF.md#SOHBET-K](https://github
 - [GitHub Actions #41285943211](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41285943211) completed SUCCESS: TAMU_ORIGINAL_RIG_METADATA_OK png=30 directions=4 clips=44, TAMU_OBJECT_TERRAIN_REVEAL_OK objects=832 visible_chunks=45, TAMU_VISUAL_CAPTURE_OK chunks=45 vertices=116622 objects=832 avatar_parts=6. ZIP artifact id 13075875479, SHA256 afce9b52ed37c7f35f37a098463d8a1e47bb5e72fa560ccfe1cfdaf0975e3dc1, CRC passed. Screenshot opened: authored terrain, objects and Osman six-part preview visible. APK build succeeded but withheld from final delivery pending full parity.
 - Open acceptance: Godot-native skeletal FK weighted mesh, 44 clip runtime sampling/transition/IK constraints contract, harvest/collision/build/craft and Android device FPS p95/p99. No Android on-device test. Original LÖVE experiment branch and main untouched. Existing canonical Avenox task not updated by DirectSync in this turn.
 
+### 2026-11-01 — Godot native Bone2D FK groundwork, runtime error gate
+
+- Added `scripts/rigby_fk.gd` native Skeleton2D/Bone2D hierarchy constructed from original 40 authored Rigby bones, with parent links, setup transforms and basic keyframe FK rotation/translation/scale time sampling. Wired the 44 named animation clips and 4 direction/action references from unchanged rig.json/directions.json into main.gd. Commits `a7320ea1e5fabc95a984a37d444691e0b9ab4747` and `e052c3767d89a46ee1d7098ce1954f2ca4818227`.
+- First CI #41287389803 returned success but job logs revealed repeated `SCRIPT ERROR Invalid operands Dictionary and String` because Rigby Bezier curves are dictionaries. Fixed typed comparison in `rigby_fk.gd` (`fc78db3388e1d4d16cc854e95d1d9c7639619435`) and added strict no-SCRIPT-ERROR and native-rig-ready log gate in current workflow (`310ab66e1cd5f8f8d1446274c0d61dc2276dbae8`).
+- CI https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41287627773 at code HEAD 310ab66e completed SUCCESS. Log: `TAMU_NATIVE_BONE_FK_READY bones=40 clips=44`, `TAMU_OBJECT_TERRAIN_REVEAL_OK objects=832 visible_chunks=45`, `TAMU_VISUAL_CAPTURE_OK chunks=45 vertices=116622 objects=832 avatar_parts=6`. Native project launch and Android debug APK generation passed, but NOT device-tested.
+- **OPEN:** Rigby cubic Bezier interpolation currently uses explicit linear fallback; inherit/shear modes, attachments, ordered slot visibility, region UV and weighted mesh skinning not yet reproduced. Six-image visible actor preview is not driven by native FK bones; therefore full visual/44-clip parity NOT accepted and APK withheld. Gameplay harvest/craft/build, touch controls, collision and Android FPS remain open. Main and LÖVE experiment branch untouched.
+
 ---
 
 
