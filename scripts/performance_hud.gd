@@ -36,8 +36,8 @@ func _ready() -> void:
     var buttons := HBoxContainer.new()
     stack.add_child(buttons)
     copy_button = Button.new()
-    copy_button.text = "📋 LOG KOPYALA"
-    copy_button.pressed.connect(copy_logs)
+    copy_button.text = "⬇ LOG İNDİR"
+    copy_button.pressed.connect(download_logs)
     buttons.add_child(copy_button)
     var clear_button := Button.new()
     clear_button.text = "SIFIRLA"
@@ -129,6 +129,44 @@ func copy_logs() -> void:
     status.text = "Kopyalandı: %d kare / %d karakter" % [samples.size(),payload.length()]
     print("TAMU_PERF_LOG_COPY_OK frames=",samples.size(), " bytes=",payload.to_utf8_buffer().size())
 
+func download_logs() -> void:
+    if samples.is_empty():
+        status.text = "Kaydedilecek log yok"
+        return
+    if not DisplayServer.has_feature(DisplayServer.FEATURE_NATIVE_DIALOG_FILE):
+        # Desktop CI and platforms without a native SAF picker retain a file.
+        var fallback := "user://tamu-performance-%d.jsonl" % Time.get_unix_time_from_system()
+        if _write_jsonl(fallback):
+            status.text = "Kaydedildi: " + ProjectSettings.globalize_path(fallback)
+        return
+    var filename := "tamu-godot-perf-%d.jsonl" % Time.get_unix_time_from_system()
+    var result := DisplayServer.file_dialog_show(
+        "Performans kayıtlarını kaydet", "Download", filename, false,
+        DisplayServer.FILE_DIALOG_MODE_SAVE_FILE,
+        PackedStringArray(["*.jsonl;JSON Lines;application/x-ndjson"]),
+        _on_log_destination_selected
+    )
+    if result != OK:
+        status.text = "Dosya seçici açılamadı: %d" % result
+
+func _on_log_destination_selected(accepted: bool, paths: PackedStringArray, _filter_index: int) -> void:
+    if not accepted or paths.is_empty():
+        status.text = "İndirme iptal edildi"
+        return
+    if _write_jsonl(paths[0]):
+        status.text = "Downloads: %d kare kaydedildi" % samples.size()
+
+func _write_jsonl(path: String) -> bool:
+    var file := FileAccess.open(path, FileAccess.WRITE)
+    if file == null:
+        status.text = "Kayıt açılamadı: %d" % FileAccess.get_open_error()
+        return false
+    file.store_string(build_jsonl() + "\n")
+    file.flush()
+    file.close()
+    print("TAMU_PERF_DOWNLOAD_OK frames=",samples.size())
+    return true
+
 func test_gate() -> bool:
     if samples.size() < 30:
         return false
@@ -151,7 +189,14 @@ func test_gate() -> bool:
         var decoded = JSON.parse_string(line)
         if decoded is not Dictionary or decoded.get("schema","") != "tamu.perf.godot.v1":
             return false
-    copy_button.emit_signal("pressed")
+    copy_logs()
+    var internal_path := "user://tamu-perf-ci.jsonl"
+    if not _write_jsonl(internal_path):
+        return false
+    var saved := FileAccess.get_file_as_string(internal_path)
+    if saved.split("\n",false).size() != samples.size():
+        return false
+    print("TAMU_PERF_DOWNLOAD_FILE_GATE_OK rows=",samples.size())
     if not status.text.begins_with("Kopyalandı:"):
         return false
     print("TAMU_PERF_COPY_BUTTON_GATE_OK rows=", samples.size())
