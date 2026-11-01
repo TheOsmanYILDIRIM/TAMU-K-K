@@ -22,9 +22,13 @@ func _create() -> bool:
     if DirAccess.dir_exists_absolute("user://saves"):
         return false
     var run = Session.new()
-    if run.save_checkpoint("live").get("status") != "saved":
+    var first := run.save_checkpoint("live")
+    print("TAMU_STAGE6_LIVE_DIAG_SAVE ", first)
+    if first.get("status") != "saved":
         return false
-    if run.checkpoint_credit("live", "tx:one", "core:wood_log", 3).get("status") != "committed":
+    var credited := run.checkpoint_credit("live", "tx:one", "core:wood_log", 3)
+    print("TAMU_STAGE6_LIVE_DIAG_CREDIT ", credited)
+    if credited.get("status") != "committed":
         return false
     return run.count_item("core:wood_log") == 3 and run.journal_sequence == 1
 
