@@ -498,6 +498,7 @@ jobs:
           PY
           godot --headless --verbose --path . --export-debug Android build/TAMU_Godot_Baseline.apk
           test -s build/TAMU_Godot_Baseline.apk
+          sha256sum build/tamu-android-content.pck
           unzip -t build/TAMU_Godot_Baseline.apk | tail -1
           sha256sum build/TAMU_Godot_Baseline.apk
       - uses: actions/upload-artifact@v4
@@ -506,6 +507,7 @@ jobs:
           name: tamu-godot-android-baseline
           path: |
             build/TAMU_Godot_Baseline.apk
+            build/tamu-android-content.pck
             screenshots/terrain-parity.png
             screenshots/run.log
             screenshots/*-legacy.png
