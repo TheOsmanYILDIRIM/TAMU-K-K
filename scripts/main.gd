@@ -150,6 +150,7 @@ func _tick_gameplay(dt: float) -> void:
                 shadow.set_meta("tamu_collected", true)
                 shadow.visible = false
             if item.has("silhouette"):
+                item["silhouette"].set_meta("tamu_collected", true)
                 item["silhouette"].visible = false
             harvested_count += 1
             audio_cues.cue("harvest_complete")
@@ -496,6 +497,7 @@ func _ready() -> void:
                 if item["shadow"] != null:
                     item["shadow"].visible = false
                 if item.has("silhouette"):
+                    item["silhouette"].set_meta("tamu_collected", true)
                     item["silhouette"].visible = false
         print("TAMU_STAGE6_PRODUCTION_ACTIVE world=",world["id"]," region=",authority.region_id)
         if OS.get_environment("TAMU_PRODUCTION_SMOKE") == "1":
