@@ -1,7 +1,7 @@
 extends RefCounted
 # All 156 authored cells are scheduled proactively; no nearby discovery gate.
 # Existing one-mesh-per-frame upload budget remains unchanged until measured.
-const Projection = preload("res://scripts/world_projection.gd")
+const WorldProjection = preload("res://scripts/world_projection.gd")
 
 static func schedule(available: Dictionary, resident: Dictionary, actor_world: Vector2) -> Array[String]:
     var result: Array[String] = []
@@ -9,8 +9,8 @@ static func schedule(available: Dictionary, resident: Dictionary, actor_world: V
         if not resident.has(stem):
             result.append(str(stem))
     result.sort_custom(func(a: String, b: String):
-        var da: float = Projection.chunk_center_from_key(a).distance_squared_to(actor_world)
-        var db: float = Projection.chunk_center_from_key(b).distance_squared_to(actor_world)
+        var da: float = WorldProjection.chunk_center_from_key(a).distance_squared_to(actor_world)
+        var db: float = WorldProjection.chunk_center_from_key(b).distance_squared_to(actor_world)
         return a < b if is_equal_approx(da, db) else da < db
     )
     return result
