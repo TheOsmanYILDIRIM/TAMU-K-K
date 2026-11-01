@@ -7,6 +7,11 @@ var world_source: RefCounted
 # the SAME TAMU compiled LÖVE CI artifact, never resampled.
 var terrain_atlas: Texture2D
 var pending: Array[String] = []
+var view_required: Dictionary = {}
+var last_plan_camera := Vector2(INF, INF)
+var last_plan_zoom := Vector2.ONE
+var evicted_total := 0
+var camera_missing := 0
 var loaded: int = 0
 var vertices: int = 0
 var frame_no: int = 0
@@ -83,8 +88,10 @@ func _try_harvest() -> void:
         print("TAMU_HARVEST_OUT_OF_RANGE")
         return
     nearest["collected"] = true
+    nearest["sprite"].set_meta("tamu_collected", true)
     nearest["sprite"].visible = false
     if nearest["shadow"] != null:
+        nearest["shadow"].set_meta("tamu_collected", true)
         nearest["shadow"].visible = false
     harvested_count += 1
     print("TAMU_HARVEST_OK id=",nearest["id"]," count=",harvested_count)
@@ -268,7 +275,23 @@ func _chunk_distance(stem: String) -> float:
 # Native screen-space camera with bounded chunk residency. Geometry
 # remains the exact authored source; camera panning never rebuilds vertices.
 func _refresh_streaming_requests() -> void:
-    pending = WorldStream.schedule(available_chunks, chunk_nodes, actor_world)
+    var camera: Camera2D = $Camera2D
+    var center := camera.get_screen_center_position()
+    var view_size := get_viewport_rect().size
+    view_required = WorldStream.required_chunks(available_chunks, center, view_size, camera.zoom)
+    pending = WorldStream.schedule(available_chunks, chunk_nodes, actor_world, center, view_size, camera.zoom)
+    for stem in chunk_nodes:
+        var show: bool = view_required.has(stem)
+        var node: Node2D = chunk_nodes[stem]
+        if node.visible != show:
+            node.visible = show and not bool(node.get_meta("tamu_collected", false))
+            _set_chunk_visuals_visible(str(stem), show)
+    camera_missing = 0
+    for stem in view_required:
+        if not chunk_nodes.has(stem):
+            camera_missing += 1
+    last_plan_camera = center
+    last_plan_zoom = camera.zoom
 
 func _chunk_distance_to_actor(stem: String) -> float:
     var parts := stem.split("_")
@@ -297,12 +320,12 @@ func _ready() -> void:
     available_chunks = world_source.available.duplicate()
     total_cached = available_chunks.size()
     print("TAMU_WORLD_SOURCE_READY chunks=", total_cached)
-    _refresh_streaming_requests()
     var camera := Camera2D.new()
     camera.name = "Camera2D"
     camera.enabled = true
     camera.position = Vector2(0.0, 0.0)
     add_child(camera)
+    _refresh_streaming_requests()
     marker = Label.new()
     marker.position = Vector2(8.0, 8.0)
     marker.add_theme_color_override("font_color", Color.WHITE)
@@ -377,7 +400,51 @@ func _load_chunk(stem: String) -> void:
     assert(buf.get_position() == raw.size())
     chunk_vertices[stem] = chunk_count
     loaded += 1
-    _set_chunk_visuals_visible(stem, true)
+    var show_now: bool = view_required.has(stem)
+    group.visible = show_now
+    _set_chunk_visuals_visible(stem, show_now)
+
+func _enforce_resident_budget() -> void:
+    var budget := WorldStream.RESIDENT_BUDGET_BYTES
+    if WorldStream.estimate_bytes(chunk_vertices) <= budget:
+        return
+    var candidates := WorldStream.eviction_candidates(chunk_vertices, view_required,
+        $Camera2D.get_screen_center_position(), budget)
+    var removed := 0
+    for stem in candidates:
+        if removed >= 2: # bound node destruction work per frame
+            break
+        var node: Node2D = chunk_nodes.get(stem)
+        if node == null:
+            continue
+        # Never evict visible terrain: object/shadow reveal follows its chunk.
+        _set_chunk_visuals_visible(stem, false)
+        node.queue_free()
+        chunk_nodes.erase(stem)
+        vertices -= int(chunk_vertices[stem])
+        chunk_vertices.erase(stem)
+        loaded -= 1
+        removed += 1
+        evicted_total += 1
+    if removed > 0:
+        _refresh_streaming_requests()
+
+func _verify_visual_order() -> bool:
+    if not object_layer.y_sort_enabled or object_layer.z_index <= 2:
+        return false
+    if avatar.get_parent() != object_layer:
+        return false
+    for item in harvestables:
+        var sprite: Sprite2D = item["sprite"]
+        if sprite.get_parent() != object_layer or sprite.z_index != 0:
+            return false
+        if item["shadow"] != null:
+            var shadow: Polygon2D = item["shadow"]
+            if shadow.get_parent().z_index >= object_layer.z_index:
+                return false
+            if not shadow.position.is_equal_approx(sprite.position + Vector2(0, 3)):
+                return false
+    return true
 
 func _load_objects() -> void:
     var path := "res://chunks/r2_objects.json"
@@ -506,17 +573,20 @@ func _process(delta: float) -> void:
     var rig_end := Time.get_ticks_usec()
     if direction.length_squared() > 0.01:
         $Camera2D.position = $Camera2D.position.lerp(avatar.position, minf(delta * 4.0, 1.0))
-    if frame_no % 20 == 0:
+    var camera_center := $Camera2D.get_screen_center_position()
+    if frame_no % 10 == 0 or camera_center.distance_squared_to(last_plan_camera) > 96.0 * 96.0 or $Camera2D.zoom != last_plan_zoom:
         _refresh_streaming_requests()
     if not pending.is_empty():
         _load_chunk(pending.pop_front())
+    if frame_no % 10 == 0:
+        _enforce_resident_budget()
     var stream_end := Time.get_ticks_usec()
     if perf_hud != null:
         perf_hud.record(delta,loaded,total_cached,object_count,vertices,actor_world,stream_end-rig_end,rig_end-frame_start,"walk" if direction.length_squared()>0.01 else "idle")
-    marker.text = "TAMU Godot R2 / authored area\n%d active / %d available | %d verts\nFPS %d | frame %.2f ms | Time %.1f | Harvest %d" % [loaded, total_cached, vertices, Engine.get_frames_per_second(), delta * 1000.0,day_clock,harvested_count]
+    marker.text = "TAMU Godot R2 / authored area\n%d resident / %d source | %d verts\nViewport missing %d | Mesh est %.1f MiB\nFPS %d | frame %.2f ms | Time %.1f | Harvest %d" % [loaded, total_cached, vertices, camera_missing, float(WorldStream.estimate_bytes(chunk_vertices))/1048576.0, Engine.get_frames_per_second(), delta * 1000.0,day_clock,harvested_count]
     if frame_no % 120 == 0:
         print("TAMU_GODOT_FRAME frame=", frame_no, " loaded=", loaded, " fps=", Engine.get_frames_per_second())
-    if OS.get_environment("TAMU_VISUAL_CI") == "1" and frame_no == 45:
+    if OS.get_environment("TAMU_VISUAL_CI") == "1" and frame_no == 110:
         if harvest_button == null or shadow_sprites.is_empty() or day_clock <= 10.5 or harvest_button.get_global_rect().size.x < 100:
             push_error("TAMU_SUN_HARVEST_BOOT_GATE_FAILED")
             get_tree().quit(11)
@@ -538,13 +608,28 @@ func _process(delta: float) -> void:
         var visible_faults := 0
         for stem in object_visuals_by_chunk:
             for node in object_visuals_by_chunk[stem]:
-                if node.visible != chunk_nodes.has(stem):
+                var expected: bool = chunk_nodes.has(stem) and chunk_nodes[stem].visible and not bool(node.get_meta("tamu_collected", false))
+                if node.visible != expected:
                     visible_faults += 1
         if visible_faults > 0:
             push_error("TAMU_OBJECT_TERRAIN_REVEAL_FAILED faults=" + str(visible_faults))
             get_tree().quit(7)
             return
         print("TAMU_OBJECT_TERRAIN_REVEAL_OK objects=", object_count, " visible_chunks=", loaded)
+        _refresh_streaming_requests()
+        if camera_missing != 0:
+            push_error("TAMU_CAMERA_VISIBLE_CHUNK_GAP missing=" + str(camera_missing))
+            get_tree().quit(17)
+            return
+        if not _verify_visual_order():
+            push_error("TAMU_YDEPTH_SHADOW_ORDER_FAILED")
+            get_tree().quit(18)
+            return
+        print("TAMU_VIEWPORT_COVERAGE_OK missing=0 required=", view_required.size(), " resident=", loaded)
+        print("TAMU_YDEPTH_SHADOW_ORDER_OK objects=", object_count)
+        print("TAMU_RESIDENT_BUDGET_OK estimated_bytes=", WorldStream.estimate_bytes(chunk_vertices),
+            " cap_bytes=", WorldStream.RESIDENT_BUDGET_BYTES, " evicted=", evicted_total)
+
         var image := get_viewport().get_texture().get_image()
         var error := image.save_png("user://tamu-godot-visual.png")
         if error != OK or loaded < 16 or total_cached < 100 or vertices < 1000 or object_count < 10 or avatar_parts.size() != 6 or rig_animations.size() != 44 or active_source_clip == "":

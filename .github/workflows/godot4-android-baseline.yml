@@ -179,6 +179,9 @@ jobs:
           grep -q TAMU_NATIVE_BONE_FK_READY screenshots/run.log
           grep -q TAMU_WORLD_PROJECTION_GATE_OK screenshots/run.log
           grep -q TAMU_STREAM_SCHEDULER_OK screenshots/run.log
+          grep -q TAMU_VIEWPORT_COVERAGE_OK screenshots/run.log
+          grep -q TAMU_YDEPTH_SHADOW_ORDER_OK screenshots/run.log
+          grep -q TAMU_RESIDENT_BUDGET_OK screenshots/run.log
           grep -q 'TAMU_WORLD_SOURCE_READY chunks=156' screenshots/run.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|Invalid operands' screenshots/run.log; then echo 'TAMU_RUNTIME_SCRIPT_GATE_FAILED'; exit 1; fi
           IMAGE="$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png"
