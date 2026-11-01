@@ -51,7 +51,8 @@ func _sample(keys: Array, time: float, component: int = -1) -> float:
     var a := float(v[component] if component >= 0 and v is Array else v)
     var b := float(w[component] if component >= 0 and w is Array else w)
     var dt := float(nxt["time"]) - float(at["time"])
-    if dt <= 0 or at.get("curve","linear") == "stepped":
+    var curve = at.get("curve", "linear")
+    if dt <= 0 or (curve is String and curve == "stepped"):
         return a
     var f := clampf((time-float(at["time"]))/dt, 0.0, 1.0)
     # Exact cubic Bézier handles remain a parity task; linear fallback is explicit.
