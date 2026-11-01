@@ -41,6 +41,7 @@ func _write() -> bool:
         return false
     var written := Store.write_checkpoint("test", state, catalog)
     if written.get("status") != "saved":
+        print("TAMU_STAGE6_DIAG_WRITE ", written)
         return false
     var invalid: Dictionary = state.duplicate(true)
     invalid["inventory"]["slots"] = [{"slot": 1, "def_id": "removed:missing", "count": 1}]
