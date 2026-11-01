@@ -82,7 +82,7 @@ jobs:
               (rig.parent/name).write_bytes(z.read('assets/osman_rig/'+name))
           rig_doc=json.loads((rig.parent/'rig.json').read_text())
           directions=json.loads((rig.parent/'directions.json').read_text())['directions']
-          clips=rig_doc.get('animations',{})
+          clips={c['name']:c for c in rig_doc.get('animations',[])}
           assert len(directions)==4 and len(clips)==44, (len(directions),len(clips))
           assert all(len(x['animations'])==11 for x in directions.values())
           assert all(clip in clips for d in directions.values() for clip in d['animations'].values())
