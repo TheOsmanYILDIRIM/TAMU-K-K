@@ -35,7 +35,8 @@ func _make_avatar() -> void:
         push_error("Original Rigby source or direction profile missing")
         get_tree().quit(8)
         return
-    rig_animations = source.get("animations", {})
+    for clip in source.get("animations", []):
+        rig_animations[str(clip["name"])] = clip
     rig_directions = mapping["directions"]
     if rig_animations.size() != 44 or rig_directions.size() != 4:
         push_error("Original 44-clip / 4-direction Rigby contract mismatch")
