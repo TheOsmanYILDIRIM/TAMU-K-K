@@ -50,7 +50,7 @@ static func parse_toml(src: String) -> Dictionary:
                 return {}
             doc[section].append({})
             continue
-        if s.begins_with("[") or s.contains("]"):
+        if s.begins_with("["):
             return {}
         var at := s.find("=")
         if at <= 0:
