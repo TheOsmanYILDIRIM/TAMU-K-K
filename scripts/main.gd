@@ -10,6 +10,11 @@ var elapsed: float = 0.0
 var perf_hud: CanvasLayer
 var marker: Label
 var drag: bool = false
+var joystick_pointer := -1
+var joystick_vector := Vector2.ZERO
+var joystick_base: Panel
+var joystick_knob: Panel
+const JOYSTICK_RADIUS := 62.0
 var total_cached: int = 0
 var chunk_nodes: Dictionary = {}
 var available_chunks: Dictionary = {}
@@ -29,6 +34,71 @@ var actor_direction := "SE"
 var actor_action := "idle"
 var active_source_clip := ""
 var native_rig: Skeleton2D
+
+func _init_mobile_joystick() -> void:
+    var layer_node := CanvasLayer.new()
+    layer_node.name = "TouchMovement"
+    layer_node.layer = 110
+    add_child(layer_node)
+    var root := Control.new()
+    root.name = "JoystickArea"
+    root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    layer_node.add_child(root)
+    joystick_base = Panel.new()
+    joystick_base.name = "JoystickBase"
+    joystick_base.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+    joystick_base.position = Vector2(30.0, -188.0)
+    joystick_base.size = Vector2(156,156)
+    joystick_base.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    var base_style := StyleBoxFlat.new()
+    base_style.bg_color = Color(0.08,0.12,0.14,0.48)
+    base_style.border_color = Color(0.7,0.92,0.9,0.6)
+    base_style.set_border_width_all(3)
+    base_style.set_corner_radius_all(78)
+    joystick_base.add_theme_stylebox_override("panel",base_style)
+    root.add_child(joystick_base)
+    joystick_knob = Panel.new()
+    joystick_knob.name = "JoystickKnob"
+    joystick_knob.position = Vector2(47,47)
+    joystick_knob.size = Vector2(62,62)
+    joystick_knob.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    var knob_style := StyleBoxFlat.new()
+    knob_style.bg_color = Color(0.52,0.82,0.76,0.72)
+    knob_style.set_corner_radius_all(31)
+    joystick_knob.add_theme_stylebox_override("panel",knob_style)
+    joystick_base.add_child(joystick_knob)
+
+func _joystick_center() -> Vector2:
+    return joystick_base.get_global_rect().get_center()
+
+func _set_joystick(point: Vector2) -> void:
+    var relative := point - _joystick_center()
+    joystick_vector = relative.limit_length(JOYSTICK_RADIUS) / JOYSTICK_RADIUS
+    if joystick_vector.length() < 0.13:
+        joystick_vector = Vector2.ZERO
+    joystick_knob.position = Vector2(47,47) + joystick_vector * JOYSTICK_RADIUS
+
+func _release_joystick() -> void:
+    joystick_pointer = -1
+    joystick_vector = Vector2.ZERO
+    if joystick_knob != null:
+        joystick_knob.position = Vector2(47,47)
+
+func _input(event: InputEvent) -> void:
+    if joystick_base == null:
+        return
+    if event is InputEventScreenTouch:
+        if event.pressed and joystick_pointer < 0 and event.position.distance_to(_joystick_center()) <= 105.0:
+            joystick_pointer = event.index
+            _set_joystick(event.position)
+            get_viewport().set_input_as_handled()
+        elif not event.pressed and event.index == joystick_pointer:
+            _release_joystick()
+            get_viewport().set_input_as_handled()
+    elif event is InputEventScreenDrag and event.index == joystick_pointer:
+        _set_joystick(event.position)
+        get_viewport().set_input_as_handled()
 
 func _make_avatar() -> void:
     var source = JSON.parse_string(FileAccess.get_file_as_string("res://assets/osman_rig/rig.json"))
@@ -169,6 +239,7 @@ func _ready() -> void:
     _make_avatar()
     perf_hud = load("res://scripts/performance_hud.gd").new()
     add_child(perf_hud)
+    _init_mobile_joystick()
     print("TAMU_GODOT_TERRAIN_START chunks=", pending.size())
 
 func _set_chunk_visuals_visible(stem: String, show: bool) -> void:
@@ -324,7 +395,7 @@ func _process(delta: float) -> void:
     var frame_start := Time.get_ticks_usec()
     frame_no += 1
     elapsed += delta
-    var direction := Input.get_vector("ui_left","ui_right","ui_up","ui_down")
+    var direction := joystick_vector if joystick_vector.length_squared() > 0.01 else Input.get_vector("ui_left","ui_right","ui_up","ui_down")
     if direction.length_squared() > 0.01:
         actor_world += direction * actor_speed * delta
         actor_world.x = clampf(actor_world.x,world_bounds.position.x,world_bounds.end.x)
@@ -382,6 +453,8 @@ func _process(delta: float) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
     if event is InputEventScreenTouch:
+        if event.index == joystick_pointer or event.position.distance_to(_joystick_center()) < 110.0:
+            return
         drag = event.pressed
     elif event is InputEventScreenDrag and drag:
         $Camera2D.position -= event.relative / $Camera2D.zoom
