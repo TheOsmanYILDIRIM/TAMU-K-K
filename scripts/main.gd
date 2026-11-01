@@ -3,6 +3,8 @@ const WorldProjection = preload("res://scripts/world_projection.gd")
 const WorldSource = preload("res://scripts/world_source.gd")
 const WorldStream = preload("res://scripts/world_stream.gd")
 const MergedTerrain = preload("res://scripts/merged_terrain.gd")
+const RigbySkinned = preload("res://scripts/rigby_skinned.gd")
+var rigby_skin: Dictionary = {}
 var merged_mode: bool = OS.get_environment("TAMU_TERRAIN_MODE") != "legacy"
 # Each independently authored region is a separate logical chunk, not one global world.
 var region_chunks: Dictionary = {}
@@ -230,6 +232,12 @@ func _make_avatar() -> void:
         avatar_parts[part] = sprite
     _set_actor_clip("SE", "idle")
     _update_avatar()
+    # Keep the old six PNGs as visible renderer until complete Rigby pose parity.
+    if OS.get_environment("TAMU_VISUAL_CI") == "1" or OS.get_environment("TAMU_RIGBY_SKIN_PREVIEW") == "1":
+        rigby_skin = RigbySkinned.build(source, native_rig)
+        if rigby_skin.is_empty():
+            push_error("TAMU_RIGBY_SKIN_BUILD_FAILED")
+            get_tree().quit(21)
 
 func _set_actor_clip(direction: String, action: String) -> void:
     if not rig_directions.has(direction):
@@ -369,6 +377,14 @@ func _ready() -> void:
             push_error("TAMU_RIGBY_CURVE_GATE_FAILED")
             get_tree().quit(20)
             return
+        native_rig.advance(0.0)
+        if not RigbySkinned.update_pose(rigby_skin, native_rig, native_rig.bones) or not RigbySkinned.verify(rigby_skin):
+            push_error("TAMU_RIGBY_WEIGHTED_MESH_GATE_FAILED")
+            get_tree().quit(22)
+            return
+        print("TAMU_RIGBY_WEIGHTED_MESH_OK meshes=", rigby_skin["records"].size(),
+            " vertices=", rigby_skin["vertices"], " triangles=", rigby_skin["triangles"],
+            " influences=", rigby_skin["influences"])
     perf_hud = load("res://scripts/performance_hud.gd").new()
     add_child(perf_hud)
     _init_mobile_joystick()

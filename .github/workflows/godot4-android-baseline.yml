@@ -230,6 +230,37 @@ jobs:
           print('TAMU_REGION_CHUNK_CONTRACT_OK regions=1 source_cells=156')
           print('TAMU_MERGE_SOURCE_PARITY_OK original_chunks=156 layers=2 vertices=',total)
           PY
+      - name: Verify original Rigby weighted mesh topology and influences
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,math
+          rig=json.loads(pathlib.Path('assets/osman_rig/rig.json').read_text())
+          weighted=[]
+          for slot in rig['slots']:
+              for attachment in slot.get('attachments',[]):
+                  if 'weights' not in attachment:
+                      continue
+                  assert attachment['type']=='mesh'
+                  weights=attachment['weights']
+                  assert len(attachment['uvs'])==2*len(weights)
+                  assert len(attachment['triangles'])%3==0
+                  assert all(0<=i<len(weights) for i in attachment['triangles'])
+                  for vertex in weights:
+                      assert vertex
+                      assert abs(sum(p['weight'] for p in vertex)-1.0)<1e-5
+                      assert all(math.isfinite(p['x']) and math.isfinite(p['y']) and
+                                 math.isfinite(p['weight']) and 0<=p['bone']<len(rig['bones'])
+                                 for p in vertex)
+                  weighted.append(attachment)
+          assert len(rig['bones'])==40 and len(rig['slots'])==24
+          assert len(weighted)==4
+          assert sum(len(a['weights']) for a in weighted)==1624
+          assert sum(len(a['triangles'])//3 for a in weighted)==2930
+          assert sum(sum(len(v) for v in a['weights']) for a in weighted)==2082
+          print('TAMU_RIGBY_WEIGHTED_SOURCE_OK meshes=4 vertices=1624 triangles=2930 influences=2082')
+          PY
       - name: Native Godot scene and screenshot smoke (Xvfb)
         shell: bash
         env:
@@ -300,6 +331,7 @@ jobs:
           grep -q 'TAMU_REGION_LOAD_OK region=fisilti_ormani source_cells=156' screenshots/run.log
           grep -q TAMU_NATIVE_BONE_FK_READY screenshots/run.log
           grep -q TAMU_RIGBY_CURVE_PARITY_OK screenshots/run.log
+          grep -q TAMU_RIGBY_WEIGHTED_MESH_OK screenshots/run.log
           grep -q TAMU_WORLD_PROJECTION_GATE_OK screenshots/run.log
           grep -q TAMU_STREAM_SCHEDULER_OK screenshots/run.log
           grep -q TAMU_VIEWPORT_COVERAGE_OK screenshots/run.log
