@@ -4,8 +4,8 @@ const Identity = preload("res://scripts/world_identity.gd")
 func _initialize() -> void:
     var phase := OS.get_environment("TAMU_WORLD_PHASE")
     var passed := false
+    var a = Authority.new()
     if phase == "create" or phase == "reopen":
-        var a = Authority.new()
         if a.initialize():
             var first: Variant = a.records.values()[0]
             var item := {"id": first["id"], "kind": first["kind"], "radius": first["radius"],
@@ -25,10 +25,10 @@ func _initialize() -> void:
                 print("TAMU_R2_AUTHORITY_OK phase=",phase," objects=",a.records.size()," obstacles=",a.boxes.size()," uuid=",before["id"])
     if passed and phase == "reopen" and not a.boxes.is_empty():
         var box: Dictionary = a.boxes[0]
-        var before_hits := a.obstacles(float(box["x"]),float(box["y"]),
+        var before_hits: Array = a.obstacles(float(box["x"]),float(box["y"]),
             float(box["x"])+float(box["w"]),float(box["y"])+float(box["h"]))
         a.depleted_ids[str(box["id"])] = true
-        var after_hits := a.obstacles(float(box["x"]),float(box["y"]),
+        var after_hits: Array = a.obstacles(float(box["x"]),float(box["y"]),
             float(box["x"])+float(box["w"]),float(box["y"])+float(box["h"]))
         passed = before_hits.size() > after_hits.size()
     if not passed:
