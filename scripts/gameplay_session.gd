@@ -144,7 +144,7 @@ func checkpoint_credit(name: String, command_id: String, def_id: String, amount:
     if not bool(loaded.get("ok", false)):
         return loaded
     var prior: Dictionary = loaded["snapshot"]
-    if JSON.stringify(prior, "", true) != JSON.stringify(snapshot_domain(), "", true):
+    if Stage6Store._seal(prior) != Stage6Store._seal(snapshot_domain()):
         return {"ok": false, "status": "checkpoint_state_mismatch"}
     var staged_slots: Array = inventory.preview()
     if not inventory.preview_add(staged_slots, def_id, amount) or not inventory.validate_preview(staged_slots):
