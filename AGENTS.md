@@ -1,3 +1,8 @@
+## 2026-11-01 — User decision: defer character/Rigby migration
+- The user will replace the character. **Do not continue Rigby weighted skinning, clip parity, IK, sockets or character art work** without a new explicit request. Preserve all current character assets, code, experiment history and backwards-compatible behavior.
+- Advance Godot migration via **Phase 3 gameplay**, then Stage 4 versioned saves, Stage 5 mobile/performance and Stage 6 acceptance. Phase 2 remains deferred, not completed.
+- Fısıltı Ormanı remains one logical authored region chunk (156 source cells, two native terrain layers); other future regions remain separate. GitHub real scene/visual regression precedes physical Android acceptance.
+
 ## 2026-11-01 — Godot bölge başına tek büyük chunk (güncel kullanıcı kararı)
 - **Tüm oyun tek chunk değildir.** Her bağımsız authored bölge ayrı bir mantıksal chunk'tır; mevcut **Fısıltı Ormanı** bölgesi eski 156 küçük kaynak hücrenin birleştirilmesiyle **tek bölge chunk'ı** olarak çizilir (mevcut terrain için iki ayrı z-katmanı MeshInstance2D).
 - Gelecekteki bölgeler ayrı manifest, ayrı yaşam döngüsü, ayrı yükleme/tahliye ve koordinat/kimlik sınırlarına sahip olacak. Yeni bölgeleri tek bir küresel mesh'e birleştirme; kaynak 156 hücreyi/sabit obje ID'lerini silme.
