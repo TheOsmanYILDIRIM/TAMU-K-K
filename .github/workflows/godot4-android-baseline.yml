@@ -26,6 +26,27 @@ jobs:
           timeout --kill-after=3s 45s godot --headless --path . --script res://scripts/fx_contract_ci.gd 2>&1 | tee fx-contract.log
           grep -q 'TAMU_FX_CONTRACT_OK voices=8' fx-contract.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|Invalid operands|TAMU_FX_CONTRACT_FAILED' fx-contract.log; then exit 1; fi
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb python3-pil >/dev/null
+          mkdir -p screenshots
+          timeout --kill-after=3s 50s xvfb-run -a -s '-screen 0 540x360x24' godot --path . --rendering-method gl_compatibility --resolution 540x360 --script res://scripts/fx_visual_ci.gd 2>&1 | tee fx-visual.log
+          grep -q 'TAMU_FX_VISUAL_OK' fx-visual.log
+          test -s screenshots/fx-shadow-preview.png
+          python3 - <<'PY'
+          from PIL import Image
+          a=Image.open('screenshots/fx-shadow-preview.png').convert('RGB')
+          assert a.width>=540 and a.height>=360 and len(set(a.resize((90,60)).getdata()))>18
+          print('TAMU_FX_VISUAL_PIXEL_GATE_OK',a.size)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tamu-fx-visual-smoke
+          path: |
+            screenshots/fx-shadow-preview.png
+            fx-contract.log
+            fx-visual.log
+          if-no-files-found: warn
   apk:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
