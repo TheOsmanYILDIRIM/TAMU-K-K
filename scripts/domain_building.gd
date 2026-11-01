@@ -58,8 +58,8 @@ func _dry_and_stable(box: Rect2) -> bool:
         return false
     for ry in [0.01, 0.5, 0.999]:
         for rx in [0.01, 0.5, 0.999]:
-            var x := box.position.x + box.size.x * rx
-            var y := box.position.y + box.size.y * ry
+            var x: float = box.position.x + box.size.x * float(rx)
+            var y: float = box.position.y + box.size.y * float(ry)
             var surface: Variant = terrain_sample.call(x, y)
             if not surface is Dictionary:
                 return false
