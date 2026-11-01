@@ -119,7 +119,7 @@ func load_checkpoint(name: String) -> Dictionary:
 const Restore = preload("res://scripts/stage6_domain_restore.gd")
 
 func _publish_checkpoint(state: Dictionary) -> Dictionary:
-    if not world_binding.is_empty() and state.get("world_binding", null) != world_binding:
+    if not world_binding.is_empty() and Stage6Store._seal({"binding": state.get("world_binding", null)}) != Stage6Store._seal({"binding": world_binding}):
         return {"ok": false, "status": "world_region_mismatch"}
     var staged: Dictionary = Restore.prepare(catalog, state)
     if not bool(staged.get("ok", false)):
@@ -226,7 +226,7 @@ func enable_durable(slot: String, world_uuid: String, region_id: String,
     if not bool(loaded.get("ok", false)) and str(loaded.get("status", "")) != "missing":
         return loaded
     if bool(loaded.get("ok", false)):
-        if loaded["snapshot"].get("world_binding", null) != binding:
+        if Stage6Store._seal({"binding": loaded["snapshot"].get("world_binding", null)}) != Stage6Store._seal({"binding": binding}):
             return {"ok": false, "status": "world_region_mismatch"}
     var old_world := world_binding.duplicate(true)
     world_binding = binding
