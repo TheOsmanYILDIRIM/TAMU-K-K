@@ -157,6 +157,13 @@ Doğrulanmış rapor bağlantısı: [SESSION_HANDOFF.md#SOHBET-K](https://github
 - GitHub Actions https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41293923834 SUCCESS at code commit d48f0c1e. `TAMU_PERF_DOWNLOAD_FILE_GATE_OK rows=45`, visual smoke 45 loaded chunks, Android pack assets gate and APK export passed. Artifact id 13078032262 ZIP digest sha256:c954430e511ce676f68fdcc6d51f44e516787d7aeb12860d5e8eabd587b781ed. Downloaded artifact ZIP CRC clean and extracted 67,144,278-byte APK; CRC clean, SHA256 2106df5003892e4a8625c893a67f3b9a78bff4d1fe8df7a1c5922a61375d2f01.
 - OPEN/UNVERIFIED: Android SAF Downloads location selector and actual file visibility require device confirmation. CI runs 45-frame smoke, so 156 simultaneous active chunks and Android FPS/memory/thermal load are not yet proven; no mobile 10x FPS claims. Full gameplay/Rigby parity separately open.
 
+### 2026-11-01 — Godot native sunlight/time and test harvesting
+- User reports latest Android APK stable 60 FPS; no mobile telemetry provided. All 156 authored terrain chunks remain eagerly enqueued and retained (1 imported per frame); no procedural invention outside source footprint.
+- Code commits c3ac036873d082dfed73200668de839895e68dee and 40bd1775497a12edf557819a7d7019c5f1e2f20b add 480-second/24-hour visual day cycle aligned to original LÖVE `terrain25d_sun.lua` sine-based daylight, projected azimuth, color tint, rotating/intensity-shifting static atlas shadows; sunlight is visual-only, no physical sun or full weather system.
+- New touch `TOPLA` button harvests nearest non-collected R2 object within 38 world units, hides its sprite/shadow and increments count; no inventory/crafting/save changes. CI test triggers actual button signal on canonical R2 object and asserts hidden visual and count 1.
+- [GitHub Actions #41296462506](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41296462506) success at code HEAD 40bd1775497a12edf557819a7d7019c5f1e2f20b. Logs `TAMU_SUN_HARVEST_BOOT_OK shadows=832 hour=10.55047275`, `TAMU_HARVEST_OK ... count=1`, `TAMU_HARVEST_BUTTON_GATE_OK count=1`, `TAMU_VISUAL_CAPTURE_OK chunks=45 vertices=115956 objects=832`. Artifact id 13079457120 digest sha256 436a6ec0486122eee0bba57fe4d88663f4e4163c62f2e974731dcfaedf283b1c; extracted APK `/mnt/data/TAMU_Godot_Sun_Harvest_TEST.apk` SHA256 8144409fb18d691bb58efdca45d05f961150d3fba06ca0c2bd80e8477324a133, inner/outer ZIP CRC clean.
+- OPEN: 156 simultaneous residency and long-run Android FPS not proven by 45-frame CI; dynamic shadow visual parity and Android touch proximity test require device validation; Rigby weighted skin/crafting and saves not done. No main/LÖVE branch changes.
+
 ---
 
 
