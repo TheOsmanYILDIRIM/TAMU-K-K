@@ -45,4 +45,6 @@ func _initialize() -> void:
     print("TAMU_R2_SWEEP_SLIDE_OK")
     print("TAMU_R2_SURFACE_PARITY_OK height=",ground_h," river=blocked land=buildable")
     quit(0)
-\nfunc _wall(_minx: float, _miny: float, _maxx: float, _maxy: float) -> Array:\n    return [{"x":20.0,"y":-20.0,"w":10.0,"h":40.0}]\n
+
+func _wall(_minx: float, _miny: float, _maxx: float, _maxy: float) -> Array:
+    return [{"x":20.0,"y":-20.0,"w":10.0,"h":40.0}]
