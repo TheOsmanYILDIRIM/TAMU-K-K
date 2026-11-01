@@ -28,7 +28,7 @@ var sun_direction := Vector2.ZERO
 var sun_level := 1.0
 var daylight_layer: CanvasModulate
 var harvest_button: Button
-const DAY_SECONDS := 480.0
+const DAY_SECONDS := 30.0
 var world_bounds := Rect2(-4096.0, -4096.0, 32768.0, 32768.0)
 const MAX_LOADED_PER_FRAME := 1
 var avatar: Node2D
@@ -90,15 +90,34 @@ func _init_harvest_button() -> void:
     ui.layer = 111
     ui.name = "HarvestTestUI"
     add_child(ui)
+    var root := Control.new()
+    root.name = "HarvestOverlay"
+    root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    ui.add_child(root)
     var button := Button.new()
     button.name = "HarvestNearest"
     button.text = "TOPLA"
-    button.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-    button.position = Vector2(-175,-165)
-    button.custom_minimum_size = Vector2(140,96)
+    button.anchor_left = 1.0
+    button.anchor_right = 1.0
+    button.anchor_top = 1.0
+    button.anchor_bottom = 1.0
+    button.offset_left = -190.0
+    button.offset_right = -24.0
+    button.offset_top = -194.0
+    button.offset_bottom = -74.0
+    button.mouse_filter = Control.MOUSE_FILTER_STOP
+    var style := StyleBoxFlat.new()
+    style.bg_color = Color(0.12, 0.40, 0.32, 0.94)
+    style.border_color = Color(0.65, 0.97, 0.81)
+    style.set_border_width_all(3)
+    style.set_corner_radius_all(20)
+    button.add_theme_stylebox_override("normal",style)
+    button.add_theme_font_size_override("font_size",26)
     button.pressed.connect(_try_harvest)
-    ui.add_child(button)
+    root.add_child(button)
     harvest_button = button
+    print("TAMU_HARVEST_UI_READY")
 
 func _init_mobile_joystick() -> void:
     var layer_node := CanvasLayer.new()
@@ -488,7 +507,7 @@ func _process(delta: float) -> void:
     if frame_no % 120 == 0:
         print("TAMU_GODOT_FRAME frame=", frame_no, " loaded=", loaded, " fps=", Engine.get_frames_per_second())
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and frame_no == 45:
-        if harvest_button == null or shadow_sprites.is_empty() or day_clock <= 10.5:
+        if harvest_button == null or shadow_sprites.is_empty() or day_clock <= 10.5 or harvest_button.get_global_rect().size.x < 100:
             push_error("TAMU_SUN_HARVEST_BOOT_GATE_FAILED")
             get_tree().quit(11)
             return
