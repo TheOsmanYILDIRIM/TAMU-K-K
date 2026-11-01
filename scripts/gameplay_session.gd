@@ -187,7 +187,7 @@ func tick(dt: float, player_pos: Vector2) -> Array[Dictionary]:
     return events
 
 func verify_contract() -> bool:
-    var proof := get_script().new()
+    var proof = get_script().new()
     var tree := {"id": "test:tree", "kind": "tree", "radius": 11.0, "position": Vector2(50.0, 0.0)}
     var rock := {"id": "test:rock", "kind": "rock", "radius": 12.0, "position": Vector2(50.0, 0.0)}
     if proof.begin_harvest(tree, Vector2.ZERO, "h1").get("status") != "out_of_range":
@@ -218,7 +218,7 @@ func verify_contract() -> bool:
     proof.tick(0.1, Vector2(500, 0))
     if proof.harvest_commands["h3"]["status"] != "interrupted" or proof.depleted.has("test:rock"):
         return false
-    var full := get_script().new()
+    var full = get_script().new()
     for i in range(CAPACITY):
         full.slots[i] = {"def_id": "core:wood_log", "count": 99}
     full.begin_harvest(rock, Vector2(50, 0), "full1")
