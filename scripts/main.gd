@@ -514,6 +514,17 @@ func _process(delta: float) -> void:
             get_tree().quit(3)
         else:
             print("TAMU_VISUAL_CAPTURE_OK chunks=", loaded, " vertices=", vertices, " objects=", object_count, " avatar_parts=", avatar_parts.size())
+            if harvestables.is_empty():
+                push_error("TAMU_HARVEST_TEST_EMPTY")
+                get_tree().quit(12)
+                return
+            actor_world = harvestables[0]["position"]
+            harvest_button.emit_signal("pressed")
+            if harvested_count != 1 or harvestables[0]["sprite"].visible:
+                push_error("TAMU_HARVEST_BUTTON_GATE_FAILED")
+                get_tree().quit(13)
+                return
+            print("TAMU_HARVEST_BUTTON_GATE_OK count=",harvested_count)
             get_tree().quit()
 
 func _unhandled_input(event: InputEvent) -> void:
