@@ -857,6 +857,17 @@ func _process(delta: float) -> void:
             push_error("TAMU_SHADOW_VISIBILITY_FAILED visible=" + str(drawn))
             get_tree().quit(14)
             return
+        if silhouette_shadows.size() < 100 or audio_cues == null or impact_effects == null:
+            push_error("TAMU_FX_SYSTEM_MISSING")
+            get_tree().quit(25)
+            return
+        for i in range(mini(silhouette_shadows.size(), 16)):
+            var sh: Sprite2D = silhouette_shadows[i]
+            if sh.texture == null or sh.material != silhouette_material:
+                push_error("TAMU_AUTHORED_SILHOUETTE_MISMATCH")
+                get_tree().quit(25)
+                return
+        print("TAMU_FX_SYSTEM_OK silhouettes=",silhouette_shadows.size()," audio=true particles=true")
         print("TAMU_GROUND_SHADOW_VISIBILITY_OK visible=",drawn)
         print("TAMU_SUN_HARVEST_BOOT_OK shadows=",shadow_sprites.size()," hour=",day_clock)
         if perf_hud == null or not perf_hud.test_gate():
