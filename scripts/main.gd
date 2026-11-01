@@ -7,6 +7,9 @@ const RigbySkinned = preload("res://scripts/rigby_skinned.gd")
 const GameplaySession = preload("res://scripts/gameplay_session.gd")
 const R2Authority = preload("res://scripts/r2_authority.gd")
 const WorldIdentity = preload("res://scripts/world_identity.gd")
+const AudioCues = preload("res://scripts/audio_cues.gd")
+const ImpactEffects = preload("res://scripts/impact_effects.gd")
+const SHADOW_SHADER = preload("res://scripts/object_shadow.gdshader")
 var rigby_skin: Dictionary = {}
 var merged_mode: bool = OS.get_environment("TAMU_TERRAIN_MODE") != "legacy"
 # Each independently authored region is a separate logical chunk, not one global world.
@@ -45,6 +48,10 @@ var authority: RefCounted
 var gameplay_sequence := 0
 var harvested_count := 0
 var shadow_sprites: Array[Polygon2D] = []
+var silhouette_shadows: Array[Sprite2D] = []
+var silhouette_material: ShaderMaterial
+var audio_cues: Node
+var impact_effects: Node2D
 var day_clock := 10.5
 var sun_direction := Vector2.ZERO
 var sun_level := 1.0
@@ -79,6 +86,10 @@ func _update_sun(delta: float) -> void:
     var tint := Color(clampf(0.54+0.46*light+0.065*golden,0.0,1.0),clampf(0.62+0.38*light-0.045*golden,0.0,1.0),clampf(0.76+0.24*light-0.13*golden,0.0,1.0))
     daylight_layer.color = tint
     if frame_no % 12 == 0:
+        if silhouette_material != null:
+            silhouette_material.set_shader_parameter("solar_dir", -sun_direction)
+            silhouette_material.set_shader_parameter("solar_length", clampf(0.28 + 1.05 * (1.0-light)/(light+0.31), 0.28, 2.65))
+            silhouette_material.set_shader_parameter("opacity", 0.36 * light)
         var cast := 0.42+0.58*light
         var length := clampf(0.32+1.05*(1.0-light)/(light+0.31),0.32,2.65)
         for shadow in shadow_sprites:
@@ -112,6 +123,9 @@ func _try_harvest() -> void:
         push_error("TAMU_HARVEST_SOURCE_MISMATCH")
         return
     var result: Dictionary = gameplay.begin_harvest(nearest, actor_world, _next_gameplay_command("harvest"))
+    if str(result.get("status", "")) == "started":
+        audio_cues.cue("harvest_start")
+        impact_effects.burst(WorldProjection.to_screen(nearest["position"]), str(nearest["kind"]), 6)
     print("TAMU_HARVEST_COMMAND id=", nearest["id"], " status=", result["status"])
 
 func _begin_craft(recipe_id: String) -> void:
@@ -135,10 +149,16 @@ func _tick_gameplay(dt: float) -> void:
                 var shadow: Polygon2D = item["shadow"]
                 shadow.set_meta("tamu_collected", true)
                 shadow.visible = false
+            if item.has("silhouette"):
+                item["silhouette"].visible = false
             harvested_count += 1
+            audio_cues.cue("harvest_complete")
+            impact_effects.burst(sprite.position, str(item["kind"]), 14)
             print("TAMU_HARVEST_OK id=", id, " count=", harvested_count,
                 " item=", change["item_id"], " amount=", change["amount"])
         elif change["type"] == "CraftCompleted":
+            audio_cues.cue("craft_complete")
+            impact_effects.burst(WorldProjection.to_screen(actor_world), "craft", 12)
             print("TAMU_CRAFT_OK recipe=", change["recipe_id"])
 
 func _init_harvest_button() -> void:
@@ -388,6 +408,13 @@ func _ready() -> void:
             get_tree().quit(16)
             return
         print("TAMU_STREAM_SCHEDULER_OK")
+    audio_cues = AudioCues.new()
+    add_child(audio_cues)
+    audio_cues.play_music("forest")
+    impact_effects = ImpactEffects.new()
+    add_child(impact_effects)
+    silhouette_material = ShaderMaterial.new()
+    silhouette_material.shader = SHADOW_SHADER
     terrain_atlas = load("res://assets/terrain25d/atlas_00.png")
     world_source = WorldSource.new()
     if not world_source.initialize():
@@ -468,6 +495,8 @@ func _ready() -> void:
                 item["sprite"].set_meta("tamu_collected", true)
                 if item["shadow"] != null:
                     item["shadow"].visible = false
+                if item.has("silhouette"):
+                    item["silhouette"].visible = false
         print("TAMU_STAGE6_PRODUCTION_ACTIVE world=",world["id"]," region=",authority.region_id)
         if OS.get_environment("TAMU_PRODUCTION_SMOKE") == "1":
             print("TAMU_STAGE6_PRODUCTION_SMOKE_OK status=",enabled["status"]," identity=",world["status"],
@@ -735,6 +764,21 @@ func _load_objects() -> void:
             shadow.set_meta("base_scale",maxf(0.7,scale_value*2.5))
             shadow_layer.add_child(shadow)
             shadow_sprites.append(shadow)
+            # Exact object atlas alpha silhouette projected in the sun direction.
+            var silhouette := Sprite2D.new()
+            silhouette.name = "AuthoredSilhouetteShadow"
+            silhouette.texture = tex
+            silhouette.centered = sprite.centered
+            silhouette.offset = sprite.offset
+            silhouette.scale = sprite.scale
+            silhouette.position = sprite.position + Vector2(0, 3)
+            silhouette.material = silhouette_material
+            silhouette.visible = merged_mode
+            shadow_layer.add_child(silhouette)
+            silhouette_shadows.append(silhouette)
+            object_visuals_by_chunk[visual_key].append(silhouette)
+            shadow.color.a = 0.24
+            item_record["silhouette"] = silhouette
             item_record["shadow"] = shadow
             object_visuals_by_chunk[visual_key].append(shadow)
         object_count += 1
