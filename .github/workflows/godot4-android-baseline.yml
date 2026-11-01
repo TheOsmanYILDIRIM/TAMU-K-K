@@ -216,12 +216,16 @@ jobs:
           sudo apt-get install -y -qq xvfb python3-pil >/dev/null
           godot --headless --editor --path . --import --quit
           mkdir -p screenshots
-          for case in center east west zoom; do
+          for case in center east west zoom north dawn reload; do
             for mode in legacy merged; do
               TAMU_TERRAIN_MODE="$mode" TAMU_VISUAL_CASE="$case" timeout 90s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 240 | tee "screenshots/$case-$mode.log"
               grep -q TAMU_VISUAL_CAPTURE_OK "screenshots/$case-$mode.log"
               grep -q TAMU_YDEPTH_SHADOW_ORDER_OK "screenshots/$case-$mode.log"
               grep -q TAMU_VIEWPORT_COVERAGE_OK "screenshots/$case-$mode.log"
+              if [ "$case" = reload ] && [ "$mode" = merged ]; then
+                grep -q 'TAMU_REGION_RELOAD_OK id_replaced=true region_count=1' "screenshots/$case-$mode.log"
+                grep -q 'TAMU_REGION_UNLOAD_OK region=fisilti_ormani remaining=0' "screenshots/$case-$mode.log"
+              fi
               if grep -Eq 'SCRIPT ERROR:|Parse Error:|Invalid operands' "screenshots/$case-$mode.log"; then exit 1; fi
               cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" "screenshots/$case-$mode.png"
             done
@@ -232,7 +236,7 @@ jobs:
           from PIL import Image,ImageChops,ImageStat
           import json,pathlib
           result=[]
-          for case in ('center','east','west','zoom'):
+          for case in ('center','east','west','zoom','north','dawn','reload'):
               a=Image.open('screenshots/%s-legacy.png'%case).convert('RGB')
               b=Image.open('screenshots/%s-merged.png'%case).convert('RGB')
               assert a.size==b.size and a.size[0]>=720 and a.size[1]>=1100
@@ -246,7 +250,26 @@ jobs:
               print('TAMU_MERGED_VISUAL_DIFF',row)
               assert mean<=3.0 and changed<=0.06, 'MERGED_VISUAL_PARITY_FAILED '+str(row)
           pathlib.Path('screenshots/visual-comparison.json').write_text(json.dumps(result,indent=2))
-          print('TAMU_MERGED_VISUAL_PARITY_OK scenarios=4')
+          print('TAMU_MERGED_VISUAL_PARITY_OK scenarios=7')
+          PY
+          python3 - <<'PY'
+          import json,re,pathlib,statistics
+          records=[]
+          for case in ('center','east','west','zoom','north','dawn','reload'):
+              log=pathlib.Path('screenshots/%s-merged.log'%case).read_text()
+              found=re.findall(r'TAMU_REGION_LOAD_OK region=fisilti_ormani source_cells=156 vertices=220254 native_nodes=2 prepare_ms=([0-9.]+) decode_ms=([0-9.]+) mesh_ms=([0-9.]+)',log)
+              assert len(found)==(2 if case=='reload' else 1), (case,found)
+              for i,values in enumerate(found):
+                  p,d,m=map(float,values)
+                  assert 0<=d<=p+1 and 0<=m<=p+1 and p<5000,(case,p,d,m)
+                  records.append(dict(camera=case,phase='reload' if i else 'initial',
+                                      prepare_ms=p,decode_ms=d,mesh_ms=m))
+          init=sorted(x['prepare_ms'] for x in records if x['phase']=='initial')
+          report=dict(records=records,median_ms=statistics.median(init),
+                      maximum_ms=max(init),runner='GitHub ubuntu-24.04 Xvfb desktop',
+                      unit='ms',gpu_latency_measured=False)
+          pathlib.Path('screenshots/region-startup.json').write_text(json.dumps(report,indent=2))
+          print('TAMU_REGION_STARTUP_PROFILE_OK scenarios=7 median_ms=',report['median_ms'],'max_ms=',report['maximum_ms'])
           PY
           grep -q TAMU_VISUAL_CAPTURE_OK screenshots/run.log
           grep -q TAMU_MERGED_TERRAIN_OK screenshots/run.log
@@ -300,6 +323,7 @@ jobs:
             screenshots/*-merged.png
             screenshots/*-world-diff.png
             screenshots/visual-comparison.json
+            screenshots/region-startup.json
             chunks/r2_objects.json
             chunks/index.json
           if-no-files-found: warn

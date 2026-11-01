@@ -343,24 +343,16 @@ func _ready() -> void:
             "zoom":
                 camera.position = WorldProjection.to_screen(Vector2(200.0, 200.0))
                 camera.zoom = Vector2(0.82, 0.82)
+            "north":
+                camera.position = WorldProjection.to_screen(Vector2(400.0, -750.0))
+            "dawn":
+                camera.position = WorldProjection.to_screen(Vector2(120.0, 180.0))
     add_child(camera)
     _refresh_streaming_requests()
-    if merged_mode:
-        var region_started_usec: int = Time.get_ticks_usec()
-        var unified: Dictionary = MergedTerrain.build_region(terrain_atlas, "res://chunks/merged_terrain.json")
-        if unified.is_empty():
-            push_error("TAMU_MERGED_TERRAIN_LOAD_FAILED")
-            get_tree().quit(19)
-            return
-        add_child(unified["root"])
-        region_chunks[str(unified["region_id"])] = unified["root"]
-        var region_load_ms: float = float(Time.get_ticks_usec() - region_started_usec) / 1000.0
-        print("TAMU_REGION_LOAD_OK region=", unified["region_id"], " source_cells=", unified["source_cells"],
-            " vertices=", unified["vertices"], " native_nodes=", unified["surfaces"], " prepare_ms=", snappedf(region_load_ms, 0.01))
-        loaded = total_cached
-        vertices = int(unified["vertices"])
-        print("TAMU_MERGED_TERRAIN_OK sources=", total_cached, " vertices=", vertices,
-            " draw_nodes=", unified["surfaces"])
+    if merged_mode and not _load_region("res://chunks/merged_terrain.json"):
+        push_error("TAMU_MERGED_TERRAIN_LOAD_FAILED")
+        get_tree().quit(19)
+        return
     marker = Label.new()
     marker.position = Vector2(8.0, 8.0)
     marker.add_theme_color_override("font_color", Color.WHITE)
@@ -368,6 +360,8 @@ func _ready() -> void:
     daylight_layer = CanvasModulate.new()
     daylight_layer.name = "TAMUSunTint"
     add_child(daylight_layer)
+    if OS.get_environment("TAMU_VISUAL_CI") == "1" and OS.get_environment("TAMU_VISUAL_CASE") == "dawn":
+        day_clock = 6.0
     _load_objects()
     _make_avatar()
     perf_hud = load("res://scripts/performance_hud.gd").new()
@@ -375,6 +369,49 @@ func _ready() -> void:
     _init_mobile_joystick()
     _init_harvest_button()
     print("TAMU_GODOT_TERRAIN_START chunks=", pending.size())
+
+func _load_region(manifest_path: String) -> bool:
+    var started: int = Time.get_ticks_usec()
+    var unified: Dictionary = MergedTerrain.build_region(terrain_atlas, manifest_path)
+    if unified.is_empty():
+        return false
+    var region_id: String = str(unified["region_id"])
+    if region_chunks.has(region_id):
+        # Prevent a second instance from covering the same authored region.
+        unified["root"].free()
+        push_error("TAMU_DUPLICATE_REGION " + region_id)
+        return false
+    var node: Node2D = unified["root"]
+    add_child(node)
+    region_chunks[region_id] = node
+    loaded = int(unified["source_cells"])
+    vertices = int(unified["vertices"])
+    for stem in object_visuals_by_chunk:
+        _set_chunk_visuals_visible(str(stem), true)
+    var prepared_ms := float(Time.get_ticks_usec() - started) / 1000.0
+    print("TAMU_REGION_LOAD_OK region=", region_id, " source_cells=", loaded,
+        " vertices=", vertices, " native_nodes=", int(unified["surfaces"]),
+        " prepare_ms=", snappedf(prepared_ms, 0.01),
+        " decode_ms=", snappedf(float(unified["decode_ms"]), 0.01),
+        " mesh_ms=", snappedf(float(unified["mesh_ms"]), 0.01))
+    print("TAMU_MERGED_TERRAIN_OK sources=", total_cached,
+        " vertices=", vertices, " draw_nodes=", int(unified["surfaces"]))
+    return true
+
+func _unload_region(region_id: String) -> bool:
+    if not region_chunks.has(region_id):
+        return false
+    var region_node: Node2D = region_chunks[region_id]
+    region_chunks.erase(region_id)
+    # Detach immediately; deferred free must never render a duplicate.
+    remove_child(region_node)
+    region_node.queue_free()
+    loaded = 0
+    vertices = 0
+    for stem in object_visuals_by_chunk:
+        _set_chunk_visuals_visible(str(stem), false)
+    print("TAMU_REGION_UNLOAD_OK region=", region_id, " remaining=", region_chunks.size())
+    return true
 
 func _set_chunk_visuals_visible(stem: String, show: bool) -> void:
     for node in object_visuals_by_chunk.get(stem, []):
@@ -623,8 +660,22 @@ func _process(delta: float) -> void:
     marker.text = "TAMU Godot R2 / authored area\n%d resident / %d source | %d verts\nViewport missing %d | Mesh est %.1f MiB\nFPS %d | frame %.2f ms | Time %.1f | Harvest %d" % [loaded, total_cached, vertices, camera_missing, float(vertices * WorldStream.ESTIMATED_BYTES_PER_VERTEX)/1048576.0, Engine.get_frames_per_second(), delta * 1000.0,day_clock,harvested_count]
     if frame_no % 120 == 0:
         print("TAMU_GODOT_FRAME frame=", frame_no, " loaded=", loaded, " fps=", Engine.get_frames_per_second())
+    if OS.get_environment("TAMU_VISUAL_CI") == "1" and frame_no == 60 and merged_mode and OS.get_environment("TAMU_VISUAL_CASE") == "reload":
+        var previous_node: Node2D = region_chunks.get("fisilti_ormani")
+        var previous_id: int = previous_node.get_instance_id() if previous_node != null else -1
+        if not _unload_region("fisilti_ormani") or not _load_region("res://chunks/merged_terrain.json"):
+            push_error("TAMU_REGION_RELOAD_FAILED")
+            get_tree().quit(21)
+            return
+        var new_node: Node2D = region_chunks.get("fisilti_ormani")
+        if new_node == null or new_node.get_instance_id() == previous_id or region_chunks.size() != 1 or vertices != 220254:
+            push_error("TAMU_REGION_RELOAD_IDENTITY_FAILED")
+            get_tree().quit(22)
+            return
+        print("TAMU_REGION_RELOAD_OK id_replaced=true region_count=", region_chunks.size(),
+            " vertices=", vertices)
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and frame_no == 180:
-        if harvest_button == null or shadow_sprites.is_empty() or day_clock <= 10.5 or harvest_button.get_global_rect().size.x < 100:
+        if harvest_button == null or shadow_sprites.is_empty() or (day_clock <= 10.5 and OS.get_environment("TAMU_VISUAL_CASE") != "dawn") or harvest_button.get_global_rect().size.x < 100:
             push_error("TAMU_SUN_HARVEST_BOOT_GATE_FAILED")
             get_tree().quit(11)
             return

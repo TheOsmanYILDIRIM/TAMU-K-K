@@ -24,6 +24,8 @@ static func build_region(atlas: Texture2D, manifest_path: String) -> Dictionary:
     if layers.is_empty() or layers.size() > 2:
         return {}
     var seen_z := {}
+    var total_decode_usec := 0
+    var total_mesh_usec := 0
     var group := Node2D.new()
     group.name = "TAMURegion_" + region_id
     var total_vertices := 0
@@ -34,9 +36,11 @@ static func build_region(atlas: Texture2D, manifest_path: String) -> Dictionary:
             return {}
         seen_z[z] = true
         var basename: String = str(layer.get("file", ""))
-        if basename != "merged_layer_%d.verts" % z:
+        if basename.is_empty() or basename.find("/") != -1 or basename.find("\\") != -1:
             return {}
-        var filename := "res://chunks/" + basename
+        if not basename.ends_with("_%d.verts" % z):
+            return {}
+        var filename := manifest_path.get_base_dir().path_join(basename)
         if not FileAccess.file_exists(filename) or FileAccess.get_sha256(filename) != str(layer["sha256"]):
             push_error("TAMU_MERGED_LAYER_HASH_FAILED z=" + str(z))
             return {}
@@ -44,6 +48,7 @@ static func build_region(atlas: Texture2D, manifest_path: String) -> Dictionary:
         if raw.size() != count * 20:
             push_error("TAMU_MERGED_LAYER_SIZE_FAILED z=" + str(z))
             return {}
+        var decode_started: int = Time.get_ticks_usec()
         var buffer := StreamPeerBuffer.new()
         buffer.big_endian = false
         buffer.data_array = raw
@@ -61,6 +66,8 @@ static func build_region(atlas: Texture2D, manifest_path: String) -> Dictionary:
                 (rgba >> 16) & 255, (rgba >> 24) & 255)
         if buffer.get_position() != raw.size():
             return {}
+        total_decode_usec += Time.get_ticks_usec() - decode_started
+        var mesh_started: int = Time.get_ticks_usec()
         var arrays := []
         arrays.resize(Mesh.ARRAY_MAX)
         arrays[Mesh.ARRAY_VERTEX] = points
@@ -74,8 +81,11 @@ static func build_region(atlas: Texture2D, manifest_path: String) -> Dictionary:
         instance.texture = atlas
         instance.z_index = z
         group.add_child(instance)
+        total_mesh_usec += Time.get_ticks_usec() - mesh_started
         total_vertices += count
     if total_vertices != int(manifest.get("vertices", -1)):
         return {}
     return {"root": group, "region_id": region_id, "source_cells": source_cells,
-        "vertices": total_vertices, "surfaces": group.get_child_count()}
+        "vertices": total_vertices, "surfaces": group.get_child_count(),
+        "decode_ms": float(total_decode_usec) / 1000.0,
+        "mesh_ms": float(total_mesh_usec) / 1000.0}
