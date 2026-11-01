@@ -325,7 +325,7 @@ jobs:
           done
           mkdir -p /tmp/tamu-prod-stage6-smoke
           for target in initialized restored; do
-            XDG_DATA_HOME=/tmp/tamu-prod-stage6-smoke TAMU_PRODUCTION_SMOKE=1 TAMU_CATALOG_REQUIRE_BINARY=1 timeout 90s godot --headless --path . --quit-after 300 | tee "screenshots/prod-$target.log"
+            XDG_DATA_HOME=/tmp/tamu-prod-stage6-smoke TAMU_PRODUCTION_SMOKE=1 TAMU_CATALOG_REQUIRE_BINARY=1 timeout 60s godot --headless --path . --quit-after 60 | tee "screenshots/prod-$target.log"
             grep -q "TAMU_STAGE6_PRODUCTION_SMOKE_OK status=$target" "screenshots/prod-$target.log"
             if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_STAGE6_PRODUCTION_GATE_FAILED|TAMU_R2_AUTHORITY_UNAVAILABLE' "screenshots/prod-$target.log"; then exit 1; fi
           done
