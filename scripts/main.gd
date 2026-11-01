@@ -1,5 +1,8 @@
 extends Node2D
 const WorldProjection = preload("res://scripts/world_projection.gd")
+const WorldSource = preload("res://scripts/world_source.gd")
+const WorldStream = preload("res://scripts/world_stream.gd")
+var world_source: RefCounted
 # Godot native ArrayMesh terrain; binary geometry and atlas are sourced from
 # the SAME TAMU compiled LÖVE CI artifact, never resampled.
 var terrain_atlas: Texture2D
@@ -265,12 +268,7 @@ func _chunk_distance(stem: String) -> float:
 # Native screen-space camera with bounded chunk residency. Geometry
 # remains the exact authored source; camera panning never rebuilds vertices.
 func _refresh_streaming_requests() -> void:
-    # 10x requested active footprint; actual authored source contains only 156.
-    # Retain all 156 real meshes once streamed. No fabricated terrain or overdraw.
-    for name in available_chunks:
-        if not chunk_nodes.has(name) and not pending.has(name):
-            pending.append(name)
-    pending.sort_custom(func(a,b): return _chunk_distance_to_actor(a) < _chunk_distance_to_actor(b))
+    pending = WorldStream.schedule(available_chunks, chunk_nodes, actor_world)
 
 func _chunk_distance_to_actor(stem: String) -> float:
     var parts := stem.split("_")
@@ -285,21 +283,20 @@ func _ready() -> void:
             get_tree().quit(15)
             return
         print("TAMU_WORLD_PROJECTION_GATE_OK")
+        if not WorldStream.verify_contract():
+            push_error("TAMU_STREAM_SCHEDULER_GATE_FAILED")
+            get_tree().quit(16)
+            return
+        print("TAMU_STREAM_SCHEDULER_OK")
     terrain_atlas = load("res://assets/terrain25d/atlas_00.png")
-    var idx = JSON.parse_string(FileAccess.get_file_as_string("res://chunks/index.json"))
-    if idx is not Dictionary or not idx.has("bounds"):
-        push_error("Authored map index missing")
+    world_source = WorldSource.new()
+    if not world_source.initialize():
+        push_error("TAMU_WORLD_SOURCE_GATE_FAILED")
         get_tree().quit(5)
         return
-    var b: Dictionary = idx["bounds"]
-    if int(b["min_x"]) != -4096 or int(b["max_x"]) != 28672 or int(b["min_y"]) != -4096 or int(b["max_y"]) != 28672:
-        push_error("Full map bounds mismatch")
-        get_tree().quit(6)
-        return
-    for stem in idx["available"]:
-        available_chunks[str(stem)] = true
+    available_chunks = world_source.available.duplicate()
     total_cached = available_chunks.size()
-    assert(total_cached == 156)
+    print("TAMU_WORLD_SOURCE_READY chunks=", total_cached)
     _refresh_streaming_requests()
     var camera := Camera2D.new()
     camera.name = "Camera2D"
@@ -327,10 +324,14 @@ func _set_chunk_visuals_visible(stem: String, show: bool) -> void:
             node.visible = show
 
 func _load_chunk(stem: String) -> void:
-    var file := "res://chunks/%s.verts" % stem
-    var raw := FileAccess.get_file_as_bytes(file)
-    var meta = JSON.parse_string(FileAccess.get_file_as_string("res://chunks/%s.json" % stem))
-    if meta == null or raw.is_empty():
+    var payload: Dictionary = world_source.read_chunk(stem)
+    if payload.is_empty():
+        push_error("TAMU_WORLD_SOURCE_LOAD_FAILED " + stem)
+        get_tree().quit(2)
+        return
+    var raw: PackedByteArray = payload["raw"]
+    var meta: Dictionary = payload["meta"]
+    if raw.is_empty():
         push_error("missing terrain chunk " + stem)
         get_tree().quit(2)
         return
