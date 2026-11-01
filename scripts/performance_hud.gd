@@ -117,7 +117,7 @@ func record(delta: float, terrain_chunks: int, available_chunks: int, objects: i
             float(record_entry["static_memory_bytes"])/1048576.0,samples.size()
         ]
 
-func copy_logs() -> void:
+func build_jsonl() -> String:
     var lines := PackedStringArray()
     for entry in samples:
         lines.append(JSON.stringify(entry))
@@ -132,5 +132,12 @@ func test_gate() -> bool:
     for row in samples:
         if row["schema"] != "tamu.perf.godot.v1" or not row.has("streaming_main_ms"):
             return false
+    var records := build_jsonl().split("\\n", false)
+    if records.size() != samples.size():
+        return false
+    var first = JSON.parse_string(records[0])
+    if first is not Dictionary or first.get("schema") != "tamu.perf.godot.v1":
+        return false
     print("TAMU_PERF_HUD_GATE_OK frames=",samples.size()," p95=",p95_ms," p99=",p99_ms)
+    print("TAMU_PERF_JSONL_EXPORT_OK rows=", records.size())
     return true
