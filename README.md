@@ -1,3 +1,7 @@
+## 2026-11-01 — TAMU modlanabilir içerik sözleşmesi
+**İçerik önce veri, ardından kod.** Eşya/tarif/kaynak/yapı/bölge ve gelecekte oynanış içerikleri genişletilebilir ve isim alanlı olacak (`core:*` korunur). Geliştirici için Godot Custom Resource / `.tres`, CI/release için derlenmiş `.res`, oyuncu modları için planlanan TOML + görseller ayrı güvenlik kapılarıdır. Harici TOML/ZIP mod yükleyici henüz tamamlanmadı; keyfî GDScript çalıştırma varsayılan olarak yasaktır. Save dosyaları eksik mod kimliklerini sessizce yeniden eşlemez. Geçişte mevcut `data/catalog/` JSON kaynakları yalnız kaynak/geri dönüş için korunur; derleme-time doğrulama ve ikili paket kıyası zorunludur.
+**Geliştirme dalı sınırı:** `experiment/godot4-android-apk-20261031`; karakter/Faz 2 ertelendi, demo arayüzü değiştirilmez. Güncel kanıt ve açık işler: `SESSION_HANDOFF.md`.
+
 ## Godot dünya birimi — 1 Kasım 2026
 **Her bölge bir büyük chunk.** Şimdiki Fısıltı Ormanı, kaynağındaki 156 terrain hücresi korunarak tek bölge olarak derlenir (zemin için iki yerel z katmanı). Bu, oyunun tüm gelecekteki bölgelerini tek mesh'e toplama kararı değildir. Başka bölgeler bağımsız manifest, residency ve yaşam döngüsüyle eklenecek. Mevcut `TAMU_TERRAIN_MODE=legacy` kıyas modu korunur. Android testinden önce GitHub görsel kıyasları zorunludur.
 

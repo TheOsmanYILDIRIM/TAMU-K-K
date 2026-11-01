@@ -300,9 +300,12 @@ jobs:
           sudo apt-get install -y -qq xvfb python3-pil >/dev/null
           godot --headless --editor --path . --import --quit
           mkdir -p screenshots
+          godot --headless --path . --script res://scripts/compile_content.gd | tee screenshots/content-compile.log
+          grep -q 'TAMU_CATALOG_BINARY_COMPILE_OK definitions=7 recipes=2' screenshots/content-compile.log
+          test -s data/catalog/compiled_catalog.res
           for case in center east west zoom north dawn reload; do
             for mode in legacy merged; do
-              TAMU_TERRAIN_MODE="$mode" TAMU_VISUAL_CASE="$case" timeout 90s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 240 | tee "screenshots/$case-$mode.log"
+              TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE="$mode" TAMU_VISUAL_CASE="$case" timeout 90s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 240 | tee "screenshots/$case-$mode.log"
               grep -q TAMU_VISUAL_CAPTURE_OK "screenshots/$case-$mode.log"
               grep -q TAMU_YDEPTH_SHADOW_ORDER_OK "screenshots/$case-$mode.log"
               grep -q TAMU_VIEWPORT_COVERAGE_OK "screenshots/$case-$mode.log"
@@ -360,6 +363,8 @@ jobs:
           grep -q 'TAMU_REGION_LOAD_OK region=fisilti_ormani source_cells=156' screenshots/run.log
           grep -q TAMU_NATIVE_BONE_FK_READY screenshots/run.log
           grep -q TAMU_RIGBY_CURVE_PARITY_OK screenshots/run.log
+          grep -q TAMU_CATALOG_BINARY_OK screenshots/run.log
+          grep -q TAMU_CONTENT_MOD_BOUNDARY_OK screenshots/run.log
           grep -q TAMU_CATALOG_SOURCE_OK screenshots/run.log
           grep -q TAMU_TRANSACTION_BOUNDARY_OK screenshots/run.log
           grep -q TAMU_BUILDING_BOUNDARY_OK screenshots/run.log
@@ -394,7 +399,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           p=Path('build/tamu-android-content.pck').read_bytes()
-          for name in (b'chunks/index.json',b'chunks/r2_objects.json',b'chunks/source_integrity.json',b'chunks/merged_terrain.json',b'merged_layer_0.verts',b'merged_layer_1.verts',b'assets/osman_rig/rig.json',b'data/catalog/manifest.json',b'data/catalog/definitions/oak_tree.json',b'data/catalog/recipes/planks_from_log.json'):
+          for name in (b'chunks/index.json',b'chunks/r2_objects.json',b'chunks/source_integrity.json',b'chunks/merged_terrain.json',b'merged_layer_0.verts',b'merged_layer_1.verts',b'assets/osman_rig/rig.json',b'data/catalog/manifest.json',b'data/catalog/definitions/oak_tree.json',b'data/catalog/recipes/planks_from_log.json',b'data/catalog/compiled_catalog.res'):
               assert name in p, f'ANDROID_ASSET_EXPORT_MISSING: {name!r}'
           print('TAMU_ANDROID_CONTENT_PACK_OK bytes=',len(p))
           PY
@@ -415,6 +420,7 @@ jobs:
             screenshots/*-world-diff.png
             screenshots/visual-comparison.json
             screenshots/region-startup.json
+            screenshots/content-compile.log
             chunks/r2_objects.json
             chunks/index.json
           if-no-files-found: warn

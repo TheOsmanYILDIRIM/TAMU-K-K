@@ -1,3 +1,10 @@
+## 2026-11-01 — TAMU zorunlu modlanabilir veri mimarisi (kullanıcı kararı)
+- **Bütün oyun içeriği ve oynanış kuralları modlanabilir olacak.** Eşya, tarif, crafting, kaynak, yapı, dünya/bölge, ileride etkileşim/ilerleme/AI veri sınırları sabit kod veya yalnız gömülü tek katalogla kilitlenmemeli. Çekirdek güvenlik ve native motor işlevleri varsayılan olarak keyfî mod script'i çalıştırmaz.
+- Godot içerik tanımları geliştirici için **tipli `.tres` / Custom Resource**, üretimde **derlenmiş `.res`** paketlerinden okunabilmeli. Oyuncu modları için açık ve kolay düzenlenebilir **TOML + görsel varlık** arayüzü hedeflenir; TOML/ZIP mod yükleyici ve Android izinleri doğrulanana kadar `var` gibi iddia edilmez.
+- Modlar benzersiz isim alanlarıyla (`ornek:esya`, `ornek:tarif`) tanımlanır. Kanonik `core:*` kimlikleri ve `worldobj:v1` instance ID'leri korunur; çakışma, eksik bağımlılık, bozuk veri, geçersiz imza/sürüm sessizce kabul edilmez. Mod kaldırıldığında save içindeki bilinmeyen ID kullanıcı onayı olmadan başka eşya/kaynakla değiştirilmez.
+- Build-time kaynak eşdeğerliği, deterministik içerik kimlikleri, mod kaynak/bağımlılık sırası, kayıt sürümü ve güvenli yükleme kapıları tasarım şartıdır. Mod verisi *data-only* varsayılandır; güvenilmeyen harici `.res`/`.pck` içinde keyfî GDScript yüklenmez. Her yeni sistemde önce mod genişletme noktası ve kabul testi düşünülür.
+- Geçiş boyunca mevcut LÖVE `data/catalog/` JSON kaynakları, Stage5/6, `main`, LÖVE dalı ve kullanıcı assetleri silinmez; doğrulanmış binary paketlemeye yalnız ayrı kıyas kapısıyla geçilir. Karakter/Faz 2 kullanıcı değiştireceği için ertelenmiştir; demo arayüzü değiştirilmez.
+
 ## 2026-11-01 — User decision: defer character/Rigby migration
 - The user will replace the character. **Do not continue Rigby weighted skinning, clip parity, IK, sockets or character art work** without a new explicit request. Preserve all current character assets, code, experiment history and backwards-compatible behavior.
 - Advance Godot migration via **Phase 3 gameplay**, then Stage 4 versioned saves, Stage 5 mobile/performance and Stage 6 acceptance. Phase 2 remains deferred, not completed.

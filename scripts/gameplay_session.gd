@@ -74,7 +74,7 @@ func snapshot_domain() -> Dictionary:
         "craft_commands": crafting.commands.duplicate(true)}
 
 func verify_contract() -> bool:
-    if not catalog.verify_contract() or not DomainTransaction.verify_contract():
+    if not catalog.verify_contract() or not catalog.verify_mod_boundary() or not DomainTransaction.verify_contract():
         return false
     var proof = get_script().new()
     var tree := {"id": "test:tree", "kind": "tree", "radius": 11.0, "position": Vector2(50.0, 0.0)}
