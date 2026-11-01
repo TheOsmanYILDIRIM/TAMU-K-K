@@ -151,6 +151,10 @@ func test_gate() -> bool:
         var decoded = JSON.parse_string(line)
         if decoded is not Dictionary or decoded.get("schema","") != "tamu.perf.godot.v1":
             return false
+    copy_button.emit_signal("pressed")
+    if not status.text.begins_with("Kopyalandı:"):
+        return false
+    print("TAMU_PERF_COPY_BUTTON_GATE_OK rows=", samples.size())
     print("TAMU_PERF_JSONL_EXPORT_OK lines=", samples.size())
     print("TAMU_PERF_HUD_GATE_OK frames=",samples.size()," p95=",p95_ms," p99=",p99_ms)
     print("TAMU_PERF_JSONL_EXPORT_OK rows=", records.size())
