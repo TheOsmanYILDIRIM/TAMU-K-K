@@ -181,27 +181,12 @@ func _chunk_distance(stem: String) -> float:
 # Native screen-space camera with bounded chunk residency. Geometry
 # remains the exact authored source; camera panning never rebuilds vertices.
 func _refresh_streaming_requests() -> void:
-    var wanted: Dictionary = {}
-    var cx := floori(actor_world.x / 256.0)
-    var cy := floori(actor_world.y / 256.0)
-    for y in range(cy-4, cy+5):
-        for x in range(cx-4, cx+5):
-            var name := "c_%d_%d" % [x,y]
-            if available_chunks.has(name):
-                wanted[name] = true
-                if not chunk_nodes.has(name) and not pending.has(name):
-                    pending.append(name)
-    pending = pending.filter(func(name): return wanted.has(name))
+    # 10x requested active footprint; actual authored source contains only 156.
+    # Retain all 156 real meshes once streamed. No fabricated terrain or overdraw.
+    for name in available_chunks:
+        if not chunk_nodes.has(name) and not pending.has(name):
+            pending.append(name)
     pending.sort_custom(func(a,b): return _chunk_distance_to_actor(a) < _chunk_distance_to_actor(b))
-    for name in chunk_nodes.keys():
-        if not wanted.has(name):
-            var old: Node2D = chunk_nodes[name]
-            old.queue_free()
-            _set_chunk_visuals_visible(name, false)
-            loaded -= 1
-            vertices -= int(chunk_vertices.get(name,0))
-            chunk_vertices.erase(name)
-            chunk_nodes.erase(name)
 
 func _chunk_distance_to_actor(stem: String) -> float:
     var parts := stem.split("_")
