@@ -22,8 +22,25 @@ var actor_speed := 96.0
 var avatar_parts: Dictionary = {}
 var avatar_motion := 0.0
 var actor_facing_back := false
+var rig_directions: Dictionary = {}
+var rig_animations: Dictionary = {}
+var actor_direction := "SE"
+var actor_action := "idle"
+var active_source_clip := ""
 
 func _make_avatar() -> void:
+    var source = JSON.parse_string(FileAccess.get_file_as_string("res://assets/osman_rig/rig.json"))
+    var mapping = JSON.parse_string(FileAccess.get_file_as_string("res://assets/osman_rig/directions.json"))
+    if source is not Dictionary or mapping is not Dictionary or not mapping.has("directions"):
+        push_error("Original Rigby source or direction profile missing")
+        get_tree().quit(8)
+        return
+    rig_animations = source.get("animations", {})
+    rig_directions = mapping["directions"]
+    if rig_animations.size() != 44 or rig_directions.size() != 4:
+        push_error("Original 44-clip / 4-direction Rigby contract mismatch")
+        get_tree().quit(9)
+        return
     avatar = Node2D.new()
     avatar.name = "OsmanNativeParts"
     avatar.z_index = 0
@@ -36,8 +53,24 @@ func _make_avatar() -> void:
         sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
         avatar.add_child(sprite)
         avatar_parts[part] = sprite
-    _set_actor_facing(false)
+    _set_actor_clip("SE", "idle")
     _update_avatar()
+
+func _set_actor_clip(direction: String, action: String) -> void:
+    if not rig_directions.has(direction):
+        return
+    var clips: Dictionary = rig_directions[direction]["animations"]
+    if not clips.has(action):
+        return
+    var source_name: String = clips[action]
+    if not rig_animations.has(source_name):
+        push_error("Missing authored Rigby clip: " + source_name)
+        return
+    actor_direction = direction
+    actor_action = action
+    active_source_clip = source_name
+    _set_actor_facing(direction == "NW" or direction == "NE")
+    avatar.scale.x = -1.0 if direction == "SW" or direction == "NE" else 1.0
 
 func _set_actor_facing(back: bool) -> void:
     if actor_facing_back == back and avatar_parts["head"].texture != null:
@@ -285,11 +318,15 @@ func _process(delta: float) -> void:
         actor_world += direction * actor_speed * delta
         actor_world.x = clampf(actor_world.x,world_bounds.position.x,world_bounds.end.x)
         actor_world.y = clampf(actor_world.y,world_bounds.position.y,world_bounds.end.y)
-        _set_actor_facing(direction.y < 0.0)
+        var next_direction := "NW" if direction.y < 0.0 else "SE"
+        if direction.x < -0.05:
+            next_direction = "NE" if direction.y < 0.0 else "SW"
+        _set_actor_clip(next_direction, "walk")
         avatar_motion += delta * 10.0
         avatar_parts["leg_L"].rotation = sin(avatar_motion)*0.16
         avatar_parts["leg_R"].rotation = -sin(avatar_motion)*0.16
     else:
+        _set_actor_clip(actor_direction, "idle")
         avatar_parts["leg_L"].rotation = 0.0
         avatar_parts["leg_R"].rotation = 0.0
     _update_avatar()
@@ -315,7 +352,7 @@ func _process(delta: float) -> void:
         print("TAMU_OBJECT_TERRAIN_REVEAL_OK objects=", object_count, " visible_chunks=", loaded)
         var image := get_viewport().get_texture().get_image()
         var error := image.save_png("user://tamu-godot-visual.png")
-        if error != OK or loaded < 16 or total_cached < 100 or vertices < 1000 or object_count < 10 or avatar_parts.size() != 6:
+        if error != OK or loaded < 16 or total_cached < 100 or vertices < 1000 or object_count < 10 or avatar_parts.size() != 6 or rig_animations.size() != 44 or active_source_clip == "":
             push_error("TAMU_VISUAL_GATE_FAILED " + str(error))
             get_tree().quit(3)
         else:
