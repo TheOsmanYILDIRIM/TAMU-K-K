@@ -6,6 +6,7 @@ const MergedTerrain = preload("res://scripts/merged_terrain.gd")
 const RigbySkinned = preload("res://scripts/rigby_skinned.gd")
 const GameplaySession = preload("res://scripts/gameplay_session.gd")
 const R2Authority = preload("res://scripts/r2_authority.gd")
+const R2Collision = preload("res://scripts/r2_collision.gd")
 const WorldIdentity = preload("res://scripts/world_identity.gd")
 const AudioCues = preload("res://scripts/audio_cues.gd")
 const ImpactEffects = preload("res://scripts/impact_effects.gd")
@@ -804,7 +805,14 @@ func _process(delta: float) -> void:
     elapsed += visual_delta
     var direction := joystick_vector if joystick_vector.length_squared() > 0.01 else Input.get_vector("ui_left","ui_right","ui_up","ui_down")
     if direction.length_squared() > 0.01:
-        actor_world += direction * actor_speed * delta
+        var intended := direction * actor_speed * delta
+        if authority != null and OS.get_environment("TAMU_VISUAL_CI") != "1":
+            var moved: Dictionary = R2Collision.move(actor_world,intended,5.0,
+                Callable(authority,"obstacles"))
+            if bool(moved.get("ok", false)):
+                actor_world = moved["position"]
+        else:
+            actor_world += intended
         actor_world.x = clampf(actor_world.x,world_bounds.position.x,world_bounds.end.x)
         actor_world.y = clampf(actor_world.y,world_bounds.position.y,world_bounds.end.y)
         var next_direction := "NW" if direction.y < 0.0 else "SE"

@@ -2,6 +2,7 @@ extends SceneTree
 # Independent fast source parity before expensive Android scene import.
 const Surface = preload("res://scripts/r2_surface.gd")
 const Building = preload("res://scripts/domain_building.gd")
+const Collision = preload("res://scripts/r2_collision.gd")
 
 func _initialize() -> void:
     var source = Surface.new()
@@ -35,5 +36,13 @@ func _initialize() -> void:
         push_error("TAMU_R2_BUILD_WATER_ACCEPTED")
         quit(72)
         return
+    var sweep: Dictionary = Collision.move(Vector2.ZERO,Vector2(40.0,12.0),5.0,
+        Callable(self,"_wall"))
+    if not bool(sweep.get("ok",false)) or not bool(sweep.get("collided",false))             or float(sweep["position"].x) > 15.01 or float(sweep["position"].y) < 5.0:
+        push_error("TAMU_R2_SWEEP_SLIDE_FAILED "+str(sweep))
+        quit(72)
+        return
+    print("TAMU_R2_SWEEP_SLIDE_OK")
     print("TAMU_R2_SURFACE_PARITY_OK height=",ground_h," river=blocked land=buildable")
     quit(0)
+\nfunc _wall(_minx: float, _miny: float, _maxx: float, _maxy: float) -> Array:\n    return [{"x":20.0,"y":-20.0,"w":10.0,"h":40.0}]\n
