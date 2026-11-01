@@ -127,7 +127,7 @@ func verify_contract() -> bool:
         return false
     if proof.building.preview("core:workbench", Vector2(50, 0), 0, Vector2.ZERO).get("status") != "valid":
         return false
-    var placed := proof.building.place("b1", "123e4567-e89b-42d3-a456-426614174001",
+    var placed: Dictionary = proof.building.place("b1", "123e4567-e89b-42d3-a456-426614174001",
         "core:workbench", Vector2(50, 0), 0, Vector2.ZERO, "test:player")
     if placed.get("status") != "placed" or proof.count_item("core:workbench") != 0:
         return false
