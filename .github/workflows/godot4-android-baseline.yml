@@ -132,6 +132,27 @@ jobs:
           assert all(-1024<=o['x']<2304 and -1536<=o['y']<1536 for o in data['objects'])
           print('TAMU_R2_OBJECT_PARITY_OK',len(ids))
           PY
+          (cd /tmp/tamu-love && lua5.4 - <<'LUA'
+          local R=dofile('player/rigby_runtime.lua')
+          local cases={
+            {'linear',-1,'linear'}, {'stepped',-1,'stepped'},
+            {'bezier',-1,{bezier={0.2,0.0,0.65,1.0}}},
+            {'beziers',0,{beziers={{0.3,0.1,0.5,0.9},{0.7,0.4,0.9,0.6}}}},
+            {'beziers',1,{beziers={{0.3,0.1,0.5,0.9},{0.7,0.4,0.9,0.6}}}}
+          }
+          local out=assert(io.open('chunks/rigby_curve_reference.csv','w'))
+          for _,entry in ipairs(cases) do
+            for _,time in ipairs({0,0.01,0.1,0.15,0.25,0.3,0.45,0.5,0.6,0.75,0.85,0.9,0.99,1.0}) do
+              local comp=entry[2]>=0 and entry[2]+1 or nil
+              local expected=10+20*R.ease(entry[3],time,comp)
+              out:write(string.format('%s,%d,%.8f,%.12f\n',entry[1],entry[2],time,expected))
+            end
+          end
+          out:close()
+          print('TAMU_LUA_RIGBY_CURVE_REFERENCE_OK samples=70')
+          LUA
+          )
+          cp /tmp/tamu-love/chunks/rigby_curve_reference.csv chunks/rigby_curve_reference.csv
       - name: Verify exact authored source and generate build-only hash manifest
         shell: bash
         run: |
@@ -275,6 +296,7 @@ jobs:
           grep -q TAMU_MERGED_TERRAIN_OK screenshots/run.log
           grep -q 'TAMU_REGION_LOAD_OK region=fisilti_ormani source_cells=156' screenshots/run.log
           grep -q TAMU_NATIVE_BONE_FK_READY screenshots/run.log
+          grep -q TAMU_RIGBY_CURVE_PARITY_OK screenshots/run.log
           grep -q TAMU_WORLD_PROJECTION_GATE_OK screenshots/run.log
           grep -q TAMU_STREAM_SCHEDULER_OK screenshots/run.log
           grep -q TAMU_VIEWPORT_COVERAGE_OK screenshots/run.log
