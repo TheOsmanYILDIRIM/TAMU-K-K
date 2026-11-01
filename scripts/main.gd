@@ -20,6 +20,15 @@ var chunk_nodes: Dictionary = {}
 var available_chunks: Dictionary = {}
 var chunk_vertices: Dictionary = {}
 var object_visuals_by_chunk: Dictionary = {}
+var harvestables: Array[Dictionary] = []
+var harvested_count := 0
+var shadow_sprites: Array[Sprite2D] = []
+var day_clock := 10.5
+var sun_direction := Vector2.ZERO
+var sun_level := 1.0
+var daylight_layer: CanvasModulate
+var harvest_button: Button
+const DAY_SECONDS := 480.0
 var world_bounds := Rect2(-4096.0, -4096.0, 32768.0, 32768.0)
 const MAX_LOADED_PER_FRAME := 1
 var avatar: Node2D
@@ -34,6 +43,62 @@ var actor_direction := "SE"
 var actor_action := "idle"
 var active_source_clip := ""
 var native_rig: Skeleton2D
+
+func _update_sun(delta: float) -> void:
+    day_clock = fposmod(day_clock + delta * 24.0 / DAY_SECONDS, 24.0)
+    var arc := (day_clock-6.0)/12.0
+    var light := clampf(sin(arc*PI),0.0,1.0)
+    var golden := clampf(maxf(0.0,1.0-absf(day_clock-7.7)/2.5)+maxf(0.0,1.0-absf(day_clock-17.2)/2.5),0.0,1.0)
+    var azimuth := -PI*0.65+arc*PI*1.3
+    var wx := -cos(azimuth)
+    var wy := -sin(azimuth)
+    sun_direction = Vector2((wx-wy)*sqrt(0.5),(wx+wy)*sqrt(0.5)*0.5).normalized()
+    sun_level = light
+    var tint := Color(clampf(0.54+0.46*light+0.065*golden,0.0,1.0),clampf(0.62+0.38*light-0.045*golden,0.0,1.0),clampf(0.76+0.24*light-0.13*golden,0.0,1.0))
+    daylight_layer.color = tint
+    if frame_no % 12 == 0:
+        var cast := 0.42+0.58*light
+        var length := clampf(0.32+1.05*(1.0-light)/(light+0.31),0.32,2.65)
+        for shadow in shadow_sprites:
+            if is_instance_valid(shadow):
+                shadow.rotation = atan2(-sun_direction.x,sun_direction.y)
+                shadow.scale = Vector2.ONE * float(shadow.get_meta("base_scale",1.0)) * length
+                shadow.modulate.a = cast * light
+
+func _try_harvest() -> void:
+    var nearest: Dictionary = {}
+    var best := 38.0 * 38.0
+    for item in harvestables:
+        if item.get("collected",false):
+            continue
+        var distance := actor_world.distance_squared_to(item["position"])
+        if distance < best:
+            best = distance
+            nearest = item
+    if nearest.is_empty():
+        print("TAMU_HARVEST_OUT_OF_RANGE")
+        return
+    nearest["collected"] = true
+    nearest["sprite"].visible = false
+    if nearest["shadow"] != null:
+        nearest["shadow"].visible = false
+    harvested_count += 1
+    print("TAMU_HARVEST_OK id=",nearest["id"]," count=",harvested_count)
+
+func _init_harvest_button() -> void:
+    var ui := CanvasLayer.new()
+    ui.layer = 111
+    ui.name = "HarvestTestUI"
+    add_child(ui)
+    var button := Button.new()
+    button.name = "HarvestNearest"
+    button.text = "TOPLA"
+    button.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+    button.position = Vector2(-175,-165)
+    button.custom_minimum_size = Vector2(140,96)
+    button.pressed.connect(_try_harvest)
+    ui.add_child(button)
+    harvest_button = button
 
 func _init_mobile_joystick() -> void:
     var layer_node := CanvasLayer.new()
@@ -220,11 +285,15 @@ func _ready() -> void:
     marker.position = Vector2(8.0, 8.0)
     marker.add_theme_color_override("font_color", Color.WHITE)
     add_child(marker)
+    daylight_layer = CanvasModulate.new()
+    daylight_layer.name = "TAMUSunTint"
+    add_child(daylight_layer)
     _load_objects()
     _make_avatar()
     perf_hud = load("res://scripts/performance_hud.gd").new()
     add_child(perf_hud)
     _init_mobile_joystick()
+    _init_harvest_button()
     print("TAMU_GODOT_TERRAIN_START chunks=", pending.size())
 
 func _set_chunk_visuals_visible(stem: String, show: bool) -> void:
@@ -357,6 +426,8 @@ func _load_objects() -> void:
         sprite.offset = Vector2(0.0, -60.0)
         object_layer.add_child(sprite)
         object_visuals_by_chunk[visual_key].append(sprite)
+        var item_record := {"id":id,"kind":kind,"position":Vector2(float(o["x"]),float(o["y"])),"sprite":sprite,"shadow":null,"collected":false}
+        harvestables.append(item_record)
         if shadow_manifest is Dictionary and shadow_manifest["objects"].has(a["id"]):
             var shadow_index: Dictionary = shadow_manifest["objects"][a["id"]]
             var shadow_tex := AtlasTexture.new()
@@ -368,7 +439,10 @@ func _load_objects() -> void:
             shadow.position = sprite.position
             shadow.scale = Vector2.ONE * scale_value * 4.0
             shadow.offset = Vector2(0, -8)
+            shadow.set_meta("base_scale",scale_value*4.0)
             shadow_layer.add_child(shadow)
+            shadow_sprites.append(shadow)
+            item_record["shadow"] = shadow
             object_visuals_by_chunk[visual_key].append(shadow)
         object_count += 1
     print("TAMU_CANONICAL_OBJECTS_LOADED count=", object_count)
@@ -379,6 +453,7 @@ var object_layer: Node2D
 func _process(delta: float) -> void:
     var frame_start := Time.get_ticks_usec()
     frame_no += 1
+    _update_sun(delta)
     elapsed += delta
     var direction := joystick_vector if joystick_vector.length_squared() > 0.01 else Input.get_vector("ui_left","ui_right","ui_up","ui_down")
     if direction.length_squared() > 0.01:
@@ -409,10 +484,15 @@ func _process(delta: float) -> void:
     var stream_end := Time.get_ticks_usec()
     if perf_hud != null:
         perf_hud.record(delta,loaded,total_cached,object_count,vertices,actor_world,stream_end-rig_end,rig_end-frame_start,"walk" if direction.length_squared()>0.01 else "idle")
-    marker.text = "TAMU Godot R2 / authored area\n%d active / %d available | %d verts\nFPS %d | frame %.2f ms" % [loaded, total_cached, vertices, Engine.get_frames_per_second(), delta * 1000.0]
+    marker.text = "TAMU Godot R2 / authored area\n%d active / %d available | %d verts\nFPS %d | frame %.2f ms | Time %.1f | Harvest %d" % [loaded, total_cached, vertices, Engine.get_frames_per_second(), delta * 1000.0,day_clock,harvested_count]
     if frame_no % 120 == 0:
         print("TAMU_GODOT_FRAME frame=", frame_no, " loaded=", loaded, " fps=", Engine.get_frames_per_second())
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and frame_no == 45:
+        if harvest_button == null or shadow_sprites.is_empty() or day_clock <= 10.5:
+            push_error("TAMU_SUN_HARVEST_BOOT_GATE_FAILED")
+            get_tree().quit(11)
+            return
+        print("TAMU_SUN_HARVEST_BOOT_OK shadows=",shadow_sprites.size()," hour=",day_clock)
         if perf_hud == null or not perf_hud.test_gate():
             push_error("TAMU_PERF_HUD_GATE_FAILED")
             get_tree().quit(10)
