@@ -7,6 +7,7 @@ var loaded: int = 0
 var vertices: int = 0
 var frame_no: int = 0
 var elapsed: float = 0.0
+var perf_hud: CanvasLayer
 var marker: Label
 var drag: bool = false
 var total_cached: int = 0
@@ -166,6 +167,8 @@ func _ready() -> void:
     add_child(marker)
     _load_objects()
     _make_avatar()
+    perf_hud = load("res://scripts/performance_hud.gd").new()
+    add_child(perf_hud)
     print("TAMU_GODOT_TERRAIN_START chunks=", pending.size())
 
 func _set_chunk_visuals_visible(stem: String, show: bool) -> void:
@@ -318,6 +321,7 @@ var object_count: int = 0
 var object_layer: Node2D
 
 func _process(delta: float) -> void:
+    var frame_start := Time.get_ticks_usec()
     frame_no += 1
     elapsed += delta
     var direction := Input.get_vector("ui_left","ui_right","ui_up","ui_down")
@@ -339,16 +343,24 @@ func _process(delta: float) -> void:
     _update_avatar()
     if native_rig != null:
         native_rig.advance(delta)
+    var rig_end := Time.get_ticks_usec()
     if direction.length_squared() > 0.01:
         $Camera2D.position = $Camera2D.position.lerp(avatar.position, minf(delta * 4.0, 1.0))
     if frame_no % 20 == 0:
         _refresh_streaming_requests()
     if not pending.is_empty():
         _load_chunk(pending.pop_front())
+    var stream_end := Time.get_ticks_usec()
+    if perf_hud != null:
+        perf_hud.record(delta,loaded,total_cached,object_count,vertices,actor_world,stream_end-rig_end,rig_end-frame_start,"walk" if direction.length_squared()>0.01 else "idle")
     marker.text = "TAMU Godot R2 / authored area\n%d active / %d available | %d verts\nFPS %d | frame %.2f ms" % [loaded, total_cached, vertices, Engine.get_frames_per_second(), delta * 1000.0]
     if frame_no % 120 == 0:
         print("TAMU_GODOT_FRAME frame=", frame_no, " loaded=", loaded, " fps=", Engine.get_frames_per_second())
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and frame_no == 45:
+        if perf_hud == null or not perf_hud.test_gate():
+            push_error("TAMU_PERF_HUD_GATE_FAILED")
+            get_tree().quit(10)
+            return
         var visible_faults := 0
         for stem in object_visuals_by_chunk:
             for node in object_visuals_by_chunk[stem]:
