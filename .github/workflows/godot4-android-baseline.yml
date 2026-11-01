@@ -25,6 +25,9 @@ jobs:
           sudo install /tmp/Godot_v4.6-stable_linux.x86_64 /usr/local/bin/godot
           timeout --kill-after=3s 45s godot --headless --path . --script res://scripts/fx_contract_ci.gd 2>&1 | tee fx-contract.log
           grep -q 'TAMU_FX_CONTRACT_OK voices=8' fx-contract.log
+          timeout --kill-after=3s 25s godot --headless --path . --script res://scripts/r2_surface_ci.gd 2>&1 | tee r2-surface.log
+          grep -q TAMU_R2_SURFACE_PARITY_OK r2-surface.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_R2_.*FAILED' r2-surface.log; then exit 1; fi
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|Invalid operands|TAMU_FX_CONTRACT_FAILED' fx-contract.log; then exit 1; fi
           sudo apt-get update -qq
           sudo apt-get install -y -qq xvfb python3-pil >/dev/null
