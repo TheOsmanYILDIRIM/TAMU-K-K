@@ -169,6 +169,11 @@ Doğrulanmış rapor bağlantısı: [SESSION_HANDOFF.md#SOHBET-K](https://github
 - [CI #41298223037](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41298223037) success at code SHA 7a5aaad...; logs `TAMU_HARVEST_UI_READY`, `TAMU_SUN_HARVEST_BOOT_OK shadows=832 hour=11.2043765`, `TAMU_HARVEST_BUTTON_GATE_OK count=1`. Downloaded artifact 13080386236 ZIP SHA256 f66c468c26e5e54c72f3e1aa13d305e83f53bf894f9d1f437502b3fc675240b1; extracted APK SHA256 a9104882f5b2bd1425d7b66794c5f1e8afdc1c20ca46cb1825b9f11e09fade49. Outer and inner ZIP CRC clean. Screenshot opened and visually inspected: TOPLA visible bottom right, joystick bottom left.
 - OPEN: physical Android tap/harvest interaction, 30-second full-cycle night transition, shadows/time pacing and Android FPS need mobile tests; 45-frame desktop smoke proves startup only. Full gameplay/Rigby parity remains open.
 
+### 2026-11-01 — Native visible sun-directed ground shadow fix
+- User reported no visible shadows on Android. Previous Godot used 32×32 transparent static shadow atlas region without visible contrast guarantee. Replaced tree/rock shadows with Godot native `Polygon2D` ground silhouettes, tinted dark, rotated/scaled by original visual sun direction; chunk reveal and harvest hide still apply. Commit `1132965af6e3b9cfc00c92015e93528373736345` only on Godot experiment branch.
+- [GitHub Actions #41298937941](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41298937941) SUCCESS. `TAMU_GROUND_SHADOW_VISIBILITY_OK visible=280`, `TAMU_SUN_HARVEST_BOOT_OK shadows=832 hour=11.5129128`, screenshot visual inspection and test APK passed. Outer artifact 13080691647 digest sha256:a678f3d52ef6d13d0b0872e23874c6e39c1125b0ad0e3af301e92f54e487cf37. Extracted `/mnt/data/TAMU_Godot_Native_Shadows_TEST.apk` 67,144,278 bytes, SHA256 d5aa63532cab4af96223deed453faea2c1b819ee802ea233e2914d8a5b86ce8b, CRC clean.
+- OPEN: actual Android visual shadow confirmation, long-run lighting/night variation and FPS; these native stylized test shadows are not pixel-exact LÖVE shadows. Existing Rigby/gameplay parity remains open.
+
 ---
 
 
