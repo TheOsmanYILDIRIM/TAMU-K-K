@@ -12,7 +12,7 @@ func _check() -> void:
     root.add_child(audio)
     var effects = Effects.new()
     root.add_child(effects)
-    var valid := Shadow is Shader and audio.players.size() == AudioCues.MAX_VOICES
+    var valid: bool = Shadow is Shader and audio.players.size() == AudioCues.MAX_VOICES
     valid = valid and AudioServer.get_bus_index("TAMU_Music") >= 0
     valid = valid and AudioServer.get_bus_index("TAMU_SFX") >= 0
     valid = valid and audio.music != null and not audio.cue("not_a_cue")
