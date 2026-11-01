@@ -308,6 +308,11 @@ jobs:
             XDG_DATA_HOME=/tmp/tamu-save-reopen-home TAMU_SAVE_PHASE="$phase" godot --headless --path . --script res://scripts/stage6_contract_ci.gd | tee "screenshots/save-$phase.log"
             grep -q "TAMU_STAGE6_${phase^^}_OK" "screenshots/save-$phase.log"
           done
+          mkdir -p /tmp/tamu-stage6-live
+          for phase in create reopen replay reject; do
+            XDG_DATA_HOME=/tmp/tamu-stage6-live TAMU_LIVE_PHASE="$phase" godot --headless --path . --script res://scripts/stage6_live_ci.gd | tee "screenshots/live-$phase.log"
+            grep -q "TAMU_STAGE6_LIVE_${phase^^}_OK" "screenshots/live-$phase.log"
+          done
           for case in center east west zoom north dawn reload; do
             for mode in legacy merged; do
               TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE="$mode" TAMU_VISUAL_CASE="$case" timeout 90s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 240 | tee "screenshots/$case-$mode.log"

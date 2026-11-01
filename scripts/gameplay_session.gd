@@ -17,6 +17,9 @@ var harvesting: RefCounted
 var crafting: RefCounted
 var building: RefCounted
 var event_count := 0
+var world_revision := 0
+var journal_sequence := 0
+var applied_commands: Dictionary = {}
 # Compatibility with existing live TOPLA/TAHTA/TEZGAH UI and CI.
 var slots: Array:
     get: return inventory.slots
@@ -67,11 +70,15 @@ func tick(dt: float, player_pos: Vector2) -> Array[Dictionary]:
 
 func snapshot_domain() -> Dictionary:
     # In-memory snapshot shape only; NOT a Stage6 checkpoint or save migration.
-    return {"catalog_version": catalog.version, "content": catalog.active_content_ids(),
+    return {"domain_version": 1, "catalog_version": catalog.version, "content": catalog.active_content_ids(),
         "inventory": inventory.snapshot(), "building": building.snapshot(),
         "depleted": harvesting.depleted.duplicate(true),
         "harvest_commands": harvesting.commands.duplicate(true),
-        "craft_commands": crafting.commands.duplicate(true)}
+        "craft_commands": crafting.commands.duplicate(true),
+        "building_commands": building.commands.duplicate(true),
+        "inventory_applied": inventory.applied.duplicate(true),
+        "journal": {"version": 1, "world_revision": world_revision,
+            "journal_sequence": journal_sequence, "applied_commands": applied_commands.duplicate(true)}}
 
 func validate_snapshot_content(snapshot: Dictionary) -> Dictionary:
     # Stage 6 restore must call this before publishing any recovered state.
@@ -88,6 +95,80 @@ func save_checkpoint(name: String) -> Dictionary:
 func load_checkpoint(name: String) -> Dictionary:
     # Validated detached state. Never publish or mutate the live domain here.
     return Stage6Store.read_checkpoint(name, catalog)
+
+const Restore = preload("res://scripts/stage6_domain_restore.gd")
+
+func _publish_checkpoint(state: Dictionary) -> Dictionary:
+    var staged: Dictionary = Restore.prepare(catalog, state)
+    if not bool(staged.get("ok", false)):
+        return staged
+    var new_inventory = DomainInventory.new(catalog, CAPACITY)
+    if not new_inventory.commit_preview(staged["slots"]):
+        return {"ok": false, "status": "invalid_inventory"}
+    new_inventory.applied = staged["inventory_applied"]
+    var new_harvesting = DomainHarvesting.new(catalog, new_inventory)
+    new_harvesting.depleted = staged["depleted"]
+    new_harvesting.commands = staged["harvest_commands"]
+    var new_crafting = DomainCrafting.new(catalog, new_inventory)
+    new_crafting.commands = staged["craft_commands"]
+    var new_building = DomainBuilding.new(catalog, new_inventory)
+    new_building.world_id = staged["world_id"]
+    new_building.revision = staged["building_revision"]
+    new_building.placed = staged["placed"]
+    new_building.commands = staged["building_commands"]
+    inventory = new_inventory
+    harvesting = new_harvesting
+    crafting = new_crafting
+    building = new_building
+    world_revision = staged["world_revision"]
+    journal_sequence = staged["journal_sequence"]
+    applied_commands = staged["applied_commands"]
+    return {"ok": true, "status": "restored"}
+
+func restore_checkpoint(name: String) -> Dictionary:
+    if not harvesting.active.is_empty() or not crafting.active.is_empty():
+        return {"ok": false, "status": "busy"}
+    var loaded := load_checkpoint(name)
+    if not bool(loaded.get("ok", false)):
+        return loaded
+    return _publish_checkpoint(loaded["snapshot"])
+
+func checkpoint_credit(name: String, command_id: String, def_id: String, amount: int) -> Dictionary:
+    if not DomainTransaction.valid_command(command_id) or amount <= 0:
+        return {"ok": false, "status": "invalid_command"}
+    if not harvesting.active.is_empty() or not crafting.active.is_empty():
+        return {"ok": false, "status": "busy"}
+    if applied_commands.has(command_id):
+        return {"ok": false, "status": "duplicate"}
+    var loaded := load_checkpoint(name)
+    if not bool(loaded.get("ok", false)):
+        return loaded
+    var prior: Dictionary = loaded["snapshot"]
+    if JSON.stringify(prior, "", true) != JSON.stringify(snapshot_domain(), "", true):
+        return {"ok": false, "status": "checkpoint_state_mismatch"}
+    var staged_slots: Array = inventory.preview()
+    if not inventory.preview_add(staged_slots, def_id, amount) or not inventory.validate_preview(staged_slots):
+        return {"ok": false, "status": "inventory_full"}
+    var candidate: Dictionary = prior.duplicate(true)
+    var rows: Array = []
+    for i in range(CAPACITY):
+        if staged_slots[i] is Dictionary:
+            rows.append({"slot": i + 1, "def_id": staged_slots[i]["def_id"],
+                "count": staged_slots[i]["count"]})
+    candidate["inventory"]["slots"] = rows
+    candidate["journal"]["world_revision"] = world_revision + 1
+    candidate["journal"]["journal_sequence"] = journal_sequence + 1
+    candidate["journal"]["applied_commands"][command_id] = true
+    var prepared := Restore.prepare(catalog, candidate)
+    if not bool(prepared.get("ok", false)):
+        return prepared
+    var saved := Stage6Store.write_checkpoint(name, candidate, catalog)
+    if not bool(saved.get("ok", false)):
+        return saved
+    var published := _publish_checkpoint(candidate)
+    if not bool(published.get("ok", false)):
+        return {"ok": false, "status": "committed_reload_required"}
+    return {"ok": true, "status": "committed"}
 
 func verify_contract() -> bool:
     if not catalog.verify_contract() or not catalog.verify_mod_boundary() or not DomainTransaction.verify_contract():
