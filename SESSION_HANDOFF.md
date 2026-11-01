@@ -143,6 +143,14 @@ Doğrulanmış rapor bağlantısı: [SESSION_HANDOFF.md#SOHBET-K](https://github
 - [GitHub Actions #41288614778](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41288614778) completed success at code commit `22faae2d2ccb2fc4b48aca7a0f8d044f13c61357`. Logs: `TAMU_PERF_COPY_BUTTON_GATE_OK rows=45`, `TAMU_PERF_JSONL_EXPORT_OK lines=45`, `TAMU_PERF_HUD_GATE_OK frames=45 p95=133.333 p99=150.0`, `TAMU_VISUAL_CAPTURE_OK chunks=45 vertices=116622 objects=832 avatar_parts=6`. CI screenshot smoke and Android APK export succeed. Xvfb p95/p99 ARE NOT Android FPS, GPU latency isn't directly measured. Device clipboard behavior and visual tap remain unverified.
 - Open: native on-device benchmark for Godot and LÖVE using same scene/settings, genuine tap clipboard paste, Android FPS p95/p99 and GPU/frame-time validation, complete Rigby mesh/playback + gameplay parity. No full APK delivered until visual/functional acceptance.
 
+### 2026-11-01 — Godot Android splash-exit investigation and touchscreen movement
+
+- Report from physical Android device: app closes after Godot splash. Root cause NOT conclusively measured with Android logcat. Strong packaging risk found: Android export preset had empty `include_filter`, possibly omitting custom `.verts` and runtime JSON files. Commit `a98c480edf4cb1654d6c2c617bb9b254dee85e76` explicitly includes chunks/*.verts, chunks/*.json and Rigby/terrain JSON.
+- Implemented left-bottom on-screen touch joystick with touch index tracking, analog vector/deadzone, drag updates and independent second finger camera gesture in existing `scripts/main.gd`, commit `f6050215009f11f86fd4fee9cffb7a9fd2d9d9f5`. No real Android touch-device input test yet.
+- Added Android `--export-pack` content gate checking bundled terrain .verts, chunk index, R2 objects and original Rigby JSON, commit `9b62bf1c7eb63f98190eb12e1ddb81299b04dab8`.
+- [GitHub Actions #41292544053](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41292544053) success: `TAMU_ANDROID_CONTENT_PACK_OK bytes=46165024`, `TAMU_VISUAL_CAPTURE_OK chunks=45 vertices=116622 objects=832 avatar_parts=6`, `TAMU_PERF_COPY_BUTTON_GATE_OK rows=45`. Artifact 13077364985 ZIP SHA256 `f99abc103a4fa027ee04ff7752b06bf53cfb9affe70a12f588f4b066da01f24c`. Extracted debug APK CRC test passed and SHA256 `62199a0e1fc42384c52759048ecaedfaf61f66ec2318c3fe8a6685286e8fdcb7`. GitHub CI uses desktop/Xvfb for launch, not Android device; successful export does NOT prove splash crash fixed.
+- Open: actual Android device logcat boot/crash inspection and joystick touch/clipboard test; only then accept crash fix. Full Rigby and gameplay parity also open; debug APK may be offered strictly as diagnostic test build, not completed TAMU.
+
 ---
 
 
