@@ -790,6 +790,10 @@ var object_count: int = 0
 var object_layer: Node2D
 
 func _process(delta: float) -> void:
+    # A Stage6 startup smoke can request quit before _make_avatar().
+    # Godot may dispatch one more frame before the queued quit completes.
+    if avatar == null or not is_instance_valid(avatar):
+        return
     var frame_start := Time.get_ticks_usec()
     frame_no += 1
     var visual_delta: float = 1.0 / 60.0 if OS.get_environment("TAMU_VISUAL_CI") == "1" else delta
