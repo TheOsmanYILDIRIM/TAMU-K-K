@@ -370,6 +370,11 @@ jobs:
           mkdir -p /tmp/tamu-mod-contract-home
           XDG_DATA_HOME=/tmp/tamu-mod-contract-home TAMU_ENABLE_MODS=0 godot --headless --path . --script res://scripts/mod_contract_ci.gd | tee screenshots/mod-e2e.log
           grep -q TAMU_USER_MOD_DISK_E2E_OK screenshots/mod-e2e.log
+          mkdir -p /tmp/tamu-save-reopen-home
+          for phase in write reopen recovery mod_reject; do
+            XDG_DATA_HOME=/tmp/tamu-save-reopen-home TAMU_SAVE_PHASE="$phase" godot --headless --path . --script res://scripts/stage6_contract_ci.gd | tee "screenshots/save-$phase.log"
+            grep -q "TAMU_STAGE6_${phase^^}_OK" "screenshots/save-$phase.log"
+          done
           grep -q TAMU_TRANSACTION_BOUNDARY_OK screenshots/run.log
           grep -q TAMU_BUILDING_BOUNDARY_OK screenshots/run.log
           grep -q TAMU_GAMEPLAY_DOMAIN_OK screenshots/run.log

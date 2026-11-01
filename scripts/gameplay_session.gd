@@ -77,6 +77,18 @@ func validate_snapshot_content(snapshot: Dictionary) -> Dictionary:
     # Stage 6 restore must call this before publishing any recovered state.
     return catalog.validate_snapshot_content(snapshot)
 
+const Stage6Store = preload("res://scripts/stage6_checkpoint.gd")
+
+func save_checkpoint(name: String) -> Dictionary:
+    # In-flight transactions cannot be snapshotted as committed.
+    if not harvesting.active.is_empty() or not crafting.active.is_empty():
+        return {"ok": false, "status": "busy"}
+    return Stage6Store.write_checkpoint(name, snapshot_domain(), catalog)
+
+func load_checkpoint(name: String) -> Dictionary:
+    # Validated detached state. Never publish or mutate the live domain here.
+    return Stage6Store.read_checkpoint(name, catalog)
+
 func verify_contract() -> bool:
     if not catalog.verify_contract() or not catalog.verify_mod_boundary() or not DomainTransaction.verify_contract():
         return false
