@@ -8,6 +8,7 @@ func _initialize() -> void:
 func _render() -> void:
     var window := get_root()
     window.size = Vector2i(540, 360)
+    window.content_scale_size = Vector2i(540, 360)
     var scene := Node2D.new()
     window.add_child(scene)
     var bg := ColorRect.new()

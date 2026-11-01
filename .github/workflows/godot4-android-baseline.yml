@@ -36,6 +36,9 @@ jobs:
           from PIL import Image
           a=Image.open('screenshots/fx-shadow-preview.png').convert('RGB')
           assert a.width>=540 and a.height>=360 and len(set(a.resize((90,60)).getdata()))>18
+          bg=a.getpixel((0,0))
+          coverage=sum(1 for pixel in a.getdata() if pixel==bg)/float(a.width*a.height)
+          assert coverage>0.65, f'FX_VIEWPORT_SCALING_FAILED background_coverage={coverage:.3f}'
           print('TAMU_FX_VISUAL_PIXEL_GATE_OK',a.size)
           PY
       - uses: actions/upload-artifact@v4
