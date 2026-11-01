@@ -939,6 +939,15 @@ func _process(delta: float) -> void:
                 push_error("TAMU_HARVEST_BUTTON_GATE_FAILED")
                 get_tree().quit(13)
                 return
+            if completed.has("silhouette"):
+                var stem: String = str(authority.records[completed_id]["stem"])
+                _set_chunk_visuals_visible(stem, false)
+                _set_chunk_visuals_visible(stem, true)
+                if completed["silhouette"].visible or not bool(completed["silhouette"].get_meta("tamu_collected", false)):
+                    push_error("TAMU_COLLECTED_SILHOUETTE_REVEAL_FAILED")
+                    get_tree().quit(13)
+                    return
+                print("TAMU_COLLECTED_SILHOUETTE_REVEAL_OK")
             print("TAMU_GAMEPLAY_HARVEST_INVENTORY_OK id=", completed_id, " item=", drop["def_id"], " count=", drop["count"])
             print("TAMU_HARVEST_BUTTON_GATE_OK count=", harvested_count)
             get_tree().quit()
