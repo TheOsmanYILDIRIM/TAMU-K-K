@@ -164,6 +164,11 @@ Doğrulanmış rapor bağlantısı: [SESSION_HANDOFF.md#SOHBET-K](https://github
 - [GitHub Actions #41296462506](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41296462506) success at code HEAD 40bd1775497a12edf557819a7d7019c5f1e2f20b. Logs `TAMU_SUN_HARVEST_BOOT_OK shadows=832 hour=10.55047275`, `TAMU_HARVEST_OK ... count=1`, `TAMU_HARVEST_BUTTON_GATE_OK count=1`, `TAMU_VISUAL_CAPTURE_OK chunks=45 vertices=115956 objects=832`. Artifact id 13079457120 digest sha256 436a6ec0486122eee0bba57fe4d88663f4e4163c62f2e974731dcfaedf283b1c; extracted APK `/mnt/data/TAMU_Godot_Sun_Harvest_TEST.apk` SHA256 8144409fb18d691bb58efdca45d05f961150d3fba06ca0c2bd80e8477324a133, inner/outer ZIP CRC clean.
 - OPEN: 156 simultaneous residency and long-run Android FPS not proven by 45-frame CI; dynamic shadow visual parity and Android touch proximity test require device validation; Rigby weighted skin/crafting and saves not done. No main/LÖVE branch changes.
 
+### 2026-11-01 — Mobile visible TOPLA button and 30-second accelerated visual day
+- User reported TOPLA invisible, requests accelerated day/night visual validation. Source defect: button was child of CanvasLayer without full rect Control anchoring. Replaced existing `_init_harvest_button` in `scripts/main.gd` with full-screen `Control` overlay + bottom-right anchored 166×120 high-contrast TOPLA, keeps joystick independently bottom left. Reduced visual DAY_SECONDS from 480 to 30 (test only). Commit `7a5aaadbf202a44188c40d1e43db4bfcc730f067`; no main/LOVE branch changes.
+- [CI #41298223037](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41298223037) success at code SHA 7a5aaad...; logs `TAMU_HARVEST_UI_READY`, `TAMU_SUN_HARVEST_BOOT_OK shadows=832 hour=11.2043765`, `TAMU_HARVEST_BUTTON_GATE_OK count=1`. Downloaded artifact 13080386236 ZIP SHA256 f66c468c26e5e54c72f3e1aa13d305e83f53bf894f9d1f437502b3fc675240b1; extracted APK SHA256 a9104882f5b2bd1425d7b66794c5f1e8afdc1c20ca46cb1825b9f11e09fade49. Outer and inner ZIP CRC clean. Screenshot opened and visually inspected: TOPLA visible bottom right, joystick bottom left.
+- OPEN: physical Android tap/harvest interaction, 30-second full-cycle night transition, shadows/time pacing and Android FPS need mobile tests; 45-frame desktop smoke proves startup only. Full gameplay/Rigby parity remains open.
+
 ---
 
 
