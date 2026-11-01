@@ -5,6 +5,8 @@ const WorldStream = preload("res://scripts/world_stream.gd")
 const MergedTerrain = preload("res://scripts/merged_terrain.gd")
 const RigbySkinned = preload("res://scripts/rigby_skinned.gd")
 const GameplaySession = preload("res://scripts/gameplay_session.gd")
+const R2Authority = preload("res://scripts/r2_authority.gd")
+const WorldIdentity = preload("res://scripts/world_identity.gd")
 var rigby_skin: Dictionary = {}
 var merged_mode: bool = OS.get_environment("TAMU_TERRAIN_MODE") != "legacy"
 # Each independently authored region is a separate logical chunk, not one global world.
@@ -39,6 +41,7 @@ var object_visuals_by_chunk: Dictionary = {}
 var harvestables: Array[Dictionary] = []
 var harvested_by_id: Dictionary = {}
 var gameplay: RefCounted
+var authority: RefCounted
 var gameplay_sequence := 0
 var harvested_count := 0
 var shadow_sprites: Array[Polygon2D] = []
@@ -104,6 +107,9 @@ func _try_harvest() -> void:
             nearest = item
     if nearest.is_empty():
         print("TAMU_HARVEST_OUT_OF_RANGE")
+        return
+    if not authority.matches_object(nearest):
+        push_error("TAMU_HARVEST_SOURCE_MISMATCH")
         return
     var result: Dictionary = gameplay.begin_harvest(nearest, actor_world, _next_gameplay_command("harvest"))
     print("TAMU_HARVEST_COMMAND id=", nearest["id"], " status=", result["status"])
@@ -429,6 +435,40 @@ func _ready() -> void:
         get_tree().quit(23)
         return
     _load_objects()
+    authority = R2Authority.new()
+    if not authority.initialize():
+        push_error("TAMU_R2_AUTHORITY_UNAVAILABLE")
+        get_tree().quit(24)
+        return
+    if object_count != authority.records.size():
+        push_error("TAMU_R2_AUTHORED_OBJECT_COUNT_MISMATCH")
+        get_tree().quit(24)
+        return
+    for item in harvestables:
+        if not authority.matches_object(item):
+            push_error("TAMU_R2_AUTHORED_OBJECT_ID_MISMATCH " + str(item["id"]))
+            get_tree().quit(24)
+            return
+    if OS.get_environment("TAMU_VISUAL_CI") != "1" and merged_mode:
+        var world: Dictionary = WorldIdentity.load_or_create()
+        if not bool(world.get("ok", false)):
+            push_error("TAMU_WORLD_IDENTITY_GATE_FAILED " + str(world.get("status", "")))
+            get_tree().quit(24)
+            return
+        var enabled: Dictionary = gameplay.enable_durable("game", str(world["id"]), authority.region_id,
+            Callable(authority, "surface"), Callable(authority, "obstacles"))
+        if not bool(enabled.get("ok", false)):
+            push_error("TAMU_STAGE6_PRODUCTION_GATE_FAILED " + str(enabled.get("status", "")))
+            get_tree().quit(24)
+            return
+        for item in harvestables:
+            if gameplay.depleted.has(str(item["id"])):
+                item["collected"] = true
+                item["sprite"].visible = false
+                item["sprite"].set_meta("tamu_collected", true)
+                if item["shadow"] != null:
+                    item["shadow"].visible = false
+        print("TAMU_STAGE6_PRODUCTION_ACTIVE world=",world["id"]," region=",authority.region_id)
     _make_avatar()
     if OS.get_environment("TAMU_VISUAL_CI") == "1":
         if native_rig == null or not native_rig.verify_curve_reference("res://chunks/rigby_curve_reference.txt"):

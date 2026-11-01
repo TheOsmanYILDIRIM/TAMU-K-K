@@ -318,6 +318,11 @@ jobs:
             XDG_DATA_HOME=/tmp/tamu-stage6-all-transactions TAMU_DURABLE_PHASE="$phase" godot --headless --path . --script res://scripts/stage6_durable_ci.gd | tee "screenshots/durable-$phase.log"
             grep -q "TAMU_STAGE6_DURABLE_${phase^^}_OK" "screenshots/durable-$phase.log"
           done
+          mkdir -p /tmp/tamu-r2-auth-ci
+          for phase in create reopen; do
+            XDG_DATA_HOME=/tmp/tamu-r2-auth-ci TAMU_WORLD_PHASE="$phase" godot --headless --path . --script res://scripts/r2_authority_ci.gd | tee "screenshots/r2-$phase.log"
+            grep -q TAMU_R2_AUTHORITY_OK "screenshots/r2-$phase.log"
+          done
           for case in center east west zoom north dawn reload; do
             for mode in legacy merged; do
               TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE="$mode" TAMU_VISUAL_CASE="$case" timeout 90s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 240 | tee "screenshots/$case-$mode.log"
