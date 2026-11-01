@@ -20,6 +20,9 @@ var event_count := 0
 var world_revision := 0
 var journal_sequence := 0
 var applied_commands: Dictionary = {}
+var durable_slot := ""
+var world_binding: Dictionary = {}
+var durable_fault := false
 # Compatibility with existing live TOPLA/TAHTA/TEZGAH UI and CI.
 var slots: Array:
     get: return inventory.slots
@@ -56,12 +59,28 @@ func harvest_drop(kind: String) -> Dictionary:
     return drops[0] if drops.size() == 1 else {}
 
 func begin_harvest(item: Dictionary, player_pos: Vector2, command_id: String) -> Dictionary:
+    if durable_slot != "":
+        if durable_fault:
+            return {"ok": false, "status": "restore_required"}
+        if applied_commands.has(command_id):
+            return {"ok": false, "status": "duplicate"}
+        if not crafting.active.is_empty():
+            return {"ok": false, "status": "busy"}
     return harvesting.begin(command_id, item, player_pos)
 
 func begin_craft(command_id: String, recipe_id: String, station_tags: Array = []) -> Dictionary:
+    if durable_slot != "":
+        if durable_fault:
+            return {"ok": false, "status": "restore_required"}
+        if applied_commands.has(command_id):
+            return {"ok": false, "status": "duplicate"}
+        if not harvesting.active.is_empty():
+            return {"ok": false, "status": "busy"}
     return crafting.begin(command_id, recipe_id, station_tags)
 
 func tick(dt: float, player_pos: Vector2) -> Array[Dictionary]:
+    if durable_slot != "":
+        return _durable_tick(dt, player_pos)
     var events: Array[Dictionary] = []
     events.append_array(harvesting.update(dt, player_pos))
     events.append_array(crafting.update(dt))
@@ -71,6 +90,7 @@ func tick(dt: float, player_pos: Vector2) -> Array[Dictionary]:
 func snapshot_domain() -> Dictionary:
     # In-memory snapshot shape only; NOT a Stage6 checkpoint or save migration.
     return {"domain_version": 1, "catalog_version": catalog.version, "content": catalog.active_content_ids(),
+        "world_binding": world_binding.duplicate(true),
         "inventory": inventory.snapshot(), "building": building.snapshot(),
         "depleted": harvesting.depleted.duplicate(true),
         "harvest_commands": harvesting.commands.duplicate(true),
@@ -99,6 +119,8 @@ func load_checkpoint(name: String) -> Dictionary:
 const Restore = preload("res://scripts/stage6_domain_restore.gd")
 
 func _publish_checkpoint(state: Dictionary) -> Dictionary:
+    if not world_binding.is_empty() and state.get("world_binding", null) != world_binding:
+        return {"ok": false, "status": "world_region_mismatch"}
     var staged: Dictionary = Restore.prepare(catalog, state)
     if not bool(staged.get("ok", false)):
         return staged
@@ -116,6 +138,8 @@ func _publish_checkpoint(state: Dictionary) -> Dictionary:
     new_building.revision = staged["building_revision"]
     new_building.placed = staged["placed"]
     new_building.commands = staged["building_commands"]
+    new_building.terrain_sample = building.terrain_sample
+    new_building.solid_query = building.solid_query
     inventory = new_inventory
     harvesting = new_harvesting
     crafting = new_crafting
@@ -169,6 +193,153 @@ func checkpoint_credit(name: String, command_id: String, def_id: String, amount:
     if not bool(published.get("ok", false)):
         return {"ok": false, "status": "committed_reload_required"}
     return {"ok": true, "status": "committed"}
+
+# Persistent gameplay is explicit opt-in: callers must provide an authoritative world
+# identity and terrain/obstacle ports. A mismatched save never loads or overwrites.
+func enable_durable(slot: String, world_uuid: String, region_id: String,
+        terrain: Callable, obstacles: Callable) -> Dictionary:
+    if durable_slot != "" or not harvesting.active.is_empty() or not crafting.active.is_empty():
+        return {"ok": false, "status": "busy"}
+    if not DomainBuilding.valid_uuid4(world_uuid) or not terrain.is_valid() or not obstacles.is_valid():
+        return {"ok": false, "status": "invalid_world_ports"}
+    var manifest_path := "res://chunks/merged_terrain.json"
+    var source_path := "res://chunks/source_integrity.json"
+    if not FileAccess.file_exists(manifest_path) or not FileAccess.file_exists(source_path):
+        return {"ok": false, "status": "world_source_missing"}
+    var manifest: Variant = JSON.parse_string(FileAccess.get_file_as_string(manifest_path))
+    var source: Variant = JSON.parse_string(FileAccess.get_file_as_string(source_path))
+    if not manifest is Dictionary or not source is Dictionary or region_id != str(manifest.get("region_id", "")):
+        return {"ok": false, "status": "invalid_region"}
+    if int(manifest.get("source_run_id", -1)) != int(source.get("source_run_id", -2)):
+        return {"ok": false, "status": "source_mismatch"}
+    var binding := {"world_uuid": world_uuid, "region_id": region_id,
+        "source_run_id": int(source["source_run_id"]),
+        "manifest_sha256": FileAccess.get_sha256(manifest_path),
+        "objects_sha256": str(source.get("objects_sha256", ""))}
+    if str(binding["objects_sha256"]) == "" or not FileAccess.file_exists("res://chunks/r2_objects.json"):
+        return {"ok": false, "status": "object_source_missing"}
+    if FileAccess.get_sha256("res://chunks/r2_objects.json") != str(binding["objects_sha256"]):
+        return {"ok": false, "status": "object_source_mismatch"}
+    if Stage6Store._path(slot).is_empty():
+        return {"ok": false, "status": "invalid_slot"}
+    var loaded := Stage6Store.read_checkpoint(slot, catalog)
+    if not bool(loaded.get("ok", false)) and str(loaded.get("status", "")) != "missing":
+        return loaded
+    if bool(loaded.get("ok", false)):
+        if loaded["snapshot"].get("world_binding", null) != binding:
+            return {"ok": false, "status": "world_region_mismatch"}
+    var old_world := world_binding.duplicate(true)
+    world_binding = binding
+    if bool(loaded.get("ok", false)):
+        var restored := _publish_checkpoint(loaded["snapshot"])
+        if not bool(restored.get("ok", false)):
+            world_binding = old_world
+            return restored
+    elif not building.configure(world_uuid, terrain, obstacles):
+        world_binding = old_world
+        return {"ok": false, "status": "world_configuration_failed"}
+    building.terrain_sample = terrain
+    building.solid_query = obstacles
+    durable_slot = slot
+    if not bool(loaded.get("ok", false)):
+        var initial := save_checkpoint(slot)
+        if not bool(initial.get("ok", false)):
+            durable_slot = ""
+            world_binding = old_world
+            return initial
+    durable_fault = false
+    return {"ok": true, "status": "restored" if bool(loaded.get("ok", false)) else "initialized"}
+
+func _stage_domain() -> RefCounted:
+    var stage = get_script().new()
+    stage.catalog = catalog
+    if not bool(stage._publish_checkpoint(snapshot_domain()).get("ok", false)):
+        return null
+    stage.world_binding = world_binding.duplicate(true)
+    stage.harvesting.active = harvesting.active.duplicate(true)
+    stage.crafting.active = crafting.active.duplicate(true)
+    stage.building.terrain_sample = building.terrain_sample
+    stage.building.solid_query = building.solid_query
+    return stage
+
+func _commit_durable(stage: RefCounted, command_id: String) -> Dictionary:
+    if durable_fault:
+        return {"ok": false, "status": "restore_required"}
+    if not DomainTransaction.valid_command(command_id) or applied_commands.has(command_id):
+        return {"ok": false, "status": "duplicate"}
+    var disk := Stage6Store.read_checkpoint(durable_slot, catalog)
+    if not bool(disk.get("ok", false)):
+        durable_fault = true
+        return disk
+    var before: Dictionary = disk["snapshot"]
+    var live := snapshot_domain()
+    # Commands can be 'started' in volatile memory, but committed data cannot differ.
+    for field in ["inventory", "building", "depleted", "journal", "world_binding", "inventory_applied"]:
+        if Stage6Store._seal({"v": before.get(field, null)}) != Stage6Store._seal({"v": live.get(field, null)}):
+            durable_fault = true
+            return {"ok": false, "status": "checkpoint_state_mismatch"}
+    stage.world_revision = world_revision + 1
+    stage.journal_sequence = journal_sequence + 1
+    stage.applied_commands[command_id] = true
+    var candidate: Dictionary = stage.snapshot_domain()
+    var ready := Restore.prepare(catalog, candidate)
+    if not bool(ready.get("ok", false)):
+        durable_fault = true
+        return ready
+    var written := Stage6Store.write_checkpoint(durable_slot, candidate, catalog)
+    if not bool(written.get("ok", false)):
+        durable_fault = true
+        return written
+    var result := _publish_checkpoint(candidate)
+    if not bool(result.get("ok", false)):
+        durable_fault = true
+        return {"ok": false, "status": "committed_reload_required"}
+    return {"ok": true, "status": "committed"}
+
+func _durable_tick(dt: float, player_pos: Vector2) -> Array[Dictionary]:
+    var empty: Array[Dictionary] = []
+    if durable_fault:
+        return empty
+    var stage = _stage_domain()
+    if stage == null:
+        durable_fault = true
+        return empty
+    var events: Array[Dictionary] = []
+    events.append_array(stage.harvesting.update(dt, player_pos))
+    events.append_array(stage.crafting.update(dt))
+    if events.is_empty():
+        harvesting.active = stage.harvesting.active
+        crafting.active = stage.crafting.active
+        harvesting.commands = stage.harvesting.commands
+        crafting.commands = stage.crafting.commands
+        return empty
+    if events.size() != 1:
+        durable_fault = true
+        return empty
+    var command_id := str(events[0].get("command_id", ""))
+    var committed := _commit_durable(stage, command_id)
+    if not bool(committed.get("ok", false)):
+        push_error("TAMU_STAGE6_TRANSACTION_REJECTED " + str(committed.get("status", "")))
+        return empty
+    event_count += events.size()
+    return events
+
+func place_building(command_id: String, instance_id: String, def_id: String,
+        at: Vector2, rotation: int, player_at: Vector2, owner_id: String) -> Dictionary:
+    if durable_slot == "":
+        return building.place(command_id, instance_id, def_id, at, rotation, player_at, owner_id)
+    if durable_fault or applied_commands.has(command_id):
+        return {"ok": false, "status": "restore_required" if durable_fault else "duplicate"}
+    if not harvesting.active.is_empty() or not crafting.active.is_empty():
+        return {"ok": false, "status": "busy"}
+    var stage = _stage_domain()
+    if stage == null:
+        return {"ok": false, "status": "stage_failed"}
+    var placed: Dictionary = stage.building.place(command_id, instance_id, def_id, at, rotation, player_at, owner_id)
+    if not bool(placed.get("ok", false)):
+        return placed
+    var committed := _commit_durable(stage, command_id)
+    return placed if bool(committed.get("ok", false)) else committed
 
 func verify_contract() -> bool:
     if not catalog.verify_contract() or not catalog.verify_mod_boundary() or not DomainTransaction.verify_contract():
