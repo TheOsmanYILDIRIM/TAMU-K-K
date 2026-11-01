@@ -1,29 +1,42 @@
 extends RefCounted
-# Exact build-time union of 156 authored terrain chunks; two z-layer draw nodes.
+# One authored REGION chunk, compiled from its original small source cells.
+# Additional game regions must be separate manifests and nodes; never fuse globally.
 const SOURCE_RUN_ID := 41234831527
 
 static func build(atlas: Texture2D) -> Dictionary:
-    var path := "res://chunks/merged_terrain.json"
+    return build_region(atlas, "res://chunks/merged_terrain.json")
+
+static func build_region(atlas: Texture2D, manifest_path: String) -> Dictionary:
+    var path := manifest_path
     if not FileAccess.file_exists(path):
         push_error("TAMU_MERGED_MANIFEST_MISSING")
         return {}
     var manifest = JSON.parse_string(FileAccess.get_file_as_string(path))
     if not manifest is Dictionary or int(manifest.get("source_run_id", -1)) != SOURCE_RUN_ID:
         return {}
-    if int(manifest.get("source_chunks", -1)) != 156 or not manifest.has("layers"):
+    if str(manifest.get("schema", "")) != "tamu.region.terrain.v1":
+        return {}
+    var region_id: String = str(manifest.get("region_id", ""))
+    var source_cells: int = int(manifest.get("source_chunks", 0))
+    if region_id.is_empty() or source_cells <= 0 or not manifest.has("layers"):
         return {}
     var layers: Array = manifest["layers"]
-    if layers.size() != 2:
+    if layers.is_empty() or layers.size() > 2:
         return {}
+    var seen_z := {}
     var group := Node2D.new()
-    group.name = "TAMUCompleteAuthoredTerrain"
+    group.name = "TAMURegion_" + region_id
     var total_vertices := 0
     for layer in layers:
         var z := int(layer["z"])
         var count := int(layer["count"])
-        if z < 0 or z > 1 or count <= 0 or count % 3 != 0:
+        if z < 0 or z > 1 or seen_z.has(z) or count <= 0 or count % 3 != 0:
             return {}
-        var filename := "res://chunks/merged_layer_%d.verts" % z
+        seen_z[z] = true
+        var basename: String = str(layer.get("file", ""))
+        if basename != "merged_layer_%d.verts" % z:
+            return {}
+        var filename := "res://chunks/" + basename
         if not FileAccess.file_exists(filename) or FileAccess.get_sha256(filename) != str(layer["sha256"]):
             push_error("TAMU_MERGED_LAYER_HASH_FAILED z=" + str(z))
             return {}
@@ -64,4 +77,5 @@ static func build(atlas: Texture2D) -> Dictionary:
         total_vertices += count
     if total_vertices != int(manifest.get("vertices", -1)):
         return {}
-    return {"root": group, "vertices": total_vertices, "surfaces": group.get_child_count()}
+    return {"root": group, "region_id": region_id, "source_cells": source_cells,
+        "vertices": total_vertices, "surfaces": group.get_child_count()}

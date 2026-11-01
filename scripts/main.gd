@@ -4,6 +4,8 @@ const WorldSource = preload("res://scripts/world_source.gd")
 const WorldStream = preload("res://scripts/world_stream.gd")
 const MergedTerrain = preload("res://scripts/merged_terrain.gd")
 var merged_mode: bool = OS.get_environment("TAMU_TERRAIN_MODE") != "legacy"
+# Each independently authored region is a separate logical chunk, not one global world.
+var region_chunks: Dictionary = {}
 var world_source: RefCounted
 # Godot native ArrayMesh terrain; binary geometry and atlas are sourced from
 # the SAME TAMU compiled LÖVE CI artifact, never resampled.
@@ -344,12 +346,17 @@ func _ready() -> void:
     add_child(camera)
     _refresh_streaming_requests()
     if merged_mode:
-        var unified: Dictionary = MergedTerrain.build(terrain_atlas)
+        var region_started_usec: int = Time.get_ticks_usec()
+        var unified: Dictionary = MergedTerrain.build_region(terrain_atlas, "res://chunks/merged_terrain.json")
         if unified.is_empty():
             push_error("TAMU_MERGED_TERRAIN_LOAD_FAILED")
             get_tree().quit(19)
             return
         add_child(unified["root"])
+        region_chunks[str(unified["region_id"])] = unified["root"]
+        var region_load_ms: float = float(Time.get_ticks_usec() - region_started_usec) / 1000.0
+        print("TAMU_REGION_LOAD_OK region=", unified["region_id"], " source_cells=", unified["source_cells"],
+            " vertices=", unified["vertices"], " native_nodes=", unified["surfaces"], " prepare_ms=", snappedf(region_load_ms, 0.01))
         loaded = total_cached
         vertices = int(unified["vertices"])
         print("TAMU_MERGED_TERRAIN_OK sources=", total_cached, " vertices=", vertices,

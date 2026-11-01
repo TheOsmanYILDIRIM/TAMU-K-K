@@ -1,3 +1,6 @@
+## Godot dünya birimi — 1 Kasım 2026
+**Her bölge bir büyük chunk.** Şimdiki Fısıltı Ormanı, kaynağındaki 156 terrain hücresi korunarak tek bölge olarak derlenir (zemin için iki yerel z katmanı). Bu, oyunun tüm gelecekteki bölgelerini tek mesh'e toplama kararı değildir. Başka bölgeler bağımsız manifest, residency ve yaşam döngüsüyle eklenecek. Mevcut `TAMU_TERRAIN_MODE=legacy` kıyas modu korunur. Android testinden önce GitHub görsel kıyasları zorunludur.
+
 ## 2026-11-01 — TAMU engine migration status
 **Primary development target: Godot 4** on `experiment/godot4-android-apk-20261031`. The LÖVE reference remains `experiment/25d-binary-vertex-20261030`; old engine guidance below is preserved as source history, not current migration policy.
 The current Godot APK is a **prototype**, not full gameplay or pixel parity: 156 original authored chunks, 832 stable R2 objects, 40-bone/44-clip source bridge, 30-second solar test, touch joystick, TOPLA trial, HUD/JSONL and ground shadows exist. Weighted Rigby mesh/animation equivalence, gameplay/save migration, actual Android sustained-performance parity are open. The build imports canonical world/rig assets from a pinned LÖVE CI artifact; those binaries are not regenerated here.

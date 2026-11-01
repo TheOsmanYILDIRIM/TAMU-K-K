@@ -1,3 +1,8 @@
+## 2026-11-01 — Godot bölge başına tek büyük chunk (güncel kullanıcı kararı)
+- **Tüm oyun tek chunk değildir.** Her bağımsız authored bölge ayrı bir mantıksal chunk'tır; mevcut **Fısıltı Ormanı** bölgesi eski 156 küçük kaynak hücrenin birleştirilmesiyle **tek bölge chunk'ı** olarak çizilir (mevcut terrain için iki ayrı z-katmanı MeshInstance2D).
+- Gelecekteki bölgeler ayrı manifest, ayrı yaşam döngüsü, ayrı yükleme/tahliye ve koordinat/kimlik sınırlarına sahip olacak. Yeni bölgeleri tek bir küresel mesh'e birleştirme; kaynak 156 hücreyi/sabit obje ID'lerini silme.
+- Yeni bölge sistemi için onaylanmamış harita, asset veya kayıt şeması üretme. Yalnız mevcut `scripts/`, `chunks/` ve `SESSION_HANDOFF.md` düzeni içinde çalış. Android cihaz testinden önce GitHub üzerinde görsel/çalıştırma/regresyonu doğrula.
+
 ## 2026-11-01 — User-approved Godot 4 primary-engine migration (current decision)
 - On `experiment/godot4-android-apk-20261031`, **Godot 4 becomes the primary engine**. Prior LÖVE-only and 3D-reboot statements below are historical for this branch; do not treat them as an instruction to revert this user's decision.
 - Preserve `experiment/25d-binary-vertex-20261030`, main, original map coordinates/heights/IDs/atlases, original Rigby sources, save data, backup branches and user-created assets. No main merge without separate approval.

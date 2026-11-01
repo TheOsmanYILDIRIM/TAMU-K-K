@@ -191,14 +191,19 @@ jobs:
                   offset+=n
                   total+=count
               assert offset==len(raw),stem
-          manifest={'source_run_id':41234831527,'source_chunks':156,'vertices':total,'layers':[]}
+          manifest={'schema':'tamu.region.terrain.v1','region_id':'fisilti_ormani',
+                    'source_run_id':41234831527,'source_chunks':156,'vertices':total,'layers':[]}
           for z in (0,1):
               blob=bytes(layers[z])
               assert len(blob)>0 and len(blob)%60==0
               (root/('merged_layer_%d.verts'%z)).write_bytes(blob)
-              manifest['layers'].append({'z':z,'count':len(blob)//20,'sha256':hashlib.sha256(blob).hexdigest()})
+              manifest['layers'].append({'z':z,'file':'merged_layer_%d.verts'%z,
+                                         'count':len(blob)//20,'sha256':hashlib.sha256(blob).hexdigest()})
           (root/'merged_terrain.json').write_text(json.dumps(manifest,separators=(',',':')))
           assert sum(x['count'] for x in manifest['layers'])==total
+          assert manifest['region_id']=='fisilti_ormani' and manifest['source_chunks']==156
+          assert len({x['z'] for x in manifest['layers']})==2
+          print('TAMU_REGION_CHUNK_CONTRACT_OK regions=1 source_cells=156')
           print('TAMU_MERGE_SOURCE_PARITY_OK original_chunks=156 layers=2 vertices=',total)
           PY
       - name: Native Godot scene and screenshot smoke (Xvfb)
@@ -245,6 +250,7 @@ jobs:
           PY
           grep -q TAMU_VISUAL_CAPTURE_OK screenshots/run.log
           grep -q TAMU_MERGED_TERRAIN_OK screenshots/run.log
+          grep -q 'TAMU_REGION_LOAD_OK region=fisilti_ormani source_cells=156' screenshots/run.log
           grep -q TAMU_NATIVE_BONE_FK_READY screenshots/run.log
           grep -q TAMU_WORLD_PROJECTION_GATE_OK screenshots/run.log
           grep -q TAMU_STREAM_SCHEDULER_OK screenshots/run.log
