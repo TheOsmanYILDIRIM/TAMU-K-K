@@ -70,7 +70,7 @@ func _build() -> bool:
     var run = _new_session()
     if run == null or run.count_item("core:workbench") != 1:
         return false
-    var result := run.place_building("build:one", INSTANCE, "core:workbench",
+    var result: Dictionary = run.place_building("build:one", INSTANCE, "core:workbench",
         Vector2(50, 0), 0, Vector2.ZERO, "test:player")
     if result.get("status") != "placed" or run.journal_sequence != 5:
         return false
