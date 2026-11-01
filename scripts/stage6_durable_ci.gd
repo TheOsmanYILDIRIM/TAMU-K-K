@@ -1,13 +1,14 @@
 extends SceneTree
 const Session = preload("res://scripts/gameplay_session.gd")
 const Building = preload("res://scripts/domain_building.gd")
+const Store = preload("res://scripts/stage6_checkpoint.gd")
 const WORLD := "123e4567-e89b-42d3-a456-426614174000"
 const REGION := "fisilti_ormani"
 const INSTANCE := "123e4567-e89b-42d3-a456-426614174001"
 
 func _new_session() -> RefCounted:
     var run = Session.new()
-    var result := run.enable_durable("durable", WORLD, REGION,
+    var result: Dictionary = run.enable_durable("durable", WORLD, REGION,
         Callable(Building, "test_dry"), Callable(Building, "test_obstacles"))
     if not bool(result.get("ok", false)):
         print("TAMU_AUTOSAVE_ENABLE_FAILED ", result)
@@ -79,8 +80,8 @@ func _replay() -> bool:
     var run = _new_session()
     if run == null or run.journal_sequence != 5 or not run.building.placed.has(INSTANCE):
         return false
-    var before := run.Stage6Store._seal(run.snapshot_domain())
-    var reject := run.place_building("build:one", INSTANCE, "core:workbench",
+    var before: String = Store._seal(run.snapshot_domain())
+    var reject: Dictionary = run.place_building("build:one", INSTANCE, "core:workbench",
         Vector2(50, 0), 0, Vector2.ZERO, "test:player")
     if reject.get("status") != "duplicate" or run.checkpoint_credit("durable", "seed:wood", "core:wood_log", 3).get("status") != "duplicate":
         return false
@@ -88,4 +89,4 @@ func _replay() -> bool:
     changed["world_binding"]["region_id"] = "other_region"
     if run._publish_checkpoint(changed).get("status") != "world_region_mismatch":
         return false
-    return run.Stage6Store._seal(run.snapshot_domain()) == before
+    return Store._seal(run.snapshot_domain()) == before
