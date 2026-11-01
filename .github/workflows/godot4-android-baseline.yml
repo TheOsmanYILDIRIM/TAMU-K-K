@@ -163,6 +163,14 @@ jobs:
           set -euo pipefail
           godot --headless --editor --path . --import --quit
           cat "$HOME/.config/godot/editor_settings-4.6.tres"
+          godot --headless --path . --export-pack Android build/tamu-android-content.pck
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('build/tamu-android-content.pck').read_bytes()
+          for name in (b'chunks/index.json',b'chunks/r2_objects.json',b'assets/osman_rig/rig.json',b'c_0_0.verts'):
+              assert name in p, f'ANDROID_ASSET_EXPORT_MISSING: {name!r}'
+          print('TAMU_ANDROID_CONTENT_PACK_OK bytes=',len(p))
+          PY
           godot --headless --verbose --path . --export-debug Android build/TAMU_Godot_Baseline.apk
           test -s build/TAMU_Godot_Baseline.apk
           unzip -t build/TAMU_Godot_Baseline.apk | tail -1
