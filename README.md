@@ -1,3 +1,8 @@
+## 2026-11-01 — Godot üretim R2 kimlik ve Stage6 bağlantısı
+`scripts/r2_authority.gd` derlenmiş kanonik `r2_objects.json` içindeki 832 sabit `worldobj:v1` kimliğini, gerçek world x/y/radius değerlerini, 256 birimlik kaynak hücre koordinatlarını, isometrik x izdüşümünü ve `source_integrity.json` SHA256'sını doğrular. Gerçek ağaç/kaya footprint'lerinden obstacle sorgusu oluşturulur; sahte dünya veya alternatif obje ID'si üretilmez. `scripts/world_identity.gd` kalıcı UUIDv4'ü ilk açılışta `user://saves/world_identity.txt` içinde kontrollü yaratır, sonraki açılışlarda geri okur; eski checkpoint varken kimlik eksikse yeni UUID atamaz.
+
+`main.gd` normal merged R2 çalıştırmada `GameplaySession.enable_durable` ile Stage6'ya bağlanır, önceden depleted objeleri gizler ve TOPLA komutlarında kaynağın ID/koordinatını tekrar doğrular. Önceki kullanıcı karakteri ve demo HUD yerleşimi değişmemiştir. **Güvenlik sınırı:** Derlenmiş mesh+tasarım haritasında yetkili su/topografya yürünebilirlik maskesi yoktur. `surface()` bu yüzden bilinmeyen zemini `walkable=false` olarak reddeder; üretim build placement tamamlanmış sayılmaz. Fiziksel Android ve gerçek fsync/güç kesintisi kabulü de yoktur.
+
 ## 2026-11-01 — Godot Stage6 kalıcı gameplay (opt-in, native domain)
 `GameplaySession.enable_durable(slot, world_uuid, region_id, terrain, obstacles)` açıkça çağrıldığında kullanıcıya ait `user://saves/<slot>.checkpoint` üzerinden güvenli kalıcı mod devreye girer. Gerçek derlenmiş `chunks/merged_terrain.json` bölge kimliği ve kaynak çalıştırma ID'si, terrain manifest SHA256 ve R2 obje kaynağının SHA256'sı ile doğrulanır. World UUID farklı kayıtla eşleşirse kaydı değiştirmeden `world_region_mismatch` reddi döner. Durumdan bağımsız `worldobj:v1` kimlikleri korunur.
 
