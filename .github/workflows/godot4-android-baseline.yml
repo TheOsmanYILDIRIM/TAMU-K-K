@@ -365,6 +365,7 @@ jobs:
           grep -q TAMU_RIGBY_CURVE_PARITY_OK screenshots/run.log
           grep -q TAMU_CATALOG_BINARY_OK screenshots/run.log
           grep -q TAMU_CONTENT_MOD_BOUNDARY_OK screenshots/run.log
+          grep -q TAMU_USER_MOD_BOUNDARY_OK screenshots/run.log
           grep -q TAMU_TRANSACTION_BOUNDARY_OK screenshots/run.log
           grep -q TAMU_BUILDING_BOUNDARY_OK screenshots/run.log
           grep -q TAMU_GAMEPLAY_DOMAIN_OK screenshots/run.log

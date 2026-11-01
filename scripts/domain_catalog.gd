@@ -19,7 +19,25 @@ static func _read_json(path: String) -> Variant:
 static func _safe_path(relative: String) -> bool:
     return not relative.is_empty() and not relative.begins_with("/") and not relative.contains("\\") and not relative.contains("..") and relative.ends_with(".json")
 
+const UserMods = preload("res://scripts/user_mod_loader.gd")
+
 func initialize() -> bool:
+    var ok := false
+    if OS.get_environment("TAMU_CATALOG_FORMAT") != "json" and ResourceLoader.exists(COMPILED):
+        ok = _initialize_binary()
+    elif OS.get_environment("TAMU_CATALOG_REQUIRE_BINARY") == "1":
+        push_error("TAMU_CATALOG_BINARY_REQUIRED_MISSING")
+        return false
+    else:
+        ok = _initialize_json()
+    if not ok:
+        return false
+    if OS.get_environment("TAMU_ENABLE_MODS") == "1" and not UserMods.apply(self):
+        push_error("TAMU_USER_MOD_REJECTED")
+        return false
+    return true
+
+func _legacy_initialize_unused() -> bool:
     if OS.get_environment("TAMU_CATALOG_FORMAT") != "json" and ResourceLoader.exists(COMPILED):
         return _initialize_binary()
     if OS.get_environment("TAMU_CATALOG_REQUIRE_BINARY") == "1":
@@ -176,7 +194,7 @@ func active_content_ids() -> Dictionary:
 
 func verify_mod_boundary() -> bool:
     var probe = get_script().new()
-    if not probe.initialize():
+    if not probe.initialize() or not UserMods.verify_contract():
         return false
     var pack = ContentPack.new()
     pack.pack_namespace = "example"
