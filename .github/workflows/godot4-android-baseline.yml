@@ -331,6 +331,8 @@ jobs:
           grep -q 'TAMU_REGION_LOAD_OK region=fisilti_ormani source_cells=156' screenshots/run.log
           grep -q TAMU_NATIVE_BONE_FK_READY screenshots/run.log
           grep -q TAMU_RIGBY_CURVE_PARITY_OK screenshots/run.log
+          grep -q TAMU_GAMEPLAY_DOMAIN_OK screenshots/run.log
+          grep -q TAMU_GAMEPLAY_HARVEST_INVENTORY_OK screenshots/run.log
           grep -q TAMU_RIGBY_WEIGHTED_MESH_OK screenshots/run.log
           grep -q TAMU_WORLD_PROJECTION_GATE_OK screenshots/run.log
           grep -q TAMU_STREAM_SCHEDULER_OK screenshots/run.log

@@ -4,6 +4,7 @@ const WorldSource = preload("res://scripts/world_source.gd")
 const WorldStream = preload("res://scripts/world_stream.gd")
 const MergedTerrain = preload("res://scripts/merged_terrain.gd")
 const RigbySkinned = preload("res://scripts/rigby_skinned.gd")
+const GameplaySession = preload("res://scripts/gameplay_session.gd")
 var rigby_skin: Dictionary = {}
 var merged_mode: bool = OS.get_environment("TAMU_TERRAIN_MODE") != "legacy"
 # Each independently authored region is a separate logical chunk, not one global world.
@@ -36,6 +37,9 @@ var available_chunks: Dictionary = {}
 var chunk_vertices: Dictionary = {}
 var object_visuals_by_chunk: Dictionary = {}
 var harvestables: Array[Dictionary] = []
+var harvested_by_id: Dictionary = {}
+var gameplay: RefCounted
+var gameplay_sequence := 0
 var harvested_count := 0
 var shadow_sprites: Array[Polygon2D] = []
 var day_clock := 10.5
@@ -80,27 +84,56 @@ func _update_sun(delta: float) -> void:
                 shadow.scale = Vector2.ONE * float(shadow.get_meta("base_scale",1.0)) * length
                 shadow.modulate.a = cast * light
 
+func _next_gameplay_command(prefix: String) -> String:
+    gameplay_sequence += 1
+    return "%s:%d" % [prefix, gameplay_sequence]
+
 func _try_harvest() -> void:
+    if not gameplay.active_harvest.is_empty():
+        print("TAMU_HARVEST_BUSY")
+        return
     var nearest: Dictionary = {}
-    var best := 38.0 * 38.0
+    var best := INF
     for item in harvestables:
-        if item.get("collected",false):
+        if bool(item.get("collected", false)) or not GameplaySession.DROPS.has(str(item["kind"])):
             continue
+        var limit := GameplaySession.HARVEST_RANGE + float(item["radius"])
         var distance := actor_world.distance_squared_to(item["position"])
-        if distance < best:
+        if distance <= limit * limit and (distance < best or (is_equal_approx(distance, best) and str(item["id"]) < str(nearest.get("id", "~")))):
             best = distance
             nearest = item
     if nearest.is_empty():
         print("TAMU_HARVEST_OUT_OF_RANGE")
         return
-    nearest["collected"] = true
-    nearest["sprite"].set_meta("tamu_collected", true)
-    nearest["sprite"].visible = false
-    if nearest["shadow"] != null:
-        nearest["shadow"].set_meta("tamu_collected", true)
-        nearest["shadow"].visible = false
-    harvested_count += 1
-    print("TAMU_HARVEST_OK id=",nearest["id"]," count=",harvested_count)
+    var result: Dictionary = gameplay.begin_harvest(nearest, actor_world, _next_gameplay_command("harvest"))
+    print("TAMU_HARVEST_COMMAND id=", nearest["id"], " status=", result["status"])
+
+func _begin_craft(recipe_id: String) -> void:
+    var result: Dictionary = gameplay.begin_craft(_next_gameplay_command("craft"), recipe_id)
+    print("TAMU_CRAFT_COMMAND recipe=", recipe_id, " status=", result["status"])
+
+func _tick_gameplay(dt: float) -> void:
+    var changes: Array[Dictionary] = gameplay.tick(dt, actor_world)
+    for change in changes:
+        if change["type"] == "HarvestCompleted":
+            var id: String = change["object_id"]
+            if not harvested_by_id.has(id):
+                push_error("TAMU_GAMEPLAY_HARVEST_ID_MISSING " + id)
+                continue
+            var item: Dictionary = harvested_by_id[id]
+            item["collected"] = true
+            var sprite: Sprite2D = item["sprite"]
+            sprite.set_meta("tamu_collected", true)
+            sprite.visible = false
+            if item["shadow"] != null:
+                var shadow: Polygon2D = item["shadow"]
+                shadow.set_meta("tamu_collected", true)
+                shadow.visible = false
+            harvested_count += 1
+            print("TAMU_HARVEST_OK id=", id, " count=", harvested_count,
+                " item=", change["item_id"], " amount=", change["amount"])
+        elif change["type"] == "CraftCompleted":
+            print("TAMU_CRAFT_OK recipe=", change["recipe_id"])
 
 func _init_harvest_button() -> void:
     var ui := CanvasLayer.new()
@@ -134,6 +167,26 @@ func _init_harvest_button() -> void:
     button.pressed.connect(_try_harvest)
     root.add_child(button)
     harvest_button = button
+    for option in [
+        {"name": "CraftPlanks", "text": "TAHTA", "recipe": "core:planks_from_log", "top": -308.0, "bottom": -210.0},
+        {"name": "CraftWorkbench", "text": "TEZGAH", "recipe": "core:bench_from_planks", "top": -420.0, "bottom": -322.0}
+    ]:
+        var crafting_button := Button.new()
+        crafting_button.name = str(option["name"])
+        crafting_button.text = str(option["text"])
+        crafting_button.anchor_left = 1.0
+        crafting_button.anchor_right = 1.0
+        crafting_button.anchor_top = 1.0
+        crafting_button.anchor_bottom = 1.0
+        crafting_button.offset_left = -190.0
+        crafting_button.offset_right = -24.0
+        crafting_button.offset_top = float(option["top"])
+        crafting_button.offset_bottom = float(option["bottom"])
+        crafting_button.mouse_filter = Control.MOUSE_FILTER_STOP
+        crafting_button.add_theme_font_size_override("font_size", 22)
+        crafting_button.add_theme_stylebox_override("normal", style)
+        crafting_button.pressed.connect(_begin_craft.bind(str(option["recipe"])))
+        root.add_child(crafting_button)
     print("TAMU_HARVEST_UI_READY")
 
 func _init_mobile_joystick() -> void:
@@ -370,6 +423,11 @@ func _ready() -> void:
     add_child(daylight_layer)
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and OS.get_environment("TAMU_VISUAL_CASE") == "dawn":
         day_clock = 6.0
+    gameplay = GameplaySession.new()
+    if OS.get_environment("TAMU_VISUAL_CI") == "1" and not gameplay.verify_contract():
+        push_error("TAMU_GAMEPLAY_DOMAIN_GATE_FAILED")
+        get_tree().quit(23)
+        return
     _load_objects()
     _make_avatar()
     if OS.get_environment("TAMU_VISUAL_CI") == "1":
@@ -612,8 +670,9 @@ func _load_objects() -> void:
         sprite.offset = Vector2(0.0, -60.0)
         object_layer.add_child(sprite)
         object_visuals_by_chunk[visual_key].append(sprite)
-        var item_record := {"id":id,"kind":kind,"position":Vector2(float(o["x"]),float(o["y"])),"sprite":sprite,"shadow":null,"collected":false}
+        var item_record := {"id":id,"kind":kind,"radius":float(o["radius"]),"position":Vector2(float(o["x"]),float(o["y"])),"sprite":sprite,"shadow":null,"collected":false}
         harvestables.append(item_record)
+        harvested_by_id[id] = item_record
         # Native Godot shadow geometry: atlas's tiny low-res alpha should not
         # make ground shadows invisible. Respect the original object footprint.
         if kind == "tree" or kind == "rock":
@@ -662,6 +721,7 @@ func _process(delta: float) -> void:
         avatar_parts["leg_L"].rotation = 0.0
         avatar_parts["leg_R"].rotation = 0.0
     _update_avatar()
+    _tick_gameplay(delta)
     if native_rig != null:
         native_rig.advance(visual_delta)
     var rig_end := Time.get_ticks_usec()
@@ -678,7 +738,7 @@ func _process(delta: float) -> void:
     var stream_end := Time.get_ticks_usec()
     if perf_hud != null:
         perf_hud.record(delta,loaded,total_cached,object_count,vertices,actor_world,stream_end-rig_end,rig_end-frame_start,"walk" if direction.length_squared()>0.01 else "idle")
-    marker.text = "TAMU Godot R2 / authored area\n%d resident / %d source | %d verts\nViewport missing %d | Mesh est %.1f MiB\nFPS %d | frame %.2f ms | Time %.1f | Harvest %d" % [loaded, total_cached, vertices, camera_missing, float(vertices * WorldStream.ESTIMATED_BYTES_PER_VERTEX)/1048576.0, Engine.get_frames_per_second(), delta * 1000.0,day_clock,harvested_count]
+    marker.text = "TAMU Godot R2 / authored area\n%d resident / %d source | %d verts\nViewport missing %d | Mesh est %.1f MiB\nFPS %d | frame %.2f ms | Time %.1f | Harvest %d\nOdun %d | Tas %d | Tahta %d | Tezgah %d" % [loaded, total_cached, vertices, camera_missing, float(vertices * WorldStream.ESTIMATED_BYTES_PER_VERTEX)/1048576.0, Engine.get_frames_per_second(), delta * 1000.0,day_clock,harvested_count, gameplay.count_item("core:wood_log"),gameplay.count_item("core:stone"),gameplay.count_item("core:wood_plank"),gameplay.count_item("core:workbench")]
     if frame_no % 120 == 0:
         print("TAMU_GODOT_FRAME frame=", frame_no, " loaded=", loaded, " fps=", Engine.get_frames_per_second())
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and frame_no == 60 and merged_mode and OS.get_environment("TAMU_VISUAL_CASE") == "reload":
@@ -753,13 +813,32 @@ func _process(delta: float) -> void:
                 push_error("TAMU_HARVEST_TEST_EMPTY")
                 get_tree().quit(12)
                 return
-            actor_world = harvestables[0]["position"]
+            var target: Dictionary = {}
+            for candidate in harvestables:
+                if GameplaySession.DROPS.has(str(candidate["kind"])):
+                    target = candidate
+                    break
+            if target.is_empty():
+                push_error("TAMU_HARVEST_TEST_NO_RESOURCE")
+                get_tree().quit(12)
+                return
+            actor_world = target["position"]
             harvest_button.emit_signal("pressed")
-            if harvested_count != 1 or harvestables[0]["sprite"].visible:
+            if gameplay.active_harvest.is_empty():
+                push_error("TAMU_HARVEST_NOT_STARTED")
+                get_tree().quit(13)
+                return
+            var completed_id: String = gameplay.active_harvest["id"]
+            for i in range(21):
+                _tick_gameplay(0.1)
+            var completed: Dictionary = harvested_by_id[completed_id]
+            var drop: Dictionary = GameplaySession.DROPS[str(completed["kind"])]
+            if harvested_count != 1 or not bool(completed["collected"]) or completed["sprite"].visible or gameplay.count_item(str(drop["def_id"])) != int(drop["count"]):
                 push_error("TAMU_HARVEST_BUTTON_GATE_FAILED")
                 get_tree().quit(13)
                 return
-            print("TAMU_HARVEST_BUTTON_GATE_OK count=",harvested_count)
+            print("TAMU_GAMEPLAY_HARVEST_INVENTORY_OK id=", completed_id, " item=", drop["def_id"], " count=", drop["count"])
+            print("TAMU_HARVEST_BUTTON_GATE_OK count=", harvested_count)
             get_tree().quit()
 
 func _unhandled_input(event: InputEvent) -> void:
