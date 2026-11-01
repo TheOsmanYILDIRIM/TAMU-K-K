@@ -41,6 +41,19 @@ jobs:
           assert coverage>0.65, f'FX_VIEWPORT_SCALING_FAILED background_coverage={coverage:.3f}'
           print('TAMU_FX_VISUAL_PIXEL_GATE_OK',a.size)
           PY
+          timeout --kill-after=3s 35s godot --headless --path . --script res://scripts/gameplay_contract_ci.gd 2>&1 | tee gameplay-native.log
+          grep -q TAMU_NATIVE_GAMEPLAY_CONTRACT_OK gameplay-native.log
+          mkdir -p /tmp/tamu-fast-save /tmp/tamu-fast-live /tmp/tamu-fast-mods
+          for phase in write reopen recovery mod_reject; do
+            XDG_DATA_HOME=/tmp/tamu-fast-save TAMU_SAVE_PHASE="$phase" timeout --kill-after=3s 20s godot --headless --path . --script res://scripts/stage6_contract_ci.gd 2>&1 | tee "save-$phase.log"
+            grep -q "TAMU_STAGE6_${phase^^}_OK" "save-$phase.log"
+          done
+          for phase in create reopen replay reject; do
+            XDG_DATA_HOME=/tmp/tamu-fast-live TAMU_LIVE_PHASE="$phase" timeout --kill-after=3s 20s godot --headless --path . --script res://scripts/stage6_live_ci.gd 2>&1 | tee "live-$phase.log"
+            grep -q "TAMU_STAGE6_LIVE_${phase^^}_OK" "live-$phase.log"
+          done
+          XDG_DATA_HOME=/tmp/tamu-fast-mods timeout --kill-after=3s 20s godot --headless --path . --script res://scripts/mod_contract_ci.gd 2>&1 | tee mod-fast.log
+          grep -q TAMU_USER_MOD_DISK_E2E_OK mod-fast.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -49,6 +62,10 @@ jobs:
             screenshots/fx-shadow-preview.png
             fx-contract.log
             fx-visual.log
+            gameplay-native.log
+            save-*.log
+            live-*.log
+            mod-fast.log
           if-no-files-found: warn
   apk:
     runs-on: ubuntu-24.04
