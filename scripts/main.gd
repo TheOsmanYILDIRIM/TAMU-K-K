@@ -284,7 +284,7 @@ func _refresh_streaming_requests() -> void:
         var show: bool = view_required.has(stem)
         var node: Node2D = chunk_nodes[stem]
         if node.visible != show:
-            node.visible = show and not bool(node.get_meta("tamu_collected", false))
+            node.visible = show
             _set_chunk_visuals_visible(str(stem), show)
     camera_missing = 0
     for stem in view_required:
@@ -344,7 +344,7 @@ func _ready() -> void:
 func _set_chunk_visuals_visible(stem: String, show: bool) -> void:
     for node in object_visuals_by_chunk.get(stem, []):
         if is_instance_valid(node):
-            node.visible = show
+            node.visible = show and not bool(node.get_meta("tamu_collected", false))
 
 func _load_chunk(stem: String) -> void:
     var payload: Dictionary = world_source.read_chunk(stem)
