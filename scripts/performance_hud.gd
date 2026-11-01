@@ -141,6 +141,17 @@ func test_gate() -> bool:
     var first = JSON.parse_string(records[0])
     if first is not Dictionary or first.get("schema") != "tamu.perf.godot.v1":
         return false
+    var lines := PackedStringArray()
+    for row in samples:
+        lines.append(JSON.stringify(row))
+    var exported := "\n".join(lines)
+    if exported.split("\n").size() != samples.size():
+        return false
+    for line in exported.split("\n"):
+        var decoded = JSON.parse_string(line)
+        if decoded is not Dictionary or decoded.get("schema","") != "tamu.perf.godot.v1":
+            return false
+    print("TAMU_PERF_JSONL_EXPORT_OK lines=", samples.size())
     print("TAMU_PERF_HUD_GATE_OK frames=",samples.size()," p95=",p95_ms," p99=",p99_ms)
     print("TAMU_PERF_JSONL_EXPORT_OK rows=", records.size())
     return true
