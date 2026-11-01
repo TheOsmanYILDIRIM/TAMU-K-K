@@ -846,7 +846,7 @@ func _process(delta: float) -> void:
             return
         print("TAMU_REGION_RELOAD_OK id_replaced=true region_count=", region_chunks.size(),
             " vertices=", vertices)
-    if OS.get_environment("TAMU_VISUAL_CI") == "1" and frame_no == 180:
+    if OS.get_environment("TAMU_VISUAL_CI") == "1" and frame_no == 90:
         if harvest_button == null or shadow_sprites.is_empty() or (day_clock <= 10.5 and OS.get_environment("TAMU_VISUAL_CASE") != "dawn") or harvest_button.get_global_rect().size.x < 100:
             push_error("TAMU_SUN_HARVEST_BOOT_GATE_FAILED")
             get_tree().quit(11)
