@@ -16,11 +16,11 @@ def timber(w,h,color):
             rim=.83+.17*max(0,1-abs(x-w*.5)/(w*.55))
             p[x,y]=tuple(max(0,min(255,int(v*shade*rim))) for v in color)+(255,)
     d=ImageDraw.Draw(im,"RGBA")
-    for _ in range(max(45,w*h//1400)):
+    for _ in range(max(35,w*h//3900)):
         x=rng.randrange(9,w-10);y=rng.randrange(9,h-10)
         length=rng.randrange(12,max(13,w//4))
         d.line((x,y,min(w-8,x+length),y+rng.choice((-1,0,0,1))),
-               fill=(20,11,5,rng.randint(12,36)),width=1)
+               fill=(20,11,5,rng.randint(8,24)),width=1)
     return im
 def framed(name,w,h,color,stroke,radius):
     result=Image.new("RGBA",(w,h),(0,0,0,0))
@@ -96,15 +96,29 @@ def bokeh():
         d.ellipse((x-r,y-r,x+r,y+r),
             fill=rng2.choice([(224,178,88,17),(182,206,90,11),(235,216,118,13)]))
     im.filter(ImageFilter.GaussianBlur(13)).save(ROOT/"bokeh.png")
+def radial_glow():
+    w=256
+    im=Image.new("RGBA",(w,w),(0,0,0,0))
+    pix=im.load()
+    for y in range(w):
+        for x in range(w):
+            dx=(x-w/2)/(w*.48)
+            dy=(y-w/2)/(w*.48)
+            r=dx*dx+dy*dy
+            alpha=int(max(0,80*math.exp(-r*3.5)-1))
+            pix[x,y]=(255,196,84,alpha)
+    im.save(ROOT/"glow.png")
+
 def main():
     wood_panel()
+    radial_glow()
     framed("button_green.png",325,115,(29,47,33),(177,151,101,215),28)
     framed("button_oak.png",440,120,(161,106,55),(230,172,93,225),26)
     framed("button_small.png",225,95,(61,57,39),(156,134,90,180),23)
     for name in ("log","leaf","basket","hammer","pick","pin"):icon(name)
     bokeh()
     required=("panel.png","button_green.png","button_oak.png","button_small.png",
-              "log.png","leaf.png","basket.png","hammer.png","pick.png","pin.png","bokeh.png")
+              "log.png","leaf.png","basket.png","hammer.png","pick.png","pin.png","bokeh.png","glow.png")
     assert all((ROOT/name).stat().st_size>300 for name in required)
     print("TAMU_FOREST_GUI_ASSETS_OK count=",len(required))
 if __name__=="__main__":main()

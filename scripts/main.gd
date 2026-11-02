@@ -823,6 +823,7 @@ func _ready() -> void:
             " vertices=", rigby_skin["vertices"], " triangles=", rigby_skin["triangles"],
             " influences=", rigby_skin["influences"])
     perf_hud = load("res://scripts/performance_hud.gd").new()
+    perf_hud.layer = 118 # The reference keeps performance telemetry crisp.
     add_child(perf_hud)
     _init_mobile_joystick()
     _init_harvest_button()
@@ -1075,6 +1076,7 @@ func _load_objects() -> void:
         var item_record := {"id":id,"kind":kind,"radius":float(o["radius"]),"position":Vector2(float(o["x"]),float(o["y"])),"sprite":sprite,"shadow":null,"collected":false}
         harvestables.append(item_record)
         item_record["alpha_key"]=str(a["id"])
+        item_record["family"]=family
         harvested_by_id[id] = item_record
         # Native Godot shadow geometry: atlas's tiny low-res alpha should not
         # make ground shadows invisible. Respect the original object footprint.
@@ -1115,7 +1117,7 @@ func _load_objects() -> void:
         object_count += 1
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and OS.get_environment("TAMU_VISUAL_CASE") == "gui":
         for candidate in harvestables:
-            if candidate["kind"] == "tree":
+            if candidate["kind"] == "tree" and str(candidate.get("family","")) in ["oak","broadleaf"]
                 $Camera2D.position = candidate["sprite"].position + Vector2(0.0,-35.0)
                 _refresh_streaming_requests()
                 break
@@ -1186,9 +1188,9 @@ func _process(delta: float) -> void:
     marker.text = "TAMU Godot R2 / authored area\n%d resident / %d source | %d verts\nViewport missing %d | Mesh est %.1f MiB\nFPS %d | frame %.2f ms | Time %.1f | Harvest %d\nOdun %d | Tas %d | Tahta %d | Tezgah %d" % [loaded, total_cached, vertices, camera_missing, float(vertices * WorldStream.ESTIMATED_BYTES_PER_VERTEX)/1048576.0, Engine.get_frames_per_second(), delta * 1000.0,day_clock,harvested_count, gameplay.count_item("core:wood_log"),gameplay.count_item("core:stone"),gameplay.count_item("core:wood_plank"),gameplay.count_item("core:workbench")]
     if frame_no % 120 == 0:
         print("TAMU_GODOT_FRAME frame=", frame_no, " loaded=", loaded, " fps=", Engine.get_frames_per_second())
-    if OS.get_environment("TAMU_VISUAL_CI") == "1" and OS.get_environment("TAMU_VISUAL_CASE") == "gui" and frame_no == 73:
+    if OS.get_environment("TAMU_VISUAL_CI") == "1" and OS.get_environment("TAMU_VISUAL_CASE") == "gui" and frame_no == 54:
         for candidate in harvestables:
-            if str(candidate["kind"]) == "tree" and candidate["sprite"].visible:
+            if str(candidate["kind"]) == "tree" and str(candidate.get("family","")) in ["oak","broadleaf"] and candidate["sprite"].visible:
                 if _select_harvest(candidate):
                     print("TAMU_GUI_VISUAL_SELECTION_OK id=",candidate["id"])
                     break

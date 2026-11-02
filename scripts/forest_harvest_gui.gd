@@ -8,6 +8,7 @@ var blur_rect: ColorRect
 var bokeh: TextureRect
 var focus_layer: CanvasLayer
 var focus: Sprite2D
+var ground_glow: Sprite2D
 var focus_outline: Sprite2D
 var root: Control
 var panel: NinePatchRect
@@ -57,6 +58,11 @@ func setup(game: Node2D) -> void:
     focus_layer.layer = 107
     focus_layer.name = "SelectedObjectFocus"
     host.add_child(focus_layer)
+    ground_glow = Sprite2D.new()
+    ground_glow.name = "WarmGroundContact"
+    ground_glow.texture = load(art_root + "glow.png")
+    ground_glow.visible = false
+    focus_layer.add_child(ground_glow)
     focus = Sprite2D.new()
     focus.name = "FocusedSource"
     focus.visible = false
@@ -253,11 +259,12 @@ func open_for(item: Dictionary) -> void:
     var drop: Dictionary = (host.get("gameplay") as RefCounted).call("harvest_drop",str(item["kind"]))
     var item_id := str(drop.get("def_id",""))
     item_label.text = "Odun" if item_id=="core:wood_log" else ("Taş" if item_id=="core:stone" else item_id)
-    quantity_label.text = "× " + str(drop.get("count",0))
+    quantity_label.text = "× " + str(int(drop.get("count",0)))
     var resource_icon: TextureRect = panel.get_node("ResourceIcon")
     resource_icon.texture = load(art_root + ("log.png" if str(item["kind"])=="tree" else "pick.png"))
-    status_label.text = "KAYNAĞI TOPLAMAK İÇİN DOKUN"
+    status_label.text = ""
     blur_layer.visible = true
+    ground_glow.visible = true
     focus.visible = true
     connector.visible = true
     target_ring.visible = true
@@ -277,6 +284,7 @@ func open_for(item: Dictionary) -> void:
 func close() -> void:
     panel_open = false
     blur_layer.visible = false
+    ground_glow.visible = false
     focus.visible = false
     connector.visible = false
     target_ring.visible = false
@@ -284,7 +292,7 @@ func close() -> void:
 
 func set_status(message: String) -> void:
     if panel != null and panel.visible and status_label != null:
-        status_label.text = message
+        status_label.text = "" if message.begins_with("SEÇİLDİ:") else message
 
 func _detail() -> void:
     if (host.get("selected_harvest") as Dictionary).is_empty():
@@ -310,6 +318,8 @@ func _sync_focus(item: Dictionary) -> void:
     focus.offset = sprite.offset
     focus.flip_h = sprite.flip_h
     focus.position = xf*Vector2.ZERO
+    ground_glow.position = focus.position + Vector2(0.0,3.0)
+    ground_glow.scale = Vector2(0.85,0.42)
     focus.scale = sprite.scale * (host.get_node("Camera2D") as Camera2D).zoom
     if host.get("selected_harvest_outline") != null:
         focus_outline.texture = host.get("selected_harvest_outline").texture
