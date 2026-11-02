@@ -491,6 +491,31 @@ jobs:
           godot --headless --path . --export-pack Android build/tamu-android-content.pck
           python3 - <<'PY'
           from pathlib import Path
+          import struct
+          p=Path('build/tamu-android-content.pck')
+          with p.open('rb') as f:
+              header=f.read(40)
+              assert header[:4]==b'GDPC', 'Invalid Godot pack magic'
+              end=struct.unpack_from('<Q',header,32)[0]
+              f.seek(end)
+              count=struct.unpack('<I',f.read(4))[0]
+              names=[]
+              for _ in range(count):
+                  size=struct.unpack('<I',f.read(4))[0]
+                  name=f.read(size).rstrip(b'\\x00').decode('utf-8')
+                  f.seek(16+16+4,1)
+                  names.append(name.lower())
+          banned=('plasma','screenshots/','game/love/','art-source/','docs/','object-studio/','world-builder/')
+          bad=[s for s in names if any(x in s for x in banned) or s.endswith(('.apk','.love','.mp3'))]
+          assert not bad, f'PCK_FORBIDDEN_FILES {bad[:15]}'
+          required=('chunks/r2_objects.json','chunks/merged_layer_1.verts','data/catalog/compiled_catalog.res','assets/terrain25d/atlas_00.png','assets/osman_rig/images/front_head.png')
+          assert all(any(key in s for s in names) for key in required), 'PCK_REQUIRED_ASSET_MISSING'
+          assert count < 450, f'PCK_TOO_MANY_FILES {count}'
+          assert p.stat().st_size < 40*1024*1024, f'PCK_TOO_LARGE {p.stat().st_size}'
+          print('TAMU_CLEAN_PCK_OK',p.stat().st_size,'files',count)
+          PY
+          python3 - <<'PY'
+          from pathlib import Path
           p=Path('build/tamu-android-content.pck').read_bytes()
           for name in (b'chunks/index.json',b'chunks/r2_objects.json',b'chunks/source_integrity.json',b'chunks/merged_terrain.json',b'merged_layer_0.verts',b'merged_layer_1.verts',b'assets/osman_rig/rig.json',b'data/catalog/manifest.json',b'data/catalog/definitions/oak_tree.json',b'data/catalog/recipes/planks_from_log.json',b'data/catalog/compiled_catalog.res'):
               assert name in p, f'ANDROID_ASSET_EXPORT_MISSING: {name!r}'

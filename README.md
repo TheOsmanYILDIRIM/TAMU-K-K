@@ -1,3 +1,8 @@
+## 2026-11-02 — Godot Loader PCK temizleme kararı
+- Godot deney dalında Plasma varlıkları, kaynak üreticileri, ilgili eski belgeler ve Plasma test dosyaları **kaldırıldı**. LÖVE ana dalı, tarihsel commitler, kullanıcı verileri ve yedekler değişmez.
+- Godot `export_presets.cfg`: `all_resources` yerine yalnız seçili sahne, gerçek terrain atlası, aktif Rigby parçaları ve derlenmiş katalog; ayrıca gerekli binary chunk, authored R2 ve JSON tanımları. Ekran görüntüsü, eski LÖVE varlıkları ve art-source dosyaları PCK dışında.
+- CI PCK dosya tablosunu okuyup Plasma/screenshot/legacy kaynaklarını ve 40 MiB üstünü reddeder. Yeni doğrulanmış boyut, test sonucu oluştuğunda geçerlidir; bu kayıt tek başına yeni PCK kabulü değildir.
+
 ## 2026-11-02 — Godot R2 native surface/collision + test edilmiş FX/APK
 - Kanonik LÖVE `field.lua` / `r2_valley_surface.lua` / `topography_surface.lua` hesapları `scripts/r2_surface.gd` üzerinde port edildi. Kaynak `data/worldbuild/fisilti_ormani.r2.v1.json` ve `osman_overworld.v2.json` kontrol edilir; Generator v1 yüksekliği, su çizgisi, vadi alçaltması, eğim hesabı gerçek matematikle örneklenir. `domain_building.gd` 4 birim aralıklı örnekleme, grade<=0.12 ve height-delta<=0.8 ile hatalı yüzeyi reddeder. `r2_collision.gd` LÖVE fizik süpürülmüş AABB/duvar boyunca kayma mantığını Godot için taşır. Depleted worldobj ID'leri R2 obstacle sorgusundan kaldırılır; karakter görselleri değiştirilmez.
 - `scripts/r2_surface_ci.gd` bağımsız hızlı test: spawn yüksekliği 12.830245, nehir `water` ve build-reject, kuru alan örnekleme ve sweep-slide PASS. `scripts/r2_authority_ci.gd` aynı oturumdan re-open, 832 authored ID/parite, collected obstacle remove testlerini doğrular.
