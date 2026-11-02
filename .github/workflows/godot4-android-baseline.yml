@@ -26,6 +26,7 @@ jobs:
           sudo install /tmp/Godot_v4.6-stable_linux.x86_64 /usr/local/bin/godot
           timeout --kill-after=3s 45s godot --headless --path . --script res://scripts/fx_contract_ci.gd 2>&1 | tee fx-contract.log
           grep -q 'TAMU_FX_CONTRACT_OK voices=8' fx-contract.log
+          grep -q TAMU_SHADOW_ALPHA_CONTOUR_OK fx-contract.log
           timeout --kill-after=3s 25s godot --headless --path . --script res://scripts/r2_surface_ci.gd 2>&1 | tee r2-surface.log
           grep -q TAMU_R2_SURFACE_PARITY_OK r2-surface.log
           grep -q TAMU_SHADOW_VOLUME_PARITY_OK fx-contract.log
@@ -36,6 +37,7 @@ jobs:
           mkdir -p screenshots
           timeout --kill-after=3s 50s xvfb-run -a -s '-screen 0 540x360x24' godot --path . --rendering-method gl_compatibility --resolution 540x360 --script res://scripts/fx_visual_ci.gd 2>&1 | tee fx-visual.log
           grep -q 'TAMU_FX_VISUAL_OK' fx-visual.log
+          grep -q TAMU_SHADOW_ALPHA_INSET_OK fx-visual.log
           grep -q 'TAMU_FX_SHADOW_25D_VOLUME_OK azimuths=3' fx-visual.log
           test -s screenshots/fx-shadow-preview.png
           python3 - <<'PY'
@@ -270,6 +272,13 @@ jobs:
           print('TAMU_REGION_CHUNK_CONTRACT_OK regions=1 source_cells=156')
           print('TAMU_MERGE_SOURCE_PARITY_OK original_chunks=156 layers=2 vertices=',total)
           PY
+      - name: Bake authored dry-material feather mesh
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/bake_terrain_seams.py | tee terrain-seams.log
+          grep -q TAMU_TERRAIN_SEAMS_OK terrain-seams.log
+          test -s chunks/merged_ground_seams.verts
       - name: Verify original Rigby weighted mesh topology and influences
         shell: bash
         run: |
@@ -540,6 +549,7 @@ jobs:
           assert any('scripts/object_shadow.gdshader' in path for path in names), 'PCK_SHADOW_SHADER_MISSING'
           assert any('scripts/terrain_mix.gdshader' in path for path in names), 'PCK_TERRAIN_MIX_SHADER_MISSING'
           assert any('assets/terrain25d/atlas_00_mix.png' in path for path in names), 'PCK_BAKED_TERRAIN_MIX_MISSING'
+          assert any('chunks/merged_ground_seams.verts' in path for path in names), 'PCK_GROUND_SEAMS_MISSING'
           print('TAMU_EXPORTED_RUNTIME_SCRIPTS_OK',len(runtime_scripts))
           assert count < 480, f'PCK_TOO_MANY_FILES {count}'
           assert p.stat().st_size < 40*1024*1024, f'PCK_TOO_LARGE {p.stat().st_size}'

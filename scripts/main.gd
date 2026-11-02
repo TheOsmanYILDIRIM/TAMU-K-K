@@ -55,6 +55,7 @@ var gameplay_sequence := 0
 var harvested_count := 0
 var shadow_sprites: Array[Polygon2D] = []
 var shadow_alpha_cache: Dictionary = {}
+var terrain_seams: MeshInstance2D
 var silhouette_shadows: Array[Sprite2D] = []
 var silhouette_material: ShaderMaterial
 var audio_cues: Node
@@ -610,6 +611,14 @@ func _ready() -> void:
         push_error("TAMU_MERGED_TERRAIN_LOAD_FAILED")
         get_tree().quit(19)
         return
+    if env_visual_stage >= 1:
+        terrain_seams = MergedTerrain.build_seam_overlay(terrain_atlas)
+        if terrain_seams == null:
+            push_error("TAMU_TERRAIN_SEAM_MISSING")
+            get_tree().quit(44)
+            return
+        add_child(terrain_seams)
+        print("TAMU_TERRAIN_SEAMS_READY vertices=",terrain_seams.get_meta("seam_vertices",0))
     marker = Label.new()
     marker.position = Vector2(8.0, 8.0)
     marker.add_theme_color_override("font_color", Color.WHITE)
@@ -715,6 +724,8 @@ func _load_region(manifest_path: String) -> bool:
     var node: Node2D = unified["root"]
     add_child(node)
     region_chunks[region_id] = node
+    if terrain_seams != null:
+        terrain_seams.visible = true
     loaded = int(unified["source_cells"])
     vertices = int(unified["vertices"])
     for stem in object_visuals_by_chunk:
@@ -734,6 +745,8 @@ func _unload_region(region_id: String) -> bool:
         return false
     var region_node: Node2D = region_chunks[region_id]
     region_chunks.erase(region_id)
+    if terrain_seams != null:
+        terrain_seams.visible = false
     # Detach immediately; deferred free must never render a duplicate.
     remove_child(region_node)
     region_node.queue_free()
