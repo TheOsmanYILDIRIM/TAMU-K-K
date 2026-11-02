@@ -1295,6 +1295,12 @@ func _process(delta: float) -> void:
                 push_error("TAMU_FOREST_GUI_SELECTION_NOT_VISIBLE")
                 get_tree().quit(56)
                 return
+            var modular := get_node_or_null("ModularReferenceHUD")
+            if modular == null or not modular.call("verify_contract"):
+                push_error("TAMU_HUD_REFERENCE_PARTS_NOT_LOADED")
+                get_tree().quit(57)
+                return
+            print("TAMU_MODULAR_HUD_VISUAL_OK portrait=true hotbar=true joystick=true")
             print("TAMU_FOREST_GUI_VISUAL_OK panel=true target=true")
         print("TAMU_ENV_STAGE_METRICS stage=",env_visual_stage,
             " drawcalls=",Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),

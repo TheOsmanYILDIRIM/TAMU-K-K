@@ -566,6 +566,10 @@ jobs:
           assert any('assets/gui/panel.png' in path for path in names), 'PCK_HARVEST_GUI_PANEL_MISSING'
           assert any('assets/gui/heading_tree.png' in path for path in names), 'PCK_HARVEST_GUI_HEADING_MISSING'
           assert any('assets/gui/joystick_base.png' in path for path in names), 'PCK_HARVEST_JOYSTICK_MISSING'
+          assert any('scripts/modular_hud.gd' in path for path in names), 'PCK_MODULAR_HUD_SCRIPT_MISSING'
+          assert any('ui/hud/layout.json' in path for path in names), 'PCK_MODULAR_HUD_LAYOUT_MISSING'
+          assert any('ui/hud/packs/TAMU_HUD_Correct_Split.zip' in path for path in names), 'PCK_MODULAR_HUD_ZIP_MISSING'
+
           assert any('scripts/terrain_mix.gdshader' in path for path in names), 'PCK_TERRAIN_MIX_SHADER_MISSING'
           assert any('assets/terrain25d/atlas_00_mix.png' in path for path in names), 'PCK_BAKED_TERRAIN_MIX_MISSING'
           print('TAMU_EXPORTED_RUNTIME_SCRIPTS_OK',len(runtime_scripts))
