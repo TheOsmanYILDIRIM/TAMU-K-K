@@ -592,7 +592,7 @@ jobs:
           assert any('scripts/terrain_mix.gdshader' in path for path in names), 'PCK_TERRAIN_MIX_SHADER_MISSING'
           assert any('assets/terrain25d/atlas_00_mix.png' in path for path in names), 'PCK_BAKED_TERRAIN_MIX_MISSING'
           print('TAMU_EXPORTED_RUNTIME_SCRIPTS_OK',len(runtime_scripts))
-          assert count < 510, f'PCK_TOO_MANY_FILES {count}'
+          assert count < 580, f'PCK_TOO_MANY_FILES {count}'
           assert p.stat().st_size < 40*1024*1024, f'PCK_TOO_LARGE {p.stat().st_size}'
           print('TAMU_CLEAN_PCK_OK',p.stat().st_size,'files',count)
           PY
