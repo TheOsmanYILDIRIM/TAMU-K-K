@@ -11,6 +11,7 @@ const WorldIdentity = preload("res://scripts/world_identity.gd")
 const AudioCues = preload("res://scripts/audio_cues.gd")
 const ImpactEffects = preload("res://scripts/impact_effects.gd")
 const SHADOW_SHADER = preload("res://scripts/object_shadow.gdshader")
+const SELECTION_SHADER = preload("res://scripts/harvest_outline.gdshader")
 const ShadowVolume = preload("res://scripts/shadow_volume.gd")
 const VisualEnvironment = preload("res://scripts/visual_environment.gd")
 var rigby_skin: Dictionary = {}
@@ -64,7 +65,11 @@ var sun_direction := Vector2.ZERO
 var sun_level := 1.0
 var daylight_layer: CanvasModulate
 var harvest_button: Button
-var harvest_select_mode := false
+var harvest_hint: Label
+var selected_harvest: Dictionary = {}
+var selected_harvest_outline: Sprite2D
+var harvest_alpha_cache: Dictionary = {}
+var harvest_outline_material: ShaderMaterial
 const DAY_SECONDS := 30.0
 var world_bounds := Rect2(-4096.0, -4096.0, 32768.0, 32768.0)
 const MAX_LOADED_PER_FRAME := 1
@@ -121,52 +126,146 @@ func _next_gameplay_command(prefix: String) -> String:
     gameplay_sequence += 1
     return "%s:%d" % [prefix, gameplay_sequence]
 
-func _try_harvest() -> void:
-    # TOPLA arms screen-space selection; it must not silently harvest nearest.
-    harvest_select_mode = not harvest_select_mode
+# Tap an authored opaque sprite first. TOPLA executes the existing
+# distance, inventory, Stage6 and depletion rules for that selected ID.
+func _harvest_feedback(message: String) -> void:
+    if harvest_hint != null:
+        harvest_hint.text = message
+
+func _clear_harvest_selection() -> void:
+    selected_harvest = {}
+    if selected_harvest_outline != null and is_instance_valid(selected_harvest_outline):
+        selected_harvest_outline.queue_free()
+    selected_harvest_outline = null
     if harvest_button != null:
-        harvest_button.text = "SEÇ: OBJE" if harvest_select_mode else "TOPLA"
-    print("TAMU_HARVEST_SELECT mode=", harvest_select_mode)
+        harvest_button.text = "TOPLA"
+
+func _selection_art(item: Dictionary) -> Dictionary:
+    var key := str(item.get("alpha_key",""))
+    if harvest_alpha_cache.has(key):
+        return harvest_alpha_cache[key]
+    var sprite: Sprite2D = item["sprite"]
+    var original: Image = sprite.texture.get_image()
+    if original == null or original.is_empty():
+        return {}
+    var padding := 5
+    var padded := Image.create(original.get_width()+2*padding,
+        original.get_height()+2*padding,false,Image.FORMAT_RGBA8)
+    padded.fill(Color.TRANSPARENT)
+    padded.blit_rect(original,Rect2i(Vector2i.ZERO,original.get_size()),
+        Vector2i(padding,padding))
+    var art := {"image":original,
+        "outline":ImageTexture.create_from_image(padded)}
+    harvest_alpha_cache[key]=art
+    return art
+
+func _alpha_contains(image: Image, x: int, y: int, flipped: bool) -> bool:
+    if image == null or x<0 or y<0 or x>=image.get_width() or y>=image.get_height():
+        return false
+    var px := image.get_width()-1-x if flipped else x
+    # Small tolerance for fingers, without accepting empty areas of a crop.
+    for delta in [Vector2i.ZERO,Vector2i(2,0),Vector2i(-2,0),
+            Vector2i(0,2),Vector2i(0,-2)]:
+        var point := Vector2i(px,y)+delta
+        if point.x>=0 and point.y>=0 and point.x<image.get_width() and point.y<image.get_height():
+            if image.get_pixel(point.x,point.y).a>0.13:
+                return true
+    return false
+
+func _select_harvest(item: Dictionary) -> bool:
+    if item.is_empty() or bool(item.get("collected",false)):
+        return false
+    var sprite: Sprite2D = item["sprite"]
+    if not sprite.visible or not gameplay.is_harvestable(str(item["kind"])):
+        return false
+    var art := _selection_art(item)
+    if art.is_empty():
+        return false
+    _clear_harvest_selection()
+    selected_harvest=item
+    if harvest_outline_material == null:
+        harvest_outline_material=ShaderMaterial.new()
+        harvest_outline_material.shader=SELECTION_SHADER
+    var outline := Sprite2D.new()
+    outline.name="HarvestGoldSilhouette"
+    outline.texture=art["outline"]
+    outline.centered=sprite.centered
+    outline.offset=sprite.offset
+    outline.flip_h=sprite.flip_h
+    outline.z_index=1
+    outline.texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR
+    outline.material=harvest_outline_material
+    sprite.add_child(outline)
+    selected_harvest_outline=outline
+    _harvest_feedback("SEÇİLDİ: %s  ·  TOPLA" % ("AĞAÇ" if str(item["kind"])=="tree" else "KAYA"))
+    print("TAMU_HARVEST_SELECTED id=",item["id"]," alpha_outline=true")
+    return true
 
 func _harvest_at_screen(screen_point: Vector2) -> bool:
-    if not harvest_select_mode:
+    if gameplay==null or authority==null:
         return false
-    # Coordinates are viewport pixels. Sprite transforms include camera zoom,
-    # atlas scaling and the authored foot anchor.
-    var chosen: Dictionary = {}
+    var chosen: Dictionary={}
     var best_depth := -INF
     var best_distance := INF
     for item in harvestables:
-        if bool(item.get("collected", false)) or not gameplay.is_harvestable(str(item["kind"])):
+        if bool(item.get("collected",false)) or not gameplay.is_harvestable(str(item["kind"])):
             continue
         var sprite: Sprite2D = item["sprite"]
         if not sprite.visible:
             continue
-        var local: Vector2 = sprite.get_global_transform_with_canvas().affine_inverse() * screen_point
-        if not sprite.get_rect().has_point(local):
+        var transform := sprite.get_global_transform_with_canvas()
+        var local := transform.affine_inverse() * screen_point
+        var rect := sprite.get_rect()
+        if not rect.has_point(local):
             continue
-        var center_distance: float = screen_point.distance_squared_to(
-            sprite.get_global_transform_with_canvas() * sprite.get_rect().get_center())
+        var art := _selection_art(item)
+        if art.is_empty():
+            continue
+        var image: Image = art["image"]
+        var px := floori(local.x-rect.position.x)
+        var py := floori(local.y-rect.position.y)
+        if not _alpha_contains(image,px,py,sprite.flip_h):
+            continue
         var depth: float = sprite.global_position.y
-        if depth > best_depth + 0.001 or (absf(depth - best_depth) <= 0.001 and center_distance < best_distance):
-            chosen = item
-            best_depth = depth
-            best_distance = center_distance
+        var distance: float = screen_point.distance_squared_to(transform*rect.get_center())
+        if depth>best_depth+0.01 or (absf(depth-best_depth)<=0.01 and distance<best_distance):
+            chosen=item
+            best_depth=depth
+            best_distance=distance
     if chosen.is_empty():
-        print("TAMU_HARVEST_SELECT_MISS")
         return false
-    harvest_select_mode = false
-    if harvest_button != null:
-        harvest_button.text = "TOPLA"
-    if not authority.matches_object(chosen):
+    return _select_harvest(chosen)
+
+func _try_harvest() -> void:
+    if selected_harvest.is_empty():
+        _harvest_feedback("ÖNCE BİR AĞACA VEYA KAYAYA DOKUN")
+        print("TAMU_HARVEST_NO_SELECTION")
+        return
+    if not gameplay.active_harvest.is_empty():
+        _harvest_feedback("TOPLAMA İŞLEMİ SÜRÜYOR")
+        return
+    if bool(selected_harvest.get("collected",false)):
+        _clear_harvest_selection()
+        _harvest_feedback("BU KAYNAK TOPLANMIŞ")
+        return
+    if not authority.matches_object(selected_harvest):
         push_error("TAMU_HARVEST_SOURCE_MISMATCH")
-        return true
-    var result: Dictionary = gameplay.begin_harvest(chosen, actor_world, _next_gameplay_command("harvest"))
-    if str(result.get("status", "")) == "started":
+        return
+    var item: Dictionary=selected_harvest
+    var result: Dictionary=gameplay.begin_harvest(item,actor_world,
+        _next_gameplay_command("harvest"))
+    var status := str(result.get("status","unknown"))
+    if status=="started":
         audio_cues.cue("harvest_start")
-        impact_effects.burst(chosen["sprite"].position, str(chosen["kind"]), 6)
-    print("TAMU_HARVEST_COMMAND id=",chosen["id"]," status=",result.get("status","unknown"))
-    return true
+        impact_effects.burst(item["sprite"].position,str(item["kind"]),6)
+        _harvest_feedback("TOPLANIYOR…")
+    elif status=="out_of_range":
+        _harvest_feedback("ÇOK UZAK: YAKLAŞ VE TOPLA")
+    elif status=="inventory_full":
+        _harvest_feedback("ENVANTER DOLU")
+    else:
+        _harvest_feedback("TOPLAMA: "+status)
+    print("TAMU_HARVEST_COMMAND id=",item["id"]," status=",status)
 
 # Minimal gameplay adapter: the canonical DomainBuilding remains authoritative.
 # Structures are drawn at world foot positions and restored from Stage6 saves.
@@ -238,6 +337,9 @@ func _tick_gameplay(dt: float) -> void:
             if bool(item.get("collected", false)):
                 continue
             item["collected"] = true
+            if not selected_harvest.is_empty() and str(selected_harvest["id"])==id:
+                _clear_harvest_selection()
+                _harvest_feedback("KAYNAK TOPLANDI")
             var sprite: Sprite2D = item["sprite"]
             sprite.set_meta("tamu_collected", true)
             sprite.visible = false
@@ -290,7 +392,24 @@ func _init_harvest_button() -> void:
     button.add_theme_font_size_override("font_size",26)
     button.pressed.connect(_try_harvest)
     root.add_child(button)
-    harvest_button = button
+    harvest_button=button
+    var status := Label.new()
+    status.name="HarvestSelectionStatus"
+    status.anchor_left=0.0
+    status.anchor_right=1.0
+    status.offset_left=18.0
+    status.offset_right=-18.0
+    status.offset_top=44.0
+    status.offset_bottom=90.0
+    status.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+    status.mouse_filter=Control.MOUSE_FILTER_IGNORE
+    status.add_theme_font_size_override("font_size",19)
+    status.add_theme_color_override("font_color",Color(1.0,0.85,0.26))
+    status.add_theme_color_override("font_shadow_color",Color(0.02,0.02,0.02,0.92))
+    status.add_theme_constant_override("shadow_offset_y",2)
+    status.text="OBJEYE DOKUN, SONRA TOPLA"
+    root.add_child(status)
+    harvest_hint=status
     for option in [
         {"name": "CraftPlanks", "text": "TAHTA", "recipe": "core:planks_from_log", "top": -308.0, "bottom": -210.0},
         {"name": "CraftWorkbench", "text": "TEZGAH", "recipe": "core:bench_from_planks", "top": -420.0, "bottom": -322.0}
@@ -942,6 +1061,7 @@ func _load_objects() -> void:
         object_visuals_by_chunk[visual_key].append(sprite)
         var item_record := {"id":id,"kind":kind,"radius":float(o["radius"]),"position":Vector2(float(o["x"]),float(o["y"])),"sprite":sprite,"shadow":null,"collected":false}
         harvestables.append(item_record)
+        item_record["alpha_key"]=str(a["id"])
         harvested_by_id[id] = item_record
         # Native Godot shadow geometry: atlas's tiny low-res alpha should not
         # make ground shadows invisible. Respect the original object footprint.
@@ -1144,10 +1264,17 @@ func _process(delta: float) -> void:
                 get_tree().quit(12)
                 return
             actor_world = target["position"]
-            # Selection UI requires an explicit object touch after arming.
+            if not _select_harvest(target) or selected_harvest_outline == null:
+                push_error("TAMU_HARVEST_SELECTION_FAILED")
+                get_tree().quit(13)
+                return
+            if not gameplay.active_harvest.is_empty():
+                push_error("TAMU_HARVEST_PREMATURE_COMMAND")
+                get_tree().quit(13)
+                return
+            print("TAMU_HARVEST_SELECTION_OK id=", selected_harvest["id"],
+                " outline=gold alpha=true")
             harvest_button.emit_signal("pressed")
-            var hit_screen: Vector2 = target["sprite"].get_global_transform_with_canvas() * target["sprite"].get_rect().get_center()
-            _harvest_at_screen(hit_screen)
             if gameplay.active_harvest.is_empty():
                 push_error("TAMU_HARVEST_NOT_STARTED")
                 get_tree().quit(13)
@@ -1157,7 +1284,7 @@ func _process(delta: float) -> void:
                 _tick_gameplay(0.1)
             var completed: Dictionary = harvested_by_id[completed_id]
             var drop: Dictionary = gameplay.harvest_drop(str(completed["kind"]))
-            if harvested_count != 1 or not bool(completed["collected"]) or completed["sprite"].visible or gameplay.count_item(str(drop["def_id"])) != int(drop["count"]):
+            if harvested_count != 1 or not bool(completed["collected"]) or completed["sprite"].visible or gameplay.count_item(str(drop["def_id"])) != int(drop["count"]) or not selected_harvest.is_empty():
                 push_error("TAMU_HARVEST_BUTTON_GATE_FAILED")
                 get_tree().quit(13)
                 return
@@ -1175,23 +1302,22 @@ func _process(delta: float) -> void:
             get_tree().quit()
 
 func _unhandled_input(event: InputEvent) -> void:
-    # Selection takes precedence over camera panning; taps remain handled by
-    # the canonical harvesting domain. Never register duplicate input methods.
-    if harvest_select_mode:
-        if event is InputEventScreenTouch and event.pressed:
-            if _harvest_at_screen(event.position):
-                get_viewport().set_input_as_handled()
-        elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-            if _harvest_at_screen(event.position):
-                get_viewport().set_input_as_handled()
-        return
+    # Taps select visible alpha; GUI and joystick keep their own controls.
     if event is InputEventScreenTouch:
         if event.index == joystick_pointer or event.position.distance_to(_joystick_center()) < 110.0:
             return
-        drag = event.pressed
+        if event.pressed and _harvest_at_screen(event.position):
+            drag=false
+            get_viewport().set_input_as_handled()
+            return
+        drag=event.pressed
     elif event is InputEventScreenDrag and drag:
         $Camera2D.position -= event.relative / $Camera2D.zoom
     elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-        drag = event.pressed
+        if event.pressed and _harvest_at_screen(event.position):
+            drag=false
+            get_viewport().set_input_as_handled()
+            return
+        drag=event.pressed
     elif event is InputEventMouseMotion and drag:
         $Camera2D.position -= event.relative / $Camera2D.zoom
