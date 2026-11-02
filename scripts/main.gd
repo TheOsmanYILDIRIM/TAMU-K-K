@@ -21,7 +21,6 @@ var world_source: RefCounted
 # Godot native ArrayMesh terrain; binary geometry and atlas are sourced from
 # the SAME TAMU compiled LÖVE CI artifact, never resampled.
 var terrain_atlas: Texture2D
-var terrain_mix_material: ShaderMaterial
 var detail_environment: MeshInstance2D
 var detail_count := 0
 var env_visual_stage := 3
@@ -570,16 +569,14 @@ func _ready() -> void:
     terrain_atlas = load("res://assets/terrain25d/atlas_00.png")
     env_visual_stage = VisualEnvironment.level()
     if env_visual_stage >= 1:
-        var terrain_manifest: Variant = JSON.parse_string(
-            FileAccess.get_file_as_string("res://assets/terrain25d/manifest.json"))
-        if not terrain_manifest is Dictionary:
-            push_error("TAMU_ENV_MANIFEST_MISSING")
-            get_tree().quit(43)
-            return
-        terrain_mix_material = VisualEnvironment.terrain_material(terrain_manifest)
-        if terrain_mix_material == null:
-            get_tree().quit(43)
-            return
+        # Build-time packed derivative: one texture fetch rather than the
+        # four-lookups-per-pixel prototype shader, with no extra draw calls.
+        var mixed_path := "res://assets/terrain25d/atlas_00_mix.png"
+        if ResourceLoader.exists(mixed_path):
+            terrain_atlas = load(mixed_path)
+            print("TAMU_TERRAIN_MIX_TEXTURE_READY")
+        else:
+            push_warning("TAMU_TERRAIN_MIX_NOT_BAKED: run scripts/bake_terrain_mix.py for authored blend; source atlas used")
     world_source = WorldSource.new()
     if not world_source.initialize():
         push_error("TAMU_WORLD_SOURCE_GATE_FAILED")
@@ -705,7 +702,7 @@ func _ready() -> void:
 
 func _load_region(manifest_path: String) -> bool:
     var started: int = Time.get_ticks_usec()
-    var unified: Dictionary = MergedTerrain.build_region(terrain_atlas, manifest_path, terrain_mix_material)
+    var unified: Dictionary = MergedTerrain.build_region(terrain_atlas, manifest_path)
     if unified.is_empty():
         return false
     var region_id: String = str(unified["region_id"])
@@ -799,8 +796,6 @@ func _load_chunk(stem: String) -> void:
         instance.mesh = mesh
         instance.texture = terrain_atlas
         instance.z_index = 0 if str(surf["key"]).begins_with("!") else 1
-        if instance.z_index == 1 and terrain_mix_material != null:
-            instance.material = terrain_mix_material
         group.add_child(instance)
         vertices += count
         chunk_count += count

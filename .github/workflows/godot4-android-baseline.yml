@@ -338,6 +338,9 @@ jobs:
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y -qq xvfb python3-pil >/dev/null
+          python3 scripts/bake_terrain_mix.py | tee screenshots-mix-bake.log
+          grep -q TAMU_TERRAIN_MIX_BAKED_OK screenshots-mix-bake.log
+          test -s assets/terrain25d/atlas_00_mix.png
           godot --headless --editor --path . --import --quit
           mkdir -p screenshots
           godot --headless --path . --script res://scripts/compile_content.gd | tee screenshots/content-compile.log
@@ -536,6 +539,7 @@ jobs:
           assert not missing_scripts, f'PCK_RUNTIME_SCRIPTS_MISSING {missing_scripts}'
           assert any('scripts/object_shadow.gdshader' in path for path in names), 'PCK_SHADOW_SHADER_MISSING'
           assert any('scripts/terrain_mix.gdshader' in path for path in names), 'PCK_TERRAIN_MIX_SHADER_MISSING'
+          assert any('assets/terrain25d/atlas_00_mix.png' in path for path in names), 'PCK_BAKED_TERRAIN_MIX_MISSING'
           print('TAMU_EXPORTED_RUNTIME_SCRIPTS_OK',len(runtime_scripts))
           assert count < 480, f'PCK_TOO_MANY_FILES {count}'
           assert p.stat().st_size < 40*1024*1024, f'PCK_TOO_LARGE {p.stat().st_size}'
