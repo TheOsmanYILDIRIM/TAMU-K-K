@@ -1,0 +1,84 @@
+name: TAMU SAM 3.1 creature segmentation
+on:
+  push:
+    branches:
+      - experiment/sam31-creature-segmentation-20261103
+    paths:
+      - .github/workflows/tamu-sam31-creature.yml
+      - scripts/sam31_creature.py
+  workflow_dispatch:
+    inputs:
+      image_url:
+        description: Optional public HTTPS URL for 124072.png (otherwise read assets/creatures/yaprakkulak/source.png)
+        required: false
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: tamu-sam31-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  segment:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preflight CUDA and gated model access
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "$HF_TOKEN" ]; then
+            echo "::error::SAM 3.1 checkpoint requires approved Hugging Face access and repository secret HF_TOKEN."
+            exit 4
+          fi
+          if ! command -v nvidia-smi >/dev/null || ! nvidia-smi; then
+            echo "::error::Standard ubuntu-24.04 GitHub runner has no CUDA GPU. Use an authorized GPU runner (self-hosted/GitHub larger GPU runner) before running SAM 3.1 inference."
+            exit 5
+          fi
+      - name: Install official SAM 3.1 code and dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 --version
+          python3 -m pip install --upgrade pip
+          python3 -m pip install torch==2.10.0 torchvision --index-url https://download.pytorch.org/whl/cu128
+          git clone --depth 1 https://github.com/facebookresearch/sam3.git /tmp/sam3
+          python3 -m pip install -e /tmp/sam3
+          python3 -m pip install pillow numpy huggingface_hub
+      - name: Acquire source from trusted repo path or explicit HTTPS input
+        env:
+          IMAGE_URL: ${{ inputs.image_url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-output/sam31
+          if [ -n "$IMAGE_URL" ]; then
+            case "$IMAGE_URL" in https://*) ;; *) echo "::error::image_url must be HTTPS"; exit 7;; esac
+            curl -fL --retry 2 --max-time 45 "$IMAGE_URL" -o ci-output/sam31/source.png
+          elif [ -f assets/creatures/yaprakkulak/source.png ]; then
+            cp assets/creatures/yaprakkulak/source.png ci-output/sam31/source.png
+          else
+            echo "::error::Input animal PNG not yet in repo. Add assets/creatures/yaprakkulak/source.png or dispatch with accessible HTTPS image_url."
+            exit 8
+          fi
+          python3 - <<'PY'
+          from PIL import Image
+          im=Image.open("ci-output/sam31/source.png")
+          im.verify()
+          print("TAMU_SAM31_INPUT_VALID")
+          PY
+      - name: Segment nine anatomical parts using SAM 3.1
+        shell: bash
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          set -euo pipefail
+          python3 scripts/sam31_creature.py --input ci-output/sam31/source.png --output ci-output/sam31/result
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tamu-sam31-creature-segmentation
+          path: ci-output/sam31/
+          if-no-files-found: warn
+          retention-days: 14
