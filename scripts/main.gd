@@ -1263,11 +1263,41 @@ func _process(delta: float) -> void:
                 push_error("TAMU_HARVEST_TEST_NO_RESOURCE")
                 get_tree().quit(12)
                 return
-            actor_world = target["position"]
-            if not _select_harvest(target) or selected_harvest_outline == null:
+            # A bare TOPLA press must never harvest an arbitrary nearest item.
+            harvest_button.emit_signal("pressed")
+            if not gameplay.active_harvest.is_empty():
+                push_error("TAMU_HARVEST_UNSELECTED_COMMAND_FAILED")
+                get_tree().quit(13)
+                return
+            print("TAMU_HARVEST_NO_SELECTION_GATE_OK")
+            # Simulate a real screen tap on an OPAQUE pixel of an authored
+            # object. This covers camera zoom, flip, hit geometry and UI order.
+            var target_sprite: Sprite2D = target["sprite"]
+            var target_art: Dictionary = _selection_art(target)
+            if target_art.is_empty():
+                push_error("TAMU_HARVEST_ALPHA_IMAGE_MISSING")
+                get_tree().quit(13)
+                return
+            var alpha_image: Image = target_art["image"]
+            var tapped := false
+            var target_rect := target_sprite.get_rect()
+            for yy in range(2,alpha_image.get_height()-2,3):
+                if tapped:
+                    break
+                for xx in range(2,alpha_image.get_width()-2,3):
+                    if alpha_image.get_pixel(xx,yy).a < 0.65:
+                        continue
+                    var xhit := alpha_image.get_width()-1-xx if target_sprite.flip_h else xx
+                    var at: Vector2 = target_rect.position+Vector2(float(xhit)+0.5,float(yy)+0.5)
+                    var screen: Vector2 = target_sprite.get_global_transform_with_canvas()*at
+                    if _harvest_at_screen(screen):
+                        tapped = true
+                        break
+            if not tapped or selected_harvest_outline == null or selected_harvest.is_empty():
                 push_error("TAMU_HARVEST_SELECTION_FAILED")
                 get_tree().quit(13)
                 return
+            actor_world = selected_harvest["position"]
             if not gameplay.active_harvest.is_empty():
                 push_error("TAMU_HARVEST_PREMATURE_COMMAND")
                 get_tree().quit(13)
