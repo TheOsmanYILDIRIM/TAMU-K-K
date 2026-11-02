@@ -129,7 +129,7 @@
       0.22,
       0.12
     ],
-    "visible": true
+    "visible": false
   },
   "crouch": {
     "pos": [
@@ -162,7 +162,7 @@
       0.93,
       0.089
     ],
-    "visible": true
+    "visible": false
   },
   "zoom_plus_separate": {
     "pos": [
@@ -173,7 +173,7 @@
       0.08,
       0.044
     ],
-    "visible": true
+    "visible": false
   },
   "zoom_minus_separate": {
     "pos": [
@@ -184,7 +184,7 @@
       0.08,
       0.044
     ],
-    "visible": true
+    "visible": false
   },
   "alert": {
     "pos": [
@@ -206,7 +206,7 @@
       0.1,
       0.1
     ],
-    "visible": false
+    "visible": true
   },
   "blank_hotbar": {
     "pos": [
@@ -217,7 +217,7 @@
       0.1,
       0.1
     ],
-    "visible": false
+    "visible": true
   },
   "cloud": {
     "pos": [
@@ -294,7 +294,7 @@
       0.1,
       0.1
     ],
-    "visible": false
+    "visible": true
   },
   "joystick_thumb": {
     "pos": [
@@ -305,7 +305,7 @@
       0.1,
       0.1
     ],
-    "visible": false
+    "visible": true
   },
   "zoom_plus": {
     "pos": [

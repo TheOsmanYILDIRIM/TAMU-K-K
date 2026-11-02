@@ -1,3 +1,7 @@
+### 2026-11-03 — HUD portrait interactive fixes
+- Replaced decoration-only HUD with input-bearing TextureButtons; restored native joystick touch logic with moving new thumb, removed duplicate forest buttons, uses blank_attack/blank_hotbar. Portrait layout calculated in pixels preserving aspect ratio. Zoom has one pair. Unsupported gameplay actions show explicit on-screen feedback, not fake functionality.
+- Native Godot CI and physical Android button tests remain distinct and pending at commit time.
+
 ### 2026-11-02 — [GODOT-HUD] Kalıcı arayüz dizinleri ve tek dosyalı görsel yükleme
 - Yeni tek referans: `ui/hud/layout.json` (konum), `ui/hud/packs/TAMU_HUD_Correct_Split.zip` (29 gerçek PNG), `scripts/modular_hud.gd` (ZIPReader). `assets/gui/hud` altındaki eski manifest yalnız geriye dönük kayıttır; mevcut PNG/yedek yok edilmedi.
 - GitHub Web upload hedefi: `https://github.com/TheOsmanYILDIRIM/TAMU-K-K/upload/main/ui/hud/packs`. Kullanıcı mevcut iç ZIP dosyasını burada tek dosya olarak yükler. Repo'da ZIP olmadığında var olan işlevsel HUD kullanılmaya devam eder. UI/R2/Stage6/save değişmez. Yeni HUD gerçek PCK kabulü ZIP yüklenmesine bağlıdır; APK yapılmaz.
