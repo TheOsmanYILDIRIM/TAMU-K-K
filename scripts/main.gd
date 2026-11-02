@@ -63,6 +63,14 @@ const DAY_SECONDS := 30.0
 var world_bounds := Rect2(-4096.0, -4096.0, 32768.0, 32768.0)
 const MAX_LOADED_PER_FRAME := 1
 const ACTOR_COLLISION_RADIUS := 9.0
+# Exact canonical LÖVE renderer reference, not an arbitrary Godot art resize:
+# camera.lua default=1.7; rigby_visual.lua display.height=72;
+# terrain25d_sprites.lua sprite foot pivot=(64,124) on 128px source.
+const LOVE_CAMERA_ZOOM := 1.7
+const LOVE_PLAYER_HEIGHT := 72.0
+const LOVE_OBJECT_PIVOT := 124.0 / 128.0
+var avatar_visual_scale := 1.0
+var avatar_scale_initialized := false
 # Original R2 ecology was exported using Iso.project(x,y,height*0.35).
 const R2_HEIGHT_SCREEN_SCALE := 0.35
 var actor_ground_sample_at := Vector2(INF, INF)
@@ -318,6 +326,11 @@ func _make_avatar() -> void:
         avatar_parts[part] = sprite
     _set_actor_clip("SE", "idle")
     _update_avatar()
+    _calibrate_avatar_scale()
+    if OS.get_environment("TAMU_VISUAL_CI") == "1":
+        print("TAMU_LOVE_VISUAL_SCALE_OK camera=", $Camera2D.zoom.x,
+            " actor_height=", snappedf(_avatar_visual_height() * avatar_visual_scale, 0.001),
+            " object_foot=124/128")
     # Keep the old six PNGs as visible renderer until complete Rigby pose parity.
     if OS.get_environment("TAMU_VISUAL_CI") == "1" or OS.get_environment("TAMU_RIGBY_SKIN_PREVIEW") == "1":
         rigby_skin = RigbySkinned.build(source, native_rig)
@@ -341,7 +354,7 @@ func _set_actor_clip(direction: String, action: String) -> void:
     if native_rig != null:
         native_rig.play_clip(source_name)
     _set_actor_facing(direction == "NW" or direction == "NE")
-    avatar.scale.x = -1.0 if direction == "SW" or direction == "NE" else 1.0
+    avatar.scale.x = (-1.0 if direction == "SW" or direction == "NE" else 1.0) * avatar_visual_scale
 
 func _set_actor_facing(back: bool) -> void:
     if actor_facing_back == back and avatar_parts["head"].texture != null:
@@ -350,6 +363,33 @@ func _set_actor_facing(back: bool) -> void:
     var prefix := "back" if back else "front"
     for part in avatar_parts:
         avatar_parts[part].texture = load("res://assets/osman_rig/images/%s_%s.png" % [prefix,part])
+    if avatar_scale_initialized:
+        _calibrate_avatar_scale()
+
+func _avatar_visual_height() -> float:
+    var top := INF
+    var bottom := -INF
+    for part in avatar_parts.values():
+        var visual: Sprite2D = part
+        if visual.texture == null:
+            return 0.0
+        var rect: Rect2 = visual.get_rect()
+        var a := visual.position.y + rect.position.y * visual.scale.y
+        var b := a + rect.size.y * visual.scale.y
+        top = minf(top, a, b)
+        bottom = maxf(bottom, a, b)
+    return bottom - top if is_finite(top) and is_finite(bottom) else 0.0
+
+func _calibrate_avatar_scale() -> void:
+    # Only on asset/facing changes, never once per frame. The six-part demo
+    # remains separate from the deferred native Rigby migration.
+    var raw_height := _avatar_visual_height()
+    if raw_height < 1.0:
+        push_error("TAMU_AVATAR_VISUAL_HEIGHT_INVALID")
+        return
+    avatar_visual_scale = LOVE_PLAYER_HEIGHT / raw_height
+    avatar.scale = Vector2((-1.0 if actor_direction == "SW" or actor_direction == "NE" else 1.0) * avatar_visual_scale, avatar_visual_scale)
+    avatar_scale_initialized = true
 
 func _update_avatar() -> void:
     # Match the authored object's terrain-height offset without re-sampling when idle.
@@ -441,6 +481,7 @@ func _ready() -> void:
     camera.name = "Camera2D"
     camera.enabled = true
     camera.position = Vector2(0.0, 0.0)
+    camera.zoom = Vector2.ONE * LOVE_CAMERA_ZOOM
     if OS.get_environment("TAMU_VISUAL_CI") == "1":
         match OS.get_environment("TAMU_VISUAL_CASE"):
             "east":
@@ -673,7 +714,12 @@ func _enforce_resident_budget() -> void:
 func _verify_visual_order() -> bool:
     if not object_layer.y_sort_enabled or object_layer.z_index <= 2:
         return false
-    if avatar.get_parent() != object_layer:
+    if avatar.get_parent() != object_layer or not avatar_scale_initialized:
+        return false
+    if absf(_avatar_visual_height() * avatar_visual_scale - LOVE_PLAYER_HEIGHT) > 0.5:
+        return false
+    var expected_zoom := 0.82 if OS.get_environment("TAMU_VISUAL_CASE") == "zoom" else (2.0 if OS.get_environment("TAMU_VISUAL_CASE") == "grounding" else LOVE_CAMERA_ZOOM)
+    if not is_equal_approx($Camera2D.zoom.x, expected_zoom):
         return false
     if authority != null and absf(avatar.position.y - (WorldProjection.to_screen(actor_world).y - actor_ground_screen_offset)) > 0.01:
         return false
@@ -681,7 +727,7 @@ func _verify_visual_order() -> bool:
         var sprite: Sprite2D = item["sprite"]
         if sprite.get_parent() != object_layer or sprite.z_index != 0:
             return false
-        if absf(sprite.offset.y + sprite.texture.get_height() * 0.5) > 0.01:
+        if absf(sprite.offset.y - sprite.texture.get_height() * (0.5 - LOVE_OBJECT_PIVOT)) > 0.01:
             return false
         if item["shadow"] != null:
             var shadow: Polygon2D = item["shadow"]
@@ -765,7 +811,7 @@ func _load_objects() -> void:
         var scale_value := float(scales.get(family, 0.5)) * (0.96 + float(h % 9) * 0.01)
         sprite.scale = Vector2.ONE * scale_value
         # Local ground anchor follows the atlas region height, never a fixed 60 px.
-        sprite.offset = Vector2(0.0, -area.size.y * 0.5)
+        sprite.offset = Vector2(0.0, area.size.y * (0.5 - LOVE_OBJECT_PIVOT))
         object_layer.add_child(sprite)
         object_visuals_by_chunk[visual_key].append(sprite)
         var item_record := {"id":id,"kind":kind,"radius":float(o["radius"]),"position":Vector2(float(o["x"]),float(o["y"])),"sprite":sprite,"shadow":null,"collected":false}
@@ -807,7 +853,7 @@ func _load_objects() -> void:
         for item in harvestables:
             if item["kind"] == "tree":
                 $Camera2D.position = item["sprite"].position + Vector2(0.0, -30.0)
-                $Camera2D.zoom = Vector2(1.35, 1.35)
+                $Camera2D.zoom = Vector2(2.0, 2.0)
                 _refresh_streaming_requests()
                 break
     print("TAMU_CANONICAL_OBJECTS_LOADED count=", object_count)
