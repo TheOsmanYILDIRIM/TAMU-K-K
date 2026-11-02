@@ -1,3 +1,11 @@
+## 🕹️ OSMAN Godot Loader — Android'de editörsüz PCK oynatıcı
+
+Android'de Godot oyunlarını her değişiklikte yeni APK oluşturmadan açmak için **OSMAN Godot Loader** bulunuyor. Bir kez Loader APK'yı kurup Godot 4.6 ile dışa aktarılmış `.pck` dosyasını **Birlikte aç / Paylaş** veya **PCK İÇERİ AKTAR** ile yükleyebilirsiniz. **Android 7.0+ ve ARM64** gereklidir; GitHub Actions ZIP'i değil içindeki PCK açılır.
+
+**[📘 OSMAN Godot Loader — Kurulum, APK indirme, PCK export, sorun giderme ve geliştirici rehberi](godot-loader/README.md)**
+
+> Loader ve TAMU oyunu ayrı paketlerdir. Godot Loader APK'sı [kendi Actions iş akışından](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/workflows/godot-loader-android.yml), TAMU oyunu PCK'si ise [Godot PCK iş akışından](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/workflows/godot4-android-baseline.yml) indirilir.
+
 ## 2026-11-02 — Android gri ekran: eksik GDScript export ve izole PCK açılış kapısı
 Gerçek Android kullanıcı geri bildirimi: önceki harici PCK **ve** bağımsız Android APK yaklaşık 10 saniye boyunca gri ekranda kaldı. Önceki temiz PCK (16.603.328 bayt, 414 dosya) açılarak incelendi: yalnızca `scripts/main.gdc`, `scripts/content_entry.gdc`, `scripts/content_pack.gdc` derlenmiş script dosyaları bulunuyordu; `main.gd` içindeki R2/Stage6/FX/Save preloads ve `object_shadow.gdshader` seçili-kaynak export filtresinde eksikti. Bu, Android'deki sorunun **güçlü kaynaklı açıklamasıdır**, cihaz üzerinde kesin kök neden ölçümü değildir.
 
