@@ -57,6 +57,19 @@ jobs:
           sha256sum "$APK"
           mkdir -p godot-loader/dist
           cp "$APK" godot-loader/dist/OSMAN_Godot_Loader-debug.apk
+      - name: Verify packaged file-manager intent association
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          APK=godot-loader/dist/OSMAN_Godot_Loader-debug.apk
+          "$SDK/build-tools/35.0.1/aapt" dump xmltree "$APK" AndroidManifest.xml > "$RUNNER_TEMP/loader-manifest-tree.txt"
+          grep -Fq 'android.intent.action.VIEW' "$RUNNER_TEMP/loader-manifest-tree.txt"
+          grep -Fq 'android.intent.action.SEND' "$RUNNER_TEMP/loader-manifest-tree.txt"
+          grep -Fq 'application/octet-stream' "$RUNNER_TEMP/loader-manifest-tree.txt"
+          grep -Fq 'application/x-godot-pck' "$RUNNER_TEMP/loader-manifest-tree.txt"
+          grep -Fq 'OSMAN Godot Loader' "$RUNNER_TEMP/loader-manifest-tree.txt"
+          echo OSMAN_PCK_OPEN_WITH_MANIFEST_OK
       - uses: actions/upload-artifact@v4
         if: success()
         with:

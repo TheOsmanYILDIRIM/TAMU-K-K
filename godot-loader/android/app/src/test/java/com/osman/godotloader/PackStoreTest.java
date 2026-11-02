@@ -10,6 +10,14 @@ public class PackStoreTest {
         assertFalse(PackStore.validName(null));
         assertTrue(PackStore.validName("a".repeat(64) + ".pck"));
     }
+    @Test public void acceptsOnlyPckDisplayNames() {
+        assertTrue(PackStore.hasPckExtension("TAMU.pck"));
+        assertTrue(PackStore.hasPckExtension("tamu.PCK"));
+        assertFalse(PackStore.hasPckExtension("archive.zip"));
+        assertFalse(PackStore.hasPckExtension("tamu.pck.zip"));
+        assertFalse(PackStore.hasPckExtension(".pck"));
+        assertFalse(PackStore.hasPckExtension(null));
+    }
     @Test public void checksGodotPckMagic() {
         assertTrue(PackStore.validHeader(new byte[]{'G','D','P','C'}, 4));
         assertFalse(PackStore.validHeader(new byte[]{'P','K',3,4}, 4));

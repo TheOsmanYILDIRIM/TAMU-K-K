@@ -9,10 +9,27 @@
         android:extractNativeLibs="true">
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- File managers commonly send proprietary .pck as application/octet-stream.
+                 The app checks the display name AND GDPC magic before importing. -->
+            <intent-filter android:label="OSMAN Godot Loader">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="application/x-godot-pck" />
+                <data android:mimeType="application/x-pck" />
+            </intent-filter>
+            <intent-filter android:label="OSMAN Godot Loader">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="application/x-godot-pck" />
+                <data android:mimeType="application/x-pck" />
             </intent-filter>
         </activity>
         <activity

@@ -9,6 +9,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.MessageDigest;
+import java.util.Locale;
 import java.security.NoSuchAlgorithmException;
 
 /** Stores untrusted SAF imports in private storage without touching game saves. */
@@ -23,6 +24,11 @@ public final class PackStore {
             if (header[i] != PCK_MAGIC[i]) return false;
         }
         return true;
+    }
+
+    public static boolean hasPckExtension(String displayName) {
+        return displayName != null && displayName.length() > 4 &&
+                displayName.toLowerCase(Locale.ROOT).endsWith(".pck");
     }
 
     public static boolean validName(String name) {
