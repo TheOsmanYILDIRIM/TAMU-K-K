@@ -764,7 +764,7 @@ func _load_objects() -> void:
                 var angle := TAU * float(n) / 24.0
                 outline.append(Vector2(cos(angle)*radius, sin(angle)*radius*0.45))
             shadow.polygon = outline
-            shadow.color = Color(0.025,0.045,0.04,0.72)
+            shadow.color = Color(0.025,0.045,0.04,0.08)
             shadow.visible = merged_mode
             shadow.position = sprite.position + Vector2(0.0,3.0)
             shadow.set_meta("base_scale",maxf(0.7,scale_value*2.5))
@@ -783,7 +783,7 @@ func _load_objects() -> void:
             shadow_layer.add_child(silhouette)
             silhouette_shadows.append(silhouette)
             object_visuals_by_chunk[visual_key].append(silhouette)
-            shadow.color.a = 0.24
+            shadow.color.a = 0.08
             item_record["silhouette"] = silhouette
             item_record["shadow"] = shadow
             object_visuals_by_chunk[visual_key].append(shadow)
