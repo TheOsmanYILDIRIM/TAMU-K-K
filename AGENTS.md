@@ -1,3 +1,28 @@
+## 2026-11-01 — TAMU zorunlu modlanabilir veri mimarisi (kullanıcı kararı)
+- **Bütün oyun içeriği ve oynanış kuralları modlanabilir olacak.** Eşya, tarif, crafting, kaynak, yapı, dünya/bölge, ileride etkileşim/ilerleme/AI veri sınırları sabit kod veya yalnız gömülü tek katalogla kilitlenmemeli. Çekirdek güvenlik ve native motor işlevleri varsayılan olarak keyfî mod script'i çalıştırmaz.
+- Godot içerik tanımları geliştirici için **tipli `.tres` / Custom Resource**, üretimde **derlenmiş `.res`** paketlerinden okunabilmeli. Oyuncu modları için açık ve kolay düzenlenebilir **TOML + görsel varlık** arayüzü hedeflenir; TOML/ZIP mod yükleyici ve Android izinleri doğrulanana kadar `var` gibi iddia edilmez.
+- Modlar benzersiz isim alanlarıyla (`ornek:esya`, `ornek:tarif`) tanımlanır. Kanonik `core:*` kimlikleri ve `worldobj:v1` instance ID'leri korunur; çakışma, eksik bağımlılık, bozuk veri, geçersiz imza/sürüm sessizce kabul edilmez. Mod kaldırıldığında save içindeki bilinmeyen ID kullanıcı onayı olmadan başka eşya/kaynakla değiştirilmez.
+- Build-time kaynak eşdeğerliği, deterministik içerik kimlikleri, mod kaynak/bağımlılık sırası, kayıt sürümü ve güvenli yükleme kapıları tasarım şartıdır. Mod verisi *data-only* varsayılandır; güvenilmeyen harici `.res`/`.pck` içinde keyfî GDScript yüklenmez. Her yeni sistemde önce mod genişletme noktası ve kabul testi düşünülür.
+- Geçiş boyunca mevcut LÖVE `data/catalog/` JSON kaynakları, Stage5/6, `main`, LÖVE dalı ve kullanıcı assetleri silinmez; doğrulanmış binary paketlemeye yalnız ayrı kıyas kapısıyla geçilir. Karakter/Faz 2 kullanıcı değiştireceği için ertelenmiştir; demo arayüzü değiştirilmez.
+
+## 2026-11-01 — User decision: defer character/Rigby migration
+- The user will replace the character. **Do not continue Rigby weighted skinning, clip parity, IK, sockets or character art work** without a new explicit request. Preserve all current character assets, code, experiment history and backwards-compatible behavior.
+- Advance Godot migration via **Phase 3 gameplay**, then Stage 4 versioned saves, Stage 5 mobile/performance and Stage 6 acceptance. Phase 2 remains deferred, not completed.
+- Fısıltı Ormanı remains one logical authored region chunk (156 source cells, two native terrain layers); other future regions remain separate. GitHub real scene/visual regression precedes physical Android acceptance.
+
+## 2026-11-01 — Godot bölge başına tek büyük chunk (güncel kullanıcı kararı)
+- **Tüm oyun tek chunk değildir.** Her bağımsız authored bölge ayrı bir mantıksal chunk'tır; mevcut **Fısıltı Ormanı** bölgesi eski 156 küçük kaynak hücrenin birleştirilmesiyle **tek bölge chunk'ı** olarak çizilir (mevcut terrain için iki ayrı z-katmanı MeshInstance2D).
+- Gelecekteki bölgeler ayrı manifest, ayrı yaşam döngüsü, ayrı yükleme/tahliye ve koordinat/kimlik sınırlarına sahip olacak. Yeni bölgeleri tek bir küresel mesh'e birleştirme; kaynak 156 hücreyi/sabit obje ID'lerini silme.
+- Yeni bölge sistemi için onaylanmamış harita, asset veya kayıt şeması üretme. Yalnız mevcut `scripts/`, `chunks/` ve `SESSION_HANDOFF.md` düzeni içinde çalış. Android cihaz testinden önce GitHub üzerinde görsel/çalıştırma/regresyonu doğrula.
+
+## 2026-11-01 — User-approved Godot 4 primary-engine migration (current decision)
+- On `experiment/godot4-android-apk-20261031`, **Godot 4 becomes the primary engine**. Prior LÖVE-only and 3D-reboot statements below are historical for this branch; do not treat them as an instruction to revert this user's decision.
+- Preserve `experiment/25d-binary-vertex-20261030`, main, original map coordinates/heights/IDs/atlases, original Rigby sources, save data, backup branches and user-created assets. No main merge without separate approval.
+- Migrate features through Godot native scenes/nodes, Skeleton2D/AnimationPlayer, mesh, collision, streaming and mobile Control nodes. Do not translate every Lua line. Modules: world/stream/render, character/rig, gameplay, save/migration, UI/telemetry.
+- Source-of-truth coordinates remain Cartesian world x/y (256-unit chunk cells); screen isometric coordinates are renderer-only. No silent legacy save import or world fabrication.
+- Plan and progress belong in the **existing** `SESSION_HANDOFF.md`, not new tracking locations. Existing LÖVE-specific Avenox task remains scoped to its original work; Godot-specific canonical task creation requires separate approval for a new record path.
+- Gate each phase with existing Godot CI import/runtime/PNG/export, focused regression, source parity and separate real-device Android FPS evidence. Debug APK is not the final game.
+
 ## 2026-10-29 — Kullanıcı onaylı Osman karakteri artık varsayılan
 Kullanıcının 29 Ekim tarihli açık talebiyle eski 16 Ekim tarihli 'insansı rig ertelendi' kararı **karakter çizim katmanı için geçersizdir**. Yeni varsayılan `game/love/player/rigby_visual.lua` canlı iskeletli Osman karakteridir. `core_visual.lua`, plazma PNG'leri ve eski gameplay/sistem kayıtları silinmez; `TAMU_USE_PLASMA=1` geri dönüş seçeneğidir. 30 özgün PNG yalnız vücut parçalarıdır, frame atlası değildir. 44 klip, 4 yön, sağlak el soketi. Ana oyun dünya görseli R2/2.5D olarak kalır. Stage6/R2 kayıt sözleşmesi değişmez. CI, gerçek cihaz ve kaynak SHA ayrı kabul kanıtlarıdır.
 

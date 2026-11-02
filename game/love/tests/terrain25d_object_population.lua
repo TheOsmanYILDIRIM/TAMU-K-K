@@ -25,4 +25,167 @@ assert(world.calls==4,'R2 must prepare 4 spatial candidate quadrants')
 local candidates=Renderer.collect(world,stream,overlay)
 assert(#candidates==1 and candidates[1]==hit,'R2 authored object must render')
 assert(world.calls==4,'draw must not perform cold queries')
+-- Reusable render buffers must retain the identical visible entity references
+-- and never force fresh ecology queries on a prepared chunk.
+local scratch={objects={},seen={}}
+for _=1,30 do
+ local current=Renderer.collect(world,stream,overlay,scratch)
+ assert(current==scratch.objects and #current==1 and current[1]==hit,
+   'pooled visible objects changed or leaked between frames')
+end
+assert(world.calls==4,'pooled frames must not query ecology')
+local independent=Renderer.collect(world,stream,overlay)
+assert(independent~=scratch.objects and independent[1]==hit,
+  'public nonpooled collect must retain independent result semantics')
 print('R2_25D_OBJECT_POPULATION_OK')
+print('TAMU_OBJECT_POOL_SEMANTICS_OK')
+
+-- Shadow pass already validated reveal readiness: contact pass must not
+-- repeat the potentially costly full-object readiness scan.
+local Sprite=require('objects.terrain25d_sprites')
+-- Parametric bundle invariant: negative cells and same-ID re-materialization
+-- must project to identical world positions across chunk boundaries.
+do
+ local camera={project=function(_,x,y,w,h)
+   return x*1.4-y*.7+w*.5, x*.35+y*.6+h*.5
+ end}
+ for _,xy in ipairs({{-257,-1},{-256,0},{-1,-1},{0,0},
+                      {255,255},{256,256},{512,-512}}) do
+   local x,y=xy[1],xy[2]
+   local o={id='fixed',x=x,y=y}
+   local key,ox,oy=Sprite.chunk_key(o)
+   assert(x-ox>=0 and x-ox<256 and y-oy>=0 and y-oy<256,
+     'chunk local coordinate outside 256-unit cell '..key)
+   local px,py=Sprite.project_chunk_local(camera,720,1100,o)
+   local ex,ey=camera:project(x,y,720,1100)
+   assert(px==ex and py==ey,'bundle projection shifted a fixed object')
+   local clone={id='fixed',x=x,y=y,cx=math.floor(x/256),cy=math.floor(y/256)}
+   local qx,qy=Sprite.project_chunk_local(camera,720,1100,clone)
+   assert(px==qx and py==qy,'chunk reload shifted object identity')
+ end
+end
+-- Fixed chunk bundle must retain a stable record; authored changes are explicit.
+do
+ local p=setmetatable({families={oak={{id='oak-A'}}},bundles={},frame=1},Sprite)
+ local o={id='stable',x=-1,y=256,kind='tree',radius=8}
+ local a=p:bundle_for(o)
+ local b=p:bundle_for({id='stable',x=-1,y=256,kind='tree',radius=8})
+ assert(a==b and a.origin_x==-256 and a.origin_y==256
+   and a.local_x==255 and a.local_y==0,'bundle origin unstable')
+ local moved=p:bundle_for({id='stable',x=0,y=256,kind='tree',radius=8})
+ assert(moved~=a and moved.origin_x==0 and moved.local_x==0,
+   'explicit world change must invalidate chunk-local record')
+end
+print('TAMU_CHUNK_BUNDLE_IDENTITY_OK')
+print('TAMU_CHUNK_LOCAL_OBJECT_SHADOW_PROJECTION_OK')
+local reveal_scans=0
+local sprite=setmetatable({
+ provider={objects_fully_revealed=function()
+   reveal_scans=reveal_scans+1;return true
+ end},contact_batch={},contact_objects=0,
+ contact_cache={zoom=1,w=720,h=1100,objects={{hit.id,hit.x,hit.y,hit.kind,hit.radius}}},
+ contact_calls=0,contact_reuses=0},Sprite)
+sprite:draw_contacts({},camera,720,1100,{hit},true)
+assert(reveal_scans==0 and sprite.contact_reuses==1,
+ 'contact pass must reuse shadow reveal readiness without rescanning')
+print('TAMU_SHADOW_CONTACT_READINESS_REUSE_OK')
+-- Selection must not bypass the static cache or alter Y-depth ordering.
+do
+ local old_graphics=love.graphics
+ love.graphics={push=function() end,pop=function() end}
+ local seen={cached=0,selection=0}
+ local override={provider={compact=true,object_chunks={chunk}}}
+ function override:begin_frame() end
+ function override:draw_shadows() end
+ function override:prepare_cached_objects()
+   seen.cached=seen.cached+1;return true
+ end
+ function override:draw_cached_objects() end
+ function override:draw_selection(_,_,_,_,o)
+   assert(o==hit,'selected object changed identity')
+   seen.selection=seen.selection+1
+ end
+ for _=1,3 do
+   local count=Renderer.draw(world,stream,camera,720,1100,
+     {x=90,y=90},hit.id,nil,override,{objects=true,rig=false})
+   assert(count==1,'selected object disappeared')
+ end
+ assert(seen.cached==3 and seen.selection==3,
+   'selection bypassed cached drawing')
+ love.graphics=old_graphics
+end
+print('TAMU_SELECTED_OBJECT_CACHE_OVERLAY_OK')
+-- Moving the player through Y-depth must not rebuild immutable object meshes.
+do
+ local old_g=love.graphics
+ local buffer={data={},range={}}
+ function buffer:clear() self.data={} end
+ function buffer:setColor() end
+ function buffer:add(quad) self.data[#self.data+1]=quad end
+ function buffer:setDrawRange(start,count) self.range={start,count} end
+ function buffer:release() end
+ love.graphics={newSpriteBatch=function() return buffer end}
+ local provider={compact_ready=true,
+   objects_fully_revealed=function() return true end,
+   pin_page=function() end,page=function() return 'image' end}
+ local cached=setmetatable({provider=provider,limit=8,
+   object_cache_rebuilds=0,object_cache_reuses=0,
+   batches=0,visible=0},Sprite)
+ function cached:appearance(_,_,_,o)
+   return {page='atlas_01.png',quad=o.id},o.x,o.y,1
+ end
+ local a,b={id='a',x=10,y=10,kind='tree',radius=8},
+   {id='b',x=20,y=20,kind='tree',radius=8}
+ local ea,eb,ep={object=a},{object=b},{player=true}
+ local cam={x=0,y=0,zoom=1,
+   project=function(_,x,y) return x,y end}
+ assert(cached:prepare_cached_objects(cam,100,100,{ea,ep,eb}))
+ assert(cached.object_cache_rebuilds==1 and cached.object_static_cache.split==1)
+ assert(cached:prepare_cached_objects(cam,100,100,{ep,ea,eb}))
+ assert(cached.object_cache_rebuilds==1 and cached.object_cache_reuses==1
+   and cached.object_static_cache.split==0,'player movement rebuilt object cache')
+ assert(cached:prepare_cached_objects(cam,100,100,{ea,eb,ep}))
+ assert(cached.object_static_cache.split==2)
+ local drawn={}
+ local g={setColor=function() end,push=function() end,pop=function() end,
+   translate=function() end,draw=function()
+     drawn[#drawn+1]={buffer.range[1],buffer.range[2]}
+   end}
+ cached:draw_cached_objects(g,cam,100,100,1)
+ cached:draw_cached_objects(g,cam,100,100,2)
+ assert(#drawn==1 and drawn[1][1]==1 and drawn[1][2]==2,
+   'static range changed depth order')
+ love.graphics=old_g
+end
+-- Return to a prior immutable scene after visiting another chunk set.
+do
+ local g0=love.graphics
+ local created=0
+ love.graphics={newSpriteBatch=function()
+   created=created+1
+   return {clear=function() end,setColor=function() end,add=function() end,
+     release=function() end}
+ end}
+ local provider={compact_ready=true,
+   objects_fully_revealed=function() return true end,
+   pin_page=function() end,page=function() return 'image' end}
+ local test=setmetatable({provider=provider,limit=8,frame=0,
+   object_cache_rebuilds=0,object_cache_reuses=0},Sprite)
+ function test:appearance(_,_,_,o)
+   return {page='atlas_01.png',quad=o.id},o.x,o.y,1
+ end
+ local cam={x=0,y=0,zoom=1,project=function(_,x,y) return x,y end}
+ local p={player=true}
+ local a={object={id='a',x=2,y=3,kind='tree',radius=8}}
+ local b={object={id='b',x=258,y=3,kind='tree',radius=8}}
+ assert(test:prepare_cached_objects(cam,100,100,{a,p}))
+ assert(test:prepare_cached_objects(cam,100,100,{b,p}))
+ assert(test:prepare_cached_objects(cam,100,100,{a,p}))
+ assert(created==2 and test.object_cache_rebuilds==2
+   and test.object_cache_reuses==1,
+   'revisiting chunk scene recreated GPU batch')
+ love.graphics=g0
+end
+print('TAMU_OBJECT_SCENE_REVISIT_GPU_CACHE_OK')
+print('TAMU_OBJECT_PLAYER_SLOT_RANGE_OK')
+

@@ -1,0 +1,78 @@
+name: Godot Loader Android
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - experiment/godot4-android-apk-20261031
+    paths:
+      - 'godot-loader/**'
+      - '.github/workflows/godot-loader-android.yml'
+permissions:
+  contents: read
+jobs:
+  loader:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 110
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: godotengine/godot
+          ref: 4.6-stable
+          path: .godot-engine
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Godot native build prerequisites
+        run: |
+          set -euo pipefail
+          python3 -m pip install --user 'scons>=4.4,<5'
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          test -d "$SDK"
+          "$SDK/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK" "platforms;android-35" "build-tools;35.0.1" "ndk;28.1.13356709"
+      - name: Compile Android ARM64 with external main-pack overrides
+        run: |
+          set -euo pipefail
+          scons -C .godot-engine -j4 platform=android target=template_debug arch=arm64 optimize=speed disable_path_overrides=no
+          find .godot-engine/platform/android/java/lib/libs/debug -name libgodot_android.so -type f -print -quit | grep -q .
+      - name: Build custom Android Godot AAR
+        run: |
+          set -euo pipefail
+          cd .godot-engine/platform/android/java
+          ./gradlew :lib:assembleTemplateDebug -x :lib:compileGodotNativeLibsTemplateDebugArm64 --no-daemon
+          test -s lib/build/outputs/aar/godot-lib.template_debug.aar
+          mkdir -p "$GITHUB_WORKSPACE/godot-loader/android/app/libs"
+          cp lib/build/outputs/aar/godot-lib.template_debug.aar "$GITHUB_WORKSPACE/godot-loader/android/app/libs/"
+          unzip -l "$GITHUB_WORKSPACE/godot-loader/android/app/libs/godot-lib.template_debug.aar" | grep -q 'jni/arm64-v8a/libgodot_android.so'
+      - name: Compile loader and run JVM tests
+        run: |
+          set -euo pipefail
+          .godot-engine/platform/android/java/gradlew -p "$GITHUB_WORKSPACE/godot-loader/android" :app:assembleDebug :app:testDebugUnitTest --no-daemon
+          APK=godot-loader/android/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          unzip -t "$APK" | tail -1
+          unzip -l "$APK" | grep -q 'lib/arm64-v8a/libgodot_android.so'
+          sha256sum "$APK"
+          mkdir -p godot-loader/dist
+          cp "$APK" godot-loader/dist/OSMAN_Godot_Loader-debug.apk
+      - name: Verify packaged file-manager intent association
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          APK=godot-loader/dist/OSMAN_Godot_Loader-debug.apk
+          "$SDK/build-tools/35.0.1/aapt" dump xmltree "$APK" AndroidManifest.xml > "$RUNNER_TEMP/loader-manifest-tree.txt"
+          grep -Fq 'android.intent.action.VIEW' "$RUNNER_TEMP/loader-manifest-tree.txt"
+          grep -Fq 'android.intent.action.SEND' "$RUNNER_TEMP/loader-manifest-tree.txt"
+          grep -Fq 'application/octet-stream' "$RUNNER_TEMP/loader-manifest-tree.txt"
+          grep -Fq 'application/x-godot-pck' "$RUNNER_TEMP/loader-manifest-tree.txt"
+          grep -Fq 'OSMAN Godot Loader' "$RUNNER_TEMP/loader-manifest-tree.txt"
+          echo OSMAN_PCK_OPEN_WITH_MANIFEST_OK
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: OSMAN-Godot-Loader-Android
+          path: godot-loader/dist/OSMAN_Godot_Loader-debug.apk
+          if-no-files-found: error

@@ -12,6 +12,12 @@ local function clamp(v,a,b) return math.max(a,math.min(b,v)) end
 local function mix(a,b,t) return a+(b-a)*t end
 local function copy(t) local r={} for k,v in pairs(t) do r[k]=v end return r end
 local fields={"x","y","rotation","scale_x","scale_y","shear_x","shear_y"}
+-- Immutable animation channel descriptors; do not allocate ten nested
+-- descriptor tables for every animated bone on every rendered frame.
+local channels={{"translate","x","y",false},{"scale","scale_x","scale_y",true},{"shear","shear_x","shear_y",false}}
+local split={{"translateX","x"},{"translateY","y"},{"scaleX","scale_x"},
+  {"scaleY","scale_y"},{"shearX","shear_x"},{"shearY","shear_y"}}
+local default_color={1,1,1,1}
 local function transform(b)
   return {x=b.x or 0,y=b.y or 0,rotation=b.rotation or 0,
     scale_x=b.scale_x or 1,scale_y=b.scale_y or 1,
@@ -64,13 +70,16 @@ local function key_index(keys,t)
   end
   return hi
 end
+-- Shared accessor avoids allocating a closure for every keyed channel sample.
+local function sample_value(k,c)
+  return c and type(k.value)=="table" and k.value[c] or k.value
+end
 function R.sample(keys,t,c)
   if not keys or #keys==0 then return nil end
-  local function val(k) return c and type(k.value)=="table" and k.value[c] or k.value end
-  if t<=keys[1].time then return val(keys[1]) end
+  if t<=keys[1].time then return sample_value(keys[1],c) end
   local at=key_index(keys,t);local a,b=keys[at],keys[at+1]
-  if not b then return val(a) end
-  local v,w=val(a),val(b)
+  if not b then return sample_value(a,c) end
+  local v,w=sample_value(a,c),sample_value(b,c)
   if type(v)~="number" then return v end
   return mix(v,w,R.ease(a.curve,(t-a.time)/(b.time-a.time),c))
 end
@@ -232,18 +241,16 @@ function R:evaluate(name,time,looped,offsets)
   for i,b in ipairs(self.bones) do for _,f in ipairs(fields) do self.local_pose[i][f]=b._setup[f] end end
   for i,s in ipairs(self.slots) do
     self.attachment[i]=s.attachment or false
-    for c=1,4 do self.colors[i][c]=(s.color or {1,1,1,1})[c] end
+    local col=s.color or default_color
+    for c=1,4 do self.colors[i][c]=col[c] end
   end
   for _,tl in ipairs(a.bones or {}) do
     local l=self.local_pose[tl.bone+1];local s=self.bones[tl.bone+1]._setup
     local v=R.sample(tl.rotate,t,1);if v~=nil then l.rotation=s.rotation+v end
-    local channels={{"translate","x","y",false},{"scale","scale_x","scale_y",true},{"shear","shear_x","shear_y",false}}
     for _,ch in ipairs(channels) do for c=1,2 do
       local n=R.sample(tl[ch[1]],t,c);local f=ch[c+1]
       if n~=nil then l[f]=ch[4] and s[f]*n or s[f]+n end
     end end
-    local split={{"translateX","x"},{"translateY","y"},{"scaleX","scale_x"},
-      {"scaleY","scale_y"},{"shearX","shear_x"},{"shearY","shear_y"}}
     for _,ch in ipairs(split) do local n=R.sample(tl[ch[1]],t,1)
       if n~=nil then l[ch[2]]=ch[1]:sub(1,5)=="scale" and s[ch[2]]*n or s[ch[2]]+n end
     end

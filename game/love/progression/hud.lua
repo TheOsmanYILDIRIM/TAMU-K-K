@@ -13,6 +13,11 @@ function H:layout(s)
   assert(type(s)=="table" and finite(s.x) and finite(s.y)
     and finite(s.w) and finite(s.h) and s.w>0 and s.h>0,
     "invalid stat HUD safe area")
+  local cached=self._layout_cache
+  if cached and cached.x==s.x and cached.y==s.y
+     and cached.w==s.w and cached.h==s.h then
+    return cached.layout
+  end
   local compact=s.w<280 or s.h<500
   local pad=compact and math.max(2,math.min(12,s.w*.03,s.h*.03)) or 12
   local toggle_h=compact and math.max(1,math.min(35,s.h-2*pad)) or 35
@@ -37,6 +42,7 @@ function H:layout(s)
         w=add_w,h=step-2}
     end
   end
+  self._layout_cache={x=s.x,y=s.y,w=s.w,h=s.h,layout=t}
   return t
 end
 

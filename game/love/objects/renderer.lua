@@ -1,5 +1,6 @@
 -- Sorted 45-degree world-foot sprites; GPU-independent placement and mutable state.
 local Depth=require("player.depth")
+local Diagnostics=require("core.diagnostics")
 local R={metrics={collect_calls=0,cold_queries=0,cold_query_ms=0,
  cold_query_max_ms=0,collect_last_ms=0,collect_max_ms=0,
  prepared_chunks=0,prepare_last_ms=0,prepare_max_ms=0}}
@@ -98,11 +99,23 @@ function R.prepare_visible(world,stream,budget_ms,camera,w,h)
  R.metrics.prepare_max_ms=math.max(R.metrics.prepare_max_ms,elapsed)
  return resumes
 end
-function R.collect(world,stream,object_override)
+-- Scratch buffers are only used by the synchronous render path.
+-- Public R.collect still returns an independent table for other callers.
+local draw_pool={objects={},seen={},order={},entries={},visual={}}
+local function clear_array(a)
+ for i=#a,1,-1 do a[i]=nil end
+ return a
+end
+local function clear_map(a)
+ for k in pairs(a) do a[k]=nil end
+ return a
+end
+function R.collect(world,stream,object_override,scratch)
   local clock=love and love.timer and love.timer.getTime
   local started=clock and clock()
   R.metrics.collect_calls=R.metrics.collect_calls+1
-  local list,seen={},{}
+  local list=scratch and clear_array(scratch.objects) or {}
+  local seen=scratch and clear_map(scratch.seen) or {}
   local immutable=stable_population(world)
   local onscreen=type(object_override)=="table" and
     object_override.provider and (object_override.provider.object_chunks or
@@ -160,22 +173,76 @@ function R.collect(world,stream,object_override)
   end
   return list
 end
-function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_override)
-  local all=R.collect(world,stream,object_override)
-  local order={{id="!player",depth=Depth.key(player.x,player.y),player=true}}
-  for _,o in ipairs(all) do order[#order+1]={id=o.id,depth=Depth.key(o.x,o.y),object=o} end
+function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_override,flags)
+  flags=flags or {objects=true,rig=true}
+  local perf_clock=Diagnostics.enabled and love.timer.getTime
+  local perf_at=perf_clock and perf_clock() or 0
+  local rig_elapsed_ms=0
+  local all=R.collect(world,stream,object_override,draw_pool)
+  if perf_clock then Diagnostics.measure("object_collect_ms",(perf_clock()-perf_at)*1000);perf_at=perf_clock() end
+  local order=clear_array(draw_pool.order)
+  local entries=draw_pool.entries
+  local player_entry=entries[1]
+  if not player_entry then
+    player_entry={};entries[1]=player_entry
+  end
+  player_entry.id="!player"
+  player_entry.depth=Depth.key(player.x,player.y)
+  player_entry.player=true
+  player_entry.object=nil
+  order[1]=player_entry
+  for i,o in ipairs(all) do
+    local slot=i+1
+    local entry=entries[slot]
+    if not entry then entry={};entries[slot]=entry end
+    entry.id=o.id
+    entry.depth=Depth.key(o.x,o.y)
+    entry.player=nil
+    entry.object=o
+    order[slot]=entry
+  end
   table.sort(order,Depth.before)
+  if perf_clock then Diagnostics.measure("depth_sort_ms",(perf_clock()-perf_at)*1000);perf_at=perf_clock() end
+  -- Same collection/depth sort; eliminate all object/shadow renderer setup.
+  if flags.object_collect_only then return #all end
+  if type(object_override)=="table" then
+    object_override.skip_gpu_draw=flags.skip_object_gpu==true
+    if flags.skip_object_gpu then
+      assert(object_override.static_manifest,
+        'GPU-submit test requires prebaked static shadow atlas')
+    end
+  end
   local g=love.graphics
   g.push("all")
-  if type(object_override)=="table" then
+  if type(object_override)=="table" and flags.objects~=false then
     object_override:begin_frame()
     -- Render projected source-alpha shadows below ALL Y-sorted sprites and
     -- the player, so an afternoon shadow never paints over a closer tree.
     object_override:draw_shadows(g,camera,w,h,all)
+    if perf_clock then Diagnostics.measure("shadows_ms",(perf_clock()-perf_at)*1000);perf_at=perf_clock() end
+  end
+  -- Shadow SpriteBatch was filled, but no sprite queues or GPU draws run.
+  if flags.object_shadow_cpu_only then g.pop();return #all end
+  local static_cached=type(object_override)=="table"
+    and flags.objects~=false and not flags.opaque_objects
+    and not flags.skip_object_gpu
+    and object_override.prepare_cached_objects
+    and object_override:prepare_cached_objects(camera,w,h,order) or false
+  -- The selected outline is separate from cached immutable object textures.
+  local selected_object,selected_side
+  if static_cached and selected_id then
+    local side=1
+    for _,entry in ipairs(order) do
+      if entry.player then side=2
+      elseif entry.id==selected_id then
+        selected_object,selected_side=entry.object,side
+        break
+      end
+    end
   end
   -- Only the legacy plasma mode uses autonomous tools. The rig follows the
   -- approved harvest clip and exposes the right-hand socket for future items.
-  local visual={}
+  local visual=clear_map(draw_pool.visual)
   if harvesting and harvesting.active then
     local source=world:get(harvesting.active.object_id)
     if source and (source.kind=="rock" or source.kind=="tree") then
@@ -184,17 +251,50 @@ function R.draw(world,stream,camera,w,h,player,selected_id,harvesting,object_ove
       visual.facing=Direction.from_world(source.x-player.x,source.y-player.y,player.facing)
     end
   end
+  -- Diagnostic only. Disable GPU alpha blending for the same original
+  -- object geometry/count/ordering. Transparent texels will overwrite the
+  -- background; this is intentionally NOT a production visual mode.
+  -- Shadows above are measured unchanged; Rigby is off in this profile.
+  if flags.opaque_objects then g.setBlendMode('replace') end
   for _,entry in ipairs(order) do
     if entry.player then
-      if type(object_override)=="table" then object_override:flush(g) end
-      player_sprite(g,camera,w,h,player,visual)
-    elseif type(object_override)=="table" then
-      object_override:queue(g,camera,w,h,entry.object,entry.id==selected_id)
-    else
+      if static_cached then
+          object_override:draw_cached_objects(g,camera,w,h,1)
+          if selected_side==1 then
+            object_override:draw_selection(g,camera,w,h,selected_object)
+          end
+        end
+      if flags.rig~=false then
+        if type(object_override)=="table" and flags.objects~=false and not static_cached then object_override:flush(g) end
+        if flags.opaque_objects then g.setBlendMode('alpha') end
+        local rig_start=perf_clock and perf_clock()
+        player_sprite(g,camera,w,h,player,visual)
+        if rig_start then
+          local elapsed=(perf_clock()-rig_start)*1000
+          rig_elapsed_ms=rig_elapsed_ms+elapsed
+          Diagnostics.measure("rigby_ms",elapsed)
+        end
+      end
+    elseif not entry.player and flags.objects~=false and type(object_override)=="table" then
+      if not static_cached then
+        object_override:queue(g,camera,w,h,entry.object,entry.id==selected_id)
+      end
+    elseif not entry.player and flags.objects~=false then
       (object_override or object_sprite)(g,camera,w,h,entry.object,entry.id==selected_id)
     end
   end
-  if type(object_override)=="table" then object_override:flush(g) end
+  if static_cached then
+    object_override:draw_cached_objects(g,camera,w,h,2)
+    if selected_side==2 then
+      object_override:draw_selection(g,camera,w,h,selected_object)
+    end
+  end
+  if type(object_override)=="table" and not static_cached then object_override:flush(g) end
+  if perf_clock then
+    -- Exclusive sprite queue/flush time: omit player Rigby draw and shadows.
+    Diagnostics.measure("sprite_pipeline_ms",math.max(0,
+      (perf_clock()-perf_at)*1000-rig_elapsed_ms))
+  end
   g.pop()
   return #all
 end

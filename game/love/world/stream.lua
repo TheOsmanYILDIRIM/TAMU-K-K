@@ -29,11 +29,16 @@ function Stream.new(query, opts)
     generation_ms=generation_ms,jobs={},cache=opts.cache,
     prefetch_options=opts.prefetch_options,
     prefetch_done={},prefetch_job=nil,previous_camera=nil,
-    resident={}, ordered={}, wanted_count=0
+    resident={}, ordered={}, wanted_count=0,
+    -- Bound GPU residency: never release finished nearby authored meshes
+    -- immediately on a small camera excursion. Non-25D stays unchanged.
+    warm={},warm_count=0,warm_limit=opts.warm_limit or
+      (opts.render_only_25d and 24 or 0),warm_tick=0,
+    warm_hits=0,warm_evictions=0
   }, Stream)
 end
 
-local function view_range(camera,width,height,size)
+local function view_range(camera,width,height,size,margin)
   assert(type(width)=="number" and width > 0 and type(height)=="number" and height > 0,
          "invalid viewport")
   local min_x,min_y,max_x,max_y
@@ -44,8 +49,9 @@ local function view_range(camera,width,height,size)
     min_x=math.min(min_x or x,x); min_y=math.min(min_y or y,y)
     max_x=math.max(max_x or x,x); max_y=math.max(max_y or y,y)
   end
-  return math.floor(min_x/size)-1,math.floor(min_y/size)-1,
-         math.floor(max_x/size)+1,math.floor(max_y/size)+1
+  margin=margin or 1
+  return math.floor(min_x/size)-margin,math.floor(min_y/size)-margin,
+         math.floor(max_x/size)+margin,math.floor(max_y/size)+margin
 end
 
 -- Screen-space overlap is a diamond bounding box, not centre distance.
@@ -64,7 +70,8 @@ function Stream:needed(camera,width,height)
      and type(camera.x)=="number" and type(camera.y)=="number",
      "camera required")
   local size=self.chunker.size
-  local min_x,min_y,max_x,max_y=view_range(camera,width,height,size)
+  local min_x,min_y,max_x,max_y=view_range(camera,width,height,size,
+    self.render_only_25d and 3 or 1)
   local candidates={}
   for cy=min_y,max_y do for cx=min_x,max_x do
     local midx,midy=(cx+0.5)*size,(cy+0.5)*size
@@ -75,17 +82,75 @@ function Stream:needed(camera,width,height)
   end end
   table.sort(candidates,less)
   if self.render_only_25d then
-    -- The inverse-isometric screen rectangle includes many chunks that
-    -- cannot intersect the actual diamond. Keep only candidates inside
-    -- a modest prefetch halo, ordered by distance to the camera.
-    local required={}
-    local pad=72*camera.zoom+16
+    -- Strict draw priority: include EVERY screen-intersecting chunk before
+    -- allocating the bounded off-screen prefetch halo. The old centre-distance
+    -- truncation could drop visible corners at portrait/zoom-out viewports.
+    local visible,halo={},{}
+    local visible_pad=12
+    local prefetch_pad=math.max(72*camera.zoom+16,size*camera.zoom*1.6)
     for _,c in ipairs(candidates) do
-      if overlaps_view(c.cx,c.cy,size,camera,width,height,pad) then
-        required[#required+1]=c
+      if overlaps_view(c.cx,c.cy,size,camera,width,height,visible_pad) then
+        visible[#visible+1]=c
+      elseif overlaps_view(c.cx,c.cy,size,camera,width,height,prefetch_pad) then
+        halo[#halo+1]=c
       end
     end
-    while #required>self.max_loaded do required[#required]=nil end
+    -- Choose the bounded halo towards camera motion, not by distance
+    -- behind the player. The next viewport edge can reveal six diagonal
+    -- terrain chunks in one frame; preload those before they become visible.
+    local prev=self._25d_prefetch_camera
+    local dx=prev and camera.x-prev.x or 0
+    local dy=prev and camera.y-prev.y or 0
+    self._25d_prefetch_camera={x=camera.x,y=camera.y}
+    local distance=math.sqrt(dx*dx+dy*dy)
+    if distance>0.05 then
+      self._25d_prefetch_dir={x=dx/distance,y=dy/distance}
+    end
+    local direction=self._25d_prefetch_dir
+    if direction then
+      -- Upload the next screen-edge entrants before more distant forward
+      -- halo. The previous two-chunk look point could place imminent
+      -- screen entrants behind offscreen meshes despite GPU-ready results.
+      -- Predict only a few frames; do not increase the upload budget.
+      local ahead=math.min(size*.5,math.max(distance,0)*5)
+      local future={x=camera.x+direction.x*ahead,
+        y=camera.y+direction.y*ahead,zoom=camera.zoom}
+      local lookx,looky=future.x,future.y
+      local function lookscore(c)
+        local entering=overlaps_view(c.cx,c.cy,size,future,
+          width,height,visible_pad)
+        local x=(c.cx+.5)*size-lookx
+        local y=(c.cy+.5)*size-looky
+        return entering and 0 or 1,x*x+y*y
+      end
+      table.sort(halo,function(a,b)
+        local ea,va=lookscore(a)
+        local eb,vb=lookscore(b)
+        if ea~=eb then return ea<eb end
+        if va~=vb then return va<vb end
+        return less(a,b)
+      end)
+    end
+    -- Keep all screen-visible cells, even when max_loaded is exceeded.
+    -- Never append halo to the screen-visible array: Lua tables alias.
+    -- Coverage diagnostics and the render readiness gate must count only
+    -- chunks intersecting the viewport, not prefetched off-screen cells.
+    local required={}
+    for i,c in ipairs(visible) do required[i]=c end
+    -- Keep a bounded forward staging buffer even at tall portrait zooms.
+    -- The old max_loaded=80 left just three halo slots when 77 chunks
+    -- intersected the viewport, so 6-7 new diagonal chunks arrived cold.
+    local residency_cap=math.max(self.max_loaded,#visible+24)
+    for _,c in ipairs(halo) do
+      if #required>=residency_cap then break end
+      required[#required+1]=c
+    end
+    local visible_keys={}
+    for _,c in ipairs(visible) do visible_keys[c.key]=true end
+    self.visible_required_keys=visible_keys
+    self.visible_required_count=#visible
+    self.coverage_over_budget=#visible>self.max_loaded and
+      (#visible-self.max_loaded) or 0
     return required
   end
   if self.viewport_cover then
@@ -111,6 +176,28 @@ function Stream:needed(camera,width,height)
   return candidates
 end
 
+local function release_chunk(chunk)
+  if chunk._meshes then
+    for _,mesh in pairs(chunk._meshes) do
+      if mesh and mesh.release then mesh:release() end
+    end
+  end
+  if chunk._25d_staging_meshes then
+    for _,mesh in pairs(chunk._25d_staging_meshes) do
+      if mesh and mesh.release then mesh:release() end
+    end
+    chunk._25d_staging_meshes=nil
+  end
+  if chunk._terrain_stage then
+    for _,mesh in pairs(chunk._terrain_stage) do
+      if mesh and mesh.release then mesh:release() end
+    end
+    chunk._terrain_stage=nil
+  end
+  chunk._terrain_job=nil
+  chunk._25d_prepare_job=nil
+end
+
 function Stream:update(camera,width,height,budget)
   if self.cache and self.cache.poll then self.cache:poll() end
   budget=budget or self.build_budget
@@ -121,30 +208,44 @@ function Stream:update(camera,width,height,budget)
   for _,c in ipairs(candidates) do want[c.key]=true end
   for key,chunk in pairs(self.resident) do
     if not want[key] then
-      -- Mesh resources are owned by cached chunks and must be released on eviction.
-      if chunk._meshes then
-        for _,mesh in pairs(chunk._meshes) do
-          if mesh and mesh.release then mesh:release() end
-        end
+      -- Keep only FINISHED GPU chunks; never cache a suspended mesh job.
+      if self.render_only_25d and self.warm_limit>0 and chunk._25d_meshes
+         and not chunk._25d_prepare_job then
+        self.warm_tick=self.warm_tick+1
+        self.warm[key]={chunk=chunk,tick=self.warm_tick}
+        self.warm_count=self.warm_count+1
+      else
+        release_chunk(chunk)
       end
-      -- The opt-in 25D upload may be yielded mid-batch; do not leak its
-      -- uncommitted meshes when the camera leaves the chunk.
-      if chunk._25d_staging_meshes then
-        for _,mesh in pairs(chunk._25d_staging_meshes) do
-          if mesh and mesh.release then mesh:release() end
-        end
-        chunk._25d_staging_meshes=nil
-      end
-      -- A partially prepared terrain job can already own GPU meshes.
-      if chunk._terrain_stage then
-        for _,mesh in pairs(chunk._terrain_stage) do
-          if mesh and mesh.release then mesh:release() end
-        end
-        chunk._terrain_stage=nil
-      end
-      chunk._terrain_job=nil
       self.resident[key]=nil
     end
+  end
+  -- If the camera returns, adopt the exact previous GPU mesh; no decode,
+  -- no GPU upload and no authored hydrology generation.
+  for _,c in ipairs(candidates) do
+    if not self.resident[c.key] then
+      local cached=self.warm[c.key]
+      if cached then
+        self.resident[c.key]=cached.chunk
+        self.warm[c.key]=nil
+        self.warm_count=self.warm_count-1
+        self.warm_hits=self.warm_hits+1
+      end
+    end
+  end
+  -- Deterministic LRU bounded by warm_limit, in addition to visible residents.
+  while self.warm_count>self.warm_limit do
+    local oldest_key,oldest_tick
+    for key,item in pairs(self.warm) do
+      if not oldest_tick or item.tick<oldest_tick then
+        oldest_key,oldest_tick=key,item.tick
+      end
+    end
+    if not oldest_key then break end
+    release_chunk(self.warm[oldest_key].chunk)
+    self.warm[oldest_key]=nil
+    self.warm_count=self.warm_count-1
+    self.warm_evictions=self.warm_evictions+1
   end
   for key in pairs(self.jobs) do
     if not want[key] then self.jobs[key]=nil end

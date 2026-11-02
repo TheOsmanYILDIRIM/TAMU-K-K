@@ -117,3 +117,52 @@ opts.canvas_cache=false
 Terrain.draw(scene,cam2,691,1536,opts)
 assert(draws.releases==3,"disabling cached terrain must release framebuffer")
 print("R2_CANVAS_INVALIDATION_OK still/move/mesh/pending/resize/dpi/disable")
+-- Opt-in terrain residency must put future camera halo ahead of the
+-- behind-camera halo, without altering legacy cap or visible coverage.
+do
+ local s=Stream.new(query,{size=256,step=8,max_loaded=80,
+   render_only_25d=true})
+ local moving=Camera.new()
+ moving.x,moving.y,moving.zoom=64,128,1.7
+ s:needed(moving,720,1100)
+ moving.x=moving.x+2
+ local items=s:needed(moving,720,1100)
+ assert(s._25d_prefetch_dir and s._25d_prefetch_dir.x>.9)
+ local last=nil
+ for i,c in ipairs(items) do
+   if not s.visible_required_keys[c.key] then
+     local x=(c.cx+.5)*256-(moving.x+512)
+     local y=(c.cy+.5)*256-moving.y
+     local score=x*x+y*y
+     if last then assert(score>=last,'forward halo lost priority') end
+     last=score
+   end
+ end
+ assert(last and #items<=math.max(80,s.visible_required_count+24),
+   'opt-in forward halo missing or bounded staging cap exceeded')
+ -- Halo cells must be wanted/preloaded without inflating visible coverage.
+ -- Before this regression, required=visible aliased the same Lua table and
+ -- incorrectly counted off-screen staging cells as missing screen chunks.
+ local on_screen=0
+ for _,c in ipairs(items) do
+   local px,py=Iso.project(c.cx*256-moving.x,c.cy*256-moving.y)
+   local z=moving.zoom
+   local edge=256*math.sqrt(.5)*z
+   local sx,sy=360+px*z,550+py*z
+   local hit=sx+edge>=-12 and sx-edge<=732 and
+     sy+edge>=-12 and sy<=1112
+   if hit then
+     on_screen=on_screen+1
+     assert(s.visible_required_keys[c.key],
+       'true screen chunk missing from required-visible keys')
+   else
+     assert(not s.visible_required_keys[c.key],
+       'prefetch-only chunk incorrectly counted as screen-visible')
+   end
+ end
+ assert(on_screen>0 and on_screen<#items and
+   s.visible_required_count==on_screen,
+   'screen-visible count includes offscreen halo')
+end
+print('TAMU_25D_FORWARD_HALO_PRIORITY_OK')
+

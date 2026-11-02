@@ -337,17 +337,21 @@ sprites:draw_shadows(g,cam,360,780,{shadow_object})
 assert(sprites.shadow_objects==1 and projected_shadow_sprites==4
   and sprites.shadow_rebuilds==2,
   "visible noon change must rebuild the silhouettes")
--- Camera motion invalidates buffers even with an identical object list.
+-- Panning reuses both preprojected batches with a camera transform.
+local previous_shadow_reuses=sprites.shadow_reuses
+local previous_contact_reuses=sprites.contact_reuses
 cam.x=cam.x+1
 sprites:draw_shadows(g,cam,360,780,{shadow_object})
-assert(projected_shadow_sprites==6 and sprites.shadow_rebuilds==3
-  and sprites.contact_rebuilds==2 and contact_sprites==2,
-  "camera motion must rebuild both sunlight and contact shadow buffers")
+assert(projected_shadow_sprites==4 and sprites.shadow_rebuilds==2
+  and sprites.contact_rebuilds==1 and contact_sprites==1
+  and sprites.shadow_reuses==previous_shadow_reuses+1
+  and sprites.contact_reuses==previous_contact_reuses+1,
+  "camera pan must translate cached shadows without rebuilding GPU batches")
 sprites:draw_shadows(g,cam,360,780,{
  {id=shadow_object.id,x=shadow_object.x+1,y=shadow_object.y,
   kind=shadow_object.kind,radius=shadow_object.radius}})
-assert(sprites.contact_rebuilds==3 and contact_sprites==3
-  and projected_shadow_sprites==8,
+assert(sprites.contact_rebuilds==2 and contact_sprites==2
+  and projected_shadow_sprites==6 and sprites.shadow_rebuilds==3,
   "object movement invalidates both shadow batches")
 rt:set_sun_hour(23)
 sprites:draw_shadows(g,cam,360,780,{shadow_object})
@@ -362,3 +366,66 @@ print("TERRAIN25D_SUN_SHADOW_OK morning=8 noon=12 evening=17 night=23")
 print("TERRAIN25D_RUNTIME_OK uploads="..uploads.." released="..released..
   " pages="..rt.catalog_counts.pages.." assets="..rt.catalog_counts.packed..
   " decoded="..decoded.." generated="..created)
+-- Stale requests may not block visible chunks or falsely satisfy a new key.
+do
+ local old_thread=love.thread
+ local channels={}
+ local function channel(name)
+   if not channels[name] then
+     local c={items={}}
+     function c:push(v) self.items[#self.items+1]=v end
+     function c:pop() return table.remove(self.items,1) end
+     function c:clear() self.items={} end
+     channels[name]=c
+   end
+   return channels[name]
+ end
+ love.thread={getChannel=channel}
+ local wr=setmetatable({binary_worker={getError=function() return nil end},
+   binary_pending={},binary_ready={},binary_inflight=0,binary_max_inflight=2},
+   getmetatable(rt))
+ wr:enqueue_binary({{key='0:0',cx=0,cy=0},{key='1:0',cx=1,cy=0}})
+ local obsolete=channel('tamu25d:binary:requests'):pop()
+ assert(obsolete.ticket,'request ticket missing')
+ wr:enqueue_binary({{key='2:0',cx=2,cy=0},{key='3:0',cx=3,cy=0}})
+ assert(wr.binary_inflight==2 and wr.binary_pending['2:0'] and
+   wr.binary_pending['3:0'] and not wr.binary_pending['0:0'],
+   'stale requests blocked visible chunks')
+ local first=channel('tamu25d:binary:requests'):pop()
+ assert(first.cx==2 and first.cy==0,'visible request priority lost')
+ channel('tamu25d:binary:ready'):push({key='0:0',ticket=obsolete.ticket})
+ channel('tamu25d:binary:ready'):push({key='2:0',ticket=first.ticket})
+ wr:poll_binary_results()
+ assert(not wr.binary_ready['0:0'] and wr.binary_ready['2:0']
+   and wr.binary_inflight==1,'stale worker reply accepted')
+ -- Changing only one halo request must preserve valid queued tickets.
+ channel('tamu25d:binary:requests'):clear()
+ local keep=setmetatable({binary_worker={getError=function() return nil end},
+   binary_pending={},binary_ready={},binary_inflight=0,binary_max_inflight=3},
+   getmetatable(rt))
+ keep:enqueue_binary({
+   {key='10:0',cx=10,cy=0},{key='11:0',cx=11,cy=0},
+   {key='12:0',cx=12,cy=0}
+ })
+ local queue=channel('tamu25d:binary:requests')
+ local prior=keep.binary_pending['11:0']
+ local prior2=keep.binary_pending['12:0']
+ keep:enqueue_binary({
+   {key='11:0',cx=11,cy=0},{key='12:0',cx=12,cy=0},
+   {key='13:0',cx=13,cy=0}
+ })
+ assert(keep.binary_pending['11:0']==prior and
+   keep.binary_pending['12:0']==prior2 and
+   keep.binary_inflight==3 and not keep.binary_pending['10:0'],
+   'valid worker tickets lost during partial halo cancellation')
+ local one,two,three=queue:pop(),queue:pop(),queue:pop()
+ assert(one.cx==11 and one.ticket==prior and
+   two.cx==12 and two.ticket==prior2 and three.cx==13 and
+   queue:pop()==nil,'surviving worker FIFO order or new priority lost')
+ channel('tamu25d:binary:ready'):push({key='11:0',ticket=prior})
+ keep:poll_binary_results()
+ assert(keep.binary_ready['11:0'] and keep.binary_inflight==2,
+   'surviving worker result not accepted')
+ love.thread=old_thread
+end
+print('TAMU_BINARY_PRIORITY_CANCELLATION_OK')

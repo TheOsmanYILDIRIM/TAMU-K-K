@@ -4,9 +4,16 @@ local Json=require("save.json")
 local R={};R.__index=R
 local function key(id,r)return id..":"..r end
 function R.new()
+ -- Neither decode the Creative atlas nor allocate GPU buffers on normal
+ -- startup. Empty Creative state never enters the graphics setup path.
+ return setmetatable({drawn=0,initialized=false},R)
+end
+function R:ensure_assets()
+ if self.initialized then return end
+ self.initialized=true
  local root="assets/"
  local data=love.filesystem.read(root.."creative_build_manifest.json")
- if not data then return setmetatable({fallback=true,drawn=0},R) end
+ if not data then self.fallback=true;return end
  local meta=Json.decode(data)
  assert(meta.canvas[1]==128 and meta.canvas[2]==128 and
    meta.max_visible_rgb_colors==64 and #meta.entries==34 and
@@ -22,15 +29,26 @@ function R.new()
   ids[name][e.rotation]=love.graphics.newQuad(e.atlas_rect[1],e.atlas_rect[2],
     128,128,width,height)
  end
- return setmetatable({image=image,views=ids,batch=love.graphics.newSpriteBatch(image,1024,"dynamic"),
-  drawn=0},R)
+ self.image=image;self.views=ids
+ self.batch=love.graphics.newSpriteBatch(image,1024,"dynamic")
 end
 function R:quad(def_id,rotation)
  local group=assert(self.views[def_id],"creative art definition missing: "..tostring(def_id))
  return group[rotation] or group[rotation%2] or group[0]
 end
 function R:draw(model,camera,w,h)
+ -- Existing constructions must still render, even when Creative is off.
+ if model.items and next(model.items)==nil
+    and not (model.active and model.target) then
+   self.drawn=0
+   return 0
+ end
  local visible=model:visible(camera,w,h)
+ if #visible==0 and not (model.active and model.target) then
+   self.drawn=0
+   return 0
+ end
+ self:ensure_assets()
  local scale=(camera.zoom or 1)/2
  if self.fallback then
   local g=love.graphics

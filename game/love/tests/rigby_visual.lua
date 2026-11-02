@@ -32,5 +32,14 @@ assert(V.instance(player).action=='chop')
 V.play(player,'slash',false);player.time=player.time+.1
 V.draw(g,camera,400,600,player,{});assert(V.instance(player).action=='slash')
 player.time=player.time+2;V.draw(g,camera,400,600,player,{});assert(V.instance(player).action=='walk')
+-- A repeated identical pose must not perform another GPU vertex upload.
+local instance=V.instance(player)
+instance:sample('SE','idle',0,false)
+instance:prepare()
+local before=updates
+instance:sample('SE','idle',0,false)
+instance:prepare()
+assert(updates==before and instance.last_uploads==0,
+  'identical Rigby pose redundantly uploaded vertices')
 assert(textures==24,'expected 24 unique referenced original part textures')
 print('RIGBY_VISUAL_MOCK_OK textures='..textures..' mesh_updates='..updates..' draws='..draws)

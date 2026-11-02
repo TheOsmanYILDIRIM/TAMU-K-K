@@ -22,6 +22,9 @@ jobs:
       - uses: actions/checkout@v4
       - run: pip install jsonschema
       - run: python -m unittest discover -s tests -v
+      - name: TAMU diagnostics JSONL analyzer regression
+        if: github.ref_name == 'experiment/25d-binary-vertex-20261030'
+        run: python3 -m unittest discover -s scripts -p 'test_analyze_tamu_diagnostics.py' -v
       - name: Targeted 25D pilot asset deterministic atlas, UV, alpha and rejection tests
         if: github.ref_name == 'experiment/25d-assets-20261028'
         shell: bash
@@ -31,21 +34,267 @@ jobs:
           python -m unittest discover -s scripts/tests -p 'test_terrain25d_assets.py' -v
       - name: Install Lua and real LÖVE test runtime
         run: sudo apt-get update -qq && sudo apt-get install -y lua5.4 luajit love xvfb
-      - name: Build and reload exact authored 25D meshes in real LÖVE
-        if: github.ref_name == 'experiment/25d-prebaked-mobile-mesh-20261029'
+      - name: Fail fast on Lua and packaging syntax in streaming experiment
+        if: github.ref_name == 'experiment/25d-binary-vertex-20261030'
         shell: bash
         run: |
           set -euo pipefail
-          export XDG_DATA_HOME="$RUNNER_TEMP/25d-prebake-ci"
+          luac5.4 -p game/love/world/terrain25d_runtime.lua
+          luac5.4 -p game/love/tests/terrain25d_batch.lua
+          luac5.4 -p game/love/world/terrain25d_baked.lua
+          luac5.4 -p game/love/world/terrain25d_binary_worker.lua
+          luac5.4 -p game/love/world/stream.lua
+          luac5.4 -p game/love/main.lua
+          luac5.4 -p game/love/core/perf_hud.lua
+          luac5.4 -p game/love/core/diagnostics.lua
+          luac5.4 -p game/love/tests/diagnostics.lua
+          luajit -b game/love/core/diagnostics.lua /tmp/tamu-diagnostics.ljc
+          cd game/love
+          lua5.4 tests/diagnostics.lua
+          luajit tests/diagnostics.lua
+          lua5.4 tests/terrain25d_static_shadows.lua
+          luajit tests/terrain25d_static_shadows.lua
+          lua5.4 tests/perf_isolation_boot.lua
+          luajit tests/perf_isolation_boot.lua
+          cd ../..
+          luac5.4 -p game/love/conf.lua
+          luac5.4 -p game/love/player/rigby_visual.lua
+          luajit -b game/love/player/rigby_visual.lua /tmp/tamu-rigby-visual-check.ljc
+          luajit -b game/love/conf.lua /tmp/tamu-conf-check.ljc
+          luac5.4 -p game/love/player/rigby_runtime.lua
+          luajit -b game/love/player/rigby_runtime.lua /tmp/tamu-rigby-runtime-check.ljc
+          luac5.4 -p game/love/objects/renderer.lua
+          luac5.4 -p game/love/tests/terrain25d_object_population.lua
+          luajit -b game/love/objects/renderer.lua /tmp/tamu-renderer-check.ljc
+          luajit -b game/love/core/perf_hud.lua /tmp/tamu-perf-hud-check.ljc
+          luajit -b game/love/main.lua /tmp/tamu-main-check.ljc
+          luajit -b game/love/world/terrain25d_binary_worker.lua /tmp/tamu-worker-check.ljc
+          python3 -m py_compile scripts/package_tamu_love.py
+          python3 -m py_compile scripts/analyze_tamu_diagnostics.py scripts/build_tamu_static_shadow_atlases.py
+          cd game/love
+          lua5.4 tests/rigby_runtime.lua
+          luajit tests/rigby_runtime.lua
+          lua5.4 tests/rigby_visual.lua
+          luajit tests/rigby_visual.lua
+          lua5.4 tests/terrain25d_runtime.lua
+          luajit tests/terrain25d_runtime.lua
+          lua5.4 tests/terrain25d_batch.lua
+          luajit tests/terrain25d_batch.lua
+          cd ../..
+      - name: Real LÖVE off-thread procedural terrain build and GPU upload
+        if: github.ref_name == 'experiment/25d-binary-vertex-20261030'
+        shell: bash
+        run: |
+          set -euo pipefail
+          export XDG_DATA_HOME="$RUNNER_TEMP/tamu-cpu-worker-smoke"
           mkdir -p "$XDG_DATA_HOME"
-          SDL_AUDIODRIVER=dummy OSMAN_25D_BAKE=1 OSMAN_25D_BAKE_LIMIT=4 timeout 240s xvfb-run -a love game/love 2>&1 | tee /tmp/tamu-bake-build.log
-          grep -q 'TAMU_25D_BAKE_BUILD_OK count=4' /tmp/tamu-bake-build.log
-          mkdir -p game/love/assets/terrain25d/baked
-          find "$XDG_DATA_HOME" -name 'c_*.json.z' -exec cp {} game/love/assets/terrain25d/baked/ \;
-          test "$(find game/love/assets/terrain25d/baked -name '*.json.z' | wc -l)" -ge 4
-          SDL_AUDIODRIVER=dummy OSMAN_25D_BAKE_VERIFY=1 OSMAN_25D_BAKE_LIMIT=4 timeout 180s xvfb-run -a love game/love 2>&1 | tee /tmp/tamu-bake-replay.log
-          grep -q 'TAMU_25D_BAKE_VERIFY_OK count=4' /tmp/tamu-bake-replay.log
-          rm -rf game/love/assets/terrain25d/baked
+          SDL_AUDIODRIVER=dummy TAMU_25D_CPU_WORKER_PROBE=1 timeout 180s xvfb-run -a love game/love 2>&1 | tee /tmp/tamu-cpu-worker.log
+          grep -q 'TAMU_25D_CPU_WORKER_OK chunks=' /tmp/tamu-cpu-worker.log
+          grep -q 'TAMU_25D_CPU_WORKER_LOADED' /tmp/tamu-cpu-worker.log
+      - name: Authored terrain warm residency and return without GPU rebuild
+        if: github.ref_name == 'experiment/25d-binary-vertex-20261030'
+        shell: bash
+        run: |
+          set -euo pipefail
+          luac5.4 -p game/love/world/stream.lua game/love/main.lua game/love/world/terrain25d_runtime.lua
+          cd game/love
+          for interpreter in lua5.4 luajit; do
+            "$interpreter" - <<'LUA'
+          local Stream=require('world.stream')
+          local Camera=require('core.camera')
+          local query={field={},sample=function() return 0 end}
+          local stream=Stream.new(query,{size=256,step=32,render_only_25d=true,
+            max_loaded=80,warm_limit=24,build_budget=80})
+          local camera=Camera.new()
+          camera.zoom=2
+          camera.x,camera.y=0,0
+          stream:update(camera,320,640)
+          local initial=stream:visible()
+          assert(#initial>0)
+          local key,original=initial[1].key,initial[1]
+          local released=0
+          original._25d_meshes={terrain=true}
+          original._meshes={terrain={release=function() released=released+1 end}}
+          camera.x=3072
+          stream:update(camera,320,640)
+          assert(stream.warm[key] and stream.warm[key].chunk==original)
+          camera.x=0
+          stream:update(camera,320,640)
+          assert(stream:get_loaded(original.cx,original.cy)==original)
+          assert(released==0 and stream.warm_hits>=1)
+          print('TAMU_WARM_RETURN_OK hits='..stream.warm_hits)
+          LUA
+          done
+      - name: Precompile complete authored R2 polygon area with safety halo
+        if: github.ref_name == 'experiment/25d-binary-vertex-20261030'
+        shell: bash
+        run: |
+          set -euo pipefail
+          export SDL_AUDIODRIVER=dummy
+          export XDG_DATA_HOME="$RUNNER_TEMP/tamu-authored-prebuild"
+          mkdir -p "$XDG_DATA_HOME"
+          TAMU_25D_FULL_AUTHORED_BAKE=1 timeout 900s xvfb-run -a love game/love 2>&1 | tee /tmp/tamu-authored-bake.log
+          grep -q 'TAMU_AUTHORED_BAKE_PLAN chunks=156' /tmp/tamu-authored-bake.log
+          grep -q 'TAMU_AUTHORED_BAKE_OK chunks=156' /tmp/tamu-authored-bake.log
+          mkdir -p /tmp/tamu-authored-binary
+          find "$XDG_DATA_HOME" -name 'c_*.verts.z' -exec cp {} /tmp/tamu-authored-binary/ \;
+          find "$XDG_DATA_HOME" -name 'c_*.meta.json' -exec cp {} /tmp/tamu-authored-binary/ \;
+          test "$(find /tmp/tamu-authored-binary -name '*.verts.z' | wc -l)" -eq 156
+          test "$(find /tmp/tamu-authored-binary -name '*.meta.json' | wc -l)" -eq 156
+          python3 - <<'PY'
+          import pathlib,zlib
+          prebuilt=pathlib.Path('/tmp/tamu-authored-binary')
+          worker=pathlib.Path(__import__('os').environ['RUNNER_TEMP'])/'tamu-cpu-worker-smoke'
+          generated=list(worker.rglob('25d-terrain-cache-v1/c_*.verts.z'))
+          assert generated,'CPU worker produced no persistent binary terrain'
+          checked=0
+          for src in generated:
+              target=prebuilt/src.name
+              if target.exists():
+                  lhs=zlib.decompress(src.read_bytes())
+                  rhs=zlib.decompress(target.read_bytes())
+                  assert lhs==rhs,f'CPU worker and authored GPU bake differ at {src.name}'
+                  checked+=1
+          assert checked>0,'no overlapping authored chunk to compare'
+          print(f'TAMU_CPU_GPU_VERTEX_PARITY_OK chunks={checked}')
+          PY
+
+          python3 -m pip install pillow
+          python3 scripts/package_tamu_love.py --repo . --prebaked-dir /tmp/tamu-authored-binary --output /tmp/tamu-authored-compiled.love
+          python3 - <<'PY'
+          import json,zipfile
+          from io import BytesIO
+          from PIL import Image
+          with zipfile.ZipFile('/tmp/tamu-authored-compiled.love') as z:
+              root='assets/terrain25d/static_shadow/'
+              m=json.loads(z.read(root+'objects_shadow_manifest.json'))
+              assert m['version']==3 and m['resolution']==32
+              assert len(m['pages'])==8 and len(m['objects'])==60
+              for page in m['pages']:
+                  raw=z.read(root+page['filename'])
+                  image=Image.open(BytesIO(raw))
+                  assert image.width<=256 and image.height<=256 and image.mode=='RGBA'
+              print('TAMU_LOWRES_SHADOW_PACKAGE_OK pages=8 tiles=60 resolution=32')
+          PY
+          python3 - <<'PY'
+          import zipfile
+          with zipfile.ZipFile('/tmp/tamu-authored-compiled.love') as z:
+              assert z.testzip() is None
+              paths=z.namelist()
+              assert len([p for p in paths if p.startswith('assets/terrain25d/baked/') and p.endswith('.verts.z')])==156
+              assert 'world/terrain25d_binary_worker.lua' in paths
+              assert 'player/rigby_visual.lua' in paths
+              assert 'assets/worldbuild/fisilti_ormani.r2.v1.json' in paths
+          print('TAMU_AUTHORED_LOVE_OK binary_chunks=156')
+          PY
+          export XDG_DATA_HOME="$RUNNER_TEMP/tamu-cpu-400-unbatched"
+          mkdir -p "$XDG_DATA_HOME"
+          SDL_AUDIODRIVER=dummy TAMU_DISABLE_TERRAIN_BATCH=1 TAMU_CPU_400_BENCH=1 OSMAN_25D_SUN_HOUR=10.5 timeout 180s xvfb-run -a love /tmp/tamu-authored-compiled.love 2>&1 | tee /tmp/tamu-cpu-400-unbatched.log
+          export XDG_DATA_HOME="$RUNNER_TEMP/tamu-cpu-400"
+          mkdir -p "$XDG_DATA_HOME"
+          SDL_AUDIODRIVER=dummy TAMU_PERF_PHASE_TRACE=1 TAMU_CPU_400_BENCH=1 OSMAN_25D_SUN_HOUR=10.5 timeout 180s xvfb-run -a love /tmp/tamu-authored-compiled.love 2>&1 | tee /tmp/tamu-cpu-400.log
+          for flavor in unbatched batched; do
+            if [ "$flavor" = "unbatched" ]; then root="$RUNNER_TEMP/tamu-cpu-400-unbatched"; else root="$RUNNER_TEMP/tamu-cpu-400"; fi
+            screenshot="$(find "$root" -name "tamu-terrain-$flavor.png" -print -quit)"
+            test -n "$screenshot" && test -s "$screenshot"
+            cp "$screenshot" "/tmp/tamu-terrain-$flavor.png"
+          done
+          python3 - <<'PY'
+          from PIL import Image
+          old=Image.open('/tmp/tamu-terrain-unbatched.png').convert('RGB')
+          new=Image.open('/tmp/tamu-terrain-batched.png').convert('RGB')
+          assert old.size==new.size and old.width>=320
+          w,h=old.size
+          a,b=old.load(),new.load()
+          changed=total=0
+          delta_sum=0
+          for y in range(250,h-235,2):
+              for x in range(0,w,2):
+                  # Ignore player/idle-animation silhouette around the center.
+                  if abs(x-w/2)<145 and abs(y-h/2)<220: continue
+                  delta=max(abs(a[x,y][ch]-b[x,y][ch]) for ch in range(3))
+                  changed+=delta>12
+                  delta_sum+=delta
+                  total+=1
+          assert total>10000
+          changed_ratio=changed/total
+          mean_delta=delta_sum/total
+          print(f'TAMU_TERRAIN_BATCH_VISUAL changed_ratio={changed_ratio:.6f} mean_rgb_delta={mean_delta:.4f} pixels={total}')
+          assert changed_ratio<=.002 and mean_delta<=.3,'GPU terrain batching altered the static scene'
+          PY
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          log=Path('/tmp/tamu-cpu-400.log').read_text()
+          match=re.search(r'TAMU_CI_CPU_400 frames=180 p50_ms=([0-9.]+) p95_ms=([0-9.]+) p99_ms=([0-9.]+)',log)
+          assert match,'missing stable 180-frame CPU benchmark'
+          p50,p95,p99=map(float,match.groups())
+          print(f'TAMU_400FPS_EQUIVALENT target_p95_ms=2.500 actual_p95_ms={p95:.3f} p50_ms={p50:.3f} p99_ms={p99:.3f}')
+          base=Path('/tmp/tamu-cpu-400-unbatched.log').read_text()
+          pat=r'TAMU_CI_CPU_400 frames=180 p50_ms=([0-9.]+) p95_ms=([0-9.]+) p99_ms=([0-9.]+).*?terrain_calls=([0-9]+)'
+          old=re.search(pat,base)
+          new=re.search(pat,log)
+          assert old and new,'missing comparable terrain draw-call results'
+          before=int(old.group(4));after=int(new.group(4))
+          print(f'TAMU_TERRAIN_BATCH_COMPARISON before={before} after={after} p95_before_ms={float(old.group(2)):.3f} p95_after_ms={float(new.group(2)):.3f}')
+          assert after<before, 'terrain aggregation did not reduce draw calls'
+          # Desktop 400 FPS target is advisory; Android 60 FPS frame pacing is assessed separately.
+          if p95>2.5:
+              print(f'TAMU_DESKTOP_CPU_BUDGET_WARNING p95_ms={p95:.3f} target_ms=2.500 (not Android FPS)')
+          PY
+          export XDG_DATA_HOME="$RUNNER_TEMP/tamu-authored-walk"
+          mkdir -p "$XDG_DATA_HOME"
+          SDL_AUDIODRIVER=dummy TAMU_25D_WALK_PROBE=1 timeout 240s xvfb-run -a love /tmp/tamu-authored-compiled.love 2>&1 | tee /tmp/tamu-authored-walk.log
+          grep -q 'TAMU_WALK_COVERAGE frames=480 max_missing=0' /tmp/tamu-authored-walk.log
+          grep -q 'TAMU_25D_BINARY_LOADED' /tmp/tamu-authored-walk.log
+          echo 'TAMU_AUTHORED_WALK_ZERO_GAP_OK'
+
+
+      - name: Upload complete authored-region binary GPU cache
+        if: always() && github.ref_name == 'experiment/25d-binary-vertex-20261030'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tamu-authored-r2-binary-cache
+          path: |
+            /tmp/tamu-authored-bake.log
+            /tmp/tamu-authored-compiled.love
+            /tmp/tamu-authored-walk.log
+            /tmp/tamu-cpu-400.log
+            /tmp/tamu-cpu-400-unbatched.log
+            /tmp/tamu-terrain-unbatched.png
+            /tmp/tamu-terrain-batched.png
+            /tmp/tamu-authored-binary/
+          if-no-files-found: warn
+      - name: Rigby JSON fast versus baseline parser on unchanged rig data
+        if: github.ref_name == 'experiment/25d-binary-vertex-20261030'
+        shell: bash
+        run: |
+          set -euo pipefail
+          luac5.4 -p game/love/save/json.lua
+          luajit -b game/love/save/json.lua /tmp/tamu-json.ljbc
+          git fetch --no-tags --depth=1 origin 36fe1fdd861b2b56535a523db63510e25415362b
+          git show 36fe1fdd861b2b56535a523db63510e25415362b:game/love/save/json.lua > /tmp/tamu-json-legacy.lua
+          cd game/love
+          for interpreter in lua5.4 luajit; do
+            "$interpreter" - <<'LUA'
+          local baseline=assert(loadfile('/tmp/tamu-json-legacy.lua'))()
+          local fast=require('save.json')
+          local f=assert(io.open('assets/osman_rig/rig.json','rb'))
+          local source=f:read('*a');f:close()
+          local clock=os.clock
+          collectgarbage('collect')
+          local old_start=clock();local old=baseline.decode(source)
+          local old_ms=(clock()-old_start)*1000
+          collectgarbage('collect')
+          local start=clock();local latest=fast.decode(source)
+          local fast_ms=(clock()-start)*1000
+          assert(baseline.encode(old)==fast.encode(latest),'Rigby JSON semantic parity failed')
+          assert(latest.format=='tamu-rigby-fk/1')
+          print(string.format('TAMU_RIGBY_JSON_COMPARE baseline_ms=%.3f fast_ms=%.3f speedup=%.2f',
+            old_ms,fast_ms,old_ms/fast_ms))
+          assert(fast_ms<old_ms,'optimized Rigby JSON not faster')
+          LUA
+          done
       - name: 25D geometry and real R2 authored mesh (Lua 5.4 / LuaJIT)
         shell: bash
         run: |

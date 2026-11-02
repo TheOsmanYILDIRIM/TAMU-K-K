@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-feature android:glEsVersion="0x00020000" android:required="true" />
+    <application
+        android:allowBackup="false"
+        android:label="OSMAN Godot Loader"
+        android:theme="@android:style/Theme.Material.Light.NoActionBar"
+        android:extractNativeLibs="true">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- File managers commonly send proprietary .pck as application/octet-stream.
+                 The app checks the display name AND GDPC magic before importing. -->
+            <intent-filter android:label="OSMAN Godot Loader">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="application/x-godot-pck" />
+                <data android:mimeType="application/x-pck" />
+            </intent-filter>
+            <intent-filter android:label="OSMAN Godot Loader">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="application/x-godot-pck" />
+                <data android:mimeType="application/x-pck" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".GameActivity"
+            android:exported="false"
+            android:screenOrientation="fullUser"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|navigation|uiMode" />
+    </application>
+</manifest>

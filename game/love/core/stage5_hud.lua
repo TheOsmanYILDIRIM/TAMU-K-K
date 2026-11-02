@@ -10,6 +10,11 @@ local function add(out,id,x,y,w,h)
 end
 function H:layout(s)
   local x,y,w,h=s.x,s.y,s.w,s.h
+  local old=self._layout_cache
+  if old and old.x==x and old.y==y and old.w==w and old.h==h
+     and old.open==self.open and old.placing==self.placing then
+    return old.buttons
+  end
   local out={}
   local pad=math.max(8,math.min(14,w*.03))
   local unit=math.min(52,(w-pad*2-16)/5)
@@ -39,6 +44,8 @@ function H:layout(s)
   if self.placing then
     add(out,"confirm",x+w-136,y+h-355,120,54)
   end
+  self._layout_cache={x=x,y=y,w=w,h=h,open=self.open,
+    placing=self.placing,buttons=out}
   return out
 end
 function H:hit(px,py,s)

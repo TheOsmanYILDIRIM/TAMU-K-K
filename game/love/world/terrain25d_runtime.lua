@@ -124,11 +124,22 @@ function Runtime.new(pilot)
    built=0,visible=0,draw_calls=0,transition_triangles=0,
    baked_written=0,baked_loaded=0,
    bake_mode=os.getenv("OSMAN_25D_BAKE")=="1",
-   uploads_per_frame=0,build_budget=1,step=32,
-   build_time_budget=.0012,build_time_budget_idle=.0028,
+   uploads_per_frame=0,build_budget=3,step=32,
+   build_time_budget=.002,build_time_budget_idle=.0035,
    moving_resume_cap=5,idle_resume_cap=14,
+   binary_worker=nil,binary_pending={},binary_ready={},binary_inflight=0,
+   binary_max_inflight=12,
    reveal_seconds=.85,last_camera_x=nil,last_camera_y=nil,
    frame_now=0,reveal_shader=compact and Reveal.new() or nil},Runtime)
+ -- Separate immutable terrain byte decompression from graphics uploads.
+ -- CI bake/verify and forced JSON tests continue using the original path.
+ if not self.bake_mode and os.getenv('TAMU_25D_FULL_AUTHORED_BAKE')~='1'
+     and os.getenv('OSMAN_25D_BAKE_VERIFY')~='1'
+     and os.getenv('TAMU_25D_FORCE_JSON')~='1'
+     and love.thread and love.thread.newThread then
+   self.binary_worker=love.thread.newThread('world/terrain25d_binary_worker.lua')
+   self.binary_worker:start()
+ end
  -- Compact mobile atlas: decoded in a real LÖVE worker thread. Main only
  -- performs one bounded GPU upload per frame, with no 228 source PNG paste.
  if compact then
@@ -322,7 +333,7 @@ function Runtime:material(family,x,y,neighbor_family,proximity)
  return Materials.choose(family,x,y,list,self.color_profiles,
    neighbor_family and self.family_centres[neighbor_family],weight)
 end
-function Runtime:prepare(chunk,checkpoint)
+function Runtime:prepare(chunk,checkpoint,cpu_only)
  assert(not chunk._25d_meshes and not chunk._meshes,"chunk already owns GPU meshes")
  local pilot=self.pilot
  local scale=pilot.render_options.height_scale or .35
@@ -476,11 +487,16 @@ function Runtime:prepare(chunk,checkpoint)
    if checkpoint then checkpoint() end
  end
  local meshes,order={},{}
- chunk._25d_staging_meshes=meshes
+ if not cpu_only then chunk._25d_staging_meshes=meshes end
  for page,group in pairs(groups) do
-   local gpu=love.graphics.newMesh(group.vertices,"triangles","static")
-   gpu:setTexture(self:page(page))
-   meshes[page]=gpu;order[#order+1]=page
+   if cpu_only then
+     meshes[page]=group.vertices
+   else
+     local gpu=love.graphics.newMesh(group.vertices,"triangles","static")
+     gpu:setTexture(self:page(page))
+     meshes[page]=gpu
+   end
+   order[#order+1]=page
    if checkpoint then checkpoint() end
  end
  table.sort(order)
@@ -503,9 +519,13 @@ function Runtime:prepare(chunk,checkpoint)
      if checkpoint and k%24==1 then checkpoint() end
    end
    for page,item in pairs(group) do
-     local gpu=love.graphics.newMesh(item.vertices,"triangles","static")
-     gpu:setTexture(self:page(page))
-     meshes["!"..layer..":"..page]=gpu
+     if cpu_only then
+       meshes["!"..layer..":"..page]=item.vertices
+     else
+       local gpu=love.graphics.newMesh(item.vertices,"triangles","static")
+       gpu:setTexture(self:page(page))
+       meshes["!"..layer..":"..page]=gpu
+     end
      overlay_order[layer][#overlay_order[layer]+1]=page
      if checkpoint then checkpoint() end
    end
@@ -513,11 +533,17 @@ function Runtime:prepare(chunk,checkpoint)
  end
  if #shore.water>0 then
    for _,v in ipairs(shore.water) do capture(v) end
-   meshes["!water"]=love.graphics.newMesh(
-     shore.water,"triangles","static")
+   if cpu_only then meshes["!water"]=shore.water
+   else meshes["!water"]=love.graphics.newMesh(
+     shore.water,"triangles","static") end
    if checkpoint then checkpoint() end
  end
  assert(minx<=maxx and miny<=maxy,"empty 25D render bounds")
+ if cpu_only then
+   return {meshes=meshes,bounds={minx,miny,maxx,maxy},
+     ground_order=order,overlay_order=overlay_order,
+     ground_pages=ground_pages}
+ end
  chunk._25d_bounds={minx,miny,maxx,maxy}
  chunk._25d_overlay_order=overlay_order
  chunk._25d_meshes=meshes;chunk._25d_ground_order=order
@@ -527,9 +553,308 @@ function Runtime:prepare(chunk,checkpoint)
  chunk._25d_reveal_start=love.timer and love.timer.getTime() or 0
  self.built=self.built+1
 end
+-- CPU worker context: same reviewed material selection and authored R2
+-- geometry, but no GPU/shader creation or image decoding.
+function Runtime.cpu_new(pilot)
+ local m=Json.decode(assert(love.filesystem.read(
+   'assets/terrain25d/manifest.json')))
+ local profiles=Json.decode(assert(love.filesystem.read(
+   'assets/terrain25d/color_profiles.json')))
+ local families={}
+ for _,asset in ipairs(m.assets) do
+   local group=families[asset.family] or {}
+   group[#group+1]=asset
+   families[asset.family]=group
+ end
+ for _,group in pairs(families) do
+   table.sort(group,function(a,b)return a.id<b.id end)
+ end
+ return setmetatable({pilot=pilot,manifest=m,families=families,
+   color_profiles=profiles.assets,
+   family_centres=Materials.centres(families,profiles.assets),
+   authored_boundaries=Materials.boundaries(pilot.query,pilot.authored_map),
+   transition_triangles=0,step=32},Runtime)
+end
+-- CI-only immutable authored polygon sweep. The huge worldmap bounds are
+-- design-only; never bake 16K+ procedural tiles as if authored content.
+function Runtime:bake_authored_step()
+ if not self.authored_bake_queue then
+   local minx,miny,maxx,maxy=math.huge,math.huge,-math.huge,-math.huge
+   for _,region in ipairs(self.pilot.authored_map.regions or {}) do
+     for _,point in ipairs(region.polygon or {}) do
+       minx=math.min(minx,point[1]);maxx=math.max(maxx,point[1])
+       miny=math.min(miny,point[2]);maxy=math.max(maxy,point[2])
+     end
+   end
+   assert(minx<maxx and miny<maxy,'no authored polygon footprint')
+   local margin=3 -- three full chunks beyond authored polygon in each direction
+   local x0=math.floor(minx/256)-margin
+   local x1=math.floor(maxx/256)+margin
+   local y0=math.floor(miny/256)-margin
+   local y1=math.floor(maxy/256)+margin
+   local queue={}
+   for cy=y0,y1 do for cx=x0,x1 do
+     queue[#queue+1]={cx=cx,cy=cy,x=cx*256,y=cy*256,
+       key=cx..':'..cy,size=256,layers={}}
+   end end
+   self.authored_bake_queue=queue
+   self.authored_bake_index=1
+   print(string.format('TAMU_AUTHORED_BAKE_PLAN chunks=%d cx=%d..%d cy=%d..%d',
+     #queue,x0,x1,y0,y1))
+ end
+ local index=self.authored_bake_index
+ local queue=self.authored_bake_queue
+ if index>#queue then return true end
+ -- The offline authored bake and the runtime worker must use the same
+ -- canonical CPU geometry and byte packing. Do not round-trip through
+ -- newMesh:getVertex: GPU vertex/color quantization may differ.
+ self.authored_cpu=self.authored_cpu or Runtime.cpu_new(self.pilot)
+ local chunk=queue[index]
+ local prepared=self.authored_cpu:prepare(chunk,nil,true)
+ local bytes=Baked.pack_cpu(self.authored_cpu,chunk,prepared)
+ assert(love.filesystem.createDirectory('25d-bake/'))
+ local base=('25d-bake/c_%d_%d'):format(chunk.cx,chunk.cy)
+ assert(love.filesystem.write(base..'.meta.json',bytes.meta))
+ assert(love.filesystem.write(base..'.verts.z',
+   love.data.compress('string','zlib',bytes.raw,6)))
+ self.authored_bake_index=index+1
+ if index%10==0 or index==#queue then
+   print(string.format('TAMU_AUTHORED_BAKE_PROGRESS done=%d total=%d',
+     index,#queue))
+   io.stdout:flush()
+ end
+ return index==#queue
+end
+function Runtime:poll_binary_results()
+ if not self.binary_worker then return end
+ local ready=love.thread.getChannel('tamu25d:binary:ready')
+ for i=1,8 do
+   local item=ready:pop()
+   if not item then break end
+   -- A previously cancelled worker result cannot fulfill a newer request.
+   if item.ticket and self.binary_pending[item.key]==item.ticket then
+     self.binary_pending[item.key]=nil
+     self.binary_inflight=math.max(0,self.binary_inflight-1)
+     self.binary_ready[item.key]=item
+   end
+ end
+end
+function Runtime:enqueue_binary(chunks)
+ if not self.binary_worker then return end
+ local worker_error=self.binary_worker.getError and
+   self.binary_worker:getError()
+ if worker_error then
+   print('TAMU_BINARY_THREAD_ERROR '..tostring(worker_error))
+   self.binary_worker=nil
+   self.binary_pending={}
+   self.binary_ready={}
+   self.binary_inflight=0
+   return
+ end
+ -- Visible chunks are first in Stream:needed. Cancel queued offscreen
+ -- work that is no longer wanted instead of starving the newest viewport
+ -- behind the fixed in-flight cap. In-progress worker replies use tickets.
+ local wanted={}
+ for _,c in ipairs(chunks) do wanted[c.key]=true end
+ for key in pairs(self.binary_ready) do
+   if not wanted[key] then self.binary_ready[key]=nil end
+ end
+ local requests=love.thread.getChannel('tamu25d:binary:requests')
+ local stale=false
+ for key in pairs(self.binary_pending) do
+   if not wanted[key] then stale=true;break end
+ end
+ if stale then
+   -- A disappearing halo cell must not cancel unrelated visible work.
+   -- Drain only queued requests; worker-owned requests remain tracked
+   -- by their tickets until poll_binary_results validates them.
+   local keep={}
+   while true do
+     local item=requests:pop()
+     if not item then break end
+     local key=tostring(item.cx)..':'..tostring(item.cy)
+     if wanted[key] and self.binary_pending[key]==item.ticket then
+       keep[#keep+1]=item
+     end
+   end
+   for _,item in ipairs(keep) do requests:push(item) end
+   local count=0
+   for key in pairs(self.binary_pending) do
+     if wanted[key] then count=count+1
+     else self.binary_pending[key]=nil end
+   end
+   self.binary_inflight=count
+ end
+ for _,c in ipairs(chunks) do
+   if self.binary_inflight>=self.binary_max_inflight then break end
+   if not c._25d_meshes and not c._25d_prepare_job and
+      not self.binary_pending[c.key] and not self.binary_ready[c.key] then
+     self.binary_ticket=(self.binary_ticket or 0)+1
+     local ticket=self.binary_ticket
+     self.binary_pending[c.key]=ticket
+     self.binary_inflight=self.binary_inflight+1
+     requests:push({cx=c.cx,cy=c.cy,ticket=ticket})
+   end
+ end
+end
+-- Stable-view render-only aggregation. The original meshes remain authoritative
+-- and owned by Stream. Aggregates preserve the exact pass and page ordering.
+local function same_chunks(a,b,meshes)
+ if not a or #a~=#b then return false end
+ for i,c in ipairs(a) do
+   if c~=b[i] or c._25d_meshes~=meshes[i] then return false end
+ end
+ return true
+end
+local function release_merged(cache)
+ if not cache then return end
+ for _,entry in ipairs(cache) do
+   if entry.owned and entry.mesh.release then entry.mesh:release() end
+ end
+end
+local function flatten_pass(chunks,layer)
+ local runs,group={},nil
+ local function append(mesh,page)
+   if not group or group.page~=page then
+     group={page=page,meshes={}}
+     runs[#runs+1]=group
+   end
+   group.meshes[#group.meshes+1]=mesh
+ end
+ for _,c in ipairs(chunks) do
+   if c._25d_meshes then
+     if layer=='ground' then
+       for _,page in ipairs(c._25d_ground_order) do
+         append(c._25d_meshes[page],page)
+       end
+     elseif layer=='water' then
+       if c._25d_meshes['!water'] then append(c._25d_meshes['!water'],'!water') end
+     else
+       for _,page in ipairs((c._25d_overlay_order or {})[layer] or {}) do
+         append(c._25d_meshes['!'..layer..':'..page],page)
+       end
+     end
+   end
+ end
+ return runs
+end
+local function aggregate_pass(runtime,runs,output)
+ assert(output and #output==0,'empty owned mesh staging required')
+ for _,run in ipairs(runs) do
+   if #run.meshes<2 then
+     output[#output+1]={mesh=run.meshes[1],owned=false}
+   else
+     local count=0
+     for _,mesh in ipairs(run.meshes) do count=count+mesh:getVertexCount() end
+     -- Bound temporary CPU/GPU duplication on mobile; oversized runs fall
+     -- back to their original meshes without losing draw order.
+     if count>96000 then
+       for _,mesh in ipairs(run.meshes) do output[#output+1]={mesh=mesh,owned=false} end
+     else
+       local vertices={}
+       for _,mesh in ipairs(run.meshes) do
+         for i=1,mesh:getVertexCount() do
+           vertices[#vertices+1]={mesh:getVertex(i)}
+           if #vertices%1024==0 then coroutine.yield() end
+         end
+       end
+       local merged=love.graphics.newMesh(vertices,'triangles','static')
+       if run.page~='!water' then merged:setTexture(runtime:page(run.page)) end
+       output[#output+1]={mesh=merged,owned=true}
+       coroutine.yield()
+     end
+   end
+ end
+ return output
+end
+function Runtime:update_ground_batch(draw_chunks,now)
+ if not self.compact or os.getenv('TAMU_DISABLE_TERRAIN_BATCH')=='1' then return nil end
+ for _,c in ipairs(draw_chunks) do
+   if not c._25d_meshes or self:chunk_reveal(c,now)<.999 then
+     self:invalidate_ground_batch()
+     return nil
+   end
+ end
+ local previous=self.ground_batch_view
+ if not same_chunks(previous,draw_chunks,self.ground_batch_meshes or {}) then
+   self:invalidate_ground_batch()
+   self.ground_batch_view={}
+   self.ground_batch_meshes={}
+   for i,c in ipairs(draw_chunks) do
+     self.ground_batch_view[i]=c
+     self.ground_batch_meshes[i]=c._25d_meshes
+   end
+   self.ground_batch_stable=0
+   return nil
+ end
+ self.ground_batch_stable=(self.ground_batch_stable or 0)+1
+ if self.ground_batch then return self.ground_batch end
+ if self.ground_batch_stable<12 then return nil end
+ if not self.ground_batch_job then
+   self.ground_batch_staging={}
+   self.ground_batch_job=coroutine.create(function()
+     for _,layer in ipairs({'ground','path','bank','water'}) do
+       local output={}
+       self.ground_batch_staging[layer]=output
+       aggregate_pass(self,flatten_pass(draw_chunks,layer),output)
+     end
+   end)
+ end
+ local start=love.timer.getTime()
+ repeat
+   local ok,err=coroutine.resume(self.ground_batch_job)
+   if not ok then
+     self:invalidate_ground_batch()
+     print('TAMU_TERRAIN_BATCH_REJECT '..tostring(err))
+     return nil
+   end
+   if coroutine.status(self.ground_batch_job)=='dead' then
+     self.ground_batch=self.ground_batch_staging
+     self.ground_batch_staging=nil
+     self.ground_batch_job=nil
+     return self.ground_batch
+   end
+ until love.timer.getTime()-start>=.001
+ return nil
+end
+function Runtime:invalidate_ground_batch()
+ if self.ground_batch then
+   for _,layer in ipairs({'ground','path','bank','water'}) do
+     release_merged(self.ground_batch[layer])
+   end
+ end
+ if self.ground_batch_staging then
+   for _,layer in ipairs({'ground','path','bank','water'}) do
+     release_merged(self.ground_batch_staging[layer])
+   end
+ end
+ self.ground_batch=nil
+ self.ground_batch_staging=nil
+ self.ground_batch_job=nil
+ self.ground_batch_view=nil
+ self.ground_batch_meshes=nil
+ self.ground_batch_stable=0
+end
 function Runtime:draw(stream,camera,w,h)
  assert(stream and stream.visible and camera and camera.zoom>0)
  local chunks=stream:visible()
+ self:poll_binary_results()
+ self:enqueue_binary(chunks)
+ -- WALK_PROBE: distinguish CPU-ready arrival from GPU upload selection.
+ -- This instrumentation is inactive outside the existing probe environment.
+ local walk_probe=os.getenv('TAMU_25D_WALK_PROBE')=='1'
+ if walk_probe then
+   self.walk_probe_frame=(self.walk_probe_frame or 0)+1
+   self.walk_ready_since=self.walk_ready_since or {}
+   for key in pairs(self.binary_ready) do
+     if not self.walk_ready_since[key] then
+       self.walk_ready_since[key]=self.walk_probe_frame
+     end
+   end
+   for key in pairs(self.walk_ready_since) do
+     if not self.binary_ready[key] then self.walk_ready_since[key]=nil end
+   end
+ end
  self.stream=stream
  self.current_camera=camera
  local image_ready=self:poll_compact_images()
@@ -545,19 +870,79 @@ function Runtime:draw(stream,camera,w,h)
  local budget=self.bake_mode and .03 or (moving and self.build_time_budget or
    self.build_time_budget_idle)
  local deadline=clock and now+budget
+ -- Avoid uploading several new GPU meshes in one moving-camera frame.
+ -- Keep the existing upload throughput during baking and stationary scenes.
+ local upload_cap=self.bake_mode and self.build_budget
+   or (moving and math.min(1,self.build_budget) or self.build_budget)
  local uploads,resumes=0,0
+ local mesh_prepare_started=clock and clock()
  local resume_cap=self.bake_mode and 800 or
    (moving and self.moving_resume_cap or self.idle_resume_cap)
- for _,c in ipairs(chunks) do
-   if image_ready and not c._25d_meshes and uploads<self.build_budget
+ -- GPU-ready binary chunks get the existing upload slot before expensive
+ -- cooperative CPU preparation. Preserve visible-first Stream order inside
+ -- each tier; never mutate Stream's authoritative visible/chunk array.
+ local upload_order=chunks
+ if self.binary_worker and not self.bake_mode and image_ready then
+   local visible_ready,halo_ready,rest={},{},{}
+   local required=stream.visible_required_keys or {}
+   for _,chunk in ipairs(chunks) do
+     if not chunk._25d_meshes and not chunk._25d_prepare_job
+         and self.binary_ready[chunk.key] and
+         not self.binary_ready[chunk.key].missing then
+       local target=required[chunk.key] and visible_ready or halo_ready
+       target[#target+1]=chunk
+     else
+       rest[#rest+1]=chunk
+     end
+   end
+   upload_order={}
+   for _,group in ipairs({visible_ready,halo_ready,rest}) do
+     for _,chunk in ipairs(group) do
+       upload_order[#upload_order+1]=chunk
+     end
+   end
+ end
+ for _,c in ipairs(upload_order) do
+   if image_ready and not c._25d_meshes and uploads<upload_cap
        and (not deadline or clock()<deadline) then
      local job=c._25d_prepare_job
      local loaded=false
+     local waiting=false
      if not job and not self.bake_mode then
-       loaded=Baked.load(self,c)
+       if self.binary_worker then
+         local result=self.binary_ready[c.key]
+         if result then
+           self.binary_ready[c.key]=nil
+           if result.missing then
+             print('TAMU_25D_CPU_WORKER_REJECT '..c.key..' '..
+               tostring(result.error))
+             -- Worker failures preserve the original cooperative renderer.
+             waiting=false
+           else
+             loaded=Baked.load_ready(self,c,result)
+             if walk_probe then
+               print(string.format('TAMU_WALK_GPU_UPLOAD frame=%d key=%s ready_since=%s loaded=%s visible=%s',
+                 self.walk_probe_frame,c.key,tostring(self.walk_ready_since[c.key]),
+                 tostring(loaded),tostring((stream.visible_required_keys or {})[c.key]==true)))
+             end
+             if loaded and result.generated then
+               self.worker_generated=(self.worker_generated or 0)+1
+               print('TAMU_25D_CPU_WORKER_LOADED key='..c.key)
+             end
+           end
+         else
+           -- The worker queue may be full, so this chunk can be neither
+           -- pending nor ready yet. Never start an expensive full authored
+           -- geometry coroutine on the render thread while the worker lives.
+           -- enqueue_binary will submit it as capacity becomes available.
+           waiting=true
+         end
+       else
+         loaded=Baked.load(self,c)
+       end
        if loaded then uploads=uploads+1 end
      end
-     if not loaded then
+     if not loaded and not waiting then
        if not job then
          job=coroutine.create(function()
            self:prepare(c,function() coroutine.yield() end)
@@ -573,6 +958,8 @@ function Runtime:draw(stream,camera,w,h)
            uploads=uploads+1
            if self.bake_mode then
              local bytes=Baked.save(self,c)
+             local binary_bytes=Baked.save_binary(self,c)
+             print(string.format('TAMU_25D_BINARY_WRITE cx=%d cy=%d bytes=%d',c.cx,c.cy,binary_bytes))
              self.baked_written=self.baked_written+1
              print(string.format("TAMU_25D_BAKED_WRITE cx=%d cy=%d bytes=%d",c.cx,c.cy,bytes))
              io.stdout:flush()
@@ -584,7 +971,43 @@ function Runtime:draw(stream,camera,w,h)
      end
    end
  end
+ if walk_probe then
+   local selected={}
+   for _,c in ipairs(chunks) do
+     if (stream.visible_required_keys or {})[c.key] and not c._25d_meshes then
+       selected[#selected+1]=c.key..':ready='..
+         tostring(self.binary_ready[c.key]~=nil)..':since='..
+         tostring(self.walk_ready_since[c.key])
+     end
+   end
+   if #selected>0 then
+     print(string.format('TAMU_WALK_GPU_WAIT frame=%d uploads=%d cap=%d missing=%s',
+       self.walk_probe_frame,uploads,upload_cap,table.concat(selected,',')))
+   end
+ end
  self.uploads_per_frame=uploads
+ -- Wall-clock time of the bounded preparation/upload loop; not GPU timing.
+ self.mesh_prepare_ms=mesh_prepare_started and (clock()-mesh_prepare_started)*1000 or 0
+ self.mesh_resumes_per_frame=resumes
+ -- Count missing screen-intersecting chunks including pending Stream chunks,
+ -- not merely chunks that already have a resident mesh.
+ local ready_visible=0
+ local required=stream.visible_required_keys or {}
+ for _,c in ipairs(chunks) do
+   if required[c.key] and c._25d_meshes then ready_visible=ready_visible+1 end
+ end
+ self.missing_visible=math.max(0,(stream.visible_required_count or 0)-ready_visible)
+ self.required_visible=stream.visible_required_count or 0
+ self.coverage_over_budget=stream.coverage_over_budget or 0
+ if os.getenv('TAMU_25D_COVERAGE_TRACE')=='1' and
+    (self.missing_visible~=self.previous_missing_visible or
+     self.coverage_over_budget>0) then
+   print(string.format(
+     'TAMU_25D_COVERAGE missing=%d required=%d resident=%d uploads=%d over_cap=%d',
+     self.missing_visible,self.required_visible,#chunks,uploads,self.coverage_over_budget))
+   io.stdout:flush()
+ end
+ self.previous_missing_visible=self.missing_visible
  local draw_chunks=stream.render_visible and stream:render_visible(camera,w,h)
    or chunks
  self.rendered_chunks=draw_chunks
@@ -594,6 +1017,13 @@ function Runtime:draw(stream,camera,w,h)
  self.object_chunks=stream.render_visible and
    stream:render_visible(camera,w,h,80*camera.zoom+16) or chunks
  self.culled_chunks=#chunks-#draw_chunks
+ -- The full terrain pipeline still prepares identical resident chunks in
+ -- matched render tests. Suppress only terrain GPU drawing when disabled.
+ if self.suppress_terrain_draw then
+   self.visible=#draw_chunks
+   self.draw_calls=0
+   return self.visible
+ end
  local g=love.graphics
  g.clear(.075,.115,.128,1);g.push("all")
  g.translate(w/2,h/2);g.scale(camera.zoom)
@@ -601,26 +1031,47 @@ function Runtime:draw(stream,camera,w,h)
  g.translate(-x,-y)
  local tint=self.sun.tint
  local calls,visible=0,0
+ local merged=self:update_ground_batch(draw_chunks,now)
  local shader=self.reveal_shader
+ -- Render-only style cache: each chunk is drawn for ground, overlays and
+ -- water within the same frame. Avoid redoing projection, reveal sampling
+ -- and uniform vectors for the same chunk on every layer.
+ local styles={}
+ local active_shader=false
+ g.setColor(tint[1],tint[2],tint[3],1)
  local function prepare_style(chunk)
-   local progress=self:chunk_reveal(chunk,now)
-   if shader and progress<.999 then
-     local cx,cy=chunk.x+chunk.size*.5,chunk.y+chunk.size*.5
-     local sx,sy=camera:project(cx,cy,w,h)
-     local radius=(chunk.size*.707106781186548+32)*camera.zoom
-     local front=progress*radius
+   if not shader then return end
+   local style=styles[chunk]
+   if style==nil then
+     local progress=self:chunk_reveal(chunk,now)
+     if progress<.999 then
+       local cx,cy=chunk.x+chunk.size*.5,chunk.y+chunk.size*.5
+       local sx,sy=camera:project(cx,cy,w,h)
+       local radius=(chunk.size*.707106781186548+32)*camera.zoom
+       style={origin={sx,sy},front=progress*radius}
+     else
+       style=false
+     end
+     styles[chunk]=style
+   end
+   if style then
      shader:send('radial',1)
-     shader:send('waveOrigin',{sx,sy})
-     shader:send('waveFront',front)
-     g.setShader(shader)
-     g.setColor(tint[1],tint[2],tint[3],1)
-   else
-     if shader then g.setShader() end
-     -- A headless test without shader only gets fully opaque completed mesh;
-     -- the real LÖVE/GLES path uses 3px creation pixels, never alpha fade.
-     g.setColor(tint[1],tint[2],tint[3],1)
+     shader:send('waveOrigin',style.origin)
+     shader:send('waveFront',style.front)
+     if not active_shader then g.setShader(shader);active_shader=true end
+   elseif active_shader then
+     g.setShader();active_shader=false
    end
  end
+ if merged then
+   visible=#draw_chunks
+   for _,layer in ipairs({'ground','path','bank','water'}) do
+     for _,entry in ipairs(merged[layer]) do
+       g.draw(entry.mesh)
+       calls=calls+1
+     end
+   end
+ else
  for _,c in ipairs(draw_chunks) do
    if c._25d_meshes then
      visible=visible+1
@@ -646,10 +1097,19 @@ function Runtime:draw(stream,camera,w,h)
      g.draw(c._25d_meshes['!water']);calls=calls+1
    end
  end
- if shader then g.setShader() end
+ end
+ if active_shader then g.setShader() end
  g.setColor(1,1,1,1)
  g.pop()
- self:prune_pages(stream,chunks)
+ -- Pruning scans every resident chunk and its texture pages. Performing
+ -- this traversal at 60 Hz creates CPU/GC work even for a static world.
+ -- Throttle to 2 Hz; all pages remain pinned by resident mesh ownership.
+ -- The delayed release is bounded and does not affect visible terrain.
+ self.page_prune_elapsed=(self.page_prune_elapsed or 0)+(love.timer and love.timer.getDelta and love.timer.getDelta() or 1/60)
+ if self.page_prune_elapsed>=.5 then
+   self.page_prune_elapsed=0
+   self:prune_pages(stream,chunks)
+ end
  self.visible,self.draw_calls=visible,calls
  return visible
 end

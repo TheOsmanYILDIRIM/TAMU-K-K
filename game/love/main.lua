@@ -1,3 +1,11 @@
+-- No gameplay module is required before explicit visual-mode selection.
+-- CI retains production entrypoint by default; tests may opt in explicitly.
+if not _G.TAMU_ISOLATION_SELECTED and
+   os.getenv('TAMU_ISOLATION_BOOT')~='0' and
+   (os.getenv('CI')~='true' or os.getenv('TAMU_ISOLATION_BOOT')=='1') then
+  require('core.perf_isolation_boot').install()
+  return
+end
 -- Integrated procedural world and playable placeholder player.
 local Query=require("world.world_query")
 local Stream=require("world.stream")
@@ -25,6 +33,8 @@ local StatHud=require("progression.hud")
 local Creative=require("systems.creative_build")
 local CreativeHUD=require("core.creative_build_hud")
 local CreativeRenderer=require("systems.creative_build_renderer")
+local PerfHud=require("core.perf_hud")
+local Diagnostics=require("core.diagnostics")
 local stage6_enabled=os.getenv("OSMAN_STAGE6_EXPLICIT")=="1"
 local stage6_create=os.getenv("OSMAN_STAGE6_CREATE")=="1"
 local stage6_reopen_smoke=os.getenv("OSMAN_STAGE6_REOPEN_SMOKE")=="1"
@@ -117,9 +127,22 @@ local chunk_cache=cache_pilot_enabled and
    size=256,step=r2_pilot and 8 or 32,quality="standard"}) or nil
 local runtime25d,sprite25d_draw
 local shadow_preview_step=0
-local shadow_preview_hours={8,12,17,23}
+local shadow_preview_hours={0,3,6,9,12,15,18,21}
+local function cycle_test_sun()
+  if not runtime25d then return end
+  local current=runtime25d.sun_hour or 12
+  local next_hour=(math.floor(current/3+1)*3)%24
+  runtime25d:set_sun_hour(next_hour)
+  runtime25d.sun_locked=true
+  Diagnostics.event('test_sun_changed',{hour=next_hour})
+  print('TAMU_TEST_SUN_HOUR '..next_hour)
+end
+local function sun_test_bounds()
+  local width=love.graphics.getDimensions()
+  return width-114,142,100,40
+end
 local stream=Stream.new(query,r2_pilot and
-  {size=256,step=8,max_loaded=48,build_budget=8,cache=chunk_cache,
+  {size=256,step=8,max_loaded=80,warm_limit=16,build_budget=12,cache=chunk_cache,
    render_only_25d=terrain25d_enabled,
    prefetch_options=cache_pilot_enabled and r2_pilot.render_options or nil} or
   {size=256,step=32,max_loaded=100,build_budget=5,cache=chunk_cache,
@@ -286,6 +309,21 @@ local function spawn()
 end
 function love.load()
   boot_started=love.timer.getTime()
+  Diagnostics.start()
+  if Diagnostics.enabled and type(love.errorhandler)=='function' then
+    local original_errorhandler=love.errorhandler
+    love.errorhandler=function(message)
+      Diagnostics.event('fatal_error',{message=tostring(message):sub(1,400)})
+      Diagnostics.close()
+      return original_errorhandler(message)
+    end
+  end
+  -- Compare Android physical-pixel workload with Xvfb's logical viewport.
+  local logical_w,logical_h=love.graphics.getDimensions()
+  local physical_w,physical_h=love.graphics.getPixelDimensions()
+  local dpi=love.window.getDPIScale and love.window.getDPIScale() or 1
+  print(string.format('TAMU_DISPLAY_DIAG logical=%dx%d physical=%dx%d dpi_scale=%.3f pixels=%d',
+    logical_w,logical_h,physical_w,physical_h,dpi,physical_w*physical_h))
   creative_renderer=CreativeRenderer.new()
   if terrain25d_compare then
     local v=os.getenv("OSMAN_25D_COMPARE_DISPLAY") or "360x780"
@@ -454,7 +492,10 @@ local function keyboard()
   if mag>0 and (sx~=0 or sy~=0) then wx,wy=wx/mag,wy/mag end
   return wx,wy
 end
+local coverage_walk={frames=0,started=false,missing_max=0,paused=0}
+local coverage_walk_enabled=os.getenv('TAMU_25D_WALK_PROBE')=='1'
 function love.update(dt)
+  Diagnostics.begin(dt)
   local perf_begin=love.timer.getTime()
   if runtime25d then runtime25d:advance_sun(dt) end
   if cache_pilot_enabled and not boot_ready then
@@ -561,6 +602,12 @@ function love.update(dt)
   end
   if terrain25d_smoke or terrain25d_compare then camera.x,camera.y=704,128
   elseif not debug_view and not creative.active then camera.x,camera.y=player.x,player.y end
+  if coverage_walk_enabled and coverage_walk.started then
+    -- Move the camera AFTER ordinary follow, or follow erases the probe.
+    -- CI-only camera traversal; player, collision and saves are unchanged.
+    coverage_walk.distance=(coverage_walk.distance or 0)+math.min(dt,.05)*96
+    camera.x=camera.x+coverage_walk.distance
+  end
   stats=stream:update(camera,w,h)
   -- Mobile object candidates must be prepared outside love.draw. R2's
   -- ecology wrapper exposes generator_version via world.query.
@@ -570,14 +617,63 @@ function love.update(dt)
   if terrain25d_compare then
     last_update_ms=(love.timer.getTime()-perf_begin)*1000
   end
+  Diagnostics.phase("update_gameplay_stream_objects")
+  Diagnostics.update_done()
+  PerfHud.update(dt,(love.timer.getTime()-perf_begin)*1000,stats)
   if long_driver then long_driver:afterUpdate(stats) end
   if os.getenv("OSMAN_CHUNK_CACHE_BASELINE_SMOKE")=="1"
    or os.getenv("OSMAN_CHUNK_CACHE_SMOKE")=="1" then
     perf_tick("update",perf_begin)
   end
 end
+local binary_benchmark={frames={},ready_at=nil,start_at=nil}
+local function binary_benchmark_report()
+  local a=binary_benchmark.frames
+  table.sort(a)
+  local function percentile(p)
+    return a[math.max(1,math.ceil(#a*p))] or 0
+  end
+  print(string.format("TAMU_25D_27_FRAME_STATS count=%d p50=%.3f p95=%.3f p99=%.3f max=%.3f",
+    #a,percentile(.5),percentile(.95),percentile(.99),percentile(1)))
+end
 local function draw_postchecks(perf_begin)
   frames=frames+1
+  if os.getenv("TAMU_25D_27_COMPARE")=="1" and
+     os.getenv("OSMAN_25D_BAKE_VERIFY")=="1" then
+    local now=love.timer.getTime()
+    binary_benchmark.start_at=binary_benchmark.start_at or perf_begin
+    binary_benchmark.frames[#binary_benchmark.frames+1]=(now-perf_begin)*1000
+  end
+  if os.getenv('TAMU_25D_CPU_WORKER_PROBE')=='1' and runtime25d then
+    if (runtime25d.worker_generated or 0)>=1 then
+      print('TAMU_25D_CPU_WORKER_OK chunks='..runtime25d.worker_generated)
+      io.stdout:flush()
+      love.event.quit()
+      return
+    end
+    if frames>720 then error('CPU terrain worker failed to supply new GPU mesh') end
+  end
+  if os.getenv('TAMU_25D_BINARY_THREAD_PROBE')=='1' and runtime25d then
+    if runtime25d.baked_loaded>=4 then
+      print(string.format('TAMU_BINARY_THREAD_OK chunks=%d missing=%d',
+        runtime25d.baked_loaded,runtime25d.missing_visible or -1))
+      io.stdout:flush()
+      love.event.quit()
+      return
+    end
+    if frames>600 then
+      error('binary background worker failed to load four real authored chunks')
+    end
+  end
+  if os.getenv('TAMU_25D_FULL_AUTHORED_BAKE')=='1' and runtime25d then
+    if runtime25d:bake_authored_step() then
+      print(string.format('TAMU_AUTHORED_BAKE_OK chunks=%d',
+        #runtime25d.authored_bake_queue))
+      io.stdout:flush()
+      love.event.quit()
+      return
+    end
+  end
   -- CI-only authored mesh compilation/verification; never alters player save.
   if runtime25d and
      (os.getenv("OSMAN_25D_BAKE")=="1" or
@@ -587,7 +683,15 @@ local function draw_postchecks(perf_begin)
     local baked=os.getenv("OSMAN_25D_BAKE")=="1"
     local count=baked and runtime25d.baked_written or runtime25d.baked_loaded
     if count>=requested then
-      if not baked then
+      if not baked and os.getenv("TAMU_25D_27_COMPARE")=="1" then
+        binary_benchmark.ready_at=binary_benchmark.ready_at or love.timer.getTime()
+        if love.timer.getTime()-binary_benchmark.ready_at < 1.3 then return end
+        local mode=os.getenv("TAMU_25D_FORCE_JSON")=="1" and "json" or "binary"
+        love.graphics.captureScreenshot("tamu-27-"..mode..".png")
+        binary_benchmark_report()
+        print(string.format("TAMU_25D_27_COMPLETE mode=%s chunks=%d wall_ms=%.3f frames=%d",
+          mode,count,(love.timer.getTime()-binary_benchmark.start_at)*1000,frames))
+      elseif not baked then
         love.graphics.captureScreenshot("tamu-prebaked-startup.png")
       end
       print(string.format("TAMU_25D_BAKE_%s_OK count=%d frames=%d visible=%d",
@@ -847,11 +951,91 @@ local function draw_postchecks(perf_begin)
     long_driver:afterDraw(object_count)
   end
 end
+local function render_flags()
+  local mode=_G.TAMU_RENDER_PROFILE or 'full'
+  if mode=='compare_terrain' then return true,false,false,false end
+  if mode=='compare_objects' then return false,true,false,false end
+  if mode=='compare_objects_opaque' then return false,true,false,false end
+  if mode=='compare_objects_prepare' then return false,true,false,false end
+  if mode=='compare_objects_collect' then return false,true,false,false end
+  if mode=='compare_objects_shadow_cpu' then return false,true,false,false end
+  if mode=='compare_rig' then return false,false,true,false end
+  if mode=='compare_terrain_objects' then return true,true,false,false end
+  if mode=='compare_nohud' then return true,true,true,false end
+  if mode=='compare_norig' then return true,true,false,true end
+  return true,true,true,true
+end
+local diag_copy_message,diag_copy_until=nil,0
 function love.draw()
+  local terrain_on,objects_on,rig_on,hud_on=render_flags()
+  Diagnostics.draw_begin()
   local perf_begin=love.timer.getTime()
+  local phase_trace=os.getenv('TAMU_PERF_PHASE_TRACE')=='1'
+  local terrain_finished,objects_finished
   if long_driver and boot_ready and long_driver.frame>0 then long_driver:beforeDraw() end
-  if runtime25d then runtime25d:draw(stream,camera,w,h)
-  else Terrain.draw(stream,camera,w,h,r2_pilot and r2_pilot.render_options) end
+  if runtime25d then
+    runtime25d.suppress_terrain_draw=not terrain_on
+    runtime25d:draw(stream,camera,w,h)
+  elseif terrain_on then
+    Terrain.draw(stream,camera,w,h,r2_pilot and r2_pilot.render_options)
+  end
+  if coverage_walk_enabled and runtime25d then
+    if not coverage_walk.started then
+      if runtime25d.missing_visible==0 and runtime25d.required_visible>0 then
+        coverage_walk.started=true
+        print(string.format('TAMU_WALK_READY visible=%d',runtime25d.required_visible))
+      end
+    else
+      coverage_walk.frames=coverage_walk.frames+1
+      local missing=runtime25d.missing_visible or 0
+      coverage_walk.missing_max=math.max(coverage_walk.missing_max,missing)
+      if missing>0 then
+        print(string.format('TAMU_WALK_GAP frame=%d missing=%d camera_x=%.2f',
+          coverage_walk.frames,missing,camera.x))
+        -- Existing WALK_PROBE only: identify missing residency vs GPU upload.
+        -- No new test mode or gameplay/debug allocations in ordinary play.
+        local keys,not_preloaded,just_visible,pending,ready={},{},{},{},{}
+        for key in pairs(stream.visible_required_keys or {}) do
+          local c=stream.resident[key]
+          if not c or not c._25d_meshes then
+            keys[#keys+1]=key
+            if not (coverage_walk.previous_loaded or {})[key] then
+              not_preloaded[#not_preloaded+1]=key
+            end
+            if not (coverage_walk.previous_visible or {})[key] then
+              just_visible[#just_visible+1]=key
+            end
+            if runtime25d.binary_pending[key] then pending[#pending+1]=key end
+            if runtime25d.binary_ready[key] then ready[#ready+1]=key end
+          end
+        end
+        table.sort(keys)
+        print(string.format(
+          'TAMU_WALK_CAUSE frame=%d zoom=%.3f view=%dx%d size=%d missing=[%s] no_previous_resident=%d first_visible=%d worker_pending=%d worker_ready=%d',
+          coverage_walk.frames,camera.zoom,w,h,stream.chunker.size,
+          table.concat(keys,','),#not_preloaded,#just_visible,#pending,#ready))
+      end
+      if coverage_walk.frames>=480 then
+        print(string.format('TAMU_WALK_COVERAGE frames=%d max_missing=%d distance=%.3f',
+          coverage_walk.frames,coverage_walk.missing_max,coverage_walk.distance or 0))
+        love.graphics.captureScreenshot('tamu-walk-coverage.png')
+        io.stdout:flush()
+        love.event.quit()
+        return
+      end
+      -- Compare the following frame with this frame's actual residency.
+      coverage_walk.previous_visible={}
+      for key in pairs(stream.visible_required_keys or {}) do
+        coverage_walk.previous_visible[key]=true
+      end
+      coverage_walk.previous_loaded={}
+      for _,c in ipairs(stream:visible()) do
+        coverage_walk.previous_loaded[c.key]=true
+      end
+    end
+  end
+  Diagnostics.phase("terrain_draw")
+  if phase_trace then terrain_finished=love.timer.getTime() end
   if cache_pilot_enabled and not boot_ready then
     local g=love.graphics
     local ready=0
@@ -881,17 +1065,27 @@ function love.draw()
     g.setColor(1,1,1,1)
   end
   object_count=ObjectRenderer.draw(objects,stream,camera,w,h,player,
-    selected_target,harvesting,sprite25d_draw)
+    selected_target,harvesting,sprite25d_draw,
+    {objects=objects_on,rig=rig_on,
+     opaque_objects=_G.TAMU_RENDER_PROFILE=='compare_objects_opaque',
+     skip_object_gpu=({compare_objects_prepare=true,compare_objects_shadow_cpu=true})[_G.TAMU_RENDER_PROFILE] or false,
+     object_collect_only=_G.TAMU_RENDER_PROFILE=='compare_objects_collect',
+     object_shadow_cpu_only=_G.TAMU_RENDER_PROFILE=='compare_objects_shadow_cpu'})
+  Diagnostics.phase("objects_and_shadows")
+  if phase_trace then objects_finished=love.timer.getTime() end
   local ghost
   if not r2_pilot and stage_hud.placing and placement_target then
     local ok=building:preview("core:workbench",placement_target.x,placement_target.y,
       placement_rotation,player.x,player.y)
     ghost={x=placement_target.x,y=placement_target.y,ok=ok}
   end
-  PlacedRenderer.draw(building,camera,w,h,ghost)
-  creative_renderer:draw(creative,camera,w,h)
+  if objects_on then
+    PlacedRenderer.draw(building,camera,w,h,ghost)
+    creative_renderer:draw(creative,camera,w,h)
+  end
   local g=love.graphics
   local safe_x,safe_y,safe_w,safe_h=safe_area()
+  if hud_on then
   g.setColor(.05,.12,.12,.75)
   g.rectangle("fill",safe_x+8,safe_y+8,math.min(safe_w-16,600),124,12,12)
   g.setColor(1,1,1)
@@ -924,12 +1118,65 @@ function love.draw()
   stage_hud:draw(inventory,crafting,hud_safe,placement_rotation,route_status)
   stat_hud:draw(g,hud_safe,progression)
   creative_hud:draw(creative,hud_safe)
+  if runtime25d then
+    local tx,ty,tw,th=sun_test_bounds()
+    g.setColor(.12,.22,.24,.90)
+    g.rectangle('fill',tx,ty,tw,th,8,8)
+    g.setColor(1,1,.84,1)
+    g.print(string.format('SUN %02d >',math.floor(runtime25d.sun_hour or 12)),tx+9,ty+10)
+  end
+  PerfHud.draw(runtime25d,w,h,safe_x,safe_y,safe_w,
+    (love.timer.getTime()-perf_begin)*1000)
   local bx,by=joystick_center()
   g.setColor(.2,.3,.34,.6)
   g.circle("fill",bx,by,72)
   g.setColor(.95,.95,.9,.7)
   g.circle("fill",bx+joystick.dx*55,by+joystick.dy*55,22)
   g.setColor(1,1,1)
+  end -- user HUD draw gate
+  if _G.TAMU_RENDER_PROFILE and _G.TAMU_RENDER_PROFILE~='full' then
+    g.setColor(1,1,1,1)
+    g.print('MATCHED: '.._G.TAMU_RENDER_PROFILE..' FPS '..love.timer.getFPS(),12,12)
+  end
+  if phase_trace and terrain_finished and objects_finished and
+     (frames<10 or frames%30==0) then
+    local finished=love.timer.getTime()
+    print(string.format(
+      'TAMU_BOOT_PHASE frame=%d terrain_ms=%.3f objects_ms=%.3f ui_ms=%.3f total_ms=%.3f visible=%d',
+      frames+1,(terrain_finished-perf_begin)*1000,
+      (objects_finished-terrain_finished)*1000,
+      (finished-objects_finished)*1000,(finished-perf_begin)*1000,
+      runtime25d and runtime25d.visible or 0))
+    io.stdout:flush()
+  end
+  if love.system and love.system.getOS and love.system.getOS()=='Android' then
+    local sx,sy,sw=safe_area()
+    local bx,by=sx+sw-118,sy+8
+    g.setColor(.06,.12,.18,.86)
+    g.rectangle('fill',bx,by,110,34,6,6)
+    g.setColor(1,1,1,1)
+    g.print('COPY LOG',bx+12,by+9)
+    if diag_copy_message and love.timer.getTime()<diag_copy_until then
+      g.setColor(.06,.12,.18,.9)
+      g.rectangle('fill',sx+8,sy+48,math.min(sw-16,310),42,5,5)
+      g.setColor(1,1,1,1)
+      g.print(diag_copy_message,sx+14,sy+59)
+    end
+  end
+  Diagnostics.phase("hud_ui")
+  Diagnostics.draw_done({chunks=stats and stats.loaded,objects=object_count,
+    missing=runtime25d and runtime25d.missing_visible,pending=stats and stats.pending,
+    shadow_rebuilds=sprite25d_draw and sprite25d_draw.shadow_rebuilds,
+    shadow_reuses=sprite25d_draw and sprite25d_draw.shadow_reuses,
+    object_cache_rebuilds=sprite25d_draw and sprite25d_draw.object_cache_rebuilds,
+    object_cache_reuses=sprite25d_draw and sprite25d_draw.object_cache_reuses,
+    mesh_uploads=runtime25d and runtime25d.uploads_per_frame,
+    mesh_prepare_ms=runtime25d and runtime25d.mesh_prepare_ms,
+    mesh_resumes=runtime25d and runtime25d.mesh_resumes_per_frame,
+    contact_rebuilds=sprite25d_draw and sprite25d_draw.contact_rebuilds,
+    contact_reuses=sprite25d_draw and sprite25d_draw.contact_reuses})
+  PerfHud.benchmark_sample(0,PerfHud.update_ms,
+    (love.timer.getTime()-perf_begin)*1000,runtime25d,stats,sprite25d_draw)
   draw_postchecks(perf_begin)
 end
 safe_area=function()
@@ -980,10 +1227,35 @@ local function interact_nearest()
   end
   if best then select_object(best) else route_status="Move closer to a resource" end
 end
+local function copy_diagnostics()
+  local ok,path=Diagnostics.export()
+  if not ok then return false,'Log export failed' end
+  local raw=love.filesystem.read(path)
+  if not raw or #raw==0 then return false,'Log empty' end
+  if not (love.system and love.system.setClipboardText) then
+    return false,'Clipboard unavailable'
+  end
+  local copied=pcall(love.system.setClipboardText,raw)
+  if not copied then return false,'Clipboard blocked' end
+  return true,'Log copied! Paste in ChatGPT'
+end
 local function press(id,x,y)
   fingers[id]={x=x,y=y,origin_x=x,origin_y=y,move=false}
   local sx,sy,sw,sh=safe_area()
   local safe={x=sx,y=sy,w=sw,h=sh}
+  if love.system and love.system.getOS and love.system.getOS()=='Android'
+      and x>=sx+sw-118 and x<=sx+sw-8
+      and y>=sy+8 and y<=sy+42 then
+    fingers[id].diag_copy=true
+    return
+  end
+  if runtime25d then
+    local tx,ty,tw,th=sun_test_bounds()
+    if x>=tx and x<=tx+tw and y>=ty and y<=ty+th then
+      fingers[id].sun_test=true
+      return
+    end
+  end
   local creative_hit=creative_hud:hit(x,y,safe,creative)
   if creative_hit then
     fingers[id].creative_ui=creative_hit
@@ -1021,7 +1293,7 @@ end
 local function move(id,x,y)
   local p=fingers[id];if not p then return end
   if p.joystick then joystick:move(id,x,y);return end
-  if p.button or p.ui or p.stats then return end
+  if p.button or p.ui or p.stats or p.sun_test then return end
   if p.multi then
     local partner
     for other,q in pairs(fingers) do if other~=id and not q.joystick and not q.button then partner=q;break end end
@@ -1039,6 +1311,17 @@ end
 local function release(id,x,y)
   local p=fingers[id];if not p then return end
   if p.joystick then joystick:release(id)
+  elseif p.diag_copy then
+    local sx,sy,sw=safe_area()
+    if x>=sx+sw-118 and x<=sx+sw-8 and y>=sy+8 and y<=sy+42 then
+      local ok,msg=copy_diagnostics()
+      diag_copy_message=msg
+      diag_copy_until=love.timer.getTime()+5
+      print('TAMU_DIAGNOSTICS_CLIPBOARD '..(ok and 'OK' or 'FAILED'))
+    end
+  elseif p.sun_test then
+    local tx,ty,tw,th=sun_test_bounds()
+    if x>=tx and x<=tx+tw and y>=ty and y<=ty+th then cycle_test_sun() end
   elseif p.stats then
     local sx,sy,sw,sh=safe_area()
     if stat_hud:hit(x,y,{x=sx,y=sy,w=sw,h=sh})==p.stats then
@@ -1110,6 +1393,13 @@ function love.wheelmoved(_,dy)
   camera:zoom_at(1.15^dy,x,y,w,h)
 end
 function love.keypressed(key)
+  if key=="f10" then
+    local ok,path=Diagnostics.export()
+    print("TAMU_DIAGNOSTICS_EXPORT "..(ok and "OK " or "FAILED ")..tostring(path))
+    return
+  end
+  if key=="f9" then PerfHud.toggle();return end
+  if key=="f8" then cycle_test_sun();return end
   if key=="p" then stat_action("stats_toggle");return end
   if stat_hud.open then
     local number=tonumber(key)
@@ -1152,6 +1442,20 @@ end
 
 -- A worker may still be compressing disposable geometry at shutdown.
 -- Drain only after gameplay has stopped, never inside the frame budget.
+function love.focus(focused)
+ Diagnostics.event('app_focus',{focused=focused==true})
+ if focused then Diagnostics.event('app_resumed') else Diagnostics.flush() end
+end
+function love.visible(visible)
+ Diagnostics.event('app_visibility',{visible=visible==true})
+ if not visible then Diagnostics.flush() end
+end
+function love.lowmemory()
+ Diagnostics.event('android_low_memory',{lua_kib=collectgarbage('count')})
+ Diagnostics.flush()
+ collectgarbage('step',200)
+end
 function love.quit()
+ Diagnostics.close()
  if chunk_cache then chunk_cache:close() end
 end

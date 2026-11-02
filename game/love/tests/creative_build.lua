@@ -52,6 +52,8 @@ pair:select(3);pair.target={x=0,y=16}
 local ok,w=pair:preview();assert(ok and math.abs(w.z-6)<1e-8)
 local h=H.new();local safe={x=0,y=0,w=360,h=780}
 local controls=h:layout(safe,c)
+assert(h:layout(safe,c)==controls,
+  "unchanged creative viewport must reuse control geometry")
 local place
 for _,item in ipairs(controls) do if item.id=="creative_place" then place=item end end
 assert(place and h:hit(place.x+4,place.y+4,safe,c)=="creative_place")
@@ -59,5 +61,33 @@ local before=c.rotation
 assert(h:action("creative_rotate",c) and c.rotation==(before+1)%4)
 local n=c.level;assert(h:action("creative_level_up",c) and c.level==math.min(3,n+1))
 assert(h:action("creative_toggle",c) and not c.active)
+assert(h:layout(safe,c)~=controls,
+  "creative panel toggle must invalidate cached controls")
 assert(not c:place())
 print("TAMU_CREATIVE_CORE_OK 13 catalog, preview, placement, collision, undo, 3D height, touch HUD")
+-- Empty normal gameplay must never load the optional Creative atlas.
+-- Existing authored construction remains visible while Creative is off.
+do
+ local Renderer=require('systems.creative_build_renderer')
+ local renderer=Renderer.new()
+ assert(not renderer.initialized and not renderer.image)
+ local empty=C.new(world)
+ local unloaded=renderer:draw(empty,camera,360,360)
+ assert(unloaded==0 and not renderer.initialized,
+   'empty Creative state allocated GPU textures')
+ local old_love=love
+ local geometry=0
+ love={filesystem={read=function() return nil end},graphics={
+   push=function() end,pop=function() end,setColor=function() end,
+   polygon=function() geometry=geometry+1 end,
+   rectangle=function() geometry=geometry+1 end}}
+ local placed={items={one=true},active=false,
+   visible=function() return {{shape='foundation',x=0,y=0,z=0}} end}
+ local view={zoom=1,project=function() return 180,180 end}
+ assert(renderer:draw(placed,view,360,360)==1 and geometry==1
+   and renderer.initialized and renderer.fallback,
+   'existing Creative construction hidden by empty fast-path')
+ love=old_love
+end
+print('TAMU_CREATIVE_EMPTY_LAZY_ATLAS_OK')
+
