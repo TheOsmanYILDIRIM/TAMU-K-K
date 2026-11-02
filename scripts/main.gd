@@ -376,8 +376,8 @@ func _avatar_visual_height() -> float:
         var rect: Rect2 = visual.get_rect()
         var a := visual.position.y + rect.position.y * visual.scale.y
         var b := a + rect.size.y * visual.scale.y
-        top = minf(top, a, b)
-        bottom = maxf(bottom, a, b)
+        top = minf(top, minf(a, b))
+        bottom = maxf(bottom, maxf(a, b))
     return bottom - top if is_finite(top) and is_finite(bottom) else 0.0
 
 func _calibrate_avatar_scale() -> void:
