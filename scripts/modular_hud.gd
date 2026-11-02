@@ -15,7 +15,7 @@ func setup(game: Node) -> bool:
     var manifest_text := ""
     if FileAccess.file_exists(LAYOUT_PATH):
         manifest_text = FileAccess.get_file_as_string(LAYOUT_PATH)
-    if ResourceLoader.exists("res://ui/hud/portrait.png"):
+    if ResourceLoader.exists("res://ui/hud/parts/portrait.png"):
         pass
     elif FileAccess.file_exists(ZIP_PATH):
         zip = ZIPReader.new()
@@ -42,8 +42,8 @@ func setup(game: Node) -> bool:
             continue
         var filename := "%s.png" % str(key)
         var texture: Texture2D
-        if ResourceLoader.exists("res://ui/hud/"+filename):
-            texture = load("res://ui/hud/"+filename)
+        if ResourceLoader.exists("res://ui/hud/parts/"+filename):
+            texture = load("res://ui/hud/parts/"+filename)
         elif zip != null and zip.get_files().has(filename):
             var image := Image.new()
             if image.load_png_from_buffer(zip.read_file(filename)) != OK:
