@@ -170,6 +170,15 @@ func _layout() -> void:
 func _process(_dt: float) -> void:
     if host == null or not sprites.has("joystick_thumb"):
         return
+    # A resource panel owns the upper-right focus region; do not overlap it.
+    var forest = host.get("forest_gui")
+    var panel_open := forest != null and bool(forest.get("panel_open"))
+    for key in ["compass_and_zoom","dawn"]:
+        if sprites.has(key):
+            (sprites[key] as Control).visible = not panel_open
+    for key in ["zoom_plus","zoom_minus"]:
+        if controls.has(key):
+            (controls[key] as Control).visible = not panel_open
     var direction: Vector2 = host.get("joystick_vector")
     var thumb: TextureRect = sprites["joystick_thumb"]
     var dimension := joystick_span*0.34
