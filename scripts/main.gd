@@ -206,6 +206,10 @@ func _tick_gameplay(dt: float) -> void:
                 push_error("TAMU_GAMEPLAY_HARVEST_ID_MISSING " + id)
                 continue
             var item: Dictionary = harvested_by_id[id]
+            # One resource may produce several drop events; remove its world
+            # visual and emit completion FX only on the first event.
+            if bool(item.get("collected", false)):
+                continue
             item["collected"] = true
             var sprite: Sprite2D = item["sprite"]
             sprite.set_meta("tamu_collected", true)

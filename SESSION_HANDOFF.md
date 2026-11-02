@@ -1,3 +1,7 @@
+### 2026-11-02 — [GODOT-MIGRATION] Toplama çoklu drop ve dünya görseli
+- Stage6 durable harvest'ta aynı `command_id` altındaki birden fazla `HarvestCompleted` drop olayı **tek atomik transaction** olarak commit edilir; farklı command kimlikleri fail-closed reddedilir. `main.gd` objenin dünya silueti, gölgesi, depletion ve FX işlemlerini sadece ilk completion olayında uygular; tüm drop eşyaları domain envanterinde kalır. Save formatı ve kanonik kimlikler değişmedi.
+- **Kabul:** mevcut Stage6 ve gameplay CI, PCK boot ve gerçek cihaz toplama gözlemi ayrı doğrulanacaktır. APK kapalıdır.
+
 ### 2026-11-02 — [GODOT-MIGRATION] Faz 3 inşa: oynanış butonu ve kayıttan sahneye yeniden çizim
 - **Main güncellemesi:** `scripts/main.gd` içinde `KUR` butonu mevcut `GameplaySession.place_building` doğrulamasını (malzeme/yüzey/obstacle/distance/Stage6 durable transaction) çağırır; world instance UUID üretilir. Başarılı yerleştirmeler `building.placed` authoritative verisinden 2.5D yerleşim görseli olarak `object_layer` Y-sort katmanına çizilir. Yüklenen kayıtta görseller baştan kurulur; kayıt şeması, Rigby ve kanonik kaynaklar değiştirilmedi.
 - **Sınır:** Bu geçici 2.5D primitive tezgâh görselidir; authored özel inşa sprite parity henüz açık. Karmaşık inşa önizleme/rotasyon arayüzü de açık. APK yok; Godot görsel/PCK CI ve cihaz kabulü ayrıdır.
