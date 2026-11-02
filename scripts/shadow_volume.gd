@@ -73,13 +73,16 @@ static func configure(node: Polygon2D, kind: String, rendered_size: Vector2,
     node.polygon = mass["points"]
     node.antialiased = true
     node.set_meta("root_inset",mass["root_inset"])
+    var pigment := Color(0.025,0.045,0.04,0.24 if kind=="tree" else 0.18)
     if bool(mass["sampled_alpha"]):
         var fades := PackedColorArray()
         for i in range(node.polygon.size()):
             var alpha := 0.0 if i == 0 or i >= node.polygon.size()-2 else 1.0
-            fades.append(Color(1,1,1,alpha))
+            fades.append(Color(pigment.r,pigment.g,pigment.b,pigment.a*alpha))
         node.vertex_colors = fades
-    node.color = Color(0.025, 0.045, 0.04, 0.24 if kind == "tree" else 0.18)
+        node.color = Color.WHITE
+    else:
+        node.color = pigment
     return true
 
 static func apply_sun(node: Polygon2D, cast_direction: Vector2, cast_length: float, sun_level: float) -> void:
