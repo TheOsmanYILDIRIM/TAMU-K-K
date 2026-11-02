@@ -300,6 +300,10 @@ func _durable_tick(dt: float, player_pos: Vector2) -> Array[Dictionary]:
     var empty: Array[Dictionary] = []
     if durable_fault:
         return empty
+    # No pending transaction: avoid cloning and validating the entire Stage6
+    # domain on every render frame. Commands remain staged on active ticks.
+    if harvesting.active.is_empty() and crafting.active.is_empty():
+        return empty
     var stage = _stage_domain()
     if stage == null:
         durable_fault = true
