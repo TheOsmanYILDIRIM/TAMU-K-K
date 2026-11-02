@@ -250,7 +250,7 @@ func open_for(item: Dictionary) -> void:
     mark_label.text = "İŞARETLE"
     title_label.text = "AĞAÇ" if str(item["kind"])=="tree" else "KAYA"
     subtitle_label.text = "Toplanabilir Kaynak"
-    var drop: Dictionary = host.gameplay.harvest_drop(str(item["kind"]))
+    var drop: Dictionary = (host.get("gameplay") as RefCounted).call("harvest_drop",str(item["kind"]))
     var item_id := str(drop.get("def_id",""))
     item_label.text = "Odun" if item_id=="core:wood_log" else ("Taş" if item_id=="core:stone" else item_id)
     quantity_label.text = "× " + str(drop.get("count",0))
@@ -287,20 +287,20 @@ func set_status(message: String) -> void:
         status_label.text = message
 
 func _detail() -> void:
-    if host.selected_harvest.is_empty():
+    if (host.get("selected_harvest") as Dictionary).is_empty():
         return
-    var item: Dictionary = host.selected_harvest
+    var item: Dictionary = host.get("selected_harvest")
     var r := float(item.get("radius",0.0))
     set_status(("AĞAÇ" if str(item["kind"])=="tree" else "KAYA") + " · MENZİL " + str(snappedf(r,1.0)))
     print("TAMU_HARVEST_DETAIL id=",item["id"])
 
 func _mark() -> void:
-    if host.selected_harvest.is_empty():
+    if (host.get("selected_harvest") as Dictionary).is_empty():
         return
     marked = not marked
     mark_label.text = "İŞARETLİ" if marked else "İŞARETLE"
     set_status("KAYNAK İŞARETLENDİ" if marked else "İŞARET KALDIRILDI")
-    print("TAMU_HARVEST_MARK id=",host.selected_harvest["id"]," active=",marked)
+    print("TAMU_HARVEST_MARK id=",(host.get("selected_harvest") as Dictionary)["id"]," active=",marked)
 
 func _sync_focus(item: Dictionary) -> void:
     var sprite: Sprite2D = item["sprite"]
@@ -310,13 +310,13 @@ func _sync_focus(item: Dictionary) -> void:
     focus.offset = sprite.offset
     focus.flip_h = sprite.flip_h
     focus.position = xf*Vector2.ZERO
-    focus.scale = sprite.scale * host.get_node("Camera2D").zoom
-    if host.selected_harvest_outline != null:
-        focus_outline.texture = host.selected_harvest_outline.texture
+    focus.scale = sprite.scale * (host.get_node("Camera2D") as Camera2D).zoom
+    if host.get("selected_harvest_outline") != null:
+        focus_outline.texture = host.get("selected_harvest_outline").texture
         focus_outline.centered = sprite.centered
         focus_outline.offset = sprite.offset
         focus_outline.flip_h = sprite.flip_h
-        focus_outline.material = host.selected_harvest_outline.material
+        focus_outline.material = host.get("selected_harvest_outline").material
     var anchor := xf * sprite.get_rect().get_center()
     if panel.visible:
         var dest := panel.position + Vector2(panel.size.x*0.26,panel.size.y*0.92)
@@ -330,5 +330,5 @@ func _sync_focus(item: Dictionary) -> void:
 
 func _process(_dt: float) -> void:
     _layout()
-    if panel_open and host != null and not host.selected_harvest.is_empty():
-        _sync_focus(host.selected_harvest)
+    if panel_open and host != null and not (host.get("selected_harvest") as Dictionary).is_empty():
+        _sync_focus(host.get("selected_harvest"))
