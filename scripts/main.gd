@@ -11,6 +11,7 @@ const WorldIdentity = preload("res://scripts/world_identity.gd")
 const AudioCues = preload("res://scripts/audio_cues.gd")
 const ImpactEffects = preload("res://scripts/impact_effects.gd")
 const SHADOW_SHADER = preload("res://scripts/object_shadow.gdshader")
+const ShadowVolume = preload("res://scripts/shadow_volume.gd")
 var rigby_skin: Dictionary = {}
 var merged_mode: bool = OS.get_environment("TAMU_TERRAIN_MODE") != "legacy"
 # Each independently authored region is a separate logical chunk, not one global world.
@@ -100,9 +101,7 @@ func _update_sun(delta: float) -> void:
         var length := clampf(0.32+1.05*(1.0-light)/(light+0.31),0.32,2.65)
         for shadow in shadow_sprites:
             if is_instance_valid(shadow):
-                shadow.rotation = atan2(-sun_direction.x,sun_direction.y)
-                shadow.scale = Vector2.ONE * float(shadow.get_meta("base_scale",1.0)) * length
-                shadow.modulate.a = cast * light
+                ShadowVolume.apply_sun(shadow, -sun_direction, length, light)
 
 func _next_gameplay_command(prefix: String) -> String:
     gameplay_sequence += 1
@@ -777,16 +776,14 @@ func _load_objects() -> void:
         if kind == "tree" or kind == "rock":
             var shadow := Polygon2D.new()
             shadow.name = "GroundShadow"
-            var outline := PackedVector2Array()
-            var radius := 10.0 if kind == "rock" else 20.0
-            for n in range(24):
-                var angle := TAU * float(n) / 24.0
-                outline.append(Vector2(cos(angle)*radius, sin(angle)*radius*0.45))
-            shadow.polygon = outline
-            shadow.color = Color(0.025,0.045,0.04,0.08)
+            # Trees and rocks need volume even when the flat atlas projection goes edge-on.
+            if not ShadowVolume.configure(shadow, kind,
+                    Vector2(area.size.x, area.size.y) * scale_value):
+                push_error("TAMU_SHADOW_VOLUME_INVALID " + id)
+                get_tree().quit(27)
+                return
             shadow.visible = merged_mode
             shadow.position = sprite.position
-            shadow.set_meta("base_scale",maxf(0.7,scale_value*2.5))
             shadow_layer.add_child(shadow)
             shadow_sprites.append(shadow)
             # Exact object atlas alpha silhouette projected in the sun direction.
@@ -802,7 +799,6 @@ func _load_objects() -> void:
             shadow_layer.add_child(silhouette)
             silhouette_shadows.append(silhouette)
             object_visuals_by_chunk[visual_key].append(silhouette)
-            shadow.color.a = 0.08
             item_record["silhouette"] = silhouette
             item_record["shadow"] = shadow
             object_visuals_by_chunk[visual_key].append(shadow)

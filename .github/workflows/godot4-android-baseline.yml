@@ -27,6 +27,7 @@ jobs:
           grep -q 'TAMU_FX_CONTRACT_OK voices=8' fx-contract.log
           timeout --kill-after=3s 25s godot --headless --path . --script res://scripts/r2_surface_ci.gd 2>&1 | tee r2-surface.log
           grep -q TAMU_R2_SURFACE_PARITY_OK r2-surface.log
+          grep -q TAMU_SHADOW_VOLUME_PARITY_OK fx-contract.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_R2_.*FAILED' r2-surface.log; then exit 1; fi
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|Invalid operands|TAMU_FX_CONTRACT_FAILED' fx-contract.log; then exit 1; fi
           sudo apt-get update -qq
@@ -34,6 +35,7 @@ jobs:
           mkdir -p screenshots
           timeout --kill-after=3s 50s xvfb-run -a -s '-screen 0 540x360x24' godot --path . --rendering-method gl_compatibility --resolution 540x360 --script res://scripts/fx_visual_ci.gd 2>&1 | tee fx-visual.log
           grep -q 'TAMU_FX_VISUAL_OK' fx-visual.log
+          grep -q 'TAMU_FX_SHADOW_25D_VOLUME_OK azimuths=3' fx-visual.log
           test -s screenshots/fx-shadow-preview.png
           python3 - <<'PY'
           from PIL import Image
@@ -489,7 +491,7 @@ jobs:
               'domain_crafting','domain_building','gameplay_session',
               'stage6_checkpoint','stage6_domain_restore','r2_authority',
               'r2_surface','world_source','world_stream','merged_terrain',
-              'world_identity','impact_effects','audio_cues','performance_hud')
+              'world_identity','impact_effects','audio_cues','performance_hud','shadow_volume')
           missing_scripts=[name for name in runtime_scripts
               if not any(f'scripts/{name}.gd' in path for path in names)]
           assert not missing_scripts, f'PCK_RUNTIME_SCRIPTS_MISSING {missing_scripts}'
