@@ -61,6 +61,11 @@ var harvest_button: Button
 const DAY_SECONDS := 30.0
 var world_bounds := Rect2(-4096.0, -4096.0, 32768.0, 32768.0)
 const MAX_LOADED_PER_FRAME := 1
+const ACTOR_COLLISION_RADIUS := 9.0
+# Original R2 ecology was exported using Iso.project(x,y,height*0.35).
+const R2_HEIGHT_SCREEN_SCALE := 0.35
+var actor_ground_sample_at := Vector2(INF, INF)
+var actor_ground_screen_offset := 0.0
 var avatar: Node2D
 var actor_world := Vector2(64.0, 128.0)
 var actor_speed := 96.0
@@ -348,7 +353,13 @@ func _set_actor_facing(back: bool) -> void:
         avatar_parts[part].texture = load("res://assets/osman_rig/images/%s_%s.png" % [prefix,part])
 
 func _update_avatar() -> void:
-    avatar.position = WorldProjection.to_screen(actor_world)
+    # Match the authored object's terrain-height offset without re-sampling when idle.
+    if authority != null and actor_world.distance_squared_to(actor_ground_sample_at) > 0.000001:
+        var ground_height: float = float(authority.terrain.height_at(actor_world.x, actor_world.y))
+        if is_finite(ground_height):
+            actor_ground_screen_offset = ground_height * R2_HEIGHT_SCREEN_SCALE
+            actor_ground_sample_at = actor_world
+    avatar.position = WorldProjection.to_screen(actor_world) - Vector2(0.0, actor_ground_screen_offset)
     avatar_parts["leg_L"].position = Vector2(-7, -10)
     avatar_parts["leg_R"].position = Vector2(7, -10)
     avatar_parts["torso"].position = Vector2(0, -33)
@@ -665,15 +676,22 @@ func _verify_visual_order() -> bool:
         return false
     if avatar.get_parent() != object_layer:
         return false
+    if authority != null and absf(avatar.position.y - (WorldProjection.to_screen(actor_world).y - actor_ground_screen_offset)) > 0.01:
+        return false
     for item in harvestables:
         var sprite: Sprite2D = item["sprite"]
         if sprite.get_parent() != object_layer or sprite.z_index != 0:
+            return false
+        if absf(sprite.offset.y + sprite.texture.get_height() * 0.5) > 0.01:
             return false
         if item["shadow"] != null:
             var shadow: Polygon2D = item["shadow"]
             if shadow.get_parent().z_index >= object_layer.z_index:
                 return false
-            if not shadow.position.is_equal_approx(sprite.position + Vector2(0, 3)):
+            if not shadow.position.is_equal_approx(sprite.position):
+                return false
+            var silhouette: Sprite2D = item["silhouette"]
+            if not silhouette.position.is_equal_approx(sprite.position) or not silhouette.offset.is_equal_approx(sprite.offset):
                 return false
     return true
 
@@ -747,7 +765,8 @@ func _load_objects() -> void:
             "shrub":0.30,"reeds":0.28,"stump":0.26,"fallen_log":0.41,"water_rocks":0.38}
         var scale_value := float(scales.get(family, 0.5)) * (0.96 + float(h % 9) * 0.01)
         sprite.scale = Vector2.ONE * scale_value
-        sprite.offset = Vector2(0.0, -60.0)
+        # Local ground anchor follows the atlas region height, never a fixed 60 px.
+        sprite.offset = Vector2(0.0, -area.size.y * 0.5)
         object_layer.add_child(sprite)
         object_visuals_by_chunk[visual_key].append(sprite)
         var item_record := {"id":id,"kind":kind,"radius":float(o["radius"]),"position":Vector2(float(o["x"]),float(o["y"])),"sprite":sprite,"shadow":null,"collected":false}
@@ -766,7 +785,7 @@ func _load_objects() -> void:
             shadow.polygon = outline
             shadow.color = Color(0.025,0.045,0.04,0.08)
             shadow.visible = merged_mode
-            shadow.position = sprite.position + Vector2(0.0,3.0)
+            shadow.position = sprite.position
             shadow.set_meta("base_scale",maxf(0.7,scale_value*2.5))
             shadow_layer.add_child(shadow)
             shadow_sprites.append(shadow)
@@ -777,7 +796,7 @@ func _load_objects() -> void:
             silhouette.centered = sprite.centered
             silhouette.offset = sprite.offset
             silhouette.scale = sprite.scale
-            silhouette.position = sprite.position + Vector2(0, 3)
+            silhouette.position = sprite.position
             silhouette.material = silhouette_material
             silhouette.visible = merged_mode
             shadow_layer.add_child(silhouette)
@@ -788,6 +807,13 @@ func _load_objects() -> void:
             item_record["shadow"] = shadow
             object_visuals_by_chunk[visual_key].append(shadow)
         object_count += 1
+    if OS.get_environment("TAMU_VISUAL_CI") == "1" and OS.get_environment("TAMU_VISUAL_CASE") == "grounding":
+        for item in harvestables:
+            if item["kind"] == "tree":
+                $Camera2D.position = item["sprite"].position + Vector2(0.0, -30.0)
+                $Camera2D.zoom = Vector2(1.35, 1.35)
+                _refresh_streaming_requests()
+                break
     print("TAMU_CANONICAL_OBJECTS_LOADED count=", object_count)
 
 var object_count: int = 0
@@ -807,7 +833,7 @@ func _process(delta: float) -> void:
     if direction.length_squared() > 0.01:
         var intended := direction * actor_speed * delta
         if authority != null and OS.get_environment("TAMU_VISUAL_CI") != "1":
-            var moved: Dictionary = R2Collision.move(actor_world,intended,5.0,
+            var moved: Dictionary = R2Collision.move(actor_world,intended,ACTOR_COLLISION_RADIUS,
                 Callable(authority,"obstacles"))
             if bool(moved.get("ok", false)):
                 actor_world = moved["position"]

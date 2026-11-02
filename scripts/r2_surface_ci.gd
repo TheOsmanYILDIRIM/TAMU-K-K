@@ -42,6 +42,14 @@ func _initialize() -> void:
         push_error("TAMU_R2_SWEEP_SLIDE_FAILED "+str(sweep))
         quit(72)
         return
+    # Moving into a wall must stop a player-sized body outside the obstacle.
+    var clearance: Dictionary = Collision.move(Vector2.ZERO, Vector2(40.0, 0.0), 9.0,
+        Callable(self, "_wall"))
+    if not bool(clearance.get("ok", false)) or not bool(clearance.get("collided", false)) or float(clearance["position"].x) > 11.01:
+        push_error("TAMU_ACTOR_OBJECT_CLEARANCE_FAILED " + str(clearance))
+        quit(72)
+        return
+    print("TAMU_ACTOR_OBJECT_CLEARANCE_OK")
     print("TAMU_R2_SWEEP_SLIDE_OK")
     print("TAMU_R2_SURFACE_PARITY_OK height=",ground_h," river=blocked land=buildable")
     quit(0)
