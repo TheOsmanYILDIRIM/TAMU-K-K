@@ -29,6 +29,7 @@ tags: [lore, gaps]
 | OPEN-BEI-002 | [[03_DUNYA/Test_Dunyasi_Toplumlar_ve_Kalintilar]] | Pet edinme, besleme, evcilleştirme ve ekoloji ilişkisi | open |
 | OPEN-CIV-002 | [[03_DUNYA/Test_Dunyasi_Toplumlar_ve_Kalintilar]] | İlk yerli halklar, dışarıdan gelenler ve kabile örnekleri | open |
 | OPEN-REL-003 | [[03_DUNYA/Test_Dunyasi_Toplumlar_ve_Kalintilar]] | İlk zindan ve kalıntı örnekleri | open |
+| OPEN-WOR-005 | [[03_DUNYA/Fisilti_Ormani]] | Fısıltı Ormanı bölgesindeki eski taş yolların kökeni ve yerel sakinler | open |
 | OPEN-REL-002 | [[03_DUNYA/Fisilti_Ormani]] | Bölgede hangi kalıntılar var? | open |
 
 **İş akışı:** Soru kanonik yanıt alınca ilgili sayfaya taşınır; satır `resolved` ve hedef bağlantıyla korunur. Yeni soru için benzersiz `OPEN-ALAN-NNN` kimliği ayrılır. Buradaki sorular cevaplanmış sayılmaz.
