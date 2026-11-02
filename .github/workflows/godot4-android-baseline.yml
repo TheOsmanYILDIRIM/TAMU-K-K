@@ -535,11 +535,16 @@ jobs:
           # The Android grey screen can be caused by assets/scripts absent in
           # selected_resources even when editor/Xvfb source-project tests pass.
           mkdir -p /tmp/tamu-exported-pack-smoke
+          pack_absolute="$PWD/build/tamu-android-content.pck"
+          log_absolute="$PWD/screenshots/exported-pack-boot.log"
+          # Launch outside the source repository: no res:// file fallback.
+          pushd /tmp/tamu-exported-pack-smoke >/dev/null
           set +e
           XDG_DATA_HOME=/tmp/tamu-exported-pack-smoke TAMU_PRODUCTION_SMOKE=1 \
             timeout --kill-after=3s 45s godot --headless \
-            --main-pack "$PWD/build/tamu-android-content.pck" --quit-after 90 \
-            2>&1 | tee screenshots/exported-pack-boot.log
+            --main-pack "$pack_absolute" --quit-after 90 \
+            2>&1 | tee "$log_absolute"
+          popd >/dev/null
           pack_rc=${PIPESTATUS[0]}
           set -e
           if [ "$pack_rc" -ne 0 ] || grep -Eq 'SCRIPT ERROR:|Parse Error:|ERROR:|TAMU_STAGE6_PRODUCTION_GATE_FAILED|TAMU_R2_AUTHORITY_UNAVAILABLE' screenshots/exported-pack-boot.log || ! grep -q TAMU_STAGE6_PRODUCTION_SMOKE_OK screenshots/exported-pack-boot.log; then
