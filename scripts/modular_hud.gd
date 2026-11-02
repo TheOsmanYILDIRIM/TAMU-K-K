@@ -8,6 +8,7 @@ var sprites: Dictionary = {}
 var controls: Dictionary = {}
 var zip: ZIPReader
 var initialized := false
+var selected_index := 0
 var joystick_origin := Vector2.ZERO
 var joystick_span := 152.0
 var alert: Label
@@ -69,6 +70,8 @@ func _action(key: String) -> void:
         _:
             _message(key)
 func _slot(slot: int) -> void:
+    selected_index = slot
+    _layout()
     _message("HIZLI ERİŞİM " + str(slot + 1))
 func setup(game: Node) -> bool:
     host = game
@@ -84,13 +87,28 @@ func setup(game: Node) -> bool:
     root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     root.mouse_filter = Control.MOUSE_FILTER_IGNORE
     add_child(root)
-    for n in ["portrait","health_water_energy","compass_and_zoom","joystick","joystick_thumb","blank_hotbar","selected_slot","dawn"]:
+    for n in ["portrait","health_water_energy","compass_and_zoom","joystick","joystick_thumb","blank_hotbar","selected_slot"]:
         _art(n)
     for n in ["codex","forge","bag","menu","journal","growth","interact","crouch","sprint"]:
         _button(n,n,Callable(self,"_action").bind(n))
     _button("attack","blank_attack",Callable(self,"_action").bind("attack"))
-    _button("zoom_plus","zoom_plus_separate",Callable(self,"_zoom").bind(1.15))
-    _button("zoom_minus","zoom_minus_separate",Callable(self,"_zoom").bind(1.0/1.15))
+    # Plus/minus artwork is already baked into the compass; hitboxes only.
+    for key in ["zoom_plus","zoom_minus"]:
+        var hit := Button.new()
+        hit.name = key
+        hit.flat = true
+        hit.focus_mode = Control.FOCUS_NONE
+        hit.mouse_filter = Control.MOUSE_FILTER_STOP
+        hit.pressed.connect(Callable(self,"_zoom").bind(1.15 if key=="zoom_plus" else 1.0/1.15))
+        root.add_child(hit)
+        controls[key] = hit
+    for index in range(8):
+        var slot_art := _art("empty_slot")
+        if slot_art != null:
+            # The same transparent texture is independently positioned per slot.
+            slot_art.name = "EmptySlot%d" % index
+            sprites["empty_slot%d" % index] = slot_art
+    sprites.erase("empty_slot")
     for index in range(8):
         var hit := Button.new()
         hit.name = "Hotbar%d" % index
@@ -100,6 +118,9 @@ func setup(game: Node) -> bool:
         hit.pressed.connect(Callable(self,"_slot").bind(index))
         root.add_child(hit)
         controls["hotbar%d" % index] = hit
+    # Selected frame must render ABOVE every empty slot.
+    if sprites.has("selected_slot"):
+        root.move_child(sprites["selected_slot"],root.get_child_count()-1)
     alert = Label.new()
     alert.name = "ActionFeedback"
     alert.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -143,13 +164,16 @@ func _layout() -> void:
     var compass_pos := Vector2(v.x-compass-margin,top+circle+18.0)
     _put("compass_and_zoom",compass_pos,Vector2(compass,compass))
     # One zoom pair; the compass texture contains no extra separate buttons.
-    _put("zoom_plus",compass_pos+Vector2(compass*0.80,compass*0.52),Vector2(compact*0.68,compact*0.68))
-    _put("zoom_minus",compass_pos+Vector2(compass*0.80,compass*0.73),Vector2(compact*0.68,compact*0.68))
-    _put("dawn",compass_pos+Vector2(compass*0.10,compass*0.77),Vector2(compact*0.64,compact*0.64))
+    _put("zoom_plus",compass_pos+Vector2(compass*0.79,compass*0.53),Vector2(compass*0.18,compass*0.18))
+    _put("zoom_minus",compass_pos+Vector2(compass*0.79,compass*0.75),Vector2(compass*0.18,compass*0.18))
     _put("blank_hotbar",Vector2(margin,bottom),Vector2(v.x-2.0*margin,bar_height))
+    var slot_w := (v.x-2.0*margin)*0.947/8.0
+    var first_x := margin+(v.x-2.0*margin)*0.026
     for i in range(8):
-        _put("hotbar%d"%i,Vector2(margin+(v.x-2.0*margin)*float(i)/8.0,bottom),Vector2((v.x-2.0*margin)/8.0,bar_height))
-    _put("selected_slot",Vector2(margin,bottom),Vector2((v.x-2.0*margin)/8.0,bar_height))
+        var x := first_x+slot_w*float(i)
+        _put("empty_slot%d"%i,Vector2(x,bottom+bar_height*0.07),Vector2(slot_w,bar_height*0.86))
+        _put("hotbar%d"%i,Vector2(x,bottom+bar_height*0.07),Vector2(slot_w,bar_height*0.86))
+    _put("selected_slot",Vector2(first_x+slot_w*float(selected_index),bottom+bar_height*0.04),Vector2(slot_w,bar_height*0.93))
     var stick := clampf(v.x*0.30,134.0,190.0)
     joystick_origin = Vector2(margin,v.y-bar_height-stick-34.0)
     joystick_span = stick
@@ -173,7 +197,7 @@ func _process(_dt: float) -> void:
     # A resource panel owns the upper-right focus region; do not overlap it.
     var forest = host.get("forest_gui")
     var panel_open := forest != null and bool(forest.get("panel_open"))
-    for key in ["compass_and_zoom","dawn"]:
+    for key in ["compass_and_zoom"]:
         if sprites.has(key):
             (sprites[key] as Control).visible = not panel_open
     for key in ["zoom_plus","zoom_minus"]:
