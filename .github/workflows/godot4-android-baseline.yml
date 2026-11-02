@@ -544,8 +544,8 @@ jobs:
             timeout --kill-after=3s 45s godot --headless \
             --main-pack "$pack_absolute" --quit-after 90 \
             2>&1 | tee "$log_absolute"
-          popd >/dev/null
           pack_rc=${PIPESTATUS[0]}
+          popd >/dev/null
           set -e
           if [ "$pack_rc" -ne 0 ] || grep -Eq 'SCRIPT ERROR:|Parse Error:|ERROR:|TAMU_STAGE6_PRODUCTION_GATE_FAILED|TAMU_R2_AUTHORITY_UNAVAILABLE' screenshots/exported-pack-boot.log || ! grep -q TAMU_STAGE6_PRODUCTION_SMOKE_OK screenshots/exported-pack-boot.log; then
             echo "TAMU_EXPORTED_PACK_BOOT_FAILED exit=$pack_rc"
