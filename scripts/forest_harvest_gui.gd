@@ -319,7 +319,7 @@ func _sync_focus(item: Dictionary) -> void:
     focus.flip_h = sprite.flip_h
     focus.position = xf*Vector2.ZERO
     ground_glow.position = focus.position + Vector2(0.0,3.0)
-    ground_glow.scale = Vector2(0.85,0.42)
+    ground_glow.scale = Vector2(1.10,0.50)
     focus.scale = sprite.scale * (host.get_node("Camera2D") as Camera2D).zoom
     if host.get("selected_harvest_outline") != null:
         focus_outline.texture = host.get("selected_harvest_outline").texture

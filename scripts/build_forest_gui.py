@@ -35,10 +35,10 @@ def framed(name,w,h,color,stroke,radius):
     tile.putalpha(mask)
     result.alpha_composite(tile,(14,9))
     d=ImageDraw.Draw(result,"RGBA")
-    d.rounded_rectangle((15,10,w-15,h-21),radius=radius,outline=stroke,width=3)
+    d.rounded_rectangle((15,10,w-15,h-21),radius=radius,outline=stroke,width=6)
     d.rounded_rectangle((22,17,w-22,h-28),radius=max(6,radius-7),
-                         outline=(244,200,129,58),width=2)
-    d.arc((28,10,w-28,h//2+18),18,168,fill=(248,211,144,41),width=2)
+                         outline=(244,200,129,58),width=3)
+    d.arc((28,10,w-28,h//2+18),18,168,fill=(248,211,144,20),width=2)
     result.save(ROOT/name)
     return result
 def wood_panel():
@@ -105,7 +105,7 @@ def radial_glow():
             dx=(x-w/2)/(w*.48)
             dy=(y-w/2)/(w*.48)
             r=dx*dx+dy*dy
-            alpha=int(max(0,80*math.exp(-r*3.5)-1))
+            alpha=int(max(0,112*math.exp(-r*3.5)-1))
             pix[x,y]=(255,196,84,alpha)
     im.save(ROOT/"glow.png")
 

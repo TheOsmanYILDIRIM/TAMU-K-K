@@ -823,8 +823,8 @@ func _ready() -> void:
             " vertices=", rigby_skin["vertices"], " triangles=", rigby_skin["triangles"],
             " influences=", rigby_skin["influences"])
     perf_hud = load("res://scripts/performance_hud.gd").new()
-    perf_hud.layer = 118 # The reference keeps performance telemetry crisp.
     add_child(perf_hud)
+    perf_hud.layer = 118 # HUD _ready sets 100; override after attachment.
     _init_mobile_joystick()
     _init_harvest_button()
     forest_gui=FOREST_GUI.new()
