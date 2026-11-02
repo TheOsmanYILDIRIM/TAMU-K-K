@@ -1,84 +1,61 @@
-name: TAMU SAM 3.1 creature segmentation
+name: TAMU MobileSAM CPU creature segmentation
 on:
   push:
-    branches:
-      - experiment/sam31-creature-segmentation-20261103
+    branches: [experiment/sam31-creature-segmentation-20261103]
     paths:
       - .github/workflows/tamu-sam31-creature.yml
       - scripts/sam31_creature.py
+      - assets/creatures/yaprakkulak/source.png
   workflow_dispatch:
-    inputs:
-      image_url:
-        description: Optional public HTTPS URL for 124072.png (otherwise read assets/creatures/yaprakkulak/source.png)
-        required: false
-        type: string
 permissions:
   contents: read
-concurrency:
-  group: tamu-sam31-${{ github.ref }}
-  cancel-in-progress: false
 jobs:
   segment:
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
-      - name: Preflight CUDA and gated model access
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate source
         run: |
           set -euo pipefail
-          if [ -z "$HF_TOKEN" ]; then
-            echo "::error::SAM 3.1 checkpoint requires approved Hugging Face access and repository secret HF_TOKEN."
-            exit 4
-          fi
-          if ! command -v nvidia-smi >/dev/null || ! nvidia-smi; then
-            echo "::error::Standard ubuntu-24.04 GitHub runner has no CUDA GPU. Use an authorized GPU runner (self-hosted/GitHub larger GPU runner) before running SAM 3.1 inference."
-            exit 5
-          fi
-      - name: Install official SAM 3.1 code and dependencies
-        shell: bash
+          test -s assets/creatures/yaprakkulak/source.png || { echo "::error::Source PNG missing in repository"; exit 8; }
+      - name: Install MobileSAM CPU
         run: |
           set -euo pipefail
-          python3 --version
-          python3 -m pip install --upgrade pip
-          python3 -m pip install torch==2.10.0 torchvision --index-url https://download.pytorch.org/whl/cu128
-          git clone --depth 1 https://github.com/facebookresearch/sam3.git /tmp/sam3
-          python3 -m pip install -e /tmp/sam3
-          python3 -m pip install pillow numpy huggingface_hub
-      - name: Acquire source from trusted repo path or explicit HTTPS input
-        env:
-          IMAGE_URL: ${{ inputs.image_url }}
-        shell: bash
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install numpy==1.26.4 pillow==11.2.1 opencv-python-headless==4.10.0.84 timm==1.0.15
+          git clone --depth 1 https://github.com/ChaoningZhang/MobileSAM.git /tmp/mobile-sam
+          python -m pip install -e /tmp/mobile-sam
+          curl -fL --retry 3 --max-time 120 https://github.com/ChaoningZhang/MobileSAM/raw/refs/heads/master/weights/mobile_sam.pt -o /tmp/mobile_sam.pt
+          test "$(stat -c%s /tmp/mobile_sam.pt)" -gt 30000000
+      - name: Segment nine parts with MobileSAM on CPU
         run: |
           set -euo pipefail
-          mkdir -p ci-output/sam31
-          if [ -n "$IMAGE_URL" ]; then
-            case "$IMAGE_URL" in https://*) ;; *) echo "::error::image_url must be HTTPS"; exit 7;; esac
-            curl -fL --retry 2 --max-time 45 "$IMAGE_URL" -o ci-output/sam31/source.png
-          elif [ -f assets/creatures/yaprakkulak/source.png ]; then
-            cp assets/creatures/yaprakkulak/source.png ci-output/sam31/source.png
-          else
-            echo "::error::Input animal PNG not yet in repo. Add assets/creatures/yaprakkulak/source.png or dispatch with accessible HTTPS image_url."
-            exit 8
-          fi
-          python3 - <<'PY'
+          python scripts/sam31_creature.py --input assets/creatures/yaprakkulak/source.png --checkpoint /tmp/mobile_sam.pt --output ci-output/creature
+          python - <<'PY'
+          import json,zipfile
+          from pathlib import Path
           from PIL import Image
-          im=Image.open("ci-output/sam31/source.png")
-          im.verify()
-          print("TAMU_SAM31_INPUT_VALID")
+          root=Path('ci-output/creature')
+          m=json.loads((root/'manifest.json').read_text())
+          assert len(m['parts'])==9
+          for p in m['parts']:
+              with Image.open(root/(p['name']+'.png')) as im:
+                  assert im.mode=='RGBA' and im.getchannel('A').getbbox()
+          with zipfile.ZipFile(root/'nine_parts.zip','w',zipfile.ZIP_DEFLATED) as z:
+              for f in root.glob('*.png'):z.write(f,f.name)
+              z.write(root/'manifest.json','manifest.json')
+          with zipfile.ZipFile(root/'nine_parts.zip') as z: assert z.testzip() is None
+          print('TAMU_MOBILESAM_OUTPUT_VALIDATED')
           PY
-      - name: Segment nine anatomical parts using SAM 3.1
-        shell: bash
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: |
-          set -euo pipefail
-          python3 scripts/sam31_creature.py --input ci-output/sam31/source.png --output ci-output/sam31/result
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: tamu-sam31-creature-segmentation
-          path: ci-output/sam31/
+          name: tamu-mobilesam-nine-parts
+          path: ci-output/creature/
           if-no-files-found: warn
           retention-days: 14
