@@ -72,6 +72,7 @@ var rig_animations: Dictionary = {}
 var actor_direction := "SE"
 var actor_action := "idle"
 var active_source_clip := ""
+var profile_sprite: AnimatedSprite2D
 var native_rig: Skeleton2D
 
 func _update_sun(delta: float) -> void:
@@ -314,6 +315,16 @@ func _make_avatar() -> void:
         avatar_parts[part] = sprite
     _set_actor_clip("SE", "idle")
     _update_avatar()
+    if ResourceLoader.exists("res://assets/profile_character/walk.png"):
+        profile_sprite = load("res://scripts/profile_character.gd").new()
+        avatar.add_child(profile_sprite)
+        if profile_sprite.setup():
+            for part in avatar_parts.values():
+                part.visible = false
+            print("TAMU_PROFILE_CHARACTER_READY")
+        else:
+            profile_sprite.queue_free()
+            profile_sprite = null
     # Keep the old six PNGs as visible renderer until complete Rigby pose parity.
     if OS.get_environment("TAMU_VISUAL_CI") == "1" or OS.get_environment("TAMU_RIGBY_SKIN_PREVIEW") == "1":
         rigby_skin = RigbySkinned.build(source, native_rig)
@@ -827,6 +838,8 @@ func _process(delta: float) -> void:
         avatar_parts["leg_L"].rotation = 0.0
         avatar_parts["leg_R"].rotation = 0.0
     _update_avatar()
+    if profile_sprite != null:
+        profile_sprite.set_movement(actor_action == "walk", direction.x < -0.05)
     _tick_gameplay(delta)
     if native_rig != null:
         native_rig.advance(visual_delta)
