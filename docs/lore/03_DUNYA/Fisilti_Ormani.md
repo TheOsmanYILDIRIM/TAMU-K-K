@@ -26,4 +26,4 @@ R2 başlangıç bölgesinin adı **Fısıltı Ormanı**dır. Bu bilgi oyun dokü
 - [[91_BOSLUKLAR|Açık sorular]]
 
 ## Kaynak
-- [Ana README](../../README.md) — R2 Fısıltı Ormanı adı ve teknik statüsü.
+- [Ana README](../../../README.md) — R2 Fısıltı Ormanı adı ve teknik statüsü.
