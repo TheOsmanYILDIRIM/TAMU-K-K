@@ -521,6 +521,22 @@ jobs:
               assert name in p, f'ANDROID_ASSET_EXPORT_MISSING: {name!r}'
           print('TAMU_ANDROID_CONTENT_PACK_OK bytes=',len(p))
           PY
+          # Critical export-only regression: run the *pack*, not the source tree.
+          # The Android grey screen can be caused by assets/scripts absent in
+          # selected_resources even when editor/Xvfb source-project tests pass.
+          mkdir -p /tmp/tamu-exported-pack-smoke
+          set +e
+          XDG_DATA_HOME=/tmp/tamu-exported-pack-smoke TAMU_PRODUCTION_SMOKE=1 \
+            timeout --kill-after=3s 45s godot --headless \
+            --main-pack "$PWD/build/tamu-android-content.pck" --quit-after 90 \
+            2>&1 | tee screenshots/exported-pack-boot.log
+          pack_rc=${PIPESTATUS[0]}
+          set -e
+          if [ "$pack_rc" -ne 0 ] || grep -Eq 'SCRIPT ERROR:|Parse Error:|ERROR:|TAMU_STAGE6_PRODUCTION_GATE_FAILED|TAMU_R2_AUTHORITY_UNAVAILABLE' screenshots/exported-pack-boot.log || ! grep -q TAMU_STAGE6_PRODUCTION_SMOKE_OK screenshots/exported-pack-boot.log; then
+            echo "TAMU_EXPORTED_PACK_BOOT_FAILED exit=$pack_rc"
+            exit 1
+          fi
+          echo TAMU_EXPORTED_PACK_BOOT_OK
           godot --headless --verbose --path . --export-debug Android build/TAMU_Godot_Baseline.apk
           test -s build/TAMU_Godot_Baseline.apk
           sha256sum build/tamu-android-content.pck
