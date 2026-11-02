@@ -2,8 +2,8 @@ extends Control
 # TAMU fixed-orientation schematic minimap: Cartesian world -> canonical 2.5D projection.
 # Direction is NEVER read from actor facing or camera rotation. Triangle never rotates.
 # Available chunk keys are authoritative; missing cells are not invented terrain.
-const Projection = preload("res://scripts/world_projection.gd")
-const CHUNK := Projection.CHUNK_SIZE
+const WorldProjection = preload("res://scripts/world_projection.gd")
+const CHUNK := WorldProjection.CHUNK_SIZE
 var world_position := Vector2.ZERO
 var available: Dictionary = {}
 var zoom := 0.085
@@ -29,14 +29,14 @@ func _draw() -> void:
     # Each cell queries the real streamed-world chunk index.
     var step := 4.0
     var scale := zoom*minf(size.x,size.y)/25.0
-    var actor_screen := Projection.to_screen(world_position)
+    var actor_screen := WorldProjection.to_screen(world_position)
     for yy in range(-24,25):
         for xx in range(-24,25):
             var pixel := Vector2(float(xx),float(yy))*step
             if pixel.length_squared() > (radius-2.0)*(radius-2.0):
                 continue
             var source_screen := actor_screen+pixel/maxf(scale,0.001)
-            var source := Projection.to_world(source_screen)
+            var source := WorldProjection.to_world(source_screen)
             var cx := floori(source.x/CHUNK)
             var cy := floori(source.y/CHUNK)
             var key := "c_%d_%d" % [cx,cy]
@@ -51,4 +51,4 @@ func _draw() -> void:
     draw_polyline(PackedVector2Array([arrow[0],arrow[1],arrow[2],arrow[3],arrow[0]]),Color(0.26,0.15,0.03),1.3,true)
 func verify_contract() -> bool:
     var p := Vector2(64,128)
-    return Projection.to_world(Projection.to_screen(p)).distance_to(p) < 0.001 and zoom >= 0.025
+    return WorldProjection.to_world(WorldProjection.to_screen(p)).distance_to(p) < 0.001 and zoom >= 0.025
