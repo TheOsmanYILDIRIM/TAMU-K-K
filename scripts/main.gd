@@ -477,8 +477,17 @@ func _init_mobile_joystick() -> void:
     base_style.border_color = Color(0.7,0.92,0.9,0.6)
     base_style.set_border_width_all(3)
     base_style.set_corner_radius_all(78)
-    joystick_base.add_theme_stylebox_override("panel",base_style)
+    # Preserve joystick physics and touch handling, replace only its skin.
+    joystick_base.add_theme_stylebox_override("panel",StyleBoxEmpty.new())
     root.add_child(joystick_base)
+    var leather_ring := TextureRect.new()
+    leather_ring.name = "CarvedJoystickRing"
+    leather_ring.texture = load("res://assets/gui/joystick_base.png")
+    leather_ring.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+    leather_ring.stretch_mode = TextureRect.STRETCH_SCALE
+    leather_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    joystick_base.add_child(leather_ring)
+    leather_ring.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     joystick_knob = Panel.new()
     joystick_knob.name = "JoystickKnob"
     joystick_knob.position = Vector2(47,47)
@@ -487,8 +496,16 @@ func _init_mobile_joystick() -> void:
     var knob_style := StyleBoxFlat.new()
     knob_style.bg_color = Color(0.52,0.82,0.76,0.72)
     knob_style.set_corner_radius_all(31)
-    joystick_knob.add_theme_stylebox_override("panel",knob_style)
+    joystick_knob.add_theme_stylebox_override("panel",StyleBoxEmpty.new())
     joystick_base.add_child(joystick_knob)
+    var engraved_knob := TextureRect.new()
+    engraved_knob.name = "EngravedStoneKnob"
+    engraved_knob.texture = load("res://assets/gui/joystick_knob.png")
+    engraved_knob.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+    engraved_knob.stretch_mode = TextureRect.STRETCH_SCALE
+    engraved_knob.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    joystick_knob.add_child(engraved_knob)
+    engraved_knob.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 func _joystick_center() -> Vector2:
     return joystick_base.get_global_rect().get_center()
