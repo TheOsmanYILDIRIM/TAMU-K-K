@@ -2,6 +2,7 @@ extends SceneTree
 const Session = preload("res://scripts/gameplay_session.gd")
 const Building = preload("res://scripts/domain_building.gd")
 const Store = preload("res://scripts/stage6_checkpoint.gd")
+const Collision = preload("res://scripts/r2_collision.gd")
 const WORLD := "123e4567-e89b-42d3-a456-426614174000"
 const REGION := "fisilti_ormani"
 const INSTANCE := "123e4567-e89b-42d3-a456-426614174001"
@@ -85,7 +86,9 @@ func _build() -> bool:
         Vector2(50, 0), 0, Vector2.ZERO, "test:player")
     if result.get("status") != "placed" or run.journal_sequence != 5:
         return false
-    return run.building.placed.has(INSTANCE) and run.count_item("core:workbench") == 0
+    if not run.building.placed.has(INSTANCE) or run.count_item("core:workbench") != 0:
+        return false
+    return _blocks_player(run)
 
 func _replay() -> bool:
     var run = _new_session()
@@ -100,4 +103,19 @@ func _replay() -> bool:
     changed["world_binding"]["region_id"] = "other_region"
     if run._publish_checkpoint(changed).get("status") != "world_region_mismatch":
         return false
-    return Store._seal(run.snapshot_domain()) == before
+    return Store._seal(run.snapshot_domain()) == before and _blocks_player(run)
+
+func _blocks_player(run: RefCounted) -> bool:
+    # The same query used by the live actor must include the placed structure
+    # after durable commit AND after reopening the Stage6 save.
+    var obstacles: Array = run.movement_obstacles(0.0, -20.0, 100.0, 20.0)
+    var found := false
+    for solid in obstacles:
+        if str(solid.get("id", "")) == INSTANCE:
+            found = true
+            break
+    if not found:
+        return false
+    var moved: Dictionary = Collision.move(Vector2.ZERO, Vector2(80.0, 0.0), 9.0,
+        Callable(run, "movement_obstacles"))
+    return bool(moved.get("ok", false)) and bool(moved.get("collided", false)) and float(moved["position"].x) <= 25.01

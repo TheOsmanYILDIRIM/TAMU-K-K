@@ -328,6 +328,27 @@ func _durable_tick(dt: float, player_pos: Vector2) -> Array[Dictionary]:
     event_count += events.size()
     return events
 
+# Single source of movement obstacles: original authored R2 solids plus any
+# durable player-built structures. Use the fast authority path until a building
+# exists, avoiding extra per-frame snapshots on an otherwise empty world.
+func movement_obstacles(x1: float, y1: float, x2: float, y2: float) -> Array:
+    if not building.solid_query.is_valid() or not is_finite(x1) or not is_finite(y1) or not is_finite(x2) or not is_finite(y2) or x2 < x1 or y2 < y1:
+        return [{"x": -1000000.0, "y": -1000000.0, "w": 2000000.0, "h": 2000000.0}]
+    var source: Variant = building.solid_query.call(x1, y1, x2, y2)
+    if not source is Array:
+        return [{"x": -1000000.0, "y": -1000000.0, "w": 2000000.0, "h": 2000000.0}]
+    if building.placed.is_empty():
+        return source
+    var result: Array = source
+    var query_box := Rect2(Vector2(x1, y1), Vector2(x2 - x1, y2 - y1))
+    for id in building.placed:
+        var placed_box: Rect2 = building.placed[id]["box"]
+        if placed_box.intersects(query_box):
+            result.append({"id": str(id), "x": placed_box.position.x,
+                "y": placed_box.position.y, "w": placed_box.size.x,
+                "h": placed_box.size.y})
+    return result
+
 func place_building(command_id: String, instance_id: String, def_id: String,
         at: Vector2, rotation: int, player_at: Vector2, owner_id: String) -> Dictionary:
     if durable_slot == "":

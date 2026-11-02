@@ -830,7 +830,7 @@ func _process(delta: float) -> void:
         var intended := direction * actor_speed * delta
         if authority != null and OS.get_environment("TAMU_VISUAL_CI") != "1":
             var moved: Dictionary = R2Collision.move(actor_world,intended,ACTOR_COLLISION_RADIUS,
-                Callable(authority,"obstacles"))
+                Callable(gameplay,"movement_obstacles"))
             if bool(moved.get("ok", false)):
                 actor_world = moved["position"]
         else:
