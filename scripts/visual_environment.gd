@@ -8,6 +8,7 @@ const TILE_SIZE := 128.0
 const OBJECT_ATLAS_SIZE := Vector2(1056.0, 1056.0)
 const MAX_DETAIL_QUADS := 1400
 const MIX_SHADER = preload("res://scripts/terrain_mix.gdshader")
+const WorldProjection = preload("res://scripts/world_projection.gd")
 
 static func level() -> int:
     match OS.get_environment("TAMU_VISUAL_STAGE"):
