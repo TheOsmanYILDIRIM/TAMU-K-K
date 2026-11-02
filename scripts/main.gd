@@ -166,7 +166,7 @@ func _alpha_contains(image: Image, x: int, y: int, flipped: bool) -> bool:
     # Small tolerance for fingers, without accepting empty areas of a crop.
     for delta in [Vector2i.ZERO,Vector2i(2,0),Vector2i(-2,0),
             Vector2i(0,2),Vector2i(0,-2)]:
-        var point := Vector2i(px,y)+delta
+        var point: Vector2i = Vector2i(px,y)+delta
         if point.x>=0 and point.y>=0 and point.x<image.get_width() and point.y<image.get_height():
             if image.get_pixel(point.x,point.y).a>0.13:
                 return true
