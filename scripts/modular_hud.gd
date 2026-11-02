@@ -1,6 +1,7 @@
 extends CanvasLayer
 # Functional portrait HUD. One art/control surface, never decorative buttons over old ones.
 const ART := "res://ui/hud/parts/"
+const MINIMAP = preload("res://scripts/minimap.gd")
 const PACK := "res://ui/hud/packs/TAMU_HUD_Correct_Split.zip"
 var host: Node
 var root: Control
@@ -12,6 +13,7 @@ var selected_index := 0
 var joystick_origin := Vector2.ZERO
 var joystick_span := 152.0
 var alert: Label
+var minimap: Control
 func _tex(name: String) -> Texture2D:
     var path := ART + name + ".png"
     if ResourceLoader.exists(path):
@@ -52,9 +54,8 @@ func _message(message: String) -> void:
     if alert != null:
         alert.text = message
 func _zoom(amount: float) -> void:
-    var camera: Camera2D = host.get_node("Camera2D")
-    var value := clampf(camera.zoom.x * amount, 0.65, 2.5)
-    camera.zoom = Vector2.ONE * value
+    if minimap != null:
+        minimap.call("change_zoom",amount)
 func _action(key: String) -> void:
     match key:
         "interact":
@@ -89,6 +90,10 @@ func setup(game: Node) -> bool:
     add_child(root)
     for n in ["portrait","health_water_energy","compass_and_zoom","joystick","joystick_thumb","blank_hotbar","selected_slot"]:
         _art(n)
+    minimap = MINIMAP.new()
+    minimap.name = "WorldMinimap"
+    minimap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    root.add_child(minimap)
     for n in ["codex","forge","bag","menu","journal","growth","interact","crouch","sprint"]:
         _button(n,n,Callable(self,"_action").bind(n))
     _button("attack","blank_attack",Callable(self,"_action").bind("attack"))
@@ -163,6 +168,8 @@ func _layout() -> void:
     var compass := clampf(v.x*0.38,150.0,224.0)
     var compass_pos := Vector2(v.x-compass-margin,top+circle+18.0)
     _put("compass_and_zoom",compass_pos,Vector2(compass,compass))
+    minimap.position = compass_pos + Vector2.ONE * compass * 0.215
+    minimap.size = Vector2.ONE * compass * 0.57
     # One zoom pair; the compass texture contains no extra separate buttons.
     _put("zoom_plus",compass_pos+Vector2(compass*0.79,compass*0.53),Vector2(compass*0.18,compass*0.18))
     _put("zoom_minus",compass_pos+Vector2(compass*0.79,compass*0.75),Vector2(compass*0.18,compass*0.18))
@@ -203,9 +210,11 @@ func _process(_dt: float) -> void:
     for key in ["zoom_plus","zoom_minus"]:
         if controls.has(key):
             (controls[key] as Control).visible = not panel_open
+    minimap.visible = not panel_open
+    minimap.call("set_world",host.get("actor_world"),host.get("available_chunks"))
     var direction: Vector2 = host.get("joystick_vector")
     var thumb: TextureRect = sprites["joystick_thumb"]
     var dimension := joystick_span*0.34
     thumb.position = joystick_origin+Vector2.ONE*(joystick_span-dimension)*0.5+direction*joystick_span*0.28
 func verify_contract() -> bool:
-    return initialized and controls.has("interact") and controls.has("zoom_plus") and sprites.has("joystick_thumb")
+    return initialized and controls.has("interact") and controls.has("zoom_plus") and sprites.has("joystick_thumb") and minimap != null

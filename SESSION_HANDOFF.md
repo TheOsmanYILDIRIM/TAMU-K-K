@@ -1,3 +1,8 @@
+### 2026-11-03 — TAMU fixed-camera minimap component
+- `scripts/minimap.gd`: standalone Control; canonical `world_projection.gd` transforms, real `available_chunks` index, player marker fixed north-facing and centered, terrain/world moves underneath, zoom local only. No camera zoom or player facing coupling. Unknown terrain not invented. The circular display is an index-based schematic rather than a painted terrain preview.
+- `scripts/modular_hud.gd`: embeds minimap within unmarked compass-ring artwork; input plus/minus now only adjusts local minimap scale. No new saved state or catalog changes.
+- Godot CI/export proof and Android touch validation pending at commit time.
+
 ### 2026-11-03 — HUD portrait interactive fixes
 - Replaced decoration-only HUD with input-bearing TextureButtons; restored native joystick touch logic with moving new thumb, removed duplicate forest buttons, uses blank_attack/blank_hotbar. Portrait layout calculated in pixels preserving aspect ratio. Zoom has one pair. Unsupported gameplay actions show explicit on-screen feedback, not fake functionality.
 - Native Godot CI and physical Android button tests remain distinct and pending at commit time.
