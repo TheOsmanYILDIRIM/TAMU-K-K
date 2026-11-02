@@ -15,6 +15,7 @@ var panel: NinePatchRect
 var connector: Line2D
 var target_ring: Line2D
 var title_label: Label
+var title_art: TextureRect
 var subtitle_label: Label
 var item_label: Label
 var quantity_label: Label
@@ -49,7 +50,7 @@ func setup(game: Node2D) -> void:
     bokeh.texture = load(art_root + "bokeh.png")
     bokeh.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
     bokeh.stretch_mode = TextureRect.STRETCH_SCALE
-    bokeh.modulate.a = 0.24
+    bokeh.modulate.a = 0.21
     bokeh.mouse_filter = Control.MOUSE_FILTER_IGNORE
     blur_layer.add_child(bokeh)
     blur_layer.visible = false
@@ -104,17 +105,26 @@ func setup(game: Node2D) -> void:
     _panel_label("Heading",Vector2(0.27,0.075),Vector2(0.68,0.13),28,
         Color(1,0.93,0.77),true)
     title_label = panel.get_node("Heading")
-    _panel_label("Subtitle",Vector2(0.27,0.204),Vector2(0.68,0.09),15,
+    title_label.visible = false
+    title_art = TextureRect.new()
+    title_art.name = "CarvedHeading"
+    title_art.texture = load(art_root+"heading_tree.png")
+    title_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+    title_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+    title_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    panel.add_child(title_art)
+    _percent_rect(title_art,Vector2(0.27,0.07),Vector2(0.61,0.16))
+    _panel_label("Subtitle",Vector2(0.27,0.255),Vector2(0.68,0.09),17,
         Color(0.81,0.73,0.60),false)
     subtitle_label = panel.get_node("Subtitle")
-    _panel_label("Resource",Vector2(0.28,0.345),Vector2(0.44,0.095),18,
+    _panel_label("Resource",Vector2(0.29,0.383),Vector2(0.44,0.095),21,
         Color(0.95,0.89,0.73),false)
     item_label = panel.get_node("Resource")
-    _panel_label("Quantity",Vector2(0.72,0.345),Vector2(0.20,0.095),17,
+    _panel_label("Quantity",Vector2(0.72,0.383),Vector2(0.20,0.095),20,
         Color(1.0,0.92,0.79),false)
     quantity_label = panel.get_node("Quantity")
     quantity_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-    _panel_label("Status",Vector2(0.12,0.87),Vector2(0.77,0.10),13,
+    _panel_label("Status",Vector2(0.12,0.91),Vector2(0.77,0.075),14,
         Color(0.94,0.77,0.45),false)
     status_label = panel.get_node("Status")
     var badge := TextureRect.new()
@@ -124,7 +134,7 @@ func setup(game: Node2D) -> void:
     badge.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
     badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
     panel.add_child(badge)
-    _percent_rect(badge,Vector2(0.09,0.09),Vector2(0.16,0.18))
+    _percent_rect(badge,Vector2(0.07,0.08),Vector2(0.20,0.21))
     var resource_icon := TextureRect.new()
     resource_icon.name = "ResourceIcon"
     resource_icon.texture = load(art_root + "log.png")
@@ -132,16 +142,16 @@ func setup(game: Node2D) -> void:
     resource_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
     resource_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
     panel.add_child(resource_icon)
-    _percent_rect(resource_icon,Vector2(0.12,0.335),Vector2(0.13,0.13))
+    _percent_rect(resource_icon,Vector2(0.12,0.36),Vector2(0.14,0.14))
 
     _card_button("PrimaryHarvest",art_root + "button_oak.png",
-        Vector2(0.11,0.49),Vector2(0.79,0.18),"TOPLA","basket",
+        Vector2(0.10,0.52),Vector2(0.81,0.19),"TOPLA","basket",
         Callable(host,"_try_harvest"))
     _card_button("DetailAction",art_root + "button_small.png",
-        Vector2(0.11,0.695),Vector2(0.36,0.155),"DETAY","leaf",
+        Vector2(0.10,0.73),Vector2(0.37,0.15),"DETAY","leaf",
         Callable(self,"_detail"))
     _card_button("MarkAction",art_root + "button_small.png",
-        Vector2(0.52,0.695),Vector2(0.37,0.155),"İŞARETLE","pin",
+        Vector2(0.53,0.73),Vector2(0.38,0.15),"İŞARETLE","pin",
         Callable(self,"_mark"))
     mark_label = panel.get_node("MarkAction/Caption")
     panel.visible = false
@@ -213,7 +223,7 @@ func _make_textured_button(name: String, skin: String, caption: String,
     label.mouse_filter = Control.MOUSE_FILTER_IGNORE
     label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-    label.add_theme_font_size_override("font_size",19)
+    label.add_theme_font_size_override("font_size",20)
     label.add_theme_color_override("font_color",Color(1.0,0.94,0.79))
     label.add_theme_color_override("font_shadow_color",Color(0.06,0.03,0.015,0.95))
     label.add_theme_constant_override("shadow_offset_y",2)
@@ -226,7 +236,7 @@ func _card_button(name: String,skin: String,pos: Vector2,
     var b := _make_textured_button(name,skin,caption,icon,action)
     panel.add_child(b)
     _percent_rect(b,pos,size_ratio)
-    b.get_node("Caption").add_theme_font_size_override("font_size",20 if name=="PrimaryHarvest" else 14)
+    b.get_node("Caption").add_theme_font_size_override("font_size",24 if name=="PrimaryHarvest" else 16)
 
 func _layout() -> void:
     if host == null or panel == null:
@@ -235,17 +245,18 @@ func _layout() -> void:
     if view == last_viewport:
         return
     last_viewport = view
-    target_position = Vector2(view.x - minf(view.x*0.50,360.0) - 10.0,
-        clampf(view.y*0.19,70.0,view.y*0.35))
-    panel.size = Vector2(minf(view.x*0.50,360.0),clampf(view.y*0.255,205.0,290.0))
+    var popup_width := minf(view.x*0.57,440.0)
+    target_position = Vector2(view.x-popup_width-8.0,
+        clampf(view.y*0.17,62.0,view.y*0.32))
+    panel.size = Vector2(popup_width,clampf(view.y*0.305,254.0,340.0))
     if panel.visible:
         panel.position = target_position
-    var w := clampf(view.x*0.245,140.0,184.0)
-    var bh := clampf(view.y*0.07,63.0,80.0)
+    var w := clampf(view.x*0.265,152.0,202.0)
+    var bh := clampf(view.y*0.077,66.0,86.0)
     for i in range(main_buttons.size()):
         var b: TextureButton = main_buttons[i]
         b.size = Vector2(w,bh)
-        b.position = Vector2(view.x-w-8.0,view.y*0.65 + i*(bh+8.0))
+        b.position = Vector2(view.x-w-9.0,view.y*0.605 + i*(bh+7.0))
     blur_rect.size = view
     bokeh.size = view
 
@@ -255,6 +266,7 @@ func open_for(item: Dictionary) -> void:
     marked = false
     mark_label.text = "İŞARETLE"
     title_label.text = "AĞAÇ" if str(item["kind"])=="tree" else "KAYA"
+    title_art.texture = load(art_root+("heading_tree.png" if str(item["kind"])=="tree" else "heading_rock.png"))
     subtitle_label.text = "Toplanabilir Kaynak"
     var drop: Dictionary = (host.get("gameplay") as RefCounted).call("harvest_drop",str(item["kind"]))
     var item_id := str(drop.get("def_id",""))
