@@ -348,6 +348,10 @@ jobs:
           test -s assets/gui/panel.png
           test -s assets/gui/button_green.png
           test -s assets/gui/bokeh.png
+          test -s assets/gui/heading_tree.png
+          test -s assets/gui/heading_rock.png
+          test -s assets/gui/joystick_base.png
+          test -s assets/gui/joystick_knob.png
           grep -q TAMU_TERRAIN_MIX_BAKED_OK screenshots-mix-bake.log
           test -s assets/terrain25d/atlas_00_mix.png
           godot --headless --editor --path . --import --quit
@@ -560,6 +564,8 @@ jobs:
           assert any('scripts/harvest_outline.gdshader' in path for path in names), 'PCK_HARVEST_OUTLINE_SHADER_MISSING'
           assert any('scripts/forest_focus.gdshader' in path for path in names), 'PCK_FOREST_FOCUS_SHADER_MISSING'
           assert any('assets/gui/panel.png' in path for path in names), 'PCK_HARVEST_GUI_PANEL_MISSING'
+          assert any('assets/gui/heading_tree.png' in path for path in names), 'PCK_HARVEST_GUI_HEADING_MISSING'
+          assert any('assets/gui/joystick_base.png' in path for path in names), 'PCK_HARVEST_JOYSTICK_MISSING'
           assert any('scripts/terrain_mix.gdshader' in path for path in names), 'PCK_TERRAIN_MIX_SHADER_MISSING'
           assert any('assets/terrain25d/atlas_00_mix.png' in path for path in names), 'PCK_BAKED_TERRAIN_MIX_MISSING'
           print('TAMU_EXPORTED_RUNTIME_SCRIPTS_OK',len(runtime_scripts))
