@@ -13,6 +13,7 @@ const ImpactEffects = preload("res://scripts/impact_effects.gd")
 const SHADOW_SHADER = preload("res://scripts/object_shadow.gdshader")
 const SELECTION_SHADER = preload("res://scripts/harvest_outline.gdshader")
 const FOREST_GUI = preload("res://scripts/forest_harvest_gui.gd")
+const MODULAR_HUD = preload("res://scripts/modular_hud.gd")
 const ShadowVolume = preload("res://scripts/shadow_volume.gd")
 const VisualEnvironment = preload("res://scripts/visual_environment.gd")
 var rigby_skin: Dictionary = {}
@@ -849,6 +850,11 @@ func _ready() -> void:
     add_child(forest_gui)
     forest_gui.call("setup",self)
     print("TAMU_FOREST_GUI_READY")
+    var modular_hud := MODULAR_HUD.new()
+    modular_hud.name = "ModularReferenceHUD"
+    add_child(modular_hud)
+    if modular_hud.setup(self):
+        print("TAMU_MODULAR_HUD_READY")
     print("TAMU_GODOT_TERRAIN_START chunks=", pending.size())
 
 func _load_region(manifest_path: String) -> bool:
@@ -1387,18 +1393,26 @@ func _unhandled_input(event: InputEvent) -> void:
     if event is InputEventScreenTouch:
         if event.index == joystick_pointer or event.position.distance_to(_joystick_center()) < 110.0:
             return
-        if event.pressed and _harvest_at_screen(event.position):
-            drag=false
-            get_viewport().set_input_as_handled()
-            return
+        if event.pressed:
+            if _harvest_at_screen(event.position):
+                drag=false
+                get_viewport().set_input_as_handled()
+                return
+            if not selected_harvest.is_empty():
+                _clear_harvest_selection()
+                print("TAMU_HARVEST_DISMISSED_ON_EMPTY")
         drag=event.pressed
     elif event is InputEventScreenDrag and drag:
         $Camera2D.position -= event.relative / $Camera2D.zoom
     elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-        if event.pressed and _harvest_at_screen(event.position):
-            drag=false
-            get_viewport().set_input_as_handled()
-            return
+        if event.pressed:
+            if _harvest_at_screen(event.position):
+                drag=false
+                get_viewport().set_input_as_handled()
+                return
+            if not selected_harvest.is_empty():
+                _clear_harvest_selection()
+                print("TAMU_HARVEST_DISMISSED_ON_EMPTY")
         drag=event.pressed
     elif event is InputEventMouseMotion and drag:
         $Camera2D.position -= event.relative / $Camera2D.zoom
