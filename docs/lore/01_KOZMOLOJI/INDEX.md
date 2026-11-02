@@ -12,10 +12,10 @@ tags: [lore, index]
 [← Ana indeks](../00_INDEX.md)
 
 ## Mevcut sayfalar
-- Henüz ayrıntılı lore sayfası yok.
+- [[01_KOZMOLOJI/Buyuk_Sistem|Büyük Sistem ve Kozmolojik Değişim]] — geliştirici kanonu.
 
 ## Planlanan içerik
-- **OPEN-COS-001** — Büyük Sistem'in kökeni: Sistem'in gerçek doğası; evrenlerin ilişkisi. Ayrıntı için [[91_BOSLUKLAR|Boşluklar]].
+- **OPEN-COS-001** — Büyük Sistem'in uyanışının kritik olayı ve fiziksel etki mekanizması. Ayrıntı için [[91_BOSLUKLAR|Boşluklar]].
 
 ## Bağlantılar
 - [[90_KARARLAR|Kanon kararları]]

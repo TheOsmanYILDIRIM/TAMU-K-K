@@ -17,6 +17,9 @@ tags: [lore, index]
 ## Planlanan içerik
 - **OPEN-MYS-001** — Sistem'in niyeti: Dışarıdan görülen kuralların ardındaki bilinmeyenler. Ayrıntı için [[91_BOSLUKLAR|Boşluklar]].
 
+## Kozmoloji bağlantısı
+- [[01_KOZMOLOJI/Buyuk_Sistem|Büyük Sistem'in bilinen ve gizli yönleri]]
+
 ## Bağlantılar
 - [[90_KARARLAR|Kanon kararları]]
 - [[92_KAYNAKLAR|Mevcut belgeler]]
