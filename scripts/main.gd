@@ -1137,7 +1137,7 @@ func _process(delta: float) -> void:
                 return
             var target: Dictionary = {}
             for candidate in harvestables:
-                if gameplay.is_harvestable(str(candidate["kind"])):
+                if gameplay.is_harvestable(str(candidate["kind"])) and candidate["sprite"].visible:
                     target = candidate
                     break
             if target.is_empty():
