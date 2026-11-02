@@ -348,7 +348,7 @@ func _set_actor_clip(direction: String, action: String) -> void:
     if native_rig != null:
         native_rig.play_clip(source_name)
     _set_actor_facing(direction == "NW" or direction == "NE")
-    avatar.scale.x = -1.0 if direction == "SW" or direction == "NE" else 1.0
+    avatar.scale.x = 1.0 if profile_sprite != null else (-1.0 if direction == "SW" or direction == "NE" else 1.0)
 
 func _set_actor_facing(back: bool) -> void:
     if actor_facing_back == back and avatar_parts["head"].texture != null:
@@ -839,7 +839,7 @@ func _process(delta: float) -> void:
         avatar_parts["leg_R"].rotation = 0.0
     _update_avatar()
     if profile_sprite != null:
-        profile_sprite.set_movement(actor_action == "walk", direction.x < -0.05)
+        profile_sprite.set_movement(actor_action == "walk", actor_direction == "SW" or actor_direction == "NE")
     _tick_gameplay(delta)
     if native_rig != null:
         native_rig.advance(visual_delta)
