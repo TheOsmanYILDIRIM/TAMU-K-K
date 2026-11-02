@@ -1,3 +1,8 @@
+### 2026-11-02 — [GODOT-MIGRATION] Plasma kaldırma ve temiz PCK doğrulandı
+- **GitHub:** `experiment/godot4-android-apk-20261031` tested `a256a21334828ba7b79089e726439499a8f19950`. [CI #41406279841](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41406279841) completed/success. PCK `16.603.328` bytes, `414` file, Godot pack version 3 / Godot 4.6, SHA256 `123485b71d19be2d8c427d68de0c391142e6f5b9b82aa5198bcf9e21905cc580`. PCK extracted and entire directory table inspected; plasma/screenshots/apk count zero. Real 7/7 visual CI PASS.
+- **Artefaktlar:** tam PCK `13122993551`, yalnız Android debug APK `13123088305`, ayrı görsel/log raporları `13123382394`, FX önizleme `13123028203`. 21 Plasma dosyası yalnız yetkili Godot deney dalı HEAD'den kaldırıldı; ana LÖVE dalı, geçmiş ve kullanıcı verisi korunur. `export_presets.cfg` resource whitelist ve `TAMU_CLEAN_PCK_OK` CI guard PCK şişmesini engeller.
+- **Açık:** Godot Loader üzerinde harici PCK gerçek Android yükleme/çalıştırma, FPS/termal ve kaydetme, tam LÖVE oynanış paritesi. Karakter ve demo UI değiştirilmedi.
+
 ### 2026-11-02 — [GODOT-MIGRATION] Plasma removal + ayrı PCK/APK/test artefaktları
 - Mevcut deney dalı Plasma dosyaları silme, `selected_resources` export ve PCK dosya/40 MiB kontrolünü devreye aldı. Son ek: GitHub Actions `tamu-godot-loader-pck`, `tamu-godot-debug-apk`, `tamu-godot-test-results` olarak ayrıldı. Yeni PCK boyutu/cihaz uyumluluğu CI bitmeden kabul edilmez. `main` ve ayrı LÖVE dalı değiştirilmez.
 
