@@ -141,6 +141,58 @@ func _try_harvest() -> void:
         impact_effects.burst(WorldProjection.to_screen(nearest["position"]), str(nearest["kind"]), 6)
     print("TAMU_HARVEST_COMMAND id=", nearest["id"], " status=", result["status"])
 
+# Minimal gameplay adapter: the canonical DomainBuilding remains authoritative.
+# Structures are drawn at world foot positions and restored from Stage6 saves.
+func _sync_building_visuals() -> void:
+    if gameplay == null or object_layer == null:
+        return
+    for instance_id in gameplay.building.placed:
+        if placed_visuals.has(instance_id):
+            continue
+        var placed: Dictionary = gameplay.building.placed[instance_id]
+        var node := Node2D.new()
+        node.name = "Structure_" + str(instance_id)
+        node.position = WorldProjection.to_screen(Vector2(float(placed["x"]), float(placed["y"])))
+        if authority != null:
+            node.position.y -= authority.terrain.height_at(float(placed["x"]), float(placed["y"])) * R2_HEIGHT_SCREEN_SCALE
+        var top := Polygon2D.new()
+        top.polygon = PackedVector2Array([Vector2(-23,-20),Vector2(0,-32),
+            Vector2(23,-20),Vector2(0,-8)])
+        top.color = Color(0.69,0.50,0.34)
+        node.add_child(top)
+        var front := Polygon2D.new()
+        front.polygon = PackedVector2Array([Vector2(-23,-20),Vector2(0,-8),
+            Vector2(0,0),Vector2(-23,-12)])
+        front.color = Color(0.40,0.28,0.21)
+        node.add_child(front)
+        var side := Polygon2D.new()
+        side.polygon = PackedVector2Array([Vector2(0,-8),Vector2(23,-20),
+            Vector2(23,-12),Vector2(0,0)])
+        side.color = Color(0.52,0.36,0.25)
+        node.add_child(side)
+        object_layer.add_child(node)
+        placed_visuals[instance_id] = node
+    for instance_id in placed_visuals.keys():
+        if not gameplay.building.placed.has(instance_id):
+            placed_visuals[instance_id].queue_free()
+            placed_visuals.erase(instance_id)
+
+func _place_workbench() -> void:
+    if gameplay == null or authority == null:
+        return
+    # Use real domain validation: distance, terrain, collision, inventory and
+    # durable journal all decide success; no debug resource injection.
+    var target := actor_world + Vector2(48.0,0.0)
+    var uid := "%08x-%04x-4%03x-a%03x-%012x" % [
+        randi(), randi() & 0xffff, randi() & 0xfff,
+        randi() & 0xfff, (int(randi()) << 16) | (randi() & 0xffff)]
+    var result: Dictionary = gameplay.place_building(_next_gameplay_command("build"),
+        uid, "core:workbench", target, 0, actor_world, "player")
+    if str(result.get("status","")) == "placed":
+        _sync_building_visuals()
+        audio_cues.cue("craft_complete")
+    print("TAMU_BUILD_COMMAND status=",result.get("status","unknown"))
+
 func _begin_craft(recipe_id: String) -> void:
     var result: Dictionary = gameplay.begin_craft(_next_gameplay_command("craft"), recipe_id)
     print("TAMU_CRAFT_COMMAND recipe=", recipe_id, " status=", result["status"])
@@ -228,6 +280,22 @@ func _init_harvest_button() -> void:
         crafting_button.add_theme_stylebox_override("normal", style)
         crafting_button.pressed.connect(_begin_craft.bind(str(option["recipe"])))
         root.add_child(crafting_button)
+    var place_button := Button.new()
+    place_button.name = "PlaceWorkbench"
+    place_button.text = "KUR"
+    place_button.anchor_left = 1.0
+    place_button.anchor_right = 1.0
+    place_button.anchor_top = 1.0
+    place_button.anchor_bottom = 1.0
+    place_button.offset_left = -190.0
+    place_button.offset_right = -24.0
+    place_button.offset_top = -532.0
+    place_button.offset_bottom = -434.0
+    place_button.mouse_filter = Control.MOUSE_FILTER_STOP
+    place_button.add_theme_font_size_override("font_size", 22)
+    place_button.add_theme_stylebox_override("normal",style)
+    place_button.pressed.connect(_place_workbench)
+    root.add_child(place_button)
     print("TAMU_HARVEST_UI_READY")
 
 func _init_mobile_joystick() -> void:
@@ -561,6 +629,7 @@ func _ready() -> void:
             get_tree().quit()
             return
     _make_avatar()
+    _sync_building_visuals()
     if OS.get_environment("TAMU_VISUAL_CI") == "1":
         if native_rig == null or not native_rig.verify_curve_reference("res://chunks/rigby_curve_reference.txt"):
             push_error("TAMU_RIGBY_CURVE_GATE_FAILED")
@@ -860,6 +929,7 @@ func _load_objects() -> void:
 
 var object_count: int = 0
 var object_layer: Node2D
+var placed_visuals: Dictionary = {}
 
 func _process(delta: float) -> void:
     # A Stage6 startup smoke can request quit before _make_avatar().
