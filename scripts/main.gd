@@ -805,7 +805,7 @@ func _load_objects() -> void:
         sprite.centered = true
         sprite.position = Vector2(float(o["sx"]), float(o["sy"]))
         sprite.z_index = 0
-        var scales := {"oak":1.04,"broadleaf":1.12,"conifer":1.20,"dead_tree":0.94,
+        var scales := {"oak":1.18,"broadleaf":1.28,"conifer":1.34,"dead_tree":1.06,
             "boulder":0.44,"rock_cluster":0.50,"rock_spire":0.53,
             "shrub":0.30,"reeds":0.28,"stump":0.26,"fallen_log":0.41,"water_rocks":0.38}
         var scale_value := float(scales.get(family, 0.5)) * (0.96 + float(h % 9) * 0.01)
