@@ -14,6 +14,6 @@ void vertex() {
     VERTEX.y = VERTEX.y * 0.12 + height * solar_dir.y * solar_length;
 }
 void fragment() {
-    float silhouette = COLOR.a;
+    float silhouette = texture(TEXTURE, UV).a * COLOR.a;
     COLOR = vec4(0.022, 0.032, 0.038, silhouette * opacity);
 }
