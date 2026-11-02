@@ -1,4 +1,4 @@
-name: TAMU Micro Evolution - isolated video experiment
+name: TAMU Micro Evolution - third-party engine validation
 on:
   push:
     branches:
@@ -6,60 +6,75 @@ on:
 permissions:
   contents: read
 jobs:
-  micro-evolution:
+  living-engine-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 18
     steps:
-      - name: Run v0.3 cell specialization experiments and model invariants
+      - name: Fetch pinned upstream artificial life engine (no TAMU game code)
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m pip install --disable-pip-version-check pillow==11.3.0
+          git clone -q https://github.com/skelinn/vivere.git "$RUNNER_TEMP/vivere"
+          cd "$RUNNER_TEMP/vivere"
+          git checkout --detach -q 9d76cbcc42e347ff3cb0cf34c19ecfe7cff11b27
+          test "$(git rev-parse HEAD)" = "9d76cbcc42e347ff3cb0cf34c19ecfe7cff11b27"
+          cp LICENSE "$RUNNER_TEMP/vivere-license.txt"
+          echo 'TAMU_UPSTREAM_PIN_OK 9d76cbcc42e347ff3cb0cf34c19ecfe7cff11b27'
+      - name: Test and compile real native Rust simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/vivere"
+          rustup toolchain install 1.97.1 --profile minimal
+          cargo +1.97.1 test --locked -p vivere-core
+          cargo +1.97.1 build --locked --release -p vivere-cli -p vivere-gif
+          echo "TAMU_UPSTREAM_ENGINE_BUILD_OK"
+      - name: Reproduce evolutionary run and render MP4
+        shell: bash
+        run: |
+          set -euo pipefail
           command -v ffmpeg || (sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg)
-          cat > "$RUNNER_TEMP/tamu_micro_source.b64" <<'B64'
-          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
-          B64
-          base64 -d "$RUNNER_TEMP/tamu_micro_source.b64" | gzip -dc > "$RUNNER_TEMP/tamu_micro_lab.py"
-          echo "bdf368c846aa0af050f9c2756c856af6eecff9ba08dce296d3e8e7d41ee0c127  $RUNNER_TEMP/tamu_micro_lab.py" | sha256sum -c -
-          python3 -m py_compile "$RUNNER_TEMP/tamu_micro_lab.py"
-          mkdir -p "$GITHUB_WORKSPACE/micro-output"
-          TAMU_MICRO_OUTPUT="$GITHUB_WORKSPACE/micro-output" python3 "$RUNNER_TEMP/tamu_micro_lab.py"
-          cp "$RUNNER_TEMP/tamu_micro_lab.py" "$GITHUB_WORKSPACE/micro-output/source.py"
-          cd "$GITHUB_WORKSPACE/micro-output"
-          sha256sum -c results.sha256
-          ffprobe -v error -show_entries stream=width,height -show_entries format=duration,size -of json tamu-micro-evolution.mp4
-          python3 - <<'CHECK'
-          import json
+          command -v ffprobe
+          cd "$RUNNER_TEMP/vivere"
+          mkdir -p "$GITHUB_WORKSPACE/engine-output"
+          OUT="$GITHUB_WORKSPACE/engine-output"
+          ./target/release/vivere run --seed 42 --ticks 6000 --metrics-every 300 --out "$OUT/seed42.csv" --save-snapshot "$OUT/seed42.snap"
+          ./target/release/vivere run --seed 42 --ticks 6000 --metrics-every 300 --out "$RUNNER_TEMP/repeat.csv"
+          cmp "$OUT/seed42.csv" "$RUNNER_TEMP/repeat.csv"
+          ./target/release/vivere run --seed 73 --ticks 6000 --metrics-every 300 --out "$OUT/seed73.csv"
+          ./target/release/vivere inspect "$OUT/seed42.snap" --summary > "$OUT/genome-census.txt"
+          ./target/release/vivere-gif --seed 42 --ticks 4000 --every 20 --scale 0.5 --out "$OUT/organisms.gif"
+          ffmpeg -y -loglevel error -i "$OUT/organisms.gif" -vf 'pad=ceil(iw/2)*2:ceil(ih/2)*2' -c:v libx264 -pix_fmt yuv420p -movflags +faststart "$OUT/tamu-alife-engine.mp4"
+          echo "9d76cbcc42e347ff3cb0cf34c19ecfe7cff11b27" > "$OUT/upstream-commit.txt"
+          cp "$RUNNER_TEMP/vivere-license.txt" "$OUT/UPSTREAM-LICENSE.txt"
+          python3 - <<'VERIFY'
+          import csv, json, hashlib, os
           from pathlib import Path
-          x=json.loads(Path('results.json').read_text())
-          assert x['model']=='micro-colony-v0.3' and x['status']=='research_only_noncanonical'
-          assert x['ticks']==600 and x['seeds']==[17,42,73] and len(x['results'])==3
-          keys={'0-free','0-generalist','0-roles','1-free','1-generalist','1-roles'}
-          for row in x['results']:
-              assert set(row['trials'])==keys
-              for p in ('0','1'):
-                  assert row['trials'][p+'-free']['colonies']==0
-                  assert row['trials'][p+'-generalist']['role_variance']==0
-                  role=row['trials'][p+'-roles']
-                  assert role['role_variance']>0
-                  assert role['sensor_role_events']>0 and role['absorber_role_events']>0
-              for v in row['trials'].values():
-                  assert 0<=v['population']<=x['population_cap']
-                  assert 1<=v['max_colony_seen']<=x['group_cap']
-                  assert v['nutrient_assimilated']<=v['nutrient_consumed']
-                  assert v['transfer_loss']>=0
-          movie=Path('tamu-micro-evolution.mp4').read_bytes()
-          assert b'ftyp' in movie[:12] and len(movie)>35000
-          print('TAMU_V03_ARTIFACT_VERIFIED',len(movie))
-          CHECK
-      - name: Upload MP4 and reproducibility evidence
+          out=Path(os.environ["GITHUB_WORKSPACE"])/"engine-output"
+          summary={}
+          for seed in (42,73):
+              with (out/f"seed{seed}.csv").open(newline="") as f:
+                  rows=list(csv.DictReader(f))
+              assert len(rows)>=5
+              assert int(rows[0]["tick"])==0 and int(rows[-1]["tick"])==6000
+              assert all(float(r["world_energy"]) >= 0 for r in rows)
+              assert all(abs(float(r["drift"])) <= max(1.0, float(r["world_energy"]))*0.00001 for r in rows)
+              summary[str(seed)]={"first_population":int(rows[0]["population"]), "last_population":int(rows[-1]["population"]), "last_mean_generation":float(rows[-1]["mean_generation"]), "max_relative_drift":max(abs(float(r["drift"]))/max(1.0,float(r["world_energy"])) for r in rows)}
+          vid=out/"tamu-alife-engine.mp4"
+          assert vid.stat().st_size>10000 and b"ftyp" in vid.read_bytes()[:12]
+          assert (out/"genome-census.txt").stat().st_size>50
+          summary.update({"status":"real_upstream_baseline_only", "magic_physics":"NOT_IMPLEMENTED", "source":"skelinn/vivere", "commit":"9d76cbcc42e347ff3cb0cf34c19ecfe7cff11b27", "same_seed_csv_identical":True,"video_bytes":vid.stat().st_size})
+          (out/"validation.json").write_text(json.dumps(summary,indent=2)+"\n")
+          for p in sorted(out.iterdir()):
+              if p.is_file():
+                  print("OUTPUT", p.name, p.stat().st_size, hashlib.sha256(p.read_bytes()).hexdigest())
+          print("TAMU_REAL_ENGINE_BASELINE_OK",json.dumps(summary))
+          VERIFY
+          ffprobe -v error -show_entries format=duration,size -show_entries stream=width,height -of json "$OUT/tamu-alife-engine.mp4"
+      - name: Publish reproducible baseline (NOT magic organ evolution)
         uses: actions/upload-artifact@v4
         with:
-          name: tamu-micro-evolution-v03
-          path: |
-            micro-output/tamu-micro-evolution.mp4
-            micro-output/results.json
-            micro-output/results.sha256
-            micro-output/source.py
-          if-no-files-found: error
+          name: tamu-real-alife-vivere-baseline
+          path: engine-output/
           retention-days: 7
+          if-no-files-found: error
