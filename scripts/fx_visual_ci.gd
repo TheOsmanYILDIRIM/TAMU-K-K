@@ -3,6 +3,7 @@ extends SceneTree
 # width even if the authored 2D sprite projection collapses side-on.
 const Shadow = preload("res://scripts/object_shadow.gdshader")
 const ShadowVolume = preload("res://scripts/shadow_volume.gd")
+const Selection = preload("res://scripts/harvest_outline.gdshader")
 
 func _initialize() -> void:
     call_deferred("_render")
@@ -58,6 +59,22 @@ func _render() -> void:
         original.position = ground
         original.offset = silhouette.offset
         scene.add_child(original)
+        if i == 1:
+            # Same padded-alpha Sprite2D material as the interactive game.
+            var pad := 5
+            var expanded := Image.create(source.get_width()+2*pad,
+                source.get_height()+2*pad,false,Image.FORMAT_RGBA8)
+            expanded.fill(Color.TRANSPARENT)
+            expanded.blit_rect(source,Rect2i(Vector2i.ZERO,source.get_size()),
+                Vector2i(pad,pad))
+            var glow := Sprite2D.new()
+            glow.name = "GoldAlphaSelectionPreview"
+            glow.texture = ImageTexture.create_from_image(expanded)
+            glow.offset = original.offset
+            var rim := ShaderMaterial.new()
+            rim.shader = Selection
+            glow.material = rim
+            original.add_child(glow)
     for frame in range(4):
         await process_frame
     await RenderingServer.frame_post_draw
@@ -68,6 +85,22 @@ func _render() -> void:
         push_error("TAMU_FX_VISUAL_FAILED " + str(err))
         quit(41)
         return
+    var gold := 0
+    for y in range(screenshot.get_height()):
+        for x in range(screenshot.get_width()):
+            var pixel: Color = screenshot.get_pixel(x,y)
+            if pixel.r > 0.60 and pixel.g > 0.35 and pixel.b < 0.35 and pixel.r > pixel.g*1.18:
+                gold += 1
+    if gold < 90 or gold > 7500:
+        push_error("TAMU_HARVEST_SELECTION_PIXEL_GATE_FAILED count=" + str(gold))
+        quit(42)
+        return
+    var selection_err := screenshot.save_png("res://screenshots/fx-harvest-selection.png")
+    if selection_err != OK:
+        push_error("TAMU_HARVEST_SELECTION_IMAGE_MISSING")
+        quit(42)
+        return
+    print("TAMU_HARVEST_OUTLINE_VISUAL_OK gold_pixels=",gold)
     print("TAMU_SHADOW_ALPHA_INSET_OK azimuths=3")
     print("TAMU_FX_SHADOW_25D_VOLUME_OK azimuths=3")
     print("TAMU_FX_VISUAL_OK size=", screenshot.get_width(), "x", screenshot.get_height())
