@@ -30,7 +30,7 @@ func setup(game: Node) -> bool:
         push_warning("TAMU_MODULAR_HUD_LAYOUT_INVALID")
         return false
     layout = parsed
-    layer = 109
+    layer = 112
     overlay = Control.new()
     overlay.name = "ReferenceHUD"
     overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -64,6 +64,11 @@ func setup(game: Node) -> bool:
         return false
     get_viewport().size_changed.connect(_position_sprites)
     _position_sprites()
+    # Native joystick keeps handling touches; suppress overlapping old art.
+    if sprites.has("joystick"):
+        var old_joystick: Panel = host.get("joystick_base")
+        if old_joystick != null:
+            old_joystick.modulate.a = 0.0
     initialized = true
     return true
 func _position_sprites() -> void:
@@ -77,5 +82,12 @@ func _position_sprites() -> void:
         var visual: TextureRect = sprites[key]
         visual.position = Vector2(float(pos[0])*v.x,float(pos[1])*v.y)
         visual.size = Vector2(float(size[0])*v.x,float(size[1])*v.y)
+    if host != null and sprites.has("joystick"):
+        var old_joystick: Panel = host.get("joystick_base")
+        if old_joystick != null:
+            var artwork: TextureRect = sprites["joystick"]
+            old_joystick.set_anchors_preset(Control.PRESET_TOP_LEFT)
+            old_joystick.position = artwork.position
+            old_joystick.size = artwork.size
 func verify_contract() -> bool:
     return initialized and sprites.has("portrait") and sprites.has("hotbar") and sprites.has("joystick")
