@@ -1,3 +1,6 @@
+### 2026-11-02 — [GODOT-MIGRATION] Plasma removal + ayrı PCK/APK/test artefaktları
+- Mevcut deney dalı Plasma dosyaları silme, `selected_resources` export ve PCK dosya/40 MiB kontrolünü devreye aldı. Son ek: GitHub Actions `tamu-godot-loader-pck`, `tamu-godot-debug-apk`, `tamu-godot-test-results` olarak ayrıldı. Yeni PCK boyutu/cihaz uyumluluğu CI bitmeden kabul edilmez. `main` ve ayrı LÖVE dalı değiştirilmez.
+
 ### 2026-11-02 — [GODOT-MIGRATION] PCK üretimi ve Plasma temizliği
 - Godot dalındaki Plasma adlı 21 dosya silinmek üzere CAS değişimine dahil edildi; tarihçe/LÖVE ana dalı silinmedi. Godot selected-resources export filtresi 30 gerçek Rigby parçası, üç aktif atlas, ana sahne ve katalog ile sınırlandırıldı, JSON/chunks whitelist. CI PCK dizin tablosunda Plasma/CI screenshots/game/love/art-source reddi ve <40 MiB boyut kapısı; yeni CI sonucuna kadar `pending_unverified`.
 

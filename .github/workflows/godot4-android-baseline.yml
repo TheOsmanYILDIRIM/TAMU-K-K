@@ -529,18 +529,21 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: tamu-godot-android-baseline
+          name: tamu-godot-loader-pck
+          path: build/tamu-android-content.pck
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tamu-godot-debug-apk
+          path: build/TAMU_Godot_Baseline.apk
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tamu-godot-test-results
           path: |
-            build/TAMU_Godot_Baseline.apk
-            build/tamu-android-content.pck
-            screenshots/terrain-parity.png
-            screenshots/run.log
-            screenshots/*-legacy.png
-            screenshots/*-merged.png
-            screenshots/*-world-diff.png
-            screenshots/visual-comparison.json
-            screenshots/region-startup.json
-            screenshots/content-compile.log
+            screenshots/
             chunks/r2_objects.json
             chunks/index.json
           if-no-files-found: warn

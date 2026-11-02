@@ -1,3 +1,7 @@
+## 2026-11-02 — Android Loader dağıtım artefaktlarını ayırma
+- Oyun PCK'si `tamu-godot-loader-pck` artefaktında **yalnız PCK** olarak yayımlanır. `tamu-godot-debug-apk` yalnız APK'dir. `tamu-godot-test-results` yalnız CI ekran görüntüleri, doğrulama logları ve testte kullanılan source indexini içerir; PCK/APK içine test sonuçları konmaz.
+- `export_presets.cfg` mevcut selected-resources değişikliği ve CI'daki `TAMU_CLEAN_PCK_OK` dosya/boyut kontrolü korunur. PCK bağımsız test çıktısı ve APK taşımaz. Godot Loader harici PCK'yi değiştirmeden çalıştırır; gerçek Android cihaz kabulü ayrıdır.
+
 ## 2026-11-02 — Godot Loader PCK temizleme kararı
 - Godot deney dalında Plasma varlıkları, kaynak üreticileri, ilgili eski belgeler ve Plasma test dosyaları **kaldırıldı**. LÖVE ana dalı, tarihsel commitler, kullanıcı verileri ve yedekler değişmez.
 - Godot `export_presets.cfg`: `all_resources` yerine yalnız seçili sahne, gerçek terrain atlası, aktif Rigby parçaları ve derlenmiş katalog; ayrıca gerekli binary chunk, authored R2 ve JSON tanımları. Ekran görüntüsü, eski LÖVE varlıkları ve art-source dosyaları PCK dışında.
