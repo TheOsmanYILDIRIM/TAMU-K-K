@@ -1117,7 +1117,7 @@ func _load_objects() -> void:
         object_count += 1
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and OS.get_environment("TAMU_VISUAL_CASE") == "gui":
         for candidate in harvestables:
-            if candidate["kind"] == "tree" and str(candidate.get("family","")) in ["oak","broadleaf"]
+            if candidate["kind"] == "tree" and str(candidate.get("family","")) in ["oak","broadleaf"]:
                 $Camera2D.position = candidate["sprite"].position + Vector2(0.0,-35.0)
                 _refresh_streaming_requests()
                 break
