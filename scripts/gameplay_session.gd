@@ -317,10 +317,16 @@ func _durable_tick(dt: float, player_pos: Vector2) -> Array[Dictionary]:
         harvesting.commands = stage.harvesting.commands
         crafting.commands = stage.crafting.commands
         return empty
-    if events.size() != 1:
+    # Multiple drops belong to one atomic harvest command, not multiple
+    # transactions. Reject only genuinely mixed completion commands.
+    var command_id := str(events[0].get("command_id", ""))
+    if command_id.is_empty():
         durable_fault = true
         return empty
-    var command_id := str(events[0].get("command_id", ""))
+    for event in events:
+        if str(event.get("command_id", "")) != command_id:
+            durable_fault = true
+            return empty
     var committed := _commit_durable(stage, command_id)
     if not bool(committed.get("ok", false)):
         push_error("TAMU_STAGE6_TRANSACTION_REJECTED " + str(committed.get("status", "")))
