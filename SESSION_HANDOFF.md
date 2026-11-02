@@ -1,3 +1,6 @@
+### 2026-11-02 — [GODOT-HUD] Kalıcı arayüz dizinleri ve tek dosyalı görsel yükleme
+- Yeni tek referans: `ui/hud/layout.json` (konum), `ui/hud/packs/TAMU_HUD_Correct_Split.zip` (29 gerçek PNG), `scripts/modular_hud.gd` (ZIPReader). `assets/gui/hud` altındaki eski manifest yalnız geriye dönük kayıttır; mevcut PNG/yedek yok edilmedi.
+- GitHub Web upload hedefi: `https://github.com/TheOsmanYILDIRIM/TAMU-K-K/upload/main/ui/hud/packs`. Kullanıcı mevcut iç ZIP dosyasını burada tek dosya olarak yükler. Repo'da ZIP olmadığında var olan işlevsel HUD kullanılmaya devam eder. UI/R2/Stage6/save değişmez. Yeni HUD gerçek PCK kabulü ZIP yüklenmesine bağlıdır; APK yapılmaz.
 ### 2026-11-02 — [GODOT-HUD] Dismiss-selection ve değiştirilebilir HUD atlası
 - Seçili resource varken dünya boşluğuna dokunma/fare tıklaması `_clear_harvest_selection()` ile ahşap panel/blur/halo/bağlantı çizgisini kapatır; joystick ve UI tarafından yakalanan girdiler hariç.
 - `modular_hud.gd` res://assets/gui/hud içindeki kullanıcının parçalanmış görsel PNG'lerini `layout.json` ile responsive konumlarda gösterir. Kullanıcı yüklemelerinin ikili dosyaları GitHub aracıyla henüz aktarılmadığından katman opsiyoneldir ve yoksa mevcut HUD görünür. Düzen JSON'u/parça PNG'ler yerel ZIP'te hazırlanmıştır, GitHub kaynak deposundaki kod yazılmıştır.

@@ -1,9 +1,9 @@
 extends CanvasLayer
 # TAMU reference HUD. Each piece is independently replaceable through
-# assets/gui/hud/layout.json and original transparent PNGs.
+# ui/hud/layout.json and original transparent PNGs.
 # If the binary HUD package is absent, legacy functional controls remain.
-const ZIP_PATH := "res://assets/gui/hud/TAMU_HUD_Correct_Split.zip"
-const LAYOUT_PATH := "res://assets/gui/hud/layout.json"
+const ZIP_PATH := "res://ui/hud/packs/TAMU_HUD_Correct_Split.zip"
+const LAYOUT_PATH := "res://ui/hud/layout.json"
 var host: Node
 var overlay: Control
 var sprites: Dictionary = {}
@@ -15,7 +15,7 @@ func setup(game: Node) -> bool:
     var manifest_text := ""
     if FileAccess.file_exists(LAYOUT_PATH):
         manifest_text = FileAccess.get_file_as_string(LAYOUT_PATH)
-    if ResourceLoader.exists("res://assets/gui/hud/portrait.png"):
+    if ResourceLoader.exists("res://ui/hud/portrait.png"):
         pass
     elif FileAccess.file_exists(ZIP_PATH):
         zip = ZIPReader.new()
@@ -42,8 +42,8 @@ func setup(game: Node) -> bool:
             continue
         var filename := "%s.png" % str(key)
         var texture: Texture2D
-        if ResourceLoader.exists("res://assets/gui/hud/"+filename):
-            texture = load("res://assets/gui/hud/"+filename)
+        if ResourceLoader.exists("res://ui/hud/"+filename):
+            texture = load("res://ui/hud/"+filename)
         elif zip != null and zip.get_files().has(filename):
             var image := Image.new()
             if image.load_png_from_buffer(zip.read_file(filename)) != OK:
