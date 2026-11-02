@@ -14,9 +14,7 @@ void vertex() {
 void fragment() {
     vec2 slot = floor(clamp(UV * vec2(14.0, 12.0), vec2(0.0), vec2(13.999, 11.999)));
     vec4 target = texture(transition_lookup, (slot + vec2(0.5)) / vec2(14.0, 12.0));
-    if (target.a < 0.5) {
-        return; // wetland / water material is unchanged
-    }
+    if (target.a >= 0.5) {
     vec2 tile_uv = clamp((UV * vec2(1848.0,1584.0) - slot * 132.0 - vec2(2.0)) / 128.0,
         vec2(0.005), vec2(0.995));
     vec2 source_slot = floor(target.rg * 255.0 + vec2(0.5));
@@ -26,4 +24,5 @@ void fragment() {
     vec3 original = texture(TEXTURE, UV).rgb;
     vec3 secondary = texture(TEXTURE, mixed_uv).rgb;
     COLOR.rgb *= mix(vec3(1.0), secondary / max(original, vec3(0.18)), cover);
+    }
 }
