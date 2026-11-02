@@ -59,6 +59,7 @@ var sun_direction := Vector2.ZERO
 var sun_level := 1.0
 var daylight_layer: CanvasModulate
 var harvest_button: Button
+var harvest_select_mode := false
 const DAY_SECONDS := 30.0
 var world_bounds := Rect2(-4096.0, -4096.0, 32768.0, 32768.0)
 const MAX_LOADED_PER_FRAME := 1
@@ -116,30 +117,61 @@ func _next_gameplay_command(prefix: String) -> String:
     return "%s:%d" % [prefix, gameplay_sequence]
 
 func _try_harvest() -> void:
-    if not gameplay.active_harvest.is_empty():
-        print("TAMU_HARVEST_BUSY")
-        return
-    var nearest: Dictionary = {}
-    var best := INF
+    # TOPLA arms screen-space selection; it must not silently harvest nearest.
+    harvest_select_mode = not harvest_select_mode
+    if harvest_button != null:
+        harvest_button.text = "SEÇ: OBJE" if harvest_select_mode else "TOPLA"
+    print("TAMU_HARVEST_SELECT mode=", harvest_select_mode)
+
+func _harvest_at_screen(screen_point: Vector2) -> bool:
+    if not harvest_select_mode:
+        return false
+    # Coordinates are viewport pixels. Sprite transforms include camera zoom,
+    # atlas scaling and the authored foot anchor.
+    var chosen: Dictionary = {}
+    var best_depth := -INF
+    var best_distance := INF
     for item in harvestables:
         if bool(item.get("collected", false)) or not gameplay.is_harvestable(str(item["kind"])):
             continue
-        var limit := GameplaySession.HARVEST_RANGE + float(item["radius"])
-        var distance := actor_world.distance_squared_to(item["position"])
-        if distance <= limit * limit and (distance < best or (is_equal_approx(distance, best) and str(item["id"]) < str(nearest.get("id", "~")))):
-            best = distance
-            nearest = item
-    if nearest.is_empty():
-        print("TAMU_HARVEST_OUT_OF_RANGE")
-        return
-    if not authority.matches_object(nearest):
+        var sprite: Sprite2D = item["sprite"]
+        if not sprite.visible:
+            continue
+        var local: Vector2 = sprite.get_global_transform_with_canvas().affine_inverse() * screen_point
+        if not sprite.get_rect().has_point(local):
+            continue
+        var center_distance: float = screen_point.distance_squared_to(
+            sprite.get_global_transform_with_canvas() * sprite.get_rect().get_center())
+        var depth: float = sprite.global_position.y
+        if depth > best_depth + 0.001 or (absf(depth - best_depth) <= 0.001 and center_distance < best_distance):
+            chosen = item
+            best_depth = depth
+            best_distance = center_distance
+    if chosen.is_empty():
+        print("TAMU_HARVEST_SELECT_MISS")
+        return false
+    harvest_select_mode = false
+    if harvest_button != null:
+        harvest_button.text = "TOPLA"
+    if not authority.matches_object(chosen):
         push_error("TAMU_HARVEST_SOURCE_MISMATCH")
-        return
-    var result: Dictionary = gameplay.begin_harvest(nearest, actor_world, _next_gameplay_command("harvest"))
+        return true
+    var result: Dictionary = gameplay.begin_harvest(chosen, actor_world, _next_gameplay_command("harvest"))
     if str(result.get("status", "")) == "started":
         audio_cues.cue("harvest_start")
-        impact_effects.burst(WorldProjection.to_screen(nearest["position"]), str(nearest["kind"]), 6)
-    print("TAMU_HARVEST_COMMAND id=", nearest["id"], " status=", result["status"])
+        impact_effects.burst(chosen["sprite"].position, str(chosen["kind"]), 6)
+    print("TAMU_HARVEST_COMMAND id=",chosen["id"]," status=",result.get("status","unknown"))
+    return true
+
+func _unhandled_input(event: InputEvent) -> void:
+    if not harvest_select_mode:
+        return
+    if event is InputEventScreenTouch and event.pressed:
+        if _harvest_at_screen(event.position):
+            get_viewport().set_input_as_handled()
+    elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+        if _harvest_at_screen(event.position):
+            get_viewport().set_input_as_handled()
 
 # Minimal gameplay adapter: the canonical DomainBuilding remains authoritative.
 # Structures are drawn at world foot positions and restored from Stage6 saves.
