@@ -35,7 +35,7 @@ jobs:
       - name: Compile Android ARM64 with external main-pack overrides
         run: |
           set -euo pipefail
-          scons -C .godot-engine -j4 platform=android target=template_debug arch=arm64 disable_path_overrides=no
+          scons -C .godot-engine -j4 platform=android target=template_debug arch=arm64 optimize=speed disable_path_overrides=no
           find .godot-engine/platform/android/java/lib/libs/debug -name libgodot_android.so -type f -print -quit | grep -q .
       - name: Build custom Android Godot AAR
         run: |
