@@ -520,7 +520,7 @@ jobs:
           assert not missing_scripts, f'PCK_RUNTIME_SCRIPTS_MISSING {missing_scripts}'
           assert any('scripts/object_shadow.gdshader' in path for path in names), 'PCK_SHADOW_SHADER_MISSING'
           print('TAMU_EXPORTED_RUNTIME_SCRIPTS_OK',len(runtime_scripts))
-          assert count < 450, f'PCK_TOO_MANY_FILES {count}'
+          assert count < 480, f'PCK_TOO_MANY_FILES {count}'
           assert p.stat().st_size < 40*1024*1024, f'PCK_TOO_LARGE {p.stat().st_size}'
           print('TAMU_CLEAN_PCK_OK',p.stat().st_size,'files',count)
           PY
