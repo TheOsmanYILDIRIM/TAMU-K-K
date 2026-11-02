@@ -1,0 +1,52 @@
+name: TAMU Micro Evolution - isolated video experiment
+on:
+  push:
+    branches:
+      - experiment/micro-evolution-actions-20261102
+permissions:
+  contents: read
+jobs:
+  micro-evolution:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Run reproducible cell evolution and validate physics assumptions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check pillow==11.3.0
+          command -v ffmpeg
+          cat > "$RUNNER_TEMP/tamu_micro_source.b64" <<'B64'
+          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
+          B64
+          base64 -d "$RUNNER_TEMP/tamu_micro_source.b64" | gzip -dc > "$RUNNER_TEMP/tamu_micro_lab.py"
+          echo "34ba6985b5200dbe4aad9d391f8b3002ef524916812cdf6b9a185245325eaa37  $RUNNER_TEMP/tamu_micro_lab.py" | sha256sum -c -
+          python3 -m py_compile "$RUNNER_TEMP/tamu_micro_lab.py"
+          mkdir -p "$GITHUB_WORKSPACE/micro-output"
+          TAMU_MICRO_OUTPUT="$GITHUB_WORKSPACE/micro-output" python3 "$RUNNER_TEMP/tamu_micro_lab.py"
+          cp "$RUNNER_TEMP/tamu_micro_lab.py" "$GITHUB_WORKSPACE/micro-output/source.py"
+          cd "$GITHUB_WORKSPACE/micro-output"
+          sha256sum -c results.sha256
+          ffprobe -v error -show_entries stream=width,height -show_entries format=duration,size -of json tamu-micro-evolution.mp4
+          python3 - <<'CHECK'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('results.json').read_text())
+          assert d['seeds']==[17,42,73] and d['ticks']==720
+          assert len(d['results'])==3
+          assert all(r[k]['population']>0 and r[k]['nutrient_assimilated']<=r[k]['nutrient_consumed'] for r in d['results'] for k in ('control','particle'))
+          raw=Path('tamu-micro-evolution.mp4').read_bytes()
+          assert len(raw)>20000 and b'ftyp' in raw[:12]
+          print('TAMU_MICRO_ARTIFACT_VERIFIED',len(raw),[r['particle']['population'] for r in d['results']])
+          CHECK
+      - name: Upload MP4 and reproducibility evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: tamu-micro-evolution-preview
+          path: |
+            micro-output/tamu-micro-evolution.mp4
+            micro-output/results.json
+            micro-output/results.sha256
+            micro-output/source.py
+          if-no-files-found: error
+          retention-days: 7
