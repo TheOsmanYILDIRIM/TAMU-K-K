@@ -6,7 +6,7 @@ const SOURCE_RUN_ID := 41234831527
 static func build(atlas: Texture2D) -> Dictionary:
     return build_region(atlas, "res://chunks/merged_terrain.json")
 
-static func build_region(atlas: Texture2D, manifest_path: String) -> Dictionary:
+static func build_region(atlas: Texture2D, manifest_path: String, mixed_material: ShaderMaterial = null) -> Dictionary:
     var path := manifest_path
     if not FileAccess.file_exists(path):
         push_error("TAMU_MERGED_MANIFEST_MISSING")
@@ -80,6 +80,8 @@ static func build_region(atlas: Texture2D, manifest_path: String) -> Dictionary:
         instance.mesh = mesh
         instance.texture = atlas
         instance.z_index = z
+        if z == 0 and mixed_material != null:
+            instance.material = mixed_material
         group.add_child(instance)
         total_mesh_usec += Time.get_ticks_usec() - mesh_started
         total_vertices += count

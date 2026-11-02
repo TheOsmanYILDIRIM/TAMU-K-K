@@ -12,6 +12,7 @@ const AudioCues = preload("res://scripts/audio_cues.gd")
 const ImpactEffects = preload("res://scripts/impact_effects.gd")
 const SHADOW_SHADER = preload("res://scripts/object_shadow.gdshader")
 const ShadowVolume = preload("res://scripts/shadow_volume.gd")
+const VisualEnvironment = preload("res://scripts/visual_environment.gd")
 var rigby_skin: Dictionary = {}
 var merged_mode: bool = OS.get_environment("TAMU_TERRAIN_MODE") != "legacy"
 # Each independently authored region is a separate logical chunk, not one global world.
@@ -20,6 +21,10 @@ var world_source: RefCounted
 # Godot native ArrayMesh terrain; binary geometry and atlas are sourced from
 # the SAME TAMU compiled LÖVE CI artifact, never resampled.
 var terrain_atlas: Texture2D
+var terrain_mix_material: ShaderMaterial
+var detail_environment: MeshInstance2D
+var detail_count := 0
+var env_visual_stage := 3
 var pending: Array[String] = []
 var view_required: Dictionary = {}
 var last_plan_camera := Vector2(INF, INF)
@@ -573,6 +578,18 @@ func _ready() -> void:
     silhouette_material = ShaderMaterial.new()
     silhouette_material.shader = SHADOW_SHADER
     terrain_atlas = load("res://assets/terrain25d/atlas_00.png")
+    env_visual_stage = VisualEnvironment.level()
+    if env_visual_stage >= 1:
+        var terrain_manifest: Variant = JSON.parse_string(
+            FileAccess.get_file_as_string("res://assets/terrain25d/manifest.json"))
+        if not terrain_manifest is Dictionary:
+            push_error("TAMU_ENV_MANIFEST_MISSING")
+            get_tree().quit(43)
+            return
+        terrain_mix_material = VisualEnvironment.terrain_material(terrain_manifest)
+        if terrain_mix_material == null:
+            get_tree().quit(43)
+            return
     world_source = WorldSource.new()
     if not world_source.initialize():
         push_error("TAMU_WORLD_SOURCE_GATE_FAILED")
@@ -664,6 +681,17 @@ func _ready() -> void:
             set_process(false)
             get_tree().quit()
             return
+    if env_visual_stage >= 3:
+        var decor_manifest: Variant = JSON.parse_string(
+            FileAccess.get_file_as_string("res://assets/terrain25d/manifest.json"))
+        var decor_atlas: Texture2D = load("res://assets/terrain25d/atlas_01.png")
+        var decor: Dictionary = VisualEnvironment.detail_mesh(decor_manifest, decor_atlas, harvestables, authority)
+        detail_count = int(decor.get("count",0))
+        detail_environment = decor.get("node",null)
+        if detail_environment != null:
+            add_child(detail_environment)
+        print("TAMU_ENV_DETAIL_OK quads=",detail_count,
+            " vertices=",decor.get("vertices",0)," max=",VisualEnvironment.MAX_DETAIL_QUADS)
     _make_avatar()
     _sync_building_visuals()
     if OS.get_environment("TAMU_VISUAL_CI") == "1":
@@ -687,7 +715,7 @@ func _ready() -> void:
 
 func _load_region(manifest_path: String) -> bool:
     var started: int = Time.get_ticks_usec()
-    var unified: Dictionary = MergedTerrain.build_region(terrain_atlas, manifest_path)
+    var unified: Dictionary = MergedTerrain.build_region(terrain_atlas, manifest_path, terrain_mix_material)
     if unified.is_empty():
         return false
     var region_id: String = str(unified["region_id"])
@@ -781,6 +809,8 @@ func _load_chunk(stem: String) -> void:
         instance.mesh = mesh
         instance.texture = terrain_atlas
         instance.z_index = 0 if str(surf["key"]).begins_with("!") else 1
+        if instance.z_index == 0 and terrain_mix_material != null:
+            instance.material = terrain_mix_material
         group.add_child(instance)
         vertices += count
         chunk_count += count
@@ -913,8 +943,14 @@ func _load_objects() -> void:
         var scales := {"oak":1.18,"broadleaf":1.28,"conifer":1.34,"dead_tree":1.06,
             "boulder":0.44,"rock_cluster":0.50,"rock_spire":0.53,
             "shrub":0.30,"reeds":0.28,"stump":0.26,"fallen_log":0.41,"water_rocks":0.38}
-        var scale_value := float(scales.get(family, 0.5)) * (0.96 + float(h % 9) * 0.01)
+        var visual_jitter := (0.96 + float(h % 9) * 0.01)
+        if env_visual_stage >= 2:
+            visual_jitter = VisualEnvironment.variation(h, kind)
+        var scale_value := float(scales.get(family, 0.5)) * visual_jitter
         sprite.scale = Vector2.ONE * scale_value
+        if env_visual_stage >= 2:
+            sprite.flip_h = posmod(h, 2) == 0
+            sprite.modulate = VisualEnvironment.tint(h)
         # Local ground anchor follows the atlas region height, never a fixed 60 px.
         sprite.offset = Vector2(0.0, area.size.y * (0.5 - LOVE_OBJECT_PIVOT))
         object_layer.add_child(sprite)
@@ -941,6 +977,7 @@ func _load_objects() -> void:
             var silhouette := Sprite2D.new()
             silhouette.name = "AuthoredSilhouetteShadow"
             silhouette.texture = tex
+            silhouette.flip_h = sprite.flip_h
             silhouette.centered = sprite.centered
             silhouette.offset = sprite.offset
             silhouette.scale = sprite.scale
@@ -1093,6 +1130,10 @@ func _process(delta: float) -> void:
 
         var image := get_viewport().get_texture().get_image()
         var error := image.save_png("user://tamu-godot-visual.png")
+        print("TAMU_ENV_STAGE_METRICS stage=",env_visual_stage,
+            " drawcalls=",Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
+            " fps=",Engine.get_frames_per_second()," detail_quads=",detail_count,
+            " source_vertices=",vertices)
         print("TAMU_VISUAL_VARIANT mode=", "merged" if merged_mode else "legacy",
             " case=", OS.get_environment("TAMU_VISUAL_CASE"))
         if error != OK or loaded < 16 or total_cached < 100 or vertices < 1000 or object_count < 10 or avatar_parts.size() != 6 or rig_animations.size() != 44 or active_source_clip == "":
@@ -1114,7 +1155,10 @@ func _process(delta: float) -> void:
                 get_tree().quit(12)
                 return
             actor_world = target["position"]
+            # Selection UI requires an explicit object touch after arming.
             harvest_button.emit_signal("pressed")
+            var hit_screen: Vector2 = target["sprite"].get_global_transform_with_canvas() * target["sprite"].get_rect().get_center()
+            _harvest_at_screen(hit_screen)
             if gameplay.active_harvest.is_empty():
                 push_error("TAMU_HARVEST_NOT_STARTED")
                 get_tree().quit(13)
