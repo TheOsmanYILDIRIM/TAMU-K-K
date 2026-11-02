@@ -24,10 +24,20 @@ func _check() -> void:
     valid = valid and effects.palette.has("tree") and effects.palette.has("rock")
     valid = valid and Shadow.code.contains("solar_dir") and Shadow.code.contains("solar_length")
     valid = valid and ShadowVolume.verify_contract()
+    var alpha_test := Image.create(48,64,false,Image.FORMAT_RGBA8)
+    alpha_test.fill(Color(0,0,0,0))
+    for yy in range(4,60):
+        for xx in range(16,32):
+            alpha_test.set_pixel(xx,yy,Color.WHITE)
+    var spans := ShadowVolume.alpha_spans(ImageTexture.create_from_image(alpha_test))
+    var mass := ShadowVolume.profile("tree",Vector2(48,64),spans)
+    valid = valid and spans.size()==12 and bool(mass.get("sampled_alpha",false))
+    valid = valid and float(mass.get("root_inset",0.0)) >= 5.0
     if not valid:
         push_error("TAMU_FX_CONTRACT_FAILED")
         quit(40)
         return
+    print("TAMU_SHADOW_ALPHA_CONTOUR_OK samples=12")
     print("TAMU_SHADOW_VOLUME_PARITY_OK orientations=5 kinds=2")
     print("TAMU_FX_CONTRACT_OK voices=8 music_bus=true sfx_bus=true shader=true")
     quit(0)

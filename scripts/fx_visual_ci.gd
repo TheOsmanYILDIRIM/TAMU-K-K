@@ -35,7 +35,7 @@ func _render() -> void:
         var ground := Vector2(115.0 + i * 155.0, 250.0)
         var cast: Vector2 = directions[i]
         var volume := Polygon2D.new()
-        if not ShadowVolume.configure(volume, "tree", Vector2(120, 160)):
+        if not ShadowVolume.configure(volume, "tree", Vector2(120, 160), ShadowVolume.alpha_spans(texture)):
             push_error("TAMU_SHADOW_VOLUME_BUILD_FAILED")
             quit(41)
             return
@@ -68,6 +68,7 @@ func _render() -> void:
         push_error("TAMU_FX_VISUAL_FAILED " + str(err))
         quit(41)
         return
+    print("TAMU_SHADOW_ALPHA_INSET_OK azimuths=3")
     print("TAMU_FX_SHADOW_25D_VOLUME_OK azimuths=3")
     print("TAMU_FX_VISUAL_OK size=", screenshot.get_width(), "x", screenshot.get_height())
     quit(0)

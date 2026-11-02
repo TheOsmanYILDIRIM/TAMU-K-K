@@ -11,7 +11,8 @@ uniform float opacity : hint_range(0.0, 1.0) = 0.42;
 void vertex() {
     float height = max(-VERTEX.y, 0.0);
     VERTEX.x += height * solar_dir.x * solar_length;
-    VERTEX.y = VERTEX.y * 0.12 + height * solar_dir.y * solar_length;
+    // Offset projected alpha inside the sprite; do not start at the crop boundary.
+    VERTEX.y = -12.0 + VERTEX.y * 0.12 + height * solar_dir.y * solar_length;
 }
 void fragment() {
     float silhouette = texture(TEXTURE, UV).a * COLOR.a;

@@ -54,6 +54,7 @@ var authority: RefCounted
 var gameplay_sequence := 0
 var harvested_count := 0
 var shadow_sprites: Array[Polygon2D] = []
+var shadow_alpha_cache: Dictionary = {}
 var silhouette_shadows: Array[Sprite2D] = []
 var silhouette_material: ShaderMaterial
 var audio_cues: Node
@@ -947,9 +948,13 @@ func _load_objects() -> void:
         if kind == "tree" or kind == "rock":
             var shadow := Polygon2D.new()
             shadow.name = "GroundShadow"
-            # Trees and rocks need volume even when the flat atlas projection goes edge-on.
+            # Derive original atlas alpha contour once per sprite variant.
+            var alpha_key := str(a["id"])
+            if not shadow_alpha_cache.has(alpha_key):
+                shadow_alpha_cache[alpha_key] = ShadowVolume.alpha_spans(tex)
             if not ShadowVolume.configure(shadow, kind,
-                    Vector2(area.size.x, area.size.y) * scale_value):
+                    Vector2(area.size.x, area.size.y) * scale_value,
+                    shadow_alpha_cache[alpha_key]):
                 push_error("TAMU_SHADOW_VOLUME_INVALID " + id)
                 get_tree().quit(27)
                 return
