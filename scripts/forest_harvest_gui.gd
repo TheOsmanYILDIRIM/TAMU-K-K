@@ -9,6 +9,7 @@ var bokeh: TextureRect
 var focus_layer: CanvasLayer
 var focus: Sprite2D
 var ground_glow: Sprite2D
+var canopy_halo: Sprite2D
 var focus_outline: Sprite2D
 var root: Control
 var panel: NinePatchRect
@@ -50,7 +51,7 @@ func setup(game: Node2D) -> void:
     bokeh.texture = load(art_root + "bokeh.png")
     bokeh.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
     bokeh.stretch_mode = TextureRect.STRETCH_SCALE
-    bokeh.modulate.a = 0.21
+    bokeh.modulate.a = 0.14
     bokeh.mouse_filter = Control.MOUSE_FILTER_IGNORE
     blur_layer.add_child(bokeh)
     blur_layer.visible = false
@@ -64,6 +65,12 @@ func setup(game: Node2D) -> void:
     ground_glow.texture = load(art_root + "glow.png")
     ground_glow.visible = false
     focus_layer.add_child(ground_glow)
+    canopy_halo = Sprite2D.new()
+    canopy_halo.name = "SoftCanopyRadiance"
+    canopy_halo.texture = load(art_root + "glow.png")
+    canopy_halo.modulate = Color(1.0,0.77,0.28,0.18)
+    canopy_halo.visible = false
+    focus_layer.add_child(canopy_halo)
     focus = Sprite2D.new()
     focus.name = "FocusedSource"
     focus.visible = false
@@ -277,6 +284,7 @@ func open_for(item: Dictionary) -> void:
     status_label.text = ""
     blur_layer.visible = true
     ground_glow.visible = true
+    canopy_halo.visible = true
     focus.visible = true
     connector.visible = true
     target_ring.visible = true
@@ -297,6 +305,7 @@ func close() -> void:
     panel_open = false
     blur_layer.visible = false
     ground_glow.visible = false
+    canopy_halo.visible = false
     focus.visible = false
     connector.visible = false
     target_ring.visible = false
@@ -331,8 +340,14 @@ func _sync_focus(item: Dictionary) -> void:
     focus.flip_h = sprite.flip_h
     focus.position = xf*Vector2.ZERO
     ground_glow.position = focus.position + Vector2(0.0,3.0)
-    ground_glow.scale = Vector2(1.10,0.50)
+    ground_glow.scale = Vector2(1.48,0.59)
+    ground_glow.modulate = Color(1.0,0.77,0.29,0.72)
     focus.scale = sprite.scale * (host.get_node("Camera2D") as Camera2D).zoom
+    canopy_halo.position = focus.position + Vector2(0.0,-sprite.texture.get_height()*absf(focus.scale.y)*0.57)
+    canopy_halo.scale = Vector2(1.20,1.13)
+    var lens := blur_rect.material as ShaderMaterial
+    if lens != null:
+        lens.set_shader_parameter("focus_uv",focus.position/get_viewport().get_visible_rect().size)
     if host.get("selected_harvest_outline") != null:
         focus_outline.texture = host.get("selected_harvest_outline").texture
         focus_outline.centered = sprite.centered

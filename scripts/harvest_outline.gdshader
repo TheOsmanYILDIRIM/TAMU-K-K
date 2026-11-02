@@ -20,7 +20,7 @@ void fragment() {
     float soft = clamp((halo - alpha) * 0.45, 0.0, 1.0);
     float fill = alpha * 0.10;
     float pulse = 0.93 + 0.07 * sin(TIME * 2.4);
-    float result_alpha = max(max(fine * 0.62, soft * 0.48), fill * 0.65) * pulse;
+    float result_alpha = max(max(fine * 0.48, soft * 0.31), fill * 0.40) * pulse;
     COLOR = vec4(mix(vec3(0.91, 0.53, 0.07), gold.rgb, fine),
         result_alpha * gold.a);
 }
