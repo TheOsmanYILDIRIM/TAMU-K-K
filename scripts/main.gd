@@ -168,16 +168,6 @@ func _harvest_at_screen(screen_point: Vector2) -> bool:
     print("TAMU_HARVEST_COMMAND id=",chosen["id"]," status=",result.get("status","unknown"))
     return true
 
-func _unhandled_input(event: InputEvent) -> void:
-    if not harvest_select_mode:
-        return
-    if event is InputEventScreenTouch and event.pressed:
-        if _harvest_at_screen(event.position):
-            get_viewport().set_input_as_handled()
-    elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-        if _harvest_at_screen(event.position):
-            get_viewport().set_input_as_handled()
-
 # Minimal gameplay adapter: the canonical DomainBuilding remains authoritative.
 # Structures are drawn at world foot positions and restored from Stage6 saves.
 func _sync_building_visuals() -> void:
@@ -1186,6 +1176,16 @@ func _process(delta: float) -> void:
             get_tree().quit()
 
 func _unhandled_input(event: InputEvent) -> void:
+    # Selection takes precedence over camera panning; taps remain handled by
+    # the canonical harvesting domain. Never register duplicate input methods.
+    if harvest_select_mode:
+        if event is InputEventScreenTouch and event.pressed:
+            if _harvest_at_screen(event.position):
+                get_viewport().set_input_as_handled()
+        elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+            if _harvest_at_screen(event.position):
+                get_viewport().set_input_as_handled()
+        return
     if event is InputEventScreenTouch:
         if event.index == joystick_pointer or event.position.distance_to(_joystick_center()) < 110.0:
             return
