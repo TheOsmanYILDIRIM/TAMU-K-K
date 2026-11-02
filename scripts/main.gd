@@ -12,6 +12,7 @@ const AudioCues = preload("res://scripts/audio_cues.gd")
 const ImpactEffects = preload("res://scripts/impact_effects.gd")
 const SHADOW_SHADER = preload("res://scripts/object_shadow.gdshader")
 const SELECTION_SHADER = preload("res://scripts/harvest_outline.gdshader")
+const FOREST_GUI = preload("res://scripts/forest_harvest_gui.gd")
 const ShadowVolume = preload("res://scripts/shadow_volume.gd")
 const VisualEnvironment = preload("res://scripts/visual_environment.gd")
 var rigby_skin: Dictionary = {}
@@ -66,6 +67,7 @@ var sun_level := 1.0
 var daylight_layer: CanvasModulate
 var harvest_button: Button
 var harvest_hint: Label
+var forest_gui: CanvasLayer
 var selected_harvest: Dictionary = {}
 var selected_harvest_outline: Sprite2D
 var harvest_alpha_cache: Dictionary = {}
@@ -131,9 +133,13 @@ func _next_gameplay_command(prefix: String) -> String:
 func _harvest_feedback(message: String) -> void:
     if harvest_hint != null:
         harvest_hint.text = message
+    if forest_gui != null:
+        forest_gui.call("set_status",message)
 
 func _clear_harvest_selection() -> void:
     selected_harvest = {}
+    if forest_gui != null:
+        forest_gui.call("close")
     if selected_harvest_outline != null and is_instance_valid(selected_harvest_outline):
         selected_harvest_outline.queue_free()
     selected_harvest_outline = null
@@ -197,6 +203,8 @@ func _select_harvest(item: Dictionary) -> bool:
     outline.material=harvest_outline_material
     sprite.add_child(outline)
     selected_harvest_outline=outline
+    if forest_gui != null:
+        forest_gui.call("open_for",item)
     _harvest_feedback("SEÇİLDİ: %s  ·  TOPLA" % ("AĞAÇ" if str(item["kind"])=="tree" else "KAYA"))
     print("TAMU_HARVEST_SELECTED id=",item["id"]," alpha_outline=true")
     return true
@@ -818,6 +826,11 @@ func _ready() -> void:
     add_child(perf_hud)
     _init_mobile_joystick()
     _init_harvest_button()
+    forest_gui=FOREST_GUI.new()
+    forest_gui.name="ForestHarvestInterface"
+    add_child(forest_gui)
+    forest_gui.call("setup",self)
+    print("TAMU_FOREST_GUI_READY")
     print("TAMU_GODOT_TERRAIN_START chunks=", pending.size())
 
 func _load_region(manifest_path: String) -> bool:
@@ -1100,6 +1113,12 @@ func _load_objects() -> void:
             item_record["shadow"] = shadow
             object_visuals_by_chunk[visual_key].append(shadow)
         object_count += 1
+    if OS.get_environment("TAMU_VISUAL_CI") == "1" and OS.get_environment("TAMU_VISUAL_CASE") == "gui":
+        for candidate in harvestables:
+            if candidate["kind"] == "tree":
+                $Camera2D.position = candidate["sprite"].position + Vector2(0.0,-35.0)
+                _refresh_streaming_requests()
+                break
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and OS.get_environment("TAMU_VISUAL_CASE") == "grounding":
         for item in harvestables:
             if item["kind"] == "tree":
@@ -1167,6 +1186,12 @@ func _process(delta: float) -> void:
     marker.text = "TAMU Godot R2 / authored area\n%d resident / %d source | %d verts\nViewport missing %d | Mesh est %.1f MiB\nFPS %d | frame %.2f ms | Time %.1f | Harvest %d\nOdun %d | Tas %d | Tahta %d | Tezgah %d" % [loaded, total_cached, vertices, camera_missing, float(vertices * WorldStream.ESTIMATED_BYTES_PER_VERTEX)/1048576.0, Engine.get_frames_per_second(), delta * 1000.0,day_clock,harvested_count, gameplay.count_item("core:wood_log"),gameplay.count_item("core:stone"),gameplay.count_item("core:wood_plank"),gameplay.count_item("core:workbench")]
     if frame_no % 120 == 0:
         print("TAMU_GODOT_FRAME frame=", frame_no, " loaded=", loaded, " fps=", Engine.get_frames_per_second())
+    if OS.get_environment("TAMU_VISUAL_CI") == "1" and OS.get_environment("TAMU_VISUAL_CASE") == "gui" and frame_no == 73:
+        for candidate in harvestables:
+            if str(candidate["kind"]) == "tree" and candidate["sprite"].visible:
+                if _select_harvest(candidate):
+                    print("TAMU_GUI_VISUAL_SELECTION_OK id=",candidate["id"])
+                    break
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and frame_no == 60 and merged_mode and OS.get_environment("TAMU_VISUAL_CASE") == "reload":
         var previous_node: Node2D = region_chunks.get("fisilti_ormani")
         var previous_id: int = previous_node.get_instance_id() if previous_node != null else -1
@@ -1239,6 +1264,13 @@ func _process(delta: float) -> void:
 
         var image := get_viewport().get_texture().get_image()
         var error := image.save_png("user://tamu-godot-visual.png")
+        if OS.get_environment("TAMU_VISUAL_CASE") == "gui":
+            var panel_node: NinePatchRect = forest_gui.get("panel")
+            if selected_harvest.is_empty() or panel_node == null or not panel_node.visible:
+                push_error("TAMU_FOREST_GUI_SELECTION_NOT_VISIBLE")
+                get_tree().quit(56)
+                return
+            print("TAMU_FOREST_GUI_VISUAL_OK panel=true target=true")
         print("TAMU_ENV_STAGE_METRICS stage=",env_visual_stage,
             " drawcalls=",Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
             " fps=",Engine.get_frames_per_second()," detail_quads=",detail_count,
