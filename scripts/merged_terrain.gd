@@ -3,47 +3,6 @@ extends RefCounted
 # Additional game regions must be separate manifests and nodes; never fuse globally.
 const SOURCE_RUN_ID := 41234831527
 
-# Derived soft material-edge overlay; the original two R2 terrain layers
-# and their manifest SHA remain unchanged. Loaded once for the whole region.
-static func build_seam_overlay(atlas: Texture2D) -> MeshInstance2D:
-    var path := "res://chunks/merged_ground_seams.verts"
-    if not FileAccess.file_exists(path):
-        return null
-    var raw := FileAccess.get_file_as_bytes(path)
-    if raw.size()%60!=0 or raw.size()<120000 or raw.size()>3000000:
-        return null
-    var count := raw.size()/20
-    var b := StreamPeerBuffer.new()
-    b.big_endian = false
-    b.data_array = raw
-    var points := PackedVector2Array()
-    var uvs := PackedVector2Array()
-    var colors := PackedColorArray()
-    points.resize(count)
-    uvs.resize(count)
-    colors.resize(count)
-    for i in range(count):
-        points[i] = Vector2(b.get_float(),b.get_float())
-        uvs[i] = Vector2(b.get_float(),b.get_float())
-        var rgba := b.get_u32()
-        colors[i] = Color8(rgba&255,(rgba>>8)&255,(rgba>>16)&255,(rgba>>24)&255)
-    if b.get_position()!=raw.size():
-        return null
-    var arrays := []
-    arrays.resize(Mesh.ARRAY_MAX)
-    arrays[Mesh.ARRAY_VERTEX] = points
-    arrays[Mesh.ARRAY_TEX_UV] = uvs
-    arrays[Mesh.ARRAY_COLOR] = colors
-    var mesh := ArrayMesh.new()
-    mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
-    var node := MeshInstance2D.new()
-    node.name = "TAMUDryMaterialFeather"
-    node.mesh = mesh
-    node.texture = atlas
-    node.z_index = 2
-    node.set_meta("seam_vertices",count)
-    return node
-
 static func build(atlas: Texture2D) -> Dictionary:
     return build_region(atlas, "res://chunks/merged_terrain.json")
 

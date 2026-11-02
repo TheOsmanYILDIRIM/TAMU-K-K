@@ -272,13 +272,6 @@ jobs:
           print('TAMU_REGION_CHUNK_CONTRACT_OK regions=1 source_cells=156')
           print('TAMU_MERGE_SOURCE_PARITY_OK original_chunks=156 layers=2 vertices=',total)
           PY
-      - name: Bake authored dry-material feather mesh
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 scripts/bake_terrain_seams.py | tee terrain-seams.log
-          grep -q TAMU_TERRAIN_SEAMS_OK terrain-seams.log
-          test -s chunks/merged_ground_seams.verts
       - name: Verify original Rigby weighted mesh topology and influences
         shell: bash
         run: |
@@ -549,7 +542,6 @@ jobs:
           assert any('scripts/object_shadow.gdshader' in path for path in names), 'PCK_SHADOW_SHADER_MISSING'
           assert any('scripts/terrain_mix.gdshader' in path for path in names), 'PCK_TERRAIN_MIX_SHADER_MISSING'
           assert any('assets/terrain25d/atlas_00_mix.png' in path for path in names), 'PCK_BAKED_TERRAIN_MIX_MISSING'
-          assert any('chunks/merged_ground_seams.verts' in path for path in names), 'PCK_GROUND_SEAMS_MISSING'
           print('TAMU_EXPORTED_RUNTIME_SCRIPTS_OK',len(runtime_scripts))
           assert count < 480, f'PCK_TOO_MANY_FILES {count}'
           assert p.stat().st_size < 40*1024*1024, f'PCK_TOO_LARGE {p.stat().st_size}'
