@@ -24,20 +24,12 @@ def wood(w,h,tint,grain=1):
     for y in range(h):
         ring=math.sin(y*.065+math.sin(y*.013)*2.6)
         for x in range(w):
-            g=(.79+.085*ring+.040*math.sin(y*.18+math.sin(x*.025)*2.0)
-               +.024*math.sin(y*.49+x*.008)+.018*offsets[y]+R.uniform(-.024,.024))
+            g=(.88+.048*ring+.017*math.sin(y*.18+math.sin(x*.025)*2.0)
+               +.009*math.sin(y*.49+x*.008)+.013*offsets[y]+R.uniform(-.014,.014))
             edges=1-.15*min(1,abs((x-w/2)/(w/2)))**1.4
             pix[x,y]=rgba([v*g*edges for v in tint])
-    d=ImageDraw.Draw(im,"RGBA")
-    for k in range(max(5,h//45)):
-        y=R.randint(9,h-10)
-        x0=R.randint(14,w//2)
-        x1=R.randint(max(x0+1,w//2),w-14)
-        segments=[]
-        for i in range(11):
-            x=x0+(x1-x0)*i/10
-            segments.append((x,y+math.sin(x*.032+k)*2.4+math.sin(x*.008)*4))
-        d.line(segments,fill=(244,196,114,14),width=1)
+    # Avoid long bright hairline scratches which look artificial at 720px.
+    # Fine grain is already included in the sampled walnut signal above.
     return im
 
 def border_design(d,w,h,radius):
@@ -50,7 +42,9 @@ def border_design(d,w,h,radius):
                         outline=(187,129,67,235),width=3)
     d.rounded_rectangle((29,24,w-29,h-36),radius=radius-7,
                         outline=(241,189,100,130),width=2)
-    d.arc((27,20,w-30,h//2+4),184,353,fill=(255,222,142,74),width=2)
+    # Short corners only; a full-width gold arc reads as a scratch in-game.
+    d.arc((32,24,150,112),188,291,fill=(255,222,142,67),width=2)
+    d.arc((w-150,24,w-32,112),250,353,fill=(255,222,142,67),width=2)
     d.arc((30,h//2,w-26,h-30),17,175,fill=(24,12,7,120),width=3)
     for x in (47,w-48):
         for y in (44,h-58):
@@ -147,9 +141,12 @@ def button(name,w,h,fill,rim,kind):
     d.rounded_rectangle((27,18,w-28,h-37),radius=23,
                         outline=(244,207,130,95),width=2)
     # Bevelled inset and tiny scrollwork only around corners.
-    d.arc((29,21,w-29,h//2+3),190,350,
-          fill=(255,227,161,130 if kind=="oak" else 70),width=3)
-    d.arc((29,h//2,w-30,h-36),10,173,fill=(18,11,7,185),width=4)
+    d.arc((28,17,145,103),200,300,
+          fill=(255,227,161,115 if kind=="oak" else 58),width=3)
+    d.arc((w-145,17,w-28,103),240,340,
+          fill=(255,227,161,115 if kind=="oak" else 58),width=3)
+    d.arc((28,h-89,142,h-32),35,165,fill=(18,11,7,125),width=3)
+    d.arc((w-142,h-89,w-28,h-32),15,145,fill=(18,11,7,125),width=3)
     if kind=="oak":
         d.line((46,h-44,w-46,h-44),fill=(243,170,65,85),width=2)
         for x,dir in ((40,1),(w-40,-1)):
