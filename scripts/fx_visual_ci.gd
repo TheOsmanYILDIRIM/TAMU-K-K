@@ -89,7 +89,7 @@ func _render() -> void:
     for y in range(screenshot.get_height()):
         for x in range(screenshot.get_width()):
             var pixel: Color = screenshot.get_pixel(x,y)
-            if pixel.r > 0.60 and pixel.g > 0.35 and pixel.b < 0.35 and pixel.r > pixel.g*1.18:
+            if pixel.r > 0.55 and pixel.g > 0.30 and pixel.b < 0.44 and pixel.r > pixel.g*0.75:
                 gold += 1
     if gold < 90 or gold > 7500:
         push_error("TAMU_HARVEST_SELECTION_PIXEL_GATE_FAILED count=" + str(gold))
