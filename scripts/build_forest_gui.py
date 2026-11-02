@@ -252,8 +252,51 @@ def title(name,text):
            fill=(248,221,168,255))
     canvas.save(ROOT/(name+".png"),optimize=True)
 
+def joystick_art():
+    # Leather navigation ring with antique-brass cardinal accents.
+    n=320
+    img=Image.new("RGBA",(n,n))
+    shade=Image.new("RGBA",(n,n))
+    d=ImageDraw.Draw(shade)
+    d.ellipse((22,23,n-20,n-19),fill=(0,0,0,183))
+    img.alpha_composite(shade.filter(ImageFilter.GaussianBlur(12)))
+    d=ImageDraw.Draw(img,"RGBA")
+    d.ellipse((18,17,n-18,n-19),fill=(32,25,19,235),
+              outline=(176,133,77,232),width=7)
+    for offset,color,width in ((28,(87,65,38,224),8),
+                               (37,(222,177,103,156),3),
+                               (47,(14,11,9,180),9)):
+        d.ellipse((offset,offset,n-offset,n-offset),
+                  outline=color,width=width)
+    for i in range(360):
+        rad=math.radians(i)
+        if i%16==0:
+            radius=n*.5-29
+            x=n*.5+radius*math.cos(rad)
+            y=n*.5+radius*math.sin(rad)
+            d.ellipse((x-2,y-2,x+2,y+2),fill=(218,169,86,166))
+    for angle in (0,90,180,270):
+        a=math.radians(angle)
+        x=n*.5+(n*.5-21)*math.cos(a)
+        y=n*.5+(n*.5-21)*math.sin(a)
+        points=[(x,y-12),(x+11,y),(x,y+12),(x-11,y)]
+        d.polygon(points,fill=(212,172,94,255),outline=(79,43,22,255))
+    img.save(ROOT/"joystick_base.png",optimize=True)
+    knob=Image.new("RGBA",(146,146))
+    d=ImageDraw.Draw(knob,"RGBA")
+    d.ellipse((7,7,139,139),fill=(55,39,26,242),
+              outline=(208,171,101,225),width=8)
+    d.ellipse((18,17,128,127),fill=(179,148,96,255),
+              outline=(230,194,128,215),width=4)
+    for r in (28,39,51):
+        d.arc((73-r,73-r,73+r,73+r),35,260,
+              fill=(119,92,53,100),width=2)
+    d.arc((20,20,125,125),188,330,fill=(251,219,160,170),width=4)
+    knob.save(ROOT/"joystick_knob.png",optimize=True)
+
 def main():
     carved_panel()
+    joystick_art()
     button("button_green.png",430,146,(43,65,36),(193,159,87,240),"green")
     button("button_oak.png",550,156,(153,86,35),(252,193,104,245),"oak")
     button("button_small.png",300,125,(72,60,38),(176,148,91,220),"small")
@@ -264,7 +307,8 @@ def main():
     bokeh()
     required=("panel.png","button_green.png","button_oak.png","button_small.png",
               "log.png","leaf.png","basket.png","hammer.png","pick.png","pin.png",
-              "glow.png","bokeh.png","heading_tree.png","heading_rock.png")
+              "glow.png","bokeh.png","heading_tree.png","heading_rock.png",
+              "joystick_base.png","joystick_knob.png")
     for path in required:
         assert (ROOT/path).stat().st_size>400, path
     print("TAMU_FOREST_GUI_ASSETS_OK count=",len(required),"style=carved_walnut_v2")
