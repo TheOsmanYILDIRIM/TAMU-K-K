@@ -80,7 +80,7 @@ static func build_region(atlas: Texture2D, manifest_path: String, mixed_material
         instance.mesh = mesh
         instance.texture = atlas
         instance.z_index = z
-        if z == 0 and mixed_material != null:
+        if z == 1 and mixed_material != null:
             instance.material = mixed_material
         group.add_child(instance)
         total_mesh_usec += Time.get_ticks_usec() - mesh_started

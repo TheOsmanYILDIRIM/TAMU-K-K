@@ -799,7 +799,7 @@ func _load_chunk(stem: String) -> void:
         instance.mesh = mesh
         instance.texture = terrain_atlas
         instance.z_index = 0 if str(surf["key"]).begins_with("!") else 1
-        if instance.z_index == 0 and terrain_mix_material != null:
+        if instance.z_index == 1 and terrain_mix_material != null:
             instance.material = terrain_mix_material
         group.add_child(instance)
         vertices += count
@@ -940,7 +940,6 @@ func _load_objects() -> void:
         sprite.scale = Vector2.ONE * scale_value
         if env_visual_stage >= 2:
             sprite.flip_h = posmod(h, 2) == 0
-            sprite.modulate = VisualEnvironment.tint(h)
         # Local ground anchor follows the atlas region height, never a fixed 60 px.
         sprite.offset = Vector2(0.0, area.size.y * (0.5 - LOVE_OBJECT_PIVOT))
         object_layer.add_child(sprite)

@@ -405,7 +405,7 @@ jobs:
           for stage in stages:
               im=Image.open('screenshots/stage-'+stage+'.png').convert('RGB')
               log=pathlib.Path('screenshots/stage-'+stage+'.log').read_text()
-              m=re.search(r'TAMU_ENV_STAGE_METRICS stage=(\d+) drawcalls=([\d.]+) fps=(\d+) detail_quads=(\d+) source_vertices=(\d+)',log)
+              m=re.search(r'TAMU_ENV_STAGE_METRICS stage=(\d+) drawcalls=([\d.]+) fps=([\d.]+) detail_quads=(\d+) source_vertices=(\d+)',log)
               assert m,(stage,'metrics missing')
               level,calls,fps,quads,verts=map(float,m.groups())
               assert level==len(data) and verts==220254 and calls>0 and fps>0,(stage,m.groups())
