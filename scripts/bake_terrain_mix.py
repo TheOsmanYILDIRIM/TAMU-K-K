@@ -9,7 +9,7 @@ import hashlib
 import json
 import math
 from pathlib import Path
-from PIL import Image, ImageChops
+from PIL import Image, ImageChops, ImageStat
 
 CELL = 132
 GUTTER = 2
@@ -30,28 +30,41 @@ def smooth(x):
 
 
 def mask_template():
-    # Toroidal 8x8 value-noise field. Equal opposite edges are guaranteed;
-    # details do not create disjoint circular or straight transition islands.
-    grid = [[((x * 157 + y * 341 + 17) * (x * 59 + y * 113 + 11) % 65521) / 65521.0
-             for x in range(8)] for y in range(8)]
-    image = Image.new("L", (SIZE, SIZE))
-    pixels = image.load()
+    # Multi-octave periodic noise with continuous domain warp. The 128px mask
+    # is a build-time asset: no additional Godot shader or mesh.
+    grids = []
+    for size, salt in ((4,9281),(8,17041),(16,27077)):
+        grids.append([[((x*157+y*341+salt)*(x*59+y*113+11)%65521)/65521.0
+                       for x in range(size)] for y in range(size)])
+    def noise(grid,x,y):
+        n=len(grid)
+        fx,fy=x*n/SIZE,y*n/SIZE
+        ix,iy=math.floor(fx),math.floor(fy)
+        tx,ty=smooth(fx-ix),smooth(fy-iy)
+        a,b=grid[iy%n][ix%n],grid[iy%n][(ix+1)%n]
+        c,d=grid[(iy+1)%n][ix%n],grid[(iy+1)%n][(ix+1)%n]
+        return ((a*(1-tx)+b*tx)*(1-ty)+(c*(1-tx)+d*tx)*ty)
+    img=Image.new("L",(SIZE,SIZE))
+    pixels=img.load()
     for y in range(SIZE):
-        fy = y / 16.0
-        iy = int(fy)
-        ty = smooth(fy - iy)
         for x in range(SIZE):
-            fx = x / 16.0
-            ix = int(fx)
-            tx = smooth(fx - ix)
-            a = grid[iy % 8][ix % 8]
-            b = grid[iy % 8][(ix + 1) % 8]
-            c = grid[(iy + 1) % 8][ix % 8]
-            d = grid[(iy + 1) % 8][(ix + 1) % 8]
-            n = (a * (1 - tx) + b * tx) * (1 - ty) + (
-                c * (1 - tx) + d * tx) * ty
-            pixels[x, y] = round(255 * smooth(max(0, min(1, (n - .23) / .55))))
-    return image
+            wx=x+5.5*math.sin(2*math.pi*y/SIZE)
+            wy=y+4.5*math.sin(2*math.pi*x/SIZE)
+            value=(.53*noise(grids[0],wx,wy)+
+                   .31*noise(grids[1],wx,wy)+
+                   .16*noise(grids[2],wx,wy))
+            pixels[x,y]=round(255*smooth(max(0,min(1,(value-.25)/.50))))
+    return img
+
+def harmonize(tile, family_means, goal, family):
+    # Match muted family chroma/lightness using only existing source colors.
+    # <=12% adjustment avoids replacing original texture identity.
+    multipliers=[max(.88,min(1.12,(goal[k]/max(20,family_means[family][k]))**.32))
+                 for k in range(3)]
+    rgba=tile.split()
+    bands=[rgba[k].point(lambda v,f=multipliers[k]:min(255,round(v*f)))
+           for k in range(3)]
+    return Image.merge("RGBA",(bands[0],bands[1],bands[2],rgba[3]))
 
 
 def bake(source, manifest, output):
@@ -66,6 +79,19 @@ def bake(source, manifest, output):
     for entry in entries:
         families.setdefault(entry["family"], []).append(entry)
     target = src.copy()
+    # Family averages are measured from pinned atlas cells, not new artwork.
+    family_means = {}
+    for family in PARTNERS:
+        averages = []
+        for item in families[family]:
+            x,y=slot(item)
+            rect=(x*CELL+GUTTER,y*CELL+GUTTER,
+                  x*CELL+GUTTER+SIZE,y*CELL+GUTTER+SIZE)
+            averages.append(ImageStat.Stat(src.crop(rect).convert("RGB").resize((16,16))).mean)
+        family_means[family]=[
+            sum(a[k] for a in averages)/len(averages) for k in range(3)]
+    goal=[sum(family_means[name][k] for name in PARTNERS)/len(PARTNERS)
+          for k in range(3)]
     noise = mask_template()
     count = 0
     for entry in entries:
@@ -86,7 +112,7 @@ def bake(source, manifest, output):
                                     (y * 29 + x * 7) % SIZE)
         strength = MIX[family]
         alpha = shifted.point(lambda q: min(255, round(q * strength)))
-        combined = Image.composite(second, first, alpha)
+        combined = harmonize(Image.composite(second, first, alpha),family_means,goal,family)
         px, py = base_rect[:2]
         target.paste(combined, (px, py))
         # Preserve the atlas's 2-pixel wrapping gutters after the mix.
