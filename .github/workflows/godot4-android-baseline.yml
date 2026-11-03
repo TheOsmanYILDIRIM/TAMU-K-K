@@ -456,6 +456,9 @@ jobs:
           test -s data/catalog/compiled_catalog.res
           timeout --kill-after=3s 60s godot --headless --path . --script res://scripts/mob_contract_ci.gd 2>&1 | tee screenshots/mob-contract.log
           grep -q TAMU_MOB_CONTRACT_OK screenshots/mob-contract.log
+          timeout --kill-after=3s 60s godot --headless --path . --script res://scripts/profile_rig_ci.gd 2>&1 | tee screenshots/profile-rig-contract.log
+          grep -q TAMU_PROFILE_NUMERIC_SKIN_OK screenshots/profile-rig-contract.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_PROFILE_.*FAILED' screenshots/profile-rig-contract.log; then exit 1; fi
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_MOB_.*FAILED' screenshots/mob-contract.log; then exit 1; fi
           mkdir -p /tmp/tamu-save-reopen-home
           for phase in write reopen recovery mod_reject; do
@@ -505,6 +508,11 @@ jobs:
           grep -q TAMU_VISUAL_CAPTURE_OK screenshots/mobs-live.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_MOB_.*FAILED|TAMU_MOB_HOST_UNAVAILABLE|TAMU_MOB_NO_VALID_SPAWN' screenshots/mobs-live.log; then exit 1; fi
           cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" screenshots/mobs-live.png
+          TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged TAMU_VISUAL_CASE=profile timeout --kill-after=3s 90s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 2>&1 | tee screenshots/profile-live.log
+          grep -q TAMU_PROFILE_GAMEPLAY_RIG_ACTIVE screenshots/profile-live.log
+          grep -q TAMU_VISUAL_CAPTURE_OK screenshots/profile-live.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_PROFILE_.*FAILED' screenshots/profile-live.log; then exit 1; fi
+          cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" screenshots/profile-live.png
           # Each cumulative visual stage gets a real Godot GL screenshot and
           # runtime drawcall/FPS telemetry on the same CI runner and camera.
           # This is a desktop Xvfb comparison, not an Android FPS claim.
@@ -677,6 +685,8 @@ jobs:
           assert any('scripts/modular_hud.gd' in path for path in names), 'PCK_MODULAR_HUD_SCRIPT_MISSING'
           assert any('assets/ui/minimap/terrain.png' in path for path in names), 'PCK_STATIC_MINIMAP_MISSING'
           assert any('scripts/minimap_static.gdshader' in path for path in names), 'PCK_MINIMAP_SHADER_MISSING'
+          for required_profile in ['scripts/profile_rig.gdc','assets/profile_character/motion.json','assets/profile_character/01_bas.png','assets/profile_character/06_govde.png']:
+              assert any(required_profile in path for path in names), f'PCK_PROFILE_RIG_MISSING {required_profile}'
           assert any('assets/ui/hud/layout.json' in path for path in names), 'PCK_MODULAR_HUD_LAYOUT_MISSING'
           for name in ('portrait','joystick','hotbar','interact','attack'):
               assert any(f'assets/ui/hud/parts/{name}.png' in path for path in names), f'PCK_HUD_TEXTURE_MISSING {name}'
