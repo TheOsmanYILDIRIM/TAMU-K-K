@@ -154,7 +154,22 @@ Arşivdeki \`sim.py\` ve \`README.md\` birlikte açılır. Python kuruluyken \`p
 
 ### İki somut referans üzerinde yapılan seçim
 
-Bu sohbette kullanıcı **Fısıltı Tavşanı** ve **Kabuk Sırtı** görsellerini üretti/paylaştı ve mevcut hâllerini yeterli buldu. Bu görsellerin kabulü, **tasarım referansı kabulüdür**; otomatik olarak Godot'a yüklenmiş asset, riglenmiş mob veya uygulanan AI anlamına gelmez. Yerel kullanıcı görsellerinin depoya yüklenmesi/lisans ve kaynak SHA doğrulaması ayrıca yapılmalıdır.
+Bu sohbette kullanıcı **Fısıltı Tavşanı** ve **Kabuk Sırtı** görsellerini üretti/paylaştı ve mevcut hâllerini yeterli buldu. Bu görsellerin kabulü, **tasarım referansı kabulüdür**; otomatik olarak Godot'a yüklenmiş asset, riglenmiş mob veya uygulanan AI anlamına gelmez. Bu iki türün **konsept PNG dosyaları artık** `docs/bestiary/images/` altında mevcuttur; kullanıcı görsel hâllerini yeterli bulmuştur. Yüklenmiş GitHub dosyasının varlığı doğrulandı, fakat kaynak arşiviyle bağımsız PNG SHA-256 eşitliği ve varlık lisansı/provenansı ayrıca doğrulanmalıdır.
+
+### Uygulanmış örnek kataloğu (3 Kasım 2026)
+
+Yüklenen örnekler için [Canlılar Atlası](../bestiary/README.md) ve [tarayıcı kataloğu](../bestiary/index.html) kullanılmalı. Öğretici **burada tek kaynak**, atlas ise türlere özgü anatomi ve kaynak görsel referansıdır.
+
+| Referans | Görsel durumu | Onay / sonraki işlem |
+| --- | --- | --- |
+| [Fısıltı Tavşanı](../bestiary/fisilti-tavsani.md) | Konsept + ayrı yan profil PNG | Bu sohbette konsept görünümü yeterli bulundu; rig/animasyon henüz doğrulanmadı |
+| [Kabuk Sırtı](../bestiary/kabuk-sirti.md) | Konsept PNG | Bu sohbette görünüm yeterli bulundu; motor varlığı değil |
+| [Kırıkdiş](../bestiary/kirikdis.md) | Konsept PNG | Yüklü örnek; ayrıca kullanıcı görsel onayı doğrulanmadı |
+| [Saz Sırtı](../bestiary/saz-sirti.md) | Konsept PNG | Yüklü örnek; ayrıca kullanıcı görsel onayı doğrulanmadı |
+| [Közboğaz](../bestiary/kozbogaz.md) | Konsept PNG | Yüklü örnek; ayrıca kullanıcı görsel onayı doğrulanmadı |
+| [Taşkabuk](../bestiary/taskabuk.md), [Yosun Gezginciği](../bestiary/yosun-gezgincigi.md), [İz Avcısı](../bestiary/iz-avcisi.md), [Diken Omuz](../bestiary/diken-omuz.md), [Dere Pusucusu](../bestiary/dere-pusucusu.md) | Depoda henüz konsept PNG eşleşmesi yok | Tür fişi / prompt mevcut; görseller tamamlanmayı bekliyor |
+
+**Kaynak bütünlüğü:** `docs/bestiary/manifest.json` içindeki `source_files_sha256` alanı yüklemede *bildirilen* SHA-256 değerlerini tutar. GitHub'daki blob SHA'sı farklı bir Git tanımlayıcısıdır; **kaynak PNG SHA-256 doğrulamasının yerine geçmez**. Bu turda bütün ikili dosyalar bağımsız indirilip hash'lenemedi. Kullanıcıdan gelen orijinal görsel, sonradan hazırlanan yan profil ve oyun içi asset birbirinin yerine geçmez.
 
 ## 6. GPT Image ile kopya değil, özgün tür tasarla
 
