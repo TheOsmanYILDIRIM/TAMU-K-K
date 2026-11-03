@@ -113,10 +113,14 @@ func advance(delta: float) -> void:
         return
     elapsed += minf(delta, 0.1)
     render_accumulator += delta
-    var skin_hz := MOBILE_SKIN_HZ if OS.has_feature("mobile") else SKIN_HZ
-    if render_accumulator < 1.0 / skin_hz:
+    # CPU skinning rebuilds six ArrayMesh surfaces per pose. On phones,
+    # lower the idle pose rate only; preserve full walking responsiveness.
+    # This does not alter movement, bones, source art, or clip timing.
+    var skin_hz := (8.0 if current_clip == "idle" else MOBILE_SKIN_HZ) if OS.has_feature("mobile") else SKIN_HZ
+    var interval := 1.0 / skin_hz
+    if render_accumulator < interval:
         return
-    render_accumulator = fmod(render_accumulator, 1.0 / skin_hz)
+    render_accumulator = fmod(render_accumulator, interval)
     _render_pose(_sample(elapsed))
 
 func _frame(clip: Dictionary, index: int) -> Dictionary:
