@@ -7,7 +7,7 @@ signal mob_event(instance_id: String, event: String)
 const Brain = preload("res://scripts/mob_brain.gd")
 const Navigation = preload("res://scripts/mob_navigation.gd")
 const Visual = preload("res://scripts/mob_visual.gd")
-const Projection = preload("res://scripts/world_projection.gd")
+const WorldProjection = preload("res://scripts/world_projection.gd")
 const Collision = preload("res://scripts/r2_collision.gd")
 const SPECIES = preload("res://data/catalog/mob_yaprakkulak.tres")
 const FIXED_STEP := 0.2
@@ -136,7 +136,7 @@ func spawn(definition: Resource, at: Vector2, seed_offset: int = 0) -> bool:
 func _place_visual(a: Dictionary) -> void:
     var p: Vector2 = a["position"]
     var height: float = float(host.get("authority").terrain.height_at(p.x, p.y))
-    a["visual"].position = Projection.to_screen(p) - Vector2(0.0, height * 0.35)
+    a["visual"].position = WorldProjection.to_screen(p) - Vector2(0.0, height * 0.35)
 
 func _key(p: Vector2, size: float) -> Vector2i:
     return Vector2i(floori(p.x / size), floori(p.y / size))
@@ -458,10 +458,10 @@ func _move_agent(a: Dictionary, dt: float) -> void:
         a["position"] = to
         a["velocity"] = (to - from) / maxf(dt, 0.001)
         a["heading"] = (to - from).normalized()
-        a["visual"].face(Projection.to_screen(to - from))
+        a["visual"].face(WorldProjection.to_screen(to - from))
     _place_visual(a)
     # Match walk/run cycle speed to projected travel instead of sliding on the spot.
-    var screen_speed: float = Projection.to_screen(a["velocity"]).length()
+    var screen_speed: float = WorldProjection.to_screen(a["velocity"]).length()
     var reference_speed := 9.0 if a["intent"]["clip"] in ["walk", "limp"] else (26.0 if a["intent"]["clip"] == "trot" else 57.4)
     a["visual"].player.speed_scale = clampf(screen_speed / reference_speed, 0.25, 1.8)
     a["visual"].advance(dt)

@@ -15,7 +15,7 @@ Bir atlas yoksa önce segmentasyon yapılır. Kaynak tam görseli doğrudan "par
 
 1. Kaynak görselin açısını ve rig hedefini sabitle: oyun kamerası ile uyumlu profil/3-4 görünüm, nötr ve eklemleri okunur poz.
 2. Anatomik parçaları önceden listele. İnsan için baş, saç/sakal, gövde, üst-alt kol, el, üst-alt bacak, ayak ve kıyafet katmanları; dört ayaklı yaratık için gövde, baş, kulaklar, kuyruk ve yakın/uzak ön-arka bacaklar başlangıç şemasıdır. Modelin anatomisine göre listeyi değiştir; gereksiz uzuv üretme.
-3. MobileSAM ViT-T CPU gibi erişilebilir segmentasyon modeliyle maske adayları çıkar. SAM maskesi nihai anatomi değildir: yakın/uzak uzuv karışması, arka plan sızıntısı ve gövdeyle birleşen köklerde elle kontrol gerekir.
+3. Anatomik parçaları elle ayır; kenarları ve yakın/uzak uzuv ilişkilerini referans üzerinde tek tek kontrol et. Otomatik MobileSAM maskeleri bu üretim hattının parçası değildir.
 4. Her parça için RGBA PNG ve ayrı maske üret; kaynak çözünürlüğü ve koordinatları manifestte sakla.
 5. Parçaları kırpıp kaydederken orijinal atlas üzerindeki sol-üst koordinat ofsetini koru. Rig editöründe parçaları aynı noktaya geri yerleştirmek için `offset`, kaynak canvas ölçüsü ve pivot/eklem konumları kaydedilmelidir.
 

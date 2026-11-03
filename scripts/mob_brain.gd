@@ -233,6 +233,7 @@ func tick(delta: float, senses: Dictionary) -> Dictionary:
                 change("idle")
             elif state_time >= 1.2:
                 change("drink")
+                return _output("drink")
             else:
                 return _output("drink_enter")
         "drink":
