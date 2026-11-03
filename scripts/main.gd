@@ -108,6 +108,9 @@ var avatar_motion := 0.0
 var actor_facing_back := false
 var rig_directions: Dictionary = {}
 var rig_animations: Dictionary = {}
+# Profile art has only left/right sides. Store that choice independently of
+# legacy Rigby's four authored clip directions.
+var profile_facing_sign := 1.0
 var actor_direction := "SE"
 var actor_action := "idle"
 var active_source_clip := ""
@@ -737,7 +740,7 @@ func _set_actor_clip(direction: String, action: String) -> void:
     if profile_rig != null:
         profile_rig.set_clip(action)
     _set_actor_facing(direction == "NW" or direction == "NE")
-    avatar.scale.x = (-1.0 if direction == "SW" or direction == "NE" else 1.0) * avatar_visual_scale
+    avatar.scale.x = (profile_facing_sign if profile_rig != null else (-1.0 if direction == "SW" or direction == "NE" else 1.0)) * avatar_visual_scale
 
 func _set_actor_facing(back: bool) -> void:
     if actor_facing_back == back and avatar_parts["head"].texture != null:
@@ -783,7 +786,16 @@ func _update_avatar() -> void:
         if is_finite(ground_height):
             actor_ground_screen_offset = ground_height * R2_HEIGHT_SCREEN_SCALE
             actor_ground_sample_at = actor_world
-    avatar.position = WorldProjection.to_screen(actor_world) - Vector2(0.0, actor_ground_screen_offset)
+    var ground_anchor := WorldProjection.to_screen(actor_world)
+    if profile_rig != null:
+        # Y-sort the shared avatar/objects layer using the actor's physical
+        # ground foot anchor; only the art is lifted for terrain height.
+        # Never distort or rotate the side-view PNG to fake a rear view.
+        avatar.position = ground_anchor
+        profile_rig.position.y = (-689.0 * ProfileRig.SOURCE_SCALE - actor_ground_screen_offset) / avatar_visual_scale
+    else:
+        # Historical four-direction visual parity fixture remains unchanged.
+        avatar.position = ground_anchor - Vector2(0.0, actor_ground_screen_offset)
     avatar_parts["leg_L"].position = Vector2(-7, -10)
     avatar_parts["leg_R"].position = Vector2(7, -10)
     avatar_parts["torso"].position = Vector2(0, -33)
@@ -1167,8 +1179,15 @@ func _verify_visual_order() -> bool:
     var expected_zoom := 0.82 if OS.get_environment("TAMU_VISUAL_CASE") == "zoom" else (2.0 if OS.get_environment("TAMU_VISUAL_CASE") == "grounding" else LOVE_CAMERA_ZOOM)
     if not is_equal_approx($Camera2D.zoom.x, expected_zoom):
         return false
-    if authority != null and absf(avatar.position.y - (WorldProjection.to_screen(actor_world).y - actor_ground_screen_offset)) > 0.01:
-        return false
+    if authority != null:
+        var projected_foot := WorldProjection.to_screen(actor_world)
+        if profile_rig != null:
+            if avatar.position.distance_to(projected_foot) > 0.01:
+                return false
+            if absf(profile_rig.position.y * avatar_visual_scale + 689.0 * ProfileRig.SOURCE_SCALE + actor_ground_screen_offset) > 0.01:
+                return false
+        elif absf(avatar.position.y - (projected_foot.y - actor_ground_screen_offset)) > 0.01:
+            return false
     for item in harvestables:
         var sprite: Sprite2D = item["sprite"]
         if sprite.get_parent() != object_layer or sprite.z_index != 0:
@@ -1353,6 +1372,11 @@ func _process(delta: float) -> void:
         var next_direction := "NW" if direction.y < 0.0 else "SE"
         if direction.x < -0.05:
             next_direction = "NE" if direction.y < 0.0 else "SW"
+        if profile_rig != null:
+            # The real Cartesian movement is projected through the existing
+            # 45-degree iso transform; diagonal and depth-only movement need
+            # no new front/back art. A blocked player keeps their last side.
+            profile_facing_sign = WorldProjection.profile_facing_sign(actor_world - position_before, profile_facing_sign)
         _set_actor_clip(next_direction, "walk")
         avatar_motion += delta * 10.0
         avatar_parts["leg_L"].rotation = sin(avatar_motion)*0.16
