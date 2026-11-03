@@ -1,3 +1,10 @@
+### 2026-11-03 — Gölge sistemi araştırması / sohbet kapatma
+- Kullanıcının bildirdiği sorun: alfa-siluet gölgesi bazı açılarda iyi olsa da güneşe göre dönme ve kısalma/uzama izometrik 2D görsel tutarlılığını bozuyor.
+- Araştırma notu docs/GOLGE.md dosyasına kaydedildi. Gnomon, PixelLight 2D, 2D Projected Ground Shadow ve Lit seçenekleri; Godot yerleşik DirectionalLight2D/LightOccluder2D; Android renderer/4.6 uyumluluk belirsizlikleri ve test planı içeriyor.
+- **Karar:** Henüz eklenti seçilmedi, ana oyunda yeni gölge geliştirmesi yapılmadı. İlk adım Gnomon paket/lisans/4.6 uyumluluğunu izole test sahnesinde doğrulamak; sonra PixelLight ve sabit yönlü özel projeksiyonla karşılaştırmak.
+- Bu sohbet salt araştırma ve kayıtla kapatıldı. CI, PCK, Android FPS veya görsel prototip testi bu araştırma çalışmasında yapılmadı.
+- Bu kayıttan önce doğrulanan GitHub HEAD: 5f9b4b20f82624cb35feccb02116923c2e7f1b28. Bu kapanış commit'i yalnız araştırma dokümanı ve devir notudur.
+
 ### 2026-11-03 — Yaprakkulak herbivore / mob integration (GitHub main, close snapshot)
 - **Uploaded to main:** commit `ff27a02165d98ef0fb79e8df6fbd21b964bc45d1` (branch HEAD at integration commit). Includes original seven PNG-preserving Rigby archive, native Godot Skeleton2D/Polygon2D/AnimationPlayer rig and 38 clips, 1024px atlas, typed mob definitions/policies, MobBrain/MobWorld/navigation/visual scripts, scene hookup, export allowlist, mob contract CI gate and live mob visual gate.
 - Six candidate herbivores spawn at validated authored-region positions; R2 terrain/obstacles/A* and y-sort integration. Eight reusable behavior policy resources are authored, but only Yaprakkulak has species art/definition. Predator/omnivore/scavenger policies are templates, not complete species.
