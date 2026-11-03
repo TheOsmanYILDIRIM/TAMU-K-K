@@ -61,7 +61,11 @@ func _action(key: String) -> void:
         "interact":
             host.call("_try_harvest")
         "attack":
-            _message("SALDIRI — henüz oynanışa bağlı değil")
+            var mobs := host.get_node_or_null("MobWorld")
+            if mobs != null and mobs.has_method("player_attack"):
+                mobs.call("player_attack")
+            else:
+                _message("MOB SİSTEMİ HAZIR DEĞİL")
         "crouch":
             _message("EĞİLME — henüz oynanışa bağlı değil")
         "sprint":

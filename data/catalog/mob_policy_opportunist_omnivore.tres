@@ -1,0 +1,13 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/mob_policy.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "core:opportunist_omnivore"
+diet = "omnivore"
+temperament = "opportunist"
+social = false
+bravery = 0.45
+carrion_preference = 0.65
+prey_tags = PackedStringArray("prey")

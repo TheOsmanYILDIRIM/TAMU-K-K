@@ -402,6 +402,9 @@ jobs:
           godot --headless --path . --script res://scripts/compile_content.gd | tee screenshots/content-compile.log
           grep -q 'TAMU_CATALOG_BINARY_COMPILE_OK definitions=7 recipes=2' screenshots/content-compile.log
           test -s data/catalog/compiled_catalog.res
+          timeout --kill-after=3s 60s godot --headless --path . --script res://scripts/mob_contract_ci.gd 2>&1 | tee screenshots/mob-contract.log
+          grep -q TAMU_MOB_CONTRACT_OK screenshots/mob-contract.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_MOB_.*FAILED' screenshots/mob-contract.log; then exit 1; fi
           mkdir -p /tmp/tamu-save-reopen-home
           for phase in write reopen recovery mod_reject; do
             XDG_DATA_HOME=/tmp/tamu-save-reopen-home TAMU_SAVE_PHASE="$phase" godot --headless --path . --script res://scripts/stage6_contract_ci.gd | tee "screenshots/save-$phase.log"
@@ -444,6 +447,11 @@ jobs:
               cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" "screenshots/$case-$mode.png"
             done
           done
+          TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged TAMU_VISUAL_CASE=mobs timeout --kill-after=3s 90s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 2>&1 | tee screenshots/mobs-live.log
+          grep -Eq 'TAMU_MOB_READY species=core:yaprakkulak count=[1-9]' screenshots/mobs-live.log
+          grep -q TAMU_VISUAL_CAPTURE_OK screenshots/mobs-live.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_MOB_.*FAILED|TAMU_MOB_HOST_UNAVAILABLE|TAMU_MOB_NO_VALID_SPAWN' screenshots/mobs-live.log; then exit 1; fi
+          cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" screenshots/mobs-live.png
           # Each cumulative visual stage gets a real Godot GL screenshot and
           # runtime drawcall/FPS telemetry on the same CI runner and camera.
           # This is a desktop Xvfb comparison, not an Android FPS claim.
