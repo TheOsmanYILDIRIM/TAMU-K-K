@@ -46,7 +46,7 @@ func _initialize() -> void:
         push_error("TAMU_NAV_GOAL_RANGE_FAILED")
         quit(75)
         return
-    var count := nav.expanded
+    var count: int = int(nav.expanded)
     nav.cancel()
     if nav.state != "idle" or not nav.path.is_empty():
         push_error("TAMU_NAV_CANCEL_FAILED")
