@@ -16,7 +16,7 @@ var clips: Dictionary = {}
 var current_clip := "idle"
 var elapsed := 0.0
 var render_accumulator := 0.0
-var ready := false
+var configured := false
 var draw_updates := 0
 
 func setup() -> bool:
@@ -93,7 +93,7 @@ func setup() -> bool:
     # Source 1178px-high character in ~72px Godot world profile; feet at Y~689.
     scale = Vector2.ONE * SOURCE_SCALE
     position = Vector2(0.0, -689.0 * SOURCE_SCALE)
-    ready = true
+    configured = true
     set_clip("idle")
     _render_pose(_sample(0.0))
     print("TAMU_PROFILE_NATIVE_RIG_READY bones=", bones.size(), " parts=", mesh_records.size(),
@@ -108,7 +108,7 @@ func set_clip(action: String) -> void:
         render_accumulator = 0.0
 
 func advance(delta: float) -> void:
-    if not ready or not is_finite(delta) or delta < 0.0:
+    if not configured or not is_finite(delta) or delta < 0.0:
         return
     elapsed += minf(delta, 0.1)
     render_accumulator += delta
@@ -221,7 +221,7 @@ func _render_pose(pose: Dictionary) -> void:
     draw_updates += 1
 
 func verify_contract() -> bool:
-    if not ready or bones.size() != 23 or mesh_records.size() != 6 or clips.size() != 7:
+    if not configured or bones.size() != 23 or mesh_records.size() != 6 or clips.size() != 7:
         return false
     var count := 0
     for clip in clips.values():
