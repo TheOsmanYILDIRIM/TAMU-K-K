@@ -1,3 +1,9 @@
+### 2026-11-03 — TAMU selection resource card refactor (user 124069.png)
+- New component `scripts/selection_card.gd` uses separate alpha PNGs for panel, source title, subtitle, resource row, primary/detail/mark buttons and icons; no gameplay authority. Existing `forest_harvest_gui.gd` keeps blur/focus/bokeh and host selection/harvest logic; old panel skin/buttons hidden only after complete new art is loaded.
+- New package target: `ui/selection/packs/TAMU_Selection_GUI_Parts.zip` uploaded by Termux; CI unpacks only allowlisted PNGs into `ui/selection/parts` before Godot import, so production PCK uses imported textures. Until binary upload, old panel remains as explicit fallback; not visually accepted.
+- Actions: TOPLA => canonical Stage6 harvest, DETAY => resource detail, İŞARETLE => selected mark flag. No new gameplay changes, no new vault task created.
+- CI/Android visual and input validation remain unverified until source package upload and subsequent build.
+
 ### 2026-11-03 — TAMU fixed-camera minimap component
 - `scripts/minimap.gd`: standalone Control; canonical `world_projection.gd` transforms, real `available_chunks` index, player marker fixed north-facing and centered, terrain/world moves underneath, zoom local only. No camera zoom or player facing coupling. Unknown terrain not invented. The circular display is an index-based schematic rather than a painted terrain preview.
 - `scripts/modular_hud.gd`: embeds minimap within unmarked compass-ring artwork; input plus/minus now only adjusts local minimap scale. No new saved state or catalog changes.

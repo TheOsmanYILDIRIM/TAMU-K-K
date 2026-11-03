@@ -344,6 +344,25 @@ jobs:
           sudo apt-get install -y -qq xvfb python3-pil >/dev/null
           python3 scripts/bake_terrain_mix.py | tee screenshots-mix-bake.log
           python3 scripts/build_forest_gui.py | tee screenshots-forest-ui.log
+          if test -f ui/selection/packs/TAMU_Selection_GUI_Parts.zip; then
+            python3 - <<'PYSELECTION'
+          from pathlib import Path
+          from zipfile import ZipFile
+          archive = Path('ui/selection/packs/TAMU_Selection_GUI_Parts.zip')
+          output = Path('ui/selection/parts')
+          names = ["panel","title_tree","subtitle_tree","resource_bar","button_primary","button_detail","button_mark","icon_wood","icon_axe","icon_info","icon_pin"]
+          with ZipFile(archive) as pack:
+              present = set(pack.namelist())
+              assert all(f'{name}.png' in present for name in names), 'TAMU_SELECTION_PARTS_MISSING'
+              output.mkdir(parents=True,exist_ok=True)
+              for name in names:
+                  raw=pack.read(f'{name}.png')
+                  assert raw.startswith(b'\\x89PNG\\r\\n\\x1a\\n'), f'TAMU_SELECTION_BAD_PNG {name}'
+                  (output/f'{name}.png').write_bytes(raw)
+          print('TAMU_SELECTION_GUI_TEXTURES_EXTRACTED',len(names))
+          PYSELECTION
+          fi
+
           # Extract the uploaded source ZIP to importable Godot texture resources.
           # Never trust ZIP paths; only these expected flat RGBA PNG names.
           python3 - <<'PYHUD'

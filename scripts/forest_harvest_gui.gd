@@ -2,6 +2,7 @@ extends CanvasLayer
 # Forest resource card: art textures are baked ONCE by build_forest_gui.py.
 # No gameplay authority, inventory edits, or per-frame texture generation.
 const BLUR_SHADER = preload("res://scripts/forest_focus.gdshader")
+const SELECTION_CARD = preload("res://scripts/selection_card.gd")
 var host: Node2D
 var blur_layer: CanvasLayer
 var blur_rect: ColorRect
@@ -13,6 +14,7 @@ var canopy_halo: Sprite2D
 var focus_outline: Sprite2D
 var root: Control
 var panel: NinePatchRect
+var premium_card: Control
 var connector: Line2D
 var target_ring: Line2D
 var title_label: Label
@@ -172,6 +174,24 @@ func setup(game: Node2D) -> void:
         var button := _make_textured_button(str(x[0]),art_root + "button_green.png",str(x[1]),str(x[2]),callback)
         root.add_child(button)
         main_buttons.append(button)
+    # The new fully modular artwork replaces the old panel only if every
+    # transparent source part is installed. No mixed or doubled buttons.
+    premium_card = SELECTION_CARD.new()
+    premium_card.name = "SelectionCardParts"
+    panel.add_child(premium_card)
+    if premium_card.call("initialize",Callable(host,"_try_harvest"),
+            Callable(self,"_detail"),Callable(self,"_mark")):
+        panel.texture = null
+        for old_child in panel.get_children():
+            if old_child != premium_card:
+                old_child.visible = false
+                if old_child is Control:
+                    old_child.mouse_filter = Control.MOUSE_FILTER_IGNORE
+        print("TAMU_SELECTION_CARD_PARTS_READY")
+    else:
+        premium_card.queue_free()
+        premium_card = null
+        print("TAMU_SELECTION_CARD_OLD_ART_FALLBACK")
     _hide_legacy_buttons()
     set_process(true)
     _layout()
@@ -279,6 +299,8 @@ func open_for(item: Dictionary) -> void:
     var item_id := str(drop.get("def_id",""))
     item_label.text = "Odun" if item_id=="core:wood_log" else ("Taş" if item_id=="core:stone" else item_id)
     quantity_label.text = "× " + str(int(drop.get("count",0)))
+    if premium_card != null:
+        premium_card.call("set_resource",str(item["kind"]),item_label.text,int(drop.get("count",0)))
     var resource_icon: TextureRect = panel.get_node("ResourceIcon")
     resource_icon.texture = load(art_root + ("log.png" if str(item["kind"])=="tree" else "pick.png"))
     status_label.text = ""
@@ -314,6 +336,8 @@ func close() -> void:
 func set_status(message: String) -> void:
     if panel != null and panel.visible and status_label != null:
         status_label.text = "" if message.begins_with("SEÇİLDİ:") else message
+        if premium_card != null:
+            premium_card.call("set_status",status_label.text)
 
 func _detail() -> void:
     if (host.get("selected_harvest") as Dictionary).is_empty():
@@ -328,6 +352,8 @@ func _mark() -> void:
         return
     marked = not marked
     mark_label.text = "İŞARETLİ" if marked else "İŞARETLE"
+    if premium_card != null:
+        premium_card.call("set_marked",marked)
     set_status("KAYNAK İŞARETLENDİ" if marked else "İŞARET KALDIRILDI")
     print("TAMU_HARVEST_MARK id=",(host.get("selected_harvest") as Dictionary)["id"]," active=",marked)
 

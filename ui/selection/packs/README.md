@@ -1,0 +1,1 @@
+# TAMU selection card artwork\n\nUpload exactly `TAMU_Selection_GUI_Parts.zip` here, containing flat transparent PNG files from user's 124069 reference; no nested ZIP. On CI these files are extracted to `ui/selection/parts/` and imported into PCK. Original `assets/gui` assets remain as fallback.\n
