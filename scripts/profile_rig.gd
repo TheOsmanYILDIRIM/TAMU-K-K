@@ -8,6 +8,7 @@ const CLIP_ALIAS := {
 }
 const SOURCE_SCALE := 0.061
 const SKIN_HZ := 30.0
+const MOBILE_SKIN_HZ := 15.0
 var source: Dictionary = {}
 var bones: Array = []
 var bone_parents: Array[int] = []
@@ -112,9 +113,10 @@ func advance(delta: float) -> void:
         return
     elapsed += minf(delta, 0.1)
     render_accumulator += delta
-    if render_accumulator < 1.0 / SKIN_HZ:
+    var skin_hz := MOBILE_SKIN_HZ if OS.has_feature("mobile") else SKIN_HZ
+    if render_accumulator < 1.0 / skin_hz:
         return
-    render_accumulator = fmod(render_accumulator, 1.0 / SKIN_HZ)
+    render_accumulator = fmod(render_accumulator, 1.0 / skin_hz)
     _render_pose(_sample(elapsed))
 
 func _frame(clip: Dictionary, index: int) -> Dictionary:

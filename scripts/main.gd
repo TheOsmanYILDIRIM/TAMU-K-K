@@ -52,6 +52,7 @@ var chunk_nodes: Dictionary = {}
 var available_chunks: Dictionary = {}
 var chunk_vertices: Dictionary = {}
 var object_visuals_by_chunk: Dictionary = {}
+var object_chunk_visibility: Dictionary = {}
 var harvestables: Array[Dictionary] = []
 var harvested_by_id: Dictionary = {}
 var gameplay: RefCounted
@@ -694,7 +695,10 @@ func _make_avatar() -> void:
             return
         for legacy_part in avatar_parts.values():
             legacy_part.visible = false
+        # Keep old pose source for historical visual tests only.
+        native_rig.visible = false
         print("TAMU_PROFILE_GAMEPLAY_RIG_ACTIVE bones=23 parts=6")
+        print("TAMU_PROFILE_ONLY_VISIBLE_OK legacy_sprites=0")
 
 func _set_actor_clip(direction: String, action: String) -> void:
     if not rig_directions.has(direction):
@@ -709,7 +713,7 @@ func _set_actor_clip(direction: String, action: String) -> void:
     actor_direction = direction
     actor_action = action
     active_source_clip = source_name
-    if native_rig != null:
+    if native_rig != null and profile_rig == null:
         native_rig.play_clip(source_name)
     if profile_rig != null:
         profile_rig.set_clip(action)
@@ -720,6 +724,8 @@ func _set_actor_facing(back: bool) -> void:
     if actor_facing_back == back and avatar_parts["head"].texture != null:
         return
     actor_facing_back = back
+    if profile_rig != null:
+        return  # No legacy texture swaps for code-driven profile animation.
     var prefix := "back" if back else "front"
     for part in avatar_parts:
         avatar_parts[part].texture = load("res://assets/osman_rig/images/%s_%s.png" % [prefix,part])
@@ -785,6 +791,13 @@ func _refresh_streaming_requests() -> void:
     view_required = WorldStream.required_chunks(available_chunks, center, view_size, camera.zoom)
     if merged_mode:
         pending.clear()
+        # The terrain stays one authored region mesh, but its individual
+        # foliage/rock sprites and alpha shadows are culled by visible source cell.
+        for stem in object_visuals_by_chunk:
+            var show: bool = view_required.has(stem)
+            if not object_chunk_visibility.has(stem) or bool(object_chunk_visibility[stem]) != show:
+                _set_chunk_visuals_visible(str(stem), show)
+                object_chunk_visibility[stem] = show
         camera_missing = 0
         last_plan_camera = center
         last_plan_zoom = camera.zoom
@@ -940,7 +953,7 @@ func _ready() -> void:
             set_process(false)
             get_tree().quit()
             return
-    if env_visual_stage >= 3:
+    if env_visual_stage >= 3 and not OS.has_feature("mobile"):
         var decor_manifest: Variant = JSON.parse_string(
             FileAccess.get_file_as_string("res://assets/terrain25d/manifest.json"))
         var decor_hires_active: bool = VisualEnvironment.apply_highres_object_uvs(decor_manifest)
@@ -952,6 +965,10 @@ func _ready() -> void:
             add_child(detail_environment)
         print("TAMU_ENV_DETAIL_OK quads=",detail_count,
             " vertices=",decor.get("vertices",0)," max=",VisualEnvironment.MAX_DETAIL_QUADS)
+    # The object index is constructed after the first camera plan at boot.
+    # Cull off-screen authored visuals before the first gameplay frame.
+    if merged_mode:
+        _refresh_streaming_requests()
     _make_avatar()
     _sync_building_visuals()
     if OS.get_environment("TAMU_VISUAL_CI") == "1":
@@ -1321,7 +1338,9 @@ func _process(delta: float) -> void:
         avatar_parts["leg_R"].rotation = 0.0
     _update_avatar()
     _tick_gameplay(delta)
-    if native_rig != null:
+    # The legacy 40-bone reference must not update alongside the active
+    # 23-bone player in production; preserve it in dedicated CI fixtures.
+    if native_rig != null and (profile_rig == null or OS.get_environment("TAMU_VISUAL_CI") == "1"):
         native_rig.advance(visual_delta)
     if profile_rig != null:
         profile_rig.advance(visual_delta)

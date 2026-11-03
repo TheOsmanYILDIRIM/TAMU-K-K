@@ -510,6 +510,7 @@ jobs:
           cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" screenshots/mobs-live.png
           TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged TAMU_VISUAL_CASE=profile timeout --kill-after=3s 90s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 2>&1 | tee screenshots/profile-live.log
           grep -q TAMU_PROFILE_GAMEPLAY_RIG_ACTIVE screenshots/profile-live.log
+          grep -q TAMU_PROFILE_ONLY_VISIBLE_OK screenshots/profile-live.log
           grep -q TAMU_VISUAL_CAPTURE_OK screenshots/profile-live.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_PROFILE_.*FAILED' screenshots/profile-live.log; then exit 1; fi
           cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" screenshots/profile-live.png
@@ -780,21 +781,23 @@ jobs:
           Path('screenshots/texture-quality-comparison.json').write_text(json.dumps(records,indent=2))
           print('TAMU_TEXTURE_QUALITY_PCK_COMPARE_OK tiers=3')
           PYQUALITY
+      # One independent artifact per quality: users download ONLY their chosen PCK.
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: tamu-texture-tier-pcks
-          path: |
-            build/tamu-android-content-balanced.pck
-            build/tamu-android-content-mobile.pck
-            screenshots/texture-quality-comparison.json
-            screenshots/quality-balanced.png
-            screenshots/quality-mobile.png
-          if-no-files-found: warn
+          name: tamu-godot-mobile-pck
+          path: build/tamu-android-content-mobile.pck
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: tamu-godot-loader-pck
+          name: tamu-godot-balanced-pck
+          path: build/tamu-android-content-balanced.pck
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tamu-godot-full-pck
           path: build/tamu-android-content.pck
           if-no-files-found: warn
       - uses: actions/upload-artifact@v4
