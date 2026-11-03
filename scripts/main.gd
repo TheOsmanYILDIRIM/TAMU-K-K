@@ -1423,7 +1423,10 @@ func _process(delta: float) -> void:
         profile_rig.advance(visual_delta)
     var rig_end := Time.get_ticks_usec()
     if direction.length_squared() > 0.01:
-        $Camera2D.position = $Camera2D.position.lerp(avatar.position, minf(delta * 4.0, 1.0))
+        # Follow the painted ground-contact point on elevated terrain, not the
+        # unprojected Y-sort anchor; this prevents apparent height drift.
+        var camera_target: Vector2 = profile_contact_shadow.position if profile_contact_shadow != null else avatar.position
+        $Camera2D.position = $Camera2D.position.lerp(camera_target, minf(delta * 4.0, 1.0))
     var camera_center: Vector2 = $Camera2D.get_screen_center_position()
     if frame_no % 10 == 0 or camera_center.distance_squared_to(last_plan_camera) > 96.0 * 96.0 or $Camera2D.zoom != last_plan_zoom:
         _refresh_streaming_requests()
