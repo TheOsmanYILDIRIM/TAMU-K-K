@@ -182,7 +182,7 @@ func _auto_harvest_direction(_delta: float) -> Vector2:
             _harvest_feedback("HEDEFE ULAŞILAMADI")
             return Vector2.ZERO
         _harvest_feedback("KAYNAĞA GİDİLİYOR…")
-    while not auto_route.is_empty() and actor_world.distance_squared_to(auto_route[0]) < 36.0:
+    while not auto_route.is_empty() and actor_world.distance_squared_to(auto_route[0]) < 2.25:
         auto_route.pop_front()
     if auto_route.is_empty():
         # The next frame either reaches harvesting range or fails explicitly.
