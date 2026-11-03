@@ -66,7 +66,17 @@ jobs:
           cd /tmp/tamu-pixellight/src
           godot --headless --editor --path . --import --quit 2>&1 | tee /tmp/pixellight-import.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:' /tmp/pixellight-import.log; then exit 1; fi
+          # Execute the genuine addon under the production GL Compatibility renderer.
+          # Snapshot is a desktop CI visual smoke, not an Android FPS result.
+          TAMU_PIXELLIGHT_TEST=1 timeout --kill-after=3s 50s \
+            xvfb-run -a -s '-screen 0 720x540x24' godot --path . \
+            --rendering-method gl_compatibility --resolution 720x540 --quit-after 90 \
+            2>&1 | tee /tmp/pixellight-visual.log
+          grep -q 'TAMU_PIXELLIGHT_VISUAL_OK' /tmp/pixellight-visual.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:' /tmp/pixellight-visual.log; then exit 1; fi
+          test -s /tmp/tamu-pixellight-preview.png
           mkdir -p "$GITHUB_WORKSPACE/build"
+          cp /tmp/tamu-pixellight-preview.png "$GITHUB_WORKSPACE/build/pixellight-preview.png"
           godot --headless --path . --export-pack Android "$GITHUB_WORKSPACE/build/tamu-pixellight-isolated.pck" 2>&1 | tee /tmp/pixellight-export.log
           test -s "$GITHUB_WORKSPACE/build/tamu-pixellight-isolated.pck"
           python3 - <<'PY'
