@@ -1,8 +1,8 @@
 extends CanvasLayer
 # Functional portrait HUD. One art/control surface, never decorative buttons over old ones.
-const ART := "res://ui/hud/parts/"
+const ART := "res://assets/ui/hud/parts/"
 const MINIMAP = preload("res://scripts/minimap.gd")
-const PACK := "res://ui/hud/packs/TAMU_HUD_Correct_Split.zip"
+const PACK := "res://assets/ui/hud/packs/TAMU_HUD_Correct_Split.zip"
 var host: Node
 var root: Control
 var sprites: Dictionary = {}

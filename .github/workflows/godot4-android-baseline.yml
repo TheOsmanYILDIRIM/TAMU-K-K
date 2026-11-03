@@ -368,8 +368,8 @@ jobs:
           python3 - <<'PYHUD'
           import zipfile
           from pathlib import Path
-          source = Path('ui/hud/packs/TAMU_HUD_Correct_Split.zip')
-          target = Path('ui/hud/parts')
+          source = Path('assets/ui/hud/packs/TAMU_HUD_Correct_Split.zip')
+          target = Path('assets/ui/hud/parts')
           expected = ["alert.png","attack.png","bag.png","blank_attack.png","blank_hotbar.png","cloud.png","codex.png","compass_and_zoom.png","crouch.png","dawn.png","day.png","dusk.png","empty_slot.png","forge.png","growth.png","health_water_energy.png","hotbar.png","interact.png","journal.png","joystick.png","joystick_thumb.png","menu.png","night.png","portrait.png","selected_slot.png","sprint.png","zoom_minus_separate.png","zoom_plus.png","zoom_plus_separate.png"]
           with zipfile.ZipFile(source) as archive:
               assert all(s in archive.namelist() for s in expected), 'HUD_PARTS_INCOMPLETE'
@@ -607,9 +607,9 @@ jobs:
           assert any('assets/gui/heading_tree.png' in path for path in names), 'PCK_HARVEST_GUI_HEADING_MISSING'
           assert any('assets/gui/joystick_base.png' in path for path in names), 'PCK_HARVEST_JOYSTICK_MISSING'
           assert any('scripts/modular_hud.gd' in path for path in names), 'PCK_MODULAR_HUD_SCRIPT_MISSING'
-          assert any('ui/hud/layout.json' in path for path in names), 'PCK_MODULAR_HUD_LAYOUT_MISSING'
+          assert any('assets/ui/hud/layout.json' in path for path in names), 'PCK_MODULAR_HUD_LAYOUT_MISSING'
           for name in ('portrait','joystick','hotbar','interact','attack'):
-              assert any(f'ui/hud/parts/{name}.png' in path for path in names), f'PCK_HUD_TEXTURE_MISSING {name}'
+              assert any(f'assets/ui/hud/parts/{name}.png' in path for path in names), f'PCK_HUD_TEXTURE_MISSING {name}'
 
           assert any('scripts/terrain_mix.gdshader' in path for path in names), 'PCK_TERRAIN_MIX_SHADER_MISSING'
           assert any('assets/terrain25d/atlas_00_mix.png' in path for path in names), 'PCK_BAKED_TERRAIN_MIX_MISSING'

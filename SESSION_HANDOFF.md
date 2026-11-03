@@ -1,3 +1,8 @@
+### 2026-11-03 — TAMU asset directory consolidation (staged)
+- Phase 1 commit 67a6a7f: selected 11 transparent resource card PNG blobs moved unchanged from ui/selection/parts to assets/ui/selection/parts; adjusted selection_card.gd, main.gd, export_presets.cfg and Godot workflow; old path removed without touching LÖVE assets. Source SHA preserved for each moved PNG. GitHub HEAD/tree and source paths were read back, new CI at #41618974633 pending when phase 2 was prepared.
+- Phase 2: authored HUD layout.json and HUD ZIP moved (same SHA) to assets/ui/hud, CI extracts 29 PNG textures to assets/ui/hud/parts; modular_hud.gd, export presets and PCK tests adapted. Historical assets/gui/hud/layout.json kept because it is a distinct layout version. Old LÖVE sources, authored map, saves and runtime material generation remain unchanged.
+- Native Godot / Android visual and touch acceptance remain pending CI and physical device checks; moving bytes does not prove gameplay parity. Do not merge or rewrite historical branches.
+
 ### 2026-11-03 — Selection v4 direct PNG integration (Termux)
 - Source: approved v4 transparent resource card, layout reference 124100.png. Godot labels render all text; tree/rock tool and resource icons are resolved by selection_card.gd.
 - Direct GitHub files: scripts/selection_card.gd and 11 ui/selection/parts/*.png; NO selection ZIP is uploaded to the repository. Export preset already includes the 11 PNG paths.
