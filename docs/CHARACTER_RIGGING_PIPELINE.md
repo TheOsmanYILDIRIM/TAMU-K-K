@@ -90,3 +90,15 @@ Projede mevcut klasör/isim sözleşmesi varsa bu örneği kopyalama; mevcut dü
 ## 8. Doğrulama kaydı
 
 Her üretimde kaynak SHA-256, model/sürüm, maske yöntemi, canvas ölçüsü, parça adları, bounding box/pivot/offset, PNG dosya boyutları, ZIP CRC ve görsel inceleme sonucu kaydedilmelidir. Otomatik maske çıktısı "rig-ready" sayılmaz; rig-ready kararı görsel ve eklem örtüşme kontrolünden sonra verilir.
+
+## 9. TAMU ana karakteri — mevcut kanonik varlık
+
+Ana oyuncu karakteri ayrıca yeniden yüklenmemelidir: mevcut dört yönlü rig ana dalda zaten kayıtlıdır.
+
+- Varlık dizini: `game/love/assets/osman_rig/`
+- Kaynak sözleşmesi: `game/love/assets/osman_rig/ASSETS_REQUIRED.md`
+- Kaynak proje: kullanıcı onaylı `osman_saglak_4yon_v5.rigby`
+- Kayıtlı içerik: 30 orijinal PNG parçası, 40 kemik, 24 slot ve 44 seyrek anahtar-kareli klip; SE/SW/NE/NW yön verisi `directions.json` içindedir.
+- Çalışma zamanı: `game/love/player/rigby_visual.lua` ve `game/love/player/rigby_runtime.lua`.
+
+Bu varlık, tek bir yeni konsept PNG'sinden farklı olarak oyunun canlı iskelet sistemiyle kullanılan ana karakter kaydıdır. Yeni ana karakter görseli aktarılacaksa önce bunun bu kanonik rig'in kaynağı mı yoksa alternatif konsept mi olduğu belirlenmeli; mevcut 4 yönlü rig üzerine körlemesine yazılmamalıdır.
