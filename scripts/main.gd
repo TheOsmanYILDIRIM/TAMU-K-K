@@ -128,11 +128,7 @@ func _update_sun(delta: float) -> void:
             silhouette_material.set_shader_parameter("solar_dir", -sun_direction)
             silhouette_material.set_shader_parameter("solar_length", clampf(0.28 + 1.05 * (1.0-light)/(light+0.31), 0.28, 2.65))
             silhouette_material.set_shader_parameter("opacity", 0.36 * light)
-        var cast := 0.42+0.58*light
-        var length := clampf(0.32+1.05*(1.0-light)/(light+0.31),0.32,2.65)
-        for shadow in shadow_sprites:
-            if is_instance_valid(shadow):
-                ShadowVolume.apply_sun(shadow, -sun_direction, length, light)
+        # One authored alpha silhouette shadow per solid. No second polygon cast.
 
 func _next_gameplay_command(prefix: String) -> String:
     gameplay_sequence += 1
@@ -1204,25 +1200,8 @@ func _load_objects() -> void:
         item_record["alpha_key"]=str(a["id"])
         item_record["family"]=family
         harvested_by_id[id] = item_record
-        # Native Godot shadow geometry: atlas's tiny low-res alpha should not
-        # make ground shadows invisible. Respect the original object footprint.
+        # Single alpha silhouette cast, one shared solar material.
         if kind == "tree" or kind == "rock":
-            var shadow := Polygon2D.new()
-            shadow.name = "GroundShadow"
-            # Derive original atlas alpha contour once per sprite variant.
-            var alpha_key := str(a["id"])
-            if not shadow_alpha_cache.has(alpha_key):
-                shadow_alpha_cache[alpha_key] = ShadowVolume.alpha_spans(tex)
-            if not ShadowVolume.configure(shadow, kind,
-                    Vector2(area.size.x, area.size.y) * scale_value,
-                    shadow_alpha_cache[alpha_key]):
-                push_error("TAMU_SHADOW_VOLUME_INVALID " + id)
-                get_tree().quit(27)
-                return
-            shadow.visible = merged_mode
-            shadow.position = sprite.position
-            shadow_layer.add_child(shadow)
-            shadow_sprites.append(shadow)
             # Exact object atlas alpha silhouette projected in the sun direction.
             var silhouette := Sprite2D.new()
             silhouette.name = "AuthoredSilhouetteShadow"
@@ -1238,8 +1217,7 @@ func _load_objects() -> void:
             silhouette_shadows.append(silhouette)
             object_visuals_by_chunk[visual_key].append(silhouette)
             item_record["silhouette"] = silhouette
-            item_record["shadow"] = shadow
-            object_visuals_by_chunk[visual_key].append(shadow)
+            item_record["shadow"] = null
         object_count += 1
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and OS.get_environment("TAMU_VISUAL_CASE") == "gui":
         for candidate in harvestables:
@@ -1373,16 +1351,16 @@ func _process(delta: float) -> void:
         print("TAMU_REGION_RELOAD_OK id_replaced=true region_count=", region_chunks.size(),
             " vertices=", vertices)
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and frame_no >= 90 and camera_missing == 0:
-        if harvest_button == null or shadow_sprites.is_empty() or (day_clock <= 10.5 and OS.get_environment("TAMU_VISUAL_CASE") != "dawn") or harvest_button.get_global_rect().size.x < 100:
+        if harvest_button == null or silhouette_shadows.is_empty() or (day_clock <= 10.5 and OS.get_environment("TAMU_VISUAL_CASE") != "dawn") or harvest_button.get_global_rect().size.x < 100:
             push_error("TAMU_SUN_HARVEST_BOOT_GATE_FAILED")
             get_tree().quit(11)
             return
         var drawn := 0
-        for sh in shadow_sprites:
-            if sh.visible and sh.modulate.a > 0.1 and sh.polygon.size() >= 16:
+        for sh in silhouette_shadows:
+            if sh.visible and sh.texture != null:
                 drawn += 1
-        if drawn < 10:
-            push_error("TAMU_SHADOW_VISIBILITY_FAILED visible=" + str(drawn))
+        if drawn < 10 or not shadow_sprites.is_empty():
+            push_error("TAMU_SINGLE_SHADOW_VISIBILITY_FAILED visible=" + str(drawn))
             get_tree().quit(14)
             return
         if silhouette_shadows.size() < 100 or audio_cues == null or impact_effects == null:
@@ -1397,7 +1375,7 @@ func _process(delta: float) -> void:
                 return
         print("TAMU_FX_SYSTEM_OK silhouettes=",silhouette_shadows.size()," audio=true particles=true")
         print("TAMU_GROUND_SHADOW_VISIBILITY_OK visible=",drawn)
-        print("TAMU_SUN_HARVEST_BOOT_OK shadows=",shadow_sprites.size()," hour=",day_clock)
+        print("TAMU_SUN_HARVEST_BOOT_OK shadows=",silhouette_shadows.size()," hour=",day_clock)
         if perf_hud == null or not perf_hud.test_gate():
             push_error("TAMU_PERF_HUD_GATE_FAILED")
             get_tree().quit(10)

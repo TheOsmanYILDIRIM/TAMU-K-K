@@ -1,3 +1,8 @@
+### 2026-11-03 — Single solar shadow + baked static minimap
+- Eliminated the duplicate per-object Polygon2D ground cast. One authored alpha Sprite2D silhouette shadow remains per R2 tree/rock, driven by the shared solar shader and original atlas alpha; source object positions, gameplay and LÖVE unchanged.
+- Replaced per-frame 49x49 CPU minimap chunk sampling with a 256x256 CI-baked R2 terrain surface PNG (water/path/height colors), single shader-textured rectangle and fixed north-up player marker. Runtime changes only shader uniforms for player position/zoom; no per-frame queue_redraw or terrain sampling.
+- Godot CI bakes terrain.png before editor import and exports texture+shader. CI and Android performance acceptance pending; generated PNG is a build artifact, not an authored source file.
+
 ### 2026-11-03 — UI pointer isolation and incremental auto-harvest (main)
 - `scripts/main.gd` now tracks GUI-owned touch pointers and only forwards world-started contacts to alpha-selection/pan. `scripts/modular_hud.gd` treats all visible HUD art and control rectangles as world-input shields, not just clickable buttons; selection popup and legacy overlay also shield input. Manual joystick movement cancels automatic travel.
 - New `scripts/harvest_pathfinder.gd` uses budgeted, incremental Cartesian A* (32 expansions / 900 µs target per frame, 4096 node and 1536 world-unit search caps); each edge is verified with authoritative `R2Collision.move` and `GameplaySession.movement_obstacles`, with terrain walkability samples. Failure, cancellation and movement stalls have explicit feedback.

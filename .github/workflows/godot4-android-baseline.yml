@@ -345,6 +345,9 @@ jobs:
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y -qq xvfb python3-pil >/dev/null
+          timeout --kill-after=3s 120s godot --headless --path . --script res://scripts/bake_minimap_ci.gd 2>&1 | tee screenshots-minimap-bake.log
+          grep -q TAMU_STATIC_MINIMAP_BAKED_OK screenshots-minimap-bake.log
+          test -s assets/ui/minimap/terrain.png
           python3 scripts/bake_terrain_mix.py | tee screenshots-mix-bake.log
           python3 scripts/build_forest_gui.py | tee screenshots-forest-ui.log
           if test -f ui/selection/packs/TAMU_Selection_GUI_Parts.zip; then
@@ -611,6 +614,8 @@ jobs:
           assert any('assets/gui/heading_tree.png' in path for path in names), 'PCK_HARVEST_GUI_HEADING_MISSING'
           assert any('assets/gui/joystick_base.png' in path for path in names), 'PCK_HARVEST_JOYSTICK_MISSING'
           assert any('scripts/modular_hud.gd' in path for path in names), 'PCK_MODULAR_HUD_SCRIPT_MISSING'
+          assert any('assets/ui/minimap/terrain.png' in path for path in names), 'PCK_STATIC_MINIMAP_MISSING'
+          assert any('scripts/minimap_static.gdshader' in path for path in names), 'PCK_MINIMAP_SHADER_MISSING'
           assert any('assets/ui/hud/layout.json' in path for path in names), 'PCK_MODULAR_HUD_LAYOUT_MISSING'
           for name in ('portrait','joystick','hotbar','interact','attack'):
               assert any(f'assets/ui/hud/parts/{name}.png' in path for path in names), f'PCK_HUD_TEXTURE_MISSING {name}'
