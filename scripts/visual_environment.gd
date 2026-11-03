@@ -6,9 +6,33 @@ const ATLAS_SIZE := Vector2(1848.0, 1584.0)
 const CELL_SIZE := 132.0
 const TILE_SIZE := 128.0
 const OBJECT_ATLAS_SIZE := Vector2(1056.0, 1056.0)
+const HIRES_OBJECT_ATLAS := "res://assets/terrain25d/atlas_objects_hires.png"
 const MAX_DETAIL_QUADS := 1400
 const MIX_SHADER = preload("res://scripts/terrain_mix.gdshader")
 const WorldProjection = preload("res://scripts/world_projection.gd")
+
+# The 60 high-resolution object slots follow sorted original_filename order.
+# UVs are changed only in the transient parsed manifest, not the canonical source.
+# Width/height remain logical 128px so world detail quads retain their size.
+static func apply_highres_object_uvs(manifest: Dictionary) -> bool:
+    if OS.get_environment("TAMU_HIRES_OBJECTS") == "0":
+        return false
+    if not ResourceLoader.exists(HIRES_OBJECT_ATLAS):
+        return false
+    var objects: Array = []
+    for item in manifest.get("assets", []):
+        if item.get("kind") == "object" and item.get("atlas_page") == "atlas_01.png":
+            objects.append(item)
+    if objects.size() != 60:
+        push_error("TAMU_HIRES_OBJECT_MANIFEST_COUNT_INVALID")
+        return false
+    objects.sort_custom(func(a, b): return str(a.get("original_filename", "")) < str(b.get("original_filename", "")))
+    for i in range(objects.size()):
+        var entry: Dictionary = objects[i]
+        var x: int = i % 8
+        var y: int = int(i / 8)
+        entry["uv_rect"] = [float(x) / 8.0, float(y) / 8.0, 0.125, 0.125]
+    return true
 
 static func level() -> int:
     match OS.get_environment("TAMU_VISUAL_STAGE"):

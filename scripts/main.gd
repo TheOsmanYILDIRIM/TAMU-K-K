@@ -920,7 +920,8 @@ func _ready() -> void:
     if env_visual_stage >= 3:
         var decor_manifest: Variant = JSON.parse_string(
             FileAccess.get_file_as_string("res://assets/terrain25d/manifest.json"))
-        var decor_atlas: Texture2D = load("res://assets/terrain25d/atlas_01.png")
+        var decor_hires_active: bool = VisualEnvironment.apply_highres_object_uvs(decor_manifest)
+        var decor_atlas: Texture2D = load(VisualEnvironment.HIRES_OBJECT_ATLAS if decor_hires_active else "res://assets/terrain25d/atlas_01.png")
         var decor: Dictionary = VisualEnvironment.detail_mesh(decor_manifest, decor_atlas, harvestables, authority)
         detail_count = int(decor.get("count",0))
         detail_environment = decor.get("node",null)
@@ -1128,6 +1129,8 @@ func _load_objects() -> void:
         get_tree().quit(4)
         return
     var manifest = JSON.parse_string(FileAccess.get_file_as_string("res://assets/terrain25d/manifest.json"))
+    var object_hires_active: bool = VisualEnvironment.apply_highres_object_uvs(manifest)
+    print("TAMU_OBJECT_HIRES_ACTIVE active=",object_hires_active," atlas=",("4096" if object_hires_active else "1056"))
     var variants := {}
     for item in manifest["assets"]:
         if item.get("kind") == "object" and item.get("atlas_page") == "atlas_01.png" and item.has("uv_rect"):
@@ -1149,7 +1152,7 @@ func _load_objects() -> void:
     shadow_layer.z_index = 2
     add_child(shadow_layer)
     object_layer.z_index = 3
-    var atlas: Texture2D = load("res://assets/terrain25d/atlas_01.png")
+    var atlas: Texture2D = load(VisualEnvironment.HIRES_OBJECT_ATLAS if object_hires_active else "res://assets/terrain25d/atlas_01.png")
     var size := atlas.get_size()
     for o in data["objects"]:
         var id: String = o["id"]
@@ -1192,6 +1195,8 @@ func _load_objects() -> void:
         if env_visual_stage >= 2:
             visual_jitter = VisualEnvironment.variation(h, kind)
         var scale_value := float(scales.get(family, 0.5)) * visual_jitter
+        if object_hires_active:
+            scale_value *= 0.25 # 512px source, original authored 128px world footprint
         sprite.scale = Vector2.ONE * scale_value
         if env_visual_stage >= 2:
             sprite.flip_h = posmod(h, 2) == 0

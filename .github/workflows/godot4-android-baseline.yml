@@ -108,13 +108,20 @@ jobs:
           mkdir -p /tmp/tamu-canonical assets/terrain25d chunks
           gh run download 41234831527 --repo "${{ github.repository }}" --name tamu-authored-r2-binary-cache --dir /tmp/tamu-canonical
           python3 - <<'PY'
-          import zipfile, zlib, pathlib, json
+          import zipfile, zlib, pathlib, json, hashlib
           root=pathlib.Path('/tmp/tamu-canonical')
           archive=next(root.rglob('tamu-authored-compiled.love'))
           z=zipfile.ZipFile(archive)
           out=pathlib.Path('assets/terrain25d')
           for name in ('atlas_00.png','atlas_01.png','manifest.json'):
               (out/name).write_bytes(z.read('assets/terrain25d/'+name))
+          parts=sorted(pathlib.Path('game/love/assets/terrain25d').glob('atlas_objects_hires.part[0-9][0-9]'))
+          assert len(parts)==8, 'TAMU_HIRES_PART_COUNT_INVALID'
+          hires=b''.join(p.read_bytes() for p in parts)
+          assert hashlib.sha256(hires).hexdigest()=='eaa7573e51d18d28f7dacb0848476b03724cb71dbdae8b41063dca4e1bb4c625', 'TAMU_HIRES_ATLAS_SHA_MISMATCH'
+          assert hires[:8]==b'\\x89PNG\\r\\n\\x1a\\n'.decode('unicode_escape').encode('latin1'), 'TAMU_HIRES_ATLAS_BAD_PNG'
+          (out/'atlas_objects_hires.png').write_bytes(hires)
+          print('TAMU_HIRES_ATLAS_SHA_OK bytes=',len(hires))
           rig=pathlib.Path('assets/osman_rig/images')
           rig.mkdir(parents=True,exist_ok=True)
           for name in ('front_leg_L.png','front_leg_R.png','front_torso.png',
@@ -430,6 +437,7 @@ jobs:
             for mode in legacy merged; do
               TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE="$mode" TAMU_VISUAL_CASE="$case" timeout --kill-after=3s 75s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 | tee "screenshots/$case-$mode.log"
               grep -q TAMU_VISUAL_CAPTURE_OK "screenshots/$case-$mode.log"
+              grep -q "TAMU_OBJECT_HIRES_ACTIVE active=true atlas=4096" "screenshots/$case-$mode.log"
               grep -q TAMU_HARVEST_SELECTION_OK "screenshots/$case-$mode.log"
               grep -q TAMU_YDEPTH_SHADOW_ORDER_OK "screenshots/$case-$mode.log"
               grep -q TAMU_VIEWPORT_COVERAGE_OK "screenshots/$case-$mode.log"
@@ -594,7 +602,7 @@ jobs:
           banned=('plasma','screenshots/','game/love/','art-source/','docs/','object-studio/','world-builder/')
           bad=[s for s in names if any(x in s for x in banned) or s.endswith(('.apk','.love','.mp3'))]
           assert not bad, f'PCK_FORBIDDEN_FILES {bad[:15]}'
-          required=('chunks/r2_objects.json','chunks/merged_layer_1.verts','data/catalog/compiled_catalog.res','assets/terrain25d/atlas_00.png','assets/osman_rig/images/front_head.png')
+          required=('chunks/r2_objects.json','chunks/merged_layer_1.verts','data/catalog/compiled_catalog.res','assets/terrain25d/atlas_00.png','assets/terrain25d/atlas_objects_hires.png','assets/osman_rig/images/front_head.png')
           assert all(any(key in s for s in names) for key in required), 'PCK_REQUIRED_ASSET_MISSING'
           runtime_scripts=('domain_catalog','domain_inventory','domain_harvesting',
               'domain_crafting','domain_building','gameplay_session','harvest_pathfinder',
