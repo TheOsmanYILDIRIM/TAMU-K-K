@@ -4,6 +4,9 @@ on:
     branches:
       - experiment/godot4-android-apk-20261031
       - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 permissions:
   contents: read
@@ -108,13 +111,20 @@ jobs:
           mkdir -p /tmp/tamu-canonical assets/terrain25d chunks
           gh run download 41234831527 --repo "${{ github.repository }}" --name tamu-authored-r2-binary-cache --dir /tmp/tamu-canonical
           python3 - <<'PY'
-          import zipfile, zlib, pathlib, json
+          import zipfile, zlib, pathlib, json, hashlib
           root=pathlib.Path('/tmp/tamu-canonical')
           archive=next(root.rglob('tamu-authored-compiled.love'))
           z=zipfile.ZipFile(archive)
           out=pathlib.Path('assets/terrain25d')
           for name in ('atlas_00.png','atlas_01.png','manifest.json'):
               (out/name).write_bytes(z.read('assets/terrain25d/'+name))
+          parts=sorted(pathlib.Path('game/love/assets/terrain25d').glob('atlas_objects_hires.part[0-9][0-9]'))
+          assert len(parts)==8, 'TAMU_HIRES_PART_COUNT_INVALID'
+          hires=b''.join(p.read_bytes() for p in parts)
+          assert hashlib.sha256(hires).hexdigest()=='eaa7573e51d18d28f7dacb0848476b03724cb71dbdae8b41063dca4e1bb4c625', 'TAMU_HIRES_ATLAS_SHA_MISMATCH'
+          assert hires[:8]==b'\\x89PNG\\r\\n\\x1a\\n'.decode('unicode_escape').encode('latin1'), 'TAMU_HIRES_ATLAS_BAD_PNG'
+          (out/'atlas_objects_hires.png').write_bytes(hires)
+          print('TAMU_HIRES_ATLAS_SHA_OK bytes=',len(hires))
           rig=pathlib.Path('assets/osman_rig/images')
           rig.mkdir(parents=True,exist_ok=True)
           for name in ('front_leg_L.png','front_leg_R.png','front_torso.png',
@@ -337,6 +347,48 @@ jobs:
           assert recipes['core:bench_from_planks']['duration_ticks']==60
           print('TAMU_CANONICAL_GAMEPLAY_SOURCE_OK definitions=7 recipes=2 same_json=true')
           PY
+      - name: Reconstruct exact source art and generate RGBA/RGB quality tiers
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq python3-pil >/dev/null
+          python3 - <<'PYTEX'
+          import hashlib, io, pathlib, zipfile
+          parts=sorted(pathlib.Path('game/love/assets/terrain25d').glob('terrain_originals.part[0-9][0-9]'))
+          assert len(parts)==26, ('TAMU_SOURCE_PARTS_MISSING',len(parts))
+          raw=b''.join(p.read_bytes() for p in parts)
+          expected='9aff9f15b39661d733b807c7dd76ca0e16e37c340ab821e7d3ea77c6ae61101c'
+          assert len(raw)==22500162 and hashlib.sha256(raw).hexdigest()==expected, 'TAMU_SOURCE_ZIP_SHA_MISMATCH'
+          dest=pathlib.Path('/tmp/tamu-terrain-originals')
+          dest.mkdir(parents=True,exist_ok=True)
+          with zipfile.ZipFile(io.BytesIO(raw)) as z:
+              assert z.testzip() is None, 'TAMU_SOURCE_ZIP_CRC_FAIL'
+              names=[n for n in z.namelist() if n.startswith('original_sheets/') and n.endswith('.png')]
+              assert len(names)==15 and len({pathlib.Path(n).name for n in names})==15
+              for name in names:
+                  assert pathlib.PurePosixPath(name).parts[0]=='original_sheets'
+                  assert len(pathlib.PurePosixPath(name).parts)==2
+                  (dest/pathlib.Path(name).name).write_bytes(z.read(name))
+          print('TAMU_TERRAIN_ORIGINALS_AUTHENTIC_OK sheets=15 sha256='+expected)
+          PYTEX
+          python3 scripts/build_tamu_texture_tiers.py --manifest assets/terrain25d/manifest.json --sources /tmp/tamu-terrain-originals --output /tmp/tamu-texture-quality --objects-atlas assets/terrain25d/atlas_objects_hires.png
+          cp /tmp/tamu-texture-quality/atlas_00_terrain_384.png assets/terrain25d/atlas_00_hires.png
+          cp /tmp/tamu-texture-quality/atlas_00_terrain_mix_384.png assets/terrain25d/atlas_00_mix_hires.png
+          python3 - <<'PYTEX'
+          import json,pathlib
+          from PIL import Image
+          root=pathlib.Path('/tmp/tamu-texture-quality')
+          for tier in (128,256,384):
+              info=json.loads((root/f'terrain_{tier}_report.json').read_text())
+              assert info['terrain_tiles']==168 and not info['quantization']
+              assert len({(x['atlas_col'],x['atlas_row']) for x in info['asset_mapping']})==168
+              assert Image.open(root/f'atlas_00_terrain_{tier}.png').size==(int(tier*14*1.03125),int(tier*12*1.03125))
+              assert Image.open(root/f'atlas_00_terrain_mix_{tier}.png').size==Image.open(root/f'atlas_00_terrain_{tier}.png').size
+          obj=json.loads((root/'objects_quality_report.json').read_text())
+          assert set(obj)=={'512','384','256'}
+          print('TAMU_TERRAIN_RGB_TIER_GATE_OK materials=168 tiers=384,256,128 object_tiers=512,384,256')
+          PYTEX
       - name: Native Godot scene and screenshot smoke (Xvfb)
         shell: bash
         env:
@@ -404,6 +456,9 @@ jobs:
           test -s data/catalog/compiled_catalog.res
           timeout --kill-after=3s 60s godot --headless --path . --script res://scripts/mob_contract_ci.gd 2>&1 | tee screenshots/mob-contract.log
           grep -q TAMU_MOB_CONTRACT_OK screenshots/mob-contract.log
+          timeout --kill-after=3s 60s godot --headless --path . --script res://scripts/profile_rig_ci.gd 2>&1 | tee screenshots/profile-rig-contract.log
+          grep -q TAMU_PROFILE_NUMERIC_SKIN_OK screenshots/profile-rig-contract.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_PROFILE_.*FAILED' screenshots/profile-rig-contract.log; then exit 1; fi
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_MOB_.*FAILED' screenshots/mob-contract.log; then exit 1; fi
           mkdir -p /tmp/tamu-save-reopen-home
           for phase in write reopen recovery mod_reject; do
@@ -436,6 +491,7 @@ jobs:
             for mode in legacy merged; do
               TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE="$mode" TAMU_VISUAL_CASE="$case" timeout --kill-after=3s 75s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 | tee "screenshots/$case-$mode.log"
               grep -q TAMU_VISUAL_CAPTURE_OK "screenshots/$case-$mode.log"
+              grep -q "TAMU_OBJECT_HIRES_ACTIVE active=true atlas=4096" "screenshots/$case-$mode.log"
               grep -q TAMU_HARVEST_SELECTION_OK "screenshots/$case-$mode.log"
               grep -q TAMU_YDEPTH_SHADOW_ORDER_OK "screenshots/$case-$mode.log"
               grep -q TAMU_VIEWPORT_COVERAGE_OK "screenshots/$case-$mode.log"
@@ -452,6 +508,13 @@ jobs:
           grep -q TAMU_VISUAL_CAPTURE_OK screenshots/mobs-live.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_MOB_.*FAILED|TAMU_MOB_HOST_UNAVAILABLE|TAMU_MOB_NO_VALID_SPAWN' screenshots/mobs-live.log; then exit 1; fi
           cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" screenshots/mobs-live.png
+          TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged TAMU_VISUAL_CASE=profile timeout --kill-after=3s 90s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 2>&1 | tee screenshots/profile-live.log
+          grep -q TAMU_PROFILE_GAMEPLAY_RIG_ACTIVE screenshots/profile-live.log
+          grep -q TAMU_PROFILE_ONLY_VISIBLE_OK screenshots/profile-live.log
+          grep -q TAMU_PROFILE_VIEW_SCALE_OK screenshots/profile-live.log
+          grep -q TAMU_VISUAL_CAPTURE_OK screenshots/profile-live.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_PROFILE_.*FAILED' screenshots/profile-live.log; then exit 1; fi
+          cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" screenshots/profile-live.png
           # Each cumulative visual stage gets a real Godot GL screenshot and
           # runtime drawcall/FPS telemetry on the same CI runner and camera.
           # This is a desktop Xvfb comparison, not an Android FPS claim.
@@ -605,7 +668,7 @@ jobs:
           banned=('plasma','screenshots/','game/love/','art-source/','docs/','object-studio/','world-builder/')
           bad=[s for s in names if any(x in s for x in banned) or s.endswith(('.apk','.love','.mp3'))]
           assert not bad, f'PCK_FORBIDDEN_FILES {bad[:15]}'
-          required=('chunks/r2_objects.json','chunks/merged_layer_1.verts','data/catalog/compiled_catalog.res','assets/terrain25d/atlas_00.png','assets/osman_rig/images/front_head.png')
+          required=('chunks/r2_objects.json','chunks/merged_layer_1.verts','data/catalog/compiled_catalog.res','assets/terrain25d/atlas_00.png','assets/terrain25d/atlas_objects_hires.png','assets/osman_rig/images/front_head.png')
           assert all(any(key in s for s in names) for key in required), 'PCK_REQUIRED_ASSET_MISSING'
           runtime_scripts=('domain_catalog','domain_inventory','domain_harvesting',
               'domain_crafting','domain_building','gameplay_session','harvest_pathfinder',
@@ -624,6 +687,8 @@ jobs:
           assert any('scripts/modular_hud.gd' in path for path in names), 'PCK_MODULAR_HUD_SCRIPT_MISSING'
           assert any('assets/ui/minimap/terrain.png' in path for path in names), 'PCK_STATIC_MINIMAP_MISSING'
           assert any('scripts/minimap_static.gdshader' in path for path in names), 'PCK_MINIMAP_SHADER_MISSING'
+          for required_profile in ['scripts/profile_rig.gdc','assets/profile_character/motion.json','assets/profile_character/01_bas.png','assets/profile_character/06_govde.png']:
+              assert any(required_profile in path for path in names), f'PCK_PROFILE_RIG_MISSING {required_profile}'
           assert any('assets/ui/hud/layout.json' in path for path in names), 'PCK_MODULAR_HUD_LAYOUT_MISSING'
           for name in ('portrait','joystick','hotbar','interact','attack'):
               assert any(f'assets/ui/hud/parts/{name}.png' in path for path in names), f'PCK_HUD_TEXTURE_MISSING {name}'
@@ -631,8 +696,10 @@ jobs:
           assert any('scripts/terrain_mix.gdshader' in path for path in names), 'PCK_TERRAIN_MIX_SHADER_MISSING'
           assert any('assets/terrain25d/atlas_00_mix.png' in path for path in names), 'PCK_BAKED_TERRAIN_MIX_MISSING'
           print('TAMU_EXPORTED_RUNTIME_SCRIPTS_OK',len(runtime_scripts))
-          assert count < 620, f'PCK_TOO_MANY_FILES {count}'
-          assert p.stat().st_size < 40*1024*1024, f'PCK_TOO_LARGE {p.stat().st_size}'
+          # Current Godot Yaprakkulak rig/AI and HD tier remaps total 641 pack entries.
+          # Keep a bounded guard; the forbidden-source and required-asset gates above remain enforced.
+          assert count < 680, f'PCK_TOO_MANY_FILES {count}'
+          assert p.stat().st_size < 180*1024*1024, f'PCK_TOO_LARGE {p.stat().st_size}' # HD tier-specific PCK budget; original source assets excluded from exported pack
           print('TAMU_CLEAN_PCK_OK',p.stat().st_size,'files',count)
           PY
           python3 - <<'PY'
@@ -663,11 +730,87 @@ jobs:
             exit 1
           fi
           echo TAMU_EXPORTED_PACK_BOOT_OK
+          # Second isolated-pack smoke must reach the real code-driven player.
+          # Early production smoke exits before _make_avatar and cannot catch
+          # missing/incorrect profile assets in the exported Android PCK.
+          set +e
+          XDG_DATA_HOME=/tmp/tamu-exported-pack-profile TAMU_VISUAL_CI=1 TAMU_VISUAL_CASE=profile             timeout --kill-after=3s 60s godot --headless             --main-pack "$pack_absolute" --quit-after 80             2>&1 | tee screenshots/exported-pack-profile.log
+          profile_rc=${PIPESTATUS[0]}
+          set -e
+          if [ "$profile_rc" -ne 0 ] || ! grep -q TAMU_PROFILE_VIEW_SCALE_OK screenshots/exported-pack-profile.log || ! grep -q TAMU_PROFILE_ONLY_VISIBLE_OK screenshots/exported-pack-profile.log || grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_PROFILE_.*FAILED' screenshots/exported-pack-profile.log; then
+            echo "TAMU_EXPORTED_PROFILE_PACK_FAILED exit=$profile_rc"
+            exit 1
+          fi
+          echo TAMU_EXPORTED_PROFILE_PACK_OK
           sha256sum build/tamu-android-content.pck
+      - name: Benchmark balanced and mobile texture PCKs and visual quality
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PYQUALITY'
+          from pathlib import Path
+          import json
+          from PIL import Image
+          root=Path('/tmp/tamu-texture-quality')
+          expected=[('full',384,512),('balanced',256,384),('mobile',128,256)]
+          for label,terrain,obj in expected:
+              assert Image.open(root/f'atlas_00_terrain_{terrain}.png').size==(14*(terrain+terrain//32),12*(terrain+terrain//32))
+              assert Image.open(root/f'atlas_objects_{obj}.png').size==(obj*8,obj*8)
+          print('TAMU_PCK_TIER_INPUTS_READY',expected)
+          PYQUALITY
+          for variant in balanced mobile; do
+            if [ "$variant" = balanced ]; then terrain=256; obj=384; else terrain=128; obj=256; fi
+            cp "/tmp/tamu-texture-quality/atlas_00_terrain_${terrain}.png" assets/terrain25d/atlas_00_hires.png
+            cp "/tmp/tamu-texture-quality/atlas_00_terrain_mix_${terrain}.png" assets/terrain25d/atlas_00_mix_hires.png
+            cp "/tmp/tamu-texture-quality/atlas_objects_${obj}.png" assets/terrain25d/atlas_objects_hires.png
+            godot --headless --editor --path . --import --quit
+            TAMU_TERRAIN_MODE=merged TAMU_VISUAL_CASE=center timeout --kill-after=3s 75s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 | tee "screenshots/quality-${variant}.log"
+            grep -q TAMU_TERRAIN_HIRES_ACTIVE "screenshots/quality-${variant}.log"
+            grep -q TAMU_OBJECT_HIRES_ACTIVE "screenshots/quality-${variant}.log"
+            cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" "screenshots/quality-${variant}.png"
+            godot --headless --path . --export-pack Android "build/tamu-android-content-${variant}.pck"
+            test -s "build/tamu-android-content-${variant}.pck"
+          done
+          python3 - <<'PYQUALITY'
+          from pathlib import Path
+          import json
+          from PIL import Image, ImageChops, ImageStat
+          base=Image.open('screenshots/center-merged.png').convert('RGB')
+          records=[]
+          for label,terrain,obj,filename in [('full',384,512,'build/tamu-android-content.pck'),('balanced',256,384,'build/tamu-android-content-balanced.pck'),('mobile',128,256,'build/tamu-android-content-mobile.pck')]:
+              p=Path(filename)
+              assert p.read_bytes()[:4]==b'GDPC'
+              row={'quality':label,'terrain_px':terrain,'object_px':obj,'pck_bytes':p.stat().st_size,
+                   'terrain_rgb8_bytes':Path(f'/tmp/tamu-texture-quality/atlas_00_terrain_{terrain}.png').stat().st_size,
+                   'object_rgba8_bytes':Path(f'/tmp/tamu-texture-quality/atlas_objects_{obj}.png').stat().st_size}
+              if label!='full':
+                  im=Image.open(f'screenshots/quality-{label}.png').convert('RGB')
+                  assert im.size==base.size
+                  delta=ImageChops.difference(base,im)
+                  row['full_vs_tier_mean_abs_rgb']=round(sum(ImageStat.Stat(delta).mean)/3.0,4)
+              records.append(row)
+              print('TAMU_QUALITY_PCK_COMPARE',row)
+          assert records[0]['pck_bytes']>records[1]['pck_bytes']>records[2]['pck_bytes'], records
+          Path('screenshots/texture-quality-comparison.json').write_text(json.dumps(records,indent=2))
+          print('TAMU_TEXTURE_QUALITY_PCK_COMPARE_OK tiers=3')
+          PYQUALITY
+      # One independent artifact per quality: users download ONLY their chosen PCK.
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: tamu-godot-loader-pck
+          name: tamu-godot-mobile-pck
+          path: build/tamu-android-content-mobile.pck
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tamu-godot-balanced-pck
+          path: build/tamu-android-content-balanced.pck
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tamu-godot-full-pck
           path: build/tamu-android-content.pck
           if-no-files-found: warn
       - uses: actions/upload-artifact@v4

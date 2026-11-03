@@ -4,6 +4,7 @@ const WorldSource = preload("res://scripts/world_source.gd")
 const WorldStream = preload("res://scripts/world_stream.gd")
 const MergedTerrain = preload("res://scripts/merged_terrain.gd")
 const RigbySkinned = preload("res://scripts/rigby_skinned.gd")
+const ProfileRig = preload("res://scripts/profile_rig.gd")
 const GameplaySession = preload("res://scripts/gameplay_session.gd")
 const R2Authority = preload("res://scripts/r2_authority.gd")
 const R2Collision = preload("res://scripts/r2_collision.gd")
@@ -51,6 +52,7 @@ var chunk_nodes: Dictionary = {}
 var available_chunks: Dictionary = {}
 var chunk_vertices: Dictionary = {}
 var object_visuals_by_chunk: Dictionary = {}
+var object_chunk_visibility: Dictionary = {}
 var harvestables: Array[Dictionary] = []
 var harvested_by_id: Dictionary = {}
 var gameplay: RefCounted
@@ -110,6 +112,7 @@ var actor_direction := "SE"
 var actor_action := "idle"
 var active_source_clip := ""
 var native_rig: Skeleton2D
+var profile_rig: Node2D
 
 func _update_sun(delta: float) -> void:
     day_clock = fposmod(day_clock + delta * 24.0 / DAY_SECONDS, 24.0)
@@ -680,6 +683,41 @@ func _make_avatar() -> void:
         if rigby_skin.is_empty():
             push_error("TAMU_RIGBY_SKIN_BUILD_FAILED")
             get_tree().quit(21)
+    # Dedicated authored profile: six original PNGs, runtime weighted meshes.
+    # Keep the legacy Rigby source and its visual-parity fixture intact in CI.
+    if OS.get_environment("TAMU_VISUAL_CI") != "1" or OS.get_environment("TAMU_VISUAL_CASE") == "profile":
+        profile_rig = ProfileRig.new()
+        profile_rig.name = "TAMUProfileWeightedRig"
+        avatar.add_child(profile_rig)
+        if not profile_rig.setup() or not profile_rig.verify_contract():
+            push_error("TAMU_PROFILE_GAMEPLAY_SETUP_FAILED")
+            get_tree().quit(73)
+            return
+        # The avatar parent retains the historical Rigby scale for CI and
+        # object-depth parity. Compensate it exactly once for the authored
+        # 1178px / 72-world-unit profile mesh; otherwise the profile is tiny.
+        if avatar_visual_scale <= 0.0:
+            push_error("TAMU_PROFILE_INVALID_PARENT_SCALE")
+            get_tree().quit(74)
+            return
+        profile_rig.scale /= avatar_visual_scale
+        profile_rig.position /= avatar_visual_scale
+        for legacy_part in avatar_parts.values():
+            legacy_part.visible = false
+        if not profile_rig.visible or absf(profile_rig.scale.y * avatar.scale.y / ProfileRig.SOURCE_SCALE - 1.0) > 0.025:
+            push_error("TAMU_PROFILE_GAMEPLAY_SCALE_FAILED")
+            get_tree().quit(75)
+            return
+        for legacy_part in avatar_parts.values():
+            if legacy_part.visible:
+                push_error("TAMU_PROFILE_LEGACY_SPRITE_STILL_VISIBLE")
+                get_tree().quit(76)
+                return
+        print("TAMU_PROFILE_VIEW_SCALE_OK world_height=72")
+        # Keep old pose source for historical visual tests only.
+        native_rig.visible = false
+        print("TAMU_PROFILE_GAMEPLAY_RIG_ACTIVE bones=23 parts=6")
+        print("TAMU_PROFILE_ONLY_VISIBLE_OK legacy_sprites=0")
 
 func _set_actor_clip(direction: String, action: String) -> void:
     if not rig_directions.has(direction):
@@ -694,8 +732,10 @@ func _set_actor_clip(direction: String, action: String) -> void:
     actor_direction = direction
     actor_action = action
     active_source_clip = source_name
-    if native_rig != null:
+    if native_rig != null and profile_rig == null:
         native_rig.play_clip(source_name)
+    if profile_rig != null:
+        profile_rig.set_clip(action)
     _set_actor_facing(direction == "NW" or direction == "NE")
     avatar.scale.x = (-1.0 if direction == "SW" or direction == "NE" else 1.0) * avatar_visual_scale
 
@@ -703,6 +743,8 @@ func _set_actor_facing(back: bool) -> void:
     if actor_facing_back == back and avatar_parts["head"].texture != null:
         return
     actor_facing_back = back
+    if profile_rig != null:
+        return  # No legacy texture swaps for code-driven profile animation.
     var prefix := "back" if back else "front"
     for part in avatar_parts:
         avatar_parts[part].texture = load("res://assets/osman_rig/images/%s_%s.png" % [prefix,part])
@@ -768,6 +810,19 @@ func _refresh_streaming_requests() -> void:
     view_required = WorldStream.required_chunks(available_chunks, center, view_size, camera.zoom)
     if merged_mode:
         pending.clear()
+        # The terrain stays one authored region mesh, but its individual
+        # foliage/rock sprites and alpha shadows are culled by visible source cell.
+        for stem in object_visuals_by_chunk:
+            var show: bool = view_required.has(stem)
+            # A world reload/harvest can change CanvasItem.visible without
+            # changing the camera cell. Heal stale visibility using the first
+            # authored item as a low-cost sentinel; avoid rewriting 832
+            # objects on every camera plan when they are already correct.
+            var nodes: Array = object_visuals_by_chunk[stem]
+            var stale: bool = not nodes.is_empty() and is_instance_valid(nodes[0]) and                 nodes[0].visible != (show and not bool(nodes[0].get_meta("tamu_collected", false)))
+            if stale or not object_chunk_visibility.has(stem) or bool(object_chunk_visibility[stem]) != show:
+                _set_chunk_visuals_visible(str(stem), show)
+                object_chunk_visibility[stem] = show
         camera_missing = 0
         last_plan_camera = center
         last_plan_zoom = camera.zoom
@@ -813,7 +868,17 @@ func _ready() -> void:
     silhouette_material.shader = SHADOW_SHADER
     terrain_atlas = load("res://assets/terrain25d/atlas_00.png")
     env_visual_stage = VisualEnvironment.level()
-    if env_visual_stage >= 1:
+    var terrain_hires := OS.get_environment("TAMU_TERRAIN_HIRES") != "0" and ResourceLoader.exists("res://assets/terrain25d/atlas_00_hires.png")
+    if terrain_hires:
+        var terrain_path := "res://assets/terrain25d/atlas_00_mix_hires.png" if env_visual_stage >= 1 else "res://assets/terrain25d/atlas_00_hires.png"
+        if ResourceLoader.exists(terrain_path):
+            terrain_atlas = load(terrain_path)
+            print("TAMU_TERRAIN_HIRES_ACTIVE size=", terrain_atlas.get_size(), " stage=", env_visual_stage)
+        else:
+            push_error("TAMU_TERRAIN_HIRES_MIX_MISSING")
+            get_tree().quit(32)
+            return
+    if env_visual_stage >= 1 and not terrain_hires:
         # Build-time packed derivative: one texture fetch rather than the
         # four-lookups-per-pixel prototype shader, with no extra draw calls.
         var mixed_path := "res://assets/terrain25d/atlas_00_mix.png"
@@ -913,10 +978,11 @@ func _ready() -> void:
             set_process(false)
             get_tree().quit()
             return
-    if env_visual_stage >= 3:
+    if env_visual_stage >= 3 and not OS.has_feature("mobile"):
         var decor_manifest: Variant = JSON.parse_string(
             FileAccess.get_file_as_string("res://assets/terrain25d/manifest.json"))
-        var decor_atlas: Texture2D = load("res://assets/terrain25d/atlas_01.png")
+        var decor_hires_active: bool = VisualEnvironment.apply_highres_object_uvs(decor_manifest)
+        var decor_atlas: Texture2D = load(VisualEnvironment.HIRES_OBJECT_ATLAS if decor_hires_active else "res://assets/terrain25d/atlas_01.png")
         var decor: Dictionary = VisualEnvironment.detail_mesh(decor_manifest, decor_atlas, harvestables, authority)
         detail_count = int(decor.get("count",0))
         detail_environment = decor.get("node",null)
@@ -924,6 +990,10 @@ func _ready() -> void:
             add_child(detail_environment)
         print("TAMU_ENV_DETAIL_OK quads=",detail_count,
             " vertices=",decor.get("vertices",0)," max=",VisualEnvironment.MAX_DETAIL_QUADS)
+    # The object index is constructed after the first camera plan at boot.
+    # Cull off-screen authored visuals before the first gameplay frame.
+    if merged_mode:
+        _refresh_streaming_requests()
     _make_avatar()
     _sync_building_visuals()
     if OS.get_environment("TAMU_VISUAL_CI") == "1":
@@ -1124,6 +1194,8 @@ func _load_objects() -> void:
         get_tree().quit(4)
         return
     var manifest = JSON.parse_string(FileAccess.get_file_as_string("res://assets/terrain25d/manifest.json"))
+    var object_hires_active: bool = VisualEnvironment.apply_highres_object_uvs(manifest)
+    print("TAMU_OBJECT_HIRES_ACTIVE active=",object_hires_active," atlas=",("4096" if object_hires_active else "1056"))
     var variants := {}
     for item in manifest["assets"]:
         if item.get("kind") == "object" and item.get("atlas_page") == "atlas_01.png" and item.has("uv_rect"):
@@ -1145,7 +1217,7 @@ func _load_objects() -> void:
     shadow_layer.z_index = 2
     add_child(shadow_layer)
     object_layer.z_index = 3
-    var atlas: Texture2D = load("res://assets/terrain25d/atlas_01.png")
+    var atlas: Texture2D = load(VisualEnvironment.HIRES_OBJECT_ATLAS if object_hires_active else "res://assets/terrain25d/atlas_01.png")
     var size := atlas.get_size()
     for o in data["objects"]:
         var id: String = o["id"]
@@ -1188,6 +1260,8 @@ func _load_objects() -> void:
         if env_visual_stage >= 2:
             visual_jitter = VisualEnvironment.variation(h, kind)
         var scale_value := float(scales.get(family, 0.5)) * visual_jitter
+        if object_hires_active:
+            scale_value *= 128.0 / (size.x / 8.0) # Preserve 128px logical footprint across 512/384/256 atlas tiers
         sprite.scale = Vector2.ONE * scale_value
         if env_visual_stage >= 2:
             sprite.flip_h = posmod(h, 2) == 0
@@ -1289,8 +1363,12 @@ func _process(delta: float) -> void:
         avatar_parts["leg_R"].rotation = 0.0
     _update_avatar()
     _tick_gameplay(delta)
-    if native_rig != null:
+    # The legacy 40-bone reference must not update alongside the active
+    # 23-bone player in production; preserve it in dedicated CI fixtures.
+    if native_rig != null and (profile_rig == null or OS.get_environment("TAMU_VISUAL_CI") == "1"):
         native_rig.advance(visual_delta)
+    if profile_rig != null:
+        profile_rig.advance(visual_delta)
     var rig_end := Time.get_ticks_usec()
     if direction.length_squared() > 0.01:
         $Camera2D.position = $Camera2D.position.lerp(avatar.position, minf(delta * 4.0, 1.0))
@@ -1380,14 +1458,22 @@ func _process(delta: float) -> void:
             push_error("TAMU_PERF_HUD_GATE_FAILED")
             get_tree().quit(10)
             return
+        # Gate the current viewport plan, not the historical all-visible
+        # merged-region assumption or an outdated dictionary sentinel.
+        if merged_mode:
+            _refresh_streaming_requests()
         var visible_faults := 0
+        var visible_fail_examples: Array[String] = []
         for stem in object_visuals_by_chunk:
             for node in object_visuals_by_chunk[stem]:
-                var source_visible: bool = merged_mode or (chunk_nodes.has(stem) and chunk_nodes[stem].visible)
+                var source_visible: bool = view_required.has(stem) if merged_mode else (chunk_nodes.has(stem) and chunk_nodes[stem].visible)
                 var expected: bool = source_visible and not bool(node.get_meta("tamu_collected", false))
                 if node.visible != expected:
                     visible_faults += 1
+                    if visible_fail_examples.size() < 3:
+                        visible_fail_examples.append("%s expected=%s actual=%s" % [str(stem), str(expected), str(node.visible)])
         if visible_faults > 0:
+            print("TAMU_OBJECT_VISIBILITY_DIAGNOSTIC ", visible_fail_examples)
             push_error("TAMU_OBJECT_TERRAIN_REVEAL_FAILED faults=" + str(visible_faults))
             get_tree().quit(7)
             return
