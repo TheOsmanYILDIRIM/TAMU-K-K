@@ -1,9 +1,14 @@
 extends Node2D
-# Isolated PixelLight visual test; does not change gameplay or the TAMU solar clock.
+# Genuine PixelLight 2D 1.0.2 isolated GL Compatibility experiment.
+# No player, world, saved-state or authored texture mutations.
+var sprites: Array[Sprite2D] = []
+var test_frames := 0
+
 func _ready() -> void:
     var addon_path := "res://addons/pixel_light_2d/pl_auto.gd"
     if not ResourceLoader.exists(addon_path):
-        push_error("PixelLight 2D addon not installed: " + addon_path)
+        push_error("TAMU_PIXELLIGHT_ADDON_MISSING " + addon_path)
+        get_tree().quit(81)
         return
     var auto_script: Script = load(addon_path)
     var ambient := CanvasModulate.new()
@@ -26,12 +31,45 @@ func _ready() -> void:
         sprite.texture = ImageTexture.create_from_image(image)
         sprite.position = Vector2(180.0 + i * 160.0, 420.0)
         add_child(sprite)
+        sprites.append(sprite)
         if i > 0:
             var auto = auto_script.new()
             auto.lights = false
             auto.occluder = "base" if i == 2 else "none"
             sprite.add_child(auto)
     var label := Label.new()
-    label.text = "PixelLight 2D | left: baseline  middle: normals  right: normals + base occluder"
+    label.text = "PixelLight 2D | baseline / normals / normals + base occluder"
     label.position = Vector2(35, 70)
     add_child(label)
+
+func _process(_delta: float) -> void:
+    if OS.get_environment("TAMU_PIXELLIGHT_TEST") != "1":
+        return
+    test_frames += 1
+    if test_frames != 18:
+        return
+    if sprites.size() != 3 or sprites[0].texture is CanvasTexture:
+        push_error("TAMU_PIXELLIGHT_BASELINE_INVALID")
+        get_tree().quit(82)
+        return
+    for i in [1, 2]:
+        var material_texture: Texture2D = sprites[i].texture
+        if not material_texture is CanvasTexture or (material_texture as CanvasTexture).normal_texture == null:
+            push_error("TAMU_PIXELLIGHT_NORMAL_MISSING " + str(i))
+            get_tree().quit(83)
+            return
+    var occluders := 0
+    for child in sprites[2].get_children():
+        if child is LightOccluder2D:
+            occluders += 1
+    if occluders == 0:
+        push_error("TAMU_PIXELLIGHT_OCCLUDER_MISSING")
+        get_tree().quit(84)
+        return
+    var snapshot := get_viewport().get_texture().get_image()
+    if snapshot == null or snapshot.is_empty() or snapshot.save_png("/tmp/tamu-pixellight-preview.png") != OK:
+        push_error("TAMU_PIXELLIGHT_SCREENSHOT_FAILED")
+        get_tree().quit(85)
+        return
+    print("TAMU_PIXELLIGHT_VISUAL_OK normal_maps=2 occluders=", occluders, " source=original_addon_1.0.2")
+    get_tree().quit()
