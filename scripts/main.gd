@@ -693,8 +693,27 @@ func _make_avatar() -> void:
             push_error("TAMU_PROFILE_GAMEPLAY_SETUP_FAILED")
             get_tree().quit(73)
             return
+        # The avatar parent retains the historical Rigby scale for CI and
+        # object-depth parity. Compensate it exactly once for the authored
+        # 1178px / 72-world-unit profile mesh; otherwise the profile is tiny.
+        if avatar_visual_scale <= 0.0:
+            push_error("TAMU_PROFILE_INVALID_PARENT_SCALE")
+            get_tree().quit(74)
+            return
+        profile_rig.scale /= avatar_visual_scale
+        profile_rig.position /= avatar_visual_scale
         for legacy_part in avatar_parts.values():
             legacy_part.visible = false
+        if not profile_rig.visible or absf(profile_rig.scale.y * avatar.scale.y / ProfileRig.SOURCE_SCALE - 1.0) > 0.025:
+            push_error("TAMU_PROFILE_GAMEPLAY_SCALE_FAILED")
+            get_tree().quit(75)
+            return
+        for legacy_part in avatar_parts.values():
+            if legacy_part.visible:
+                push_error("TAMU_PROFILE_LEGACY_SPRITE_STILL_VISIBLE")
+                get_tree().quit(76)
+                return
+        print("TAMU_PROFILE_VIEW_SCALE_OK world_height=72")
         # Keep old pose source for historical visual tests only.
         native_rig.visible = false
         print("TAMU_PROFILE_GAMEPLAY_RIG_ACTIVE bones=23 parts=6")
@@ -1436,7 +1455,10 @@ func _process(delta: float) -> void:
         var visible_faults := 0
         for stem in object_visuals_by_chunk:
             for node in object_visuals_by_chunk[stem]:
-                var source_visible: bool = merged_mode or (chunk_nodes.has(stem) and chunk_nodes[stem].visible)
+                # Visibility is explicitly tracked per source chunk even in
+                # merged terrain mode; invisible objects are a mobile perf
+                # feature, not an authored-world parity failure.
+                var source_visible: bool = bool(object_chunk_visibility.get(stem, false)) if merged_mode else (chunk_nodes.has(stem) and chunk_nodes[stem].visible)
                 var expected: bool = source_visible and not bool(node.get_meta("tamu_collected", false))
                 if node.visible != expected:
                     visible_faults += 1

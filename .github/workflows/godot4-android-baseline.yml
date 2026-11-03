@@ -511,6 +511,7 @@ jobs:
           TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged TAMU_VISUAL_CASE=profile timeout --kill-after=3s 90s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 2>&1 | tee screenshots/profile-live.log
           grep -q TAMU_PROFILE_GAMEPLAY_RIG_ACTIVE screenshots/profile-live.log
           grep -q TAMU_PROFILE_ONLY_VISIBLE_OK screenshots/profile-live.log
+          grep -q TAMU_PROFILE_VIEW_SCALE_OK screenshots/profile-live.log
           grep -q TAMU_VISUAL_CAPTURE_OK screenshots/profile-live.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_PROFILE_.*FAILED' screenshots/profile-live.log; then exit 1; fi
           cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" screenshots/profile-live.png
@@ -729,6 +730,18 @@ jobs:
             exit 1
           fi
           echo TAMU_EXPORTED_PACK_BOOT_OK
+          # Second isolated-pack smoke must reach the real code-driven player.
+          # Early production smoke exits before _make_avatar and cannot catch
+          # missing/incorrect profile assets in the exported Android PCK.
+          set +e
+          XDG_DATA_HOME=/tmp/tamu-exported-pack-profile TAMU_VISUAL_CI=1 TAMU_VISUAL_CASE=profile             timeout --kill-after=3s 60s godot --headless             --main-pack "$pack_absolute" --quit-after 80             2>&1 | tee screenshots/exported-pack-profile.log
+          profile_rc=${PIPESTATUS[0]}
+          set -e
+          if [ "$profile_rc" -ne 0 ] || ! grep -q TAMU_PROFILE_VIEW_SCALE_OK screenshots/exported-pack-profile.log || ! grep -q TAMU_PROFILE_ONLY_VISIBLE_OK screenshots/exported-pack-profile.log || grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_PROFILE_.*FAILED' screenshots/exported-pack-profile.log; then
+            echo "TAMU_EXPORTED_PROFILE_PACK_FAILED exit=$profile_rc"
+            exit 1
+          fi
+          echo TAMU_EXPORTED_PROFILE_PACK_OK
           sha256sum build/tamu-android-content.pck
       - name: Benchmark balanced and mobile texture PCKs and visual quality
         shell: bash
