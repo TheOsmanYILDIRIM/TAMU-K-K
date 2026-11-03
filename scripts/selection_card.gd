@@ -127,7 +127,7 @@ func initialize(on_harvest: Callable, on_detail: Callable, on_mark: Callable) ->
         return true
     var result: Dictionary = {}
     for name in PART_NAMES:
-        var path := ART_ROOT + name + ".png"
+        var path: String = ART_ROOT + str(name) + ".png"
         if not ResourceLoader.exists(path):
             push_warning("TAMU_SELECTION_ART_MISSING: " + path)
             return false
