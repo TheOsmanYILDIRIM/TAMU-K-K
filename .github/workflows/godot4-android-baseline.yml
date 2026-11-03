@@ -349,7 +349,7 @@ jobs:
           from pathlib import Path
           from zipfile import ZipFile
           archive = Path('ui/selection/packs/TAMU_Selection_GUI_Parts.zip')
-          output = Path('ui/selection/parts')
+          output = Path('assets/ui/selection/parts')
           names = ["panel","title_tree","subtitle_tree","resource_bar","button_primary","button_detail","button_mark","icon_wood","icon_axe","icon_info","icon_pin"]
           with ZipFile(archive) as pack:
               present = set(pack.namelist())
@@ -481,7 +481,7 @@ jobs:
             godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 \
             | tee screenshots/gui-merged.log
           grep -q TAMU_FOREST_GUI_VISUAL_OK screenshots/gui-merged.log
-          if test -s ui/selection/parts/panel.png; then
+          if test -s assets/ui/selection/parts/panel.png; then
             grep -q TAMU_SELECTION_CARD_VISUAL_OK screenshots/gui-merged.log
           fi
           grep -q TAMU_HARVEST_BUTTON_GATE_OK screenshots/gui-merged.log

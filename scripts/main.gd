@@ -1301,7 +1301,7 @@ func _process(delta: float) -> void:
                 get_tree().quit(57)
                 return
             print("TAMU_MODULAR_HUD_VISUAL_OK portrait=true hotbar=true joystick=true")
-            if ResourceLoader.exists("res://ui/selection/parts/panel.png"):
+            if ResourceLoader.exists("res://assets/ui/selection/parts/panel.png"):
                 var card = forest_gui.get("premium_card")
                 if card == null or not card.call("verify_contract"):
                     push_error("TAMU_SELECTION_CARD_VISUAL_GATE_FAILED")

@@ -1,7 +1,7 @@
 extends Control
 # TAMU resource card: presentation only. forest_harvest_gui.gd and main.gd
 # retain canonical selection, inventory, harvesting, marking and Stage6 state.
-const ART_ROOT := "res://ui/selection/parts/"
+const ART_ROOT := "res://assets/ui/selection/parts/"
 const PART_NAMES := ["panel", "title_tree", "subtitle_tree", "resource_bar",
     "button_primary", "button_detail", "button_mark", "icon_wood",
     "icon_axe", "icon_info", "icon_pin"]
