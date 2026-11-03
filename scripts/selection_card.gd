@@ -2,7 +2,7 @@ extends Control
 # Selection card art layer only. Gameplay authority remains in main.gd.
 # Transparent images from the user's 124069 reference, not UI screenshots.
 const ART_ROOT := "res://ui/selection/parts/"
-var ready := false
+var is_initialized := false
 var buttons: Dictionary = {}
 var kind_heading: Label
 var tree_heading: TextureRect
@@ -104,10 +104,10 @@ func initialize(on_harvest: Callable, on_detail: Callable, on_mark: Callable) ->
     set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     mouse_filter = Control.MOUSE_FILTER_PASS
     _image("panel",Vector2.ZERO,Vector2.ONE)
-    tree_heading = _image("title_tree",Vector2(0.28,0.115),Vector2(0.53,0.13))
+    tree_heading = _image("title_tree",Vector2(0.38,0.115),Vector2(0.48,0.13))
     kind_heading = _label("OtherHeading","KAYA",Vector2(0.29,0.10),Vector2(0.54,0.15),26)
     kind_heading.visible = false
-    _image("subtitle_tree",Vector2(0.27,0.259),Vector2(0.64,0.077))
+    _image("subtitle_tree",Vector2(0.36,0.259),Vector2(0.56,0.077))
     _image("resource_bar",Vector2(0.105,0.386),Vector2(0.81,0.145))
     item_icon = _image("icon_wood",Vector2(0.14,0.402),Vector2(0.14,0.105))
     item_name = _label("ResourceName","Odun",Vector2(0.32,0.394),Vector2(0.36,0.13),18)
@@ -120,11 +120,11 @@ func initialize(on_harvest: Callable, on_detail: Callable, on_mark: Callable) ->
         Vector2(0.515,0.745),Vector2(0.395,0.139),on_mark)
     mark_caption = buttons["MarkAction"].get_node("Caption")
     status = _label("Status","",Vector2(0.16,0.89),Vector2(0.73,0.075),13,true)
-    ready = true
+    is_initialized = true
     return true
 
 func set_resource(kind: String, item_title: String, count: int) -> void:
-    if not ready:
+    if not is_initialized:
         return
     tree_heading.visible = kind=="tree"
     kind_heading.visible = kind!="tree"
@@ -136,12 +136,12 @@ func set_resource(kind: String, item_title: String, count: int) -> void:
     set_status("")
 
 func set_marked(value: bool) -> void:
-    if ready:
+    if is_initialized:
         mark_caption.text = "İŞARETLİ" if value else "İŞARETLE"
 
 func set_status(value: String) -> void:
-    if ready:
+    if is_initialized:
         status.text = value
 
 func verify_contract() -> bool:
-    return ready and buttons.has("PrimaryHarvest") and buttons.has("DetailAction") and buttons.has("MarkAction")
+    return is_initialized and buttons.has("PrimaryHarvest") and buttons.has("DetailAction") and buttons.has("MarkAction")
