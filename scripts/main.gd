@@ -1301,6 +1301,13 @@ func _process(delta: float) -> void:
                 get_tree().quit(57)
                 return
             print("TAMU_MODULAR_HUD_VISUAL_OK portrait=true hotbar=true joystick=true")
+            if ResourceLoader.exists("res://ui/selection/parts/panel.png"):
+                var card = forest_gui.get("premium_card")
+                if card == null or not card.call("verify_contract"):
+                    push_error("TAMU_SELECTION_CARD_VISUAL_GATE_FAILED")
+                    get_tree().quit(58)
+                    return
+                print("TAMU_SELECTION_CARD_VISUAL_OK buttons=3 source=real_parts")
             print("TAMU_FOREST_GUI_VISUAL_OK panel=true target=true")
         print("TAMU_ENV_STAGE_METRICS stage=",env_visual_stage,
             " drawcalls=",Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),

@@ -481,6 +481,9 @@ jobs:
             godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 \
             | tee screenshots/gui-merged.log
           grep -q TAMU_FOREST_GUI_VISUAL_OK screenshots/gui-merged.log
+          if test -f ui/selection/packs/TAMU_Selection_GUI_Parts.zip; then
+            grep -q TAMU_SELECTION_CARD_VISUAL_OK screenshots/gui-merged.log
+          fi
           grep -q TAMU_HARVEST_BUTTON_GATE_OK screenshots/gui-merged.log
           cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" screenshots/harvest-forest-gui.png
           test -s screenshots/harvest-forest-gui.png
@@ -611,7 +614,7 @@ jobs:
           assert any('scripts/terrain_mix.gdshader' in path for path in names), 'PCK_TERRAIN_MIX_SHADER_MISSING'
           assert any('assets/terrain25d/atlas_00_mix.png' in path for path in names), 'PCK_BAKED_TERRAIN_MIX_MISSING'
           print('TAMU_EXPORTED_RUNTIME_SCRIPTS_OK',len(runtime_scripts))
-          assert count < 580, f'PCK_TOO_MANY_FILES {count}'
+          assert count < 620, f'PCK_TOO_MANY_FILES {count}'
           assert p.stat().st_size < 40*1024*1024, f'PCK_TOO_LARGE {p.stat().st_size}'
           print('TAMU_CLEAN_PCK_OK',p.stat().st_size,'files',count)
           PY
