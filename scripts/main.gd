@@ -116,6 +116,7 @@ var actor_action := "idle"
 var active_source_clip := ""
 var native_rig: Skeleton2D
 var profile_rig: Node2D
+var profile_contact_shadow: Polygon2D
 
 func _update_sun(delta: float) -> void:
     day_clock = fposmod(day_clock + delta * 24.0 / DAY_SECONDS, 24.0)
@@ -721,6 +722,23 @@ func _make_avatar() -> void:
         native_rig.visible = false
         print("TAMU_PROFILE_GAMEPLAY_RIG_ACTIVE bones=23 parts=6")
         print("TAMU_PROFILE_ONLY_VISIBLE_OK legacy_sprites=0")
+        # Independent world-space footprint: never mirror, rotate or skew with
+        # the side-view character. Keep one contact shadow, not one per PNG.
+        profile_contact_shadow = Polygon2D.new()
+        profile_contact_shadow.name = "ProfileGroundContact"
+        var footprint := PackedVector2Array()
+        for i in range(20):
+            var angle := TAU * float(i) / 20.0
+            footprint.append(Vector2(cos(angle) * ACTOR_COLLISION_RADIUS * 1.3,
+                sin(angle) * ACTOR_COLLISION_RADIUS * 0.34))
+        profile_contact_shadow.polygon = footprint
+        profile_contact_shadow.color = Color(0.05, 0.07, 0.06, 0.27)
+        # The negative local z puts the contact mark under Y-sorted scenery
+        # without pushing the original six sprites into another render layer.
+        profile_contact_shadow.z_index = -1
+        object_layer.add_child(profile_contact_shadow)
+        _update_avatar()
+        print("TAMU_PROFILE_FOOT_CONTACT_READY radius=", ACTOR_COLLISION_RADIUS)
 
 func _set_actor_clip(direction: String, action: String) -> void:
     if not rig_directions.has(direction):
@@ -788,6 +806,10 @@ func _update_avatar() -> void:
             actor_ground_sample_at = actor_world
     var ground_anchor := WorldProjection.to_screen(actor_world)
     if profile_rig != null:
+        if profile_contact_shadow != null:
+            # Same terrain-corrected foot position as the painted profile;
+            # never offset the shadow using the sprite's head/center.
+            profile_contact_shadow.position = ground_anchor - Vector2(0.0, actor_ground_screen_offset)
         # Y-sort the shared avatar/objects layer using the actor's physical
         # ground foot anchor; only the art is lifted for terrain height.
         # Never distort or rotate the side-view PNG to fake a rear view.
@@ -1182,6 +1204,12 @@ func _verify_visual_order() -> bool:
     if authority != null:
         var projected_foot := WorldProjection.to_screen(actor_world)
         if profile_rig != null:
+            if profile_contact_shadow == null or profile_contact_shadow.get_parent() != object_layer:
+                return false
+            if profile_contact_shadow.z_index != -1 or profile_contact_shadow.polygon.size() != 20:
+                return false
+            if profile_contact_shadow.position.distance_to(projected_foot - Vector2(0.0, actor_ground_screen_offset)) > 0.01:
+                return false
             if avatar.position.distance_to(projected_foot) > 0.01:
                 return false
             if absf(profile_rig.position.y * avatar_visual_scale + 689.0 * ProfileRig.SOURCE_SCALE + actor_ground_screen_offset) > 0.01:
