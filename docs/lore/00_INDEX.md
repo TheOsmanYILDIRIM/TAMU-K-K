@@ -27,7 +27,7 @@ tags: [lore, index]
 - [[90_KARARLAR|Kararlar]] — kanon onayı ve değişen kararlar
 - [[91_BOSLUKLAR|Açık sorular]] — henüz sayfası olmayan başlıklar
 - [[92_KAYNAKLAR|Kaynaklar]] — gerçek tasarım belgeleri
-- [[README|Bağlantı ve doğrulama standardı]]
+- [[README|Bağlantı standardı ve lore'dan mob tasarımına uygulamalı tutorial]]
 
 ## Durum
 
