@@ -7,6 +7,7 @@ const RigbySkinned = preload("res://scripts/rigby_skinned.gd")
 const GameplaySession = preload("res://scripts/gameplay_session.gd")
 const R2Authority = preload("res://scripts/r2_authority.gd")
 const R2Collision = preload("res://scripts/r2_collision.gd")
+const HarvestNavigation = preload("res://scripts/harvest_pathfinder.gd")
 const WorldIdentity = preload("res://scripts/world_identity.gd")
 const AudioCues = preload("res://scripts/audio_cues.gd")
 const ImpactEffects = preload("res://scripts/impact_effects.gd")
@@ -71,6 +72,14 @@ var harvest_hint: Label
 var forest_gui: CanvasLayer
 var selected_harvest: Dictionary = {}
 var selected_harvest_outline: Sprite2D
+var modular_hud: CanvasLayer
+var ui_touch_ids: Dictionary = {}
+var world_touch_pointer := -1
+var harvest_navigation = HarvestNavigation.new()
+var auto_harvest_id := ""
+var auto_route: Array[Vector2] = []
+var auto_path_loaded := false
+var auto_stuck_time := 0.0
 var harvest_alpha_cache: Dictionary = {}
 var harvest_outline_material: ShaderMaterial
 const DAY_SECONDS := 30.0
@@ -137,7 +146,57 @@ func _harvest_feedback(message: String) -> void:
     if forest_gui != null:
         forest_gui.call("set_status",message)
 
+func _cancel_auto_harvest() -> void:
+    auto_harvest_id = ""
+    auto_route.clear()
+    auto_path_loaded = false
+    auto_stuck_time = 0.0
+    harvest_navigation.cancel()
+
+func _auto_harvest_direction(_delta: float) -> Vector2:
+    if auto_harvest_id.is_empty():
+        return Vector2.ZERO
+    if selected_harvest.is_empty() or str(selected_harvest.get("id", "")) != auto_harvest_id             or bool(selected_harvest.get("collected", false))             or not authority.matches_object(selected_harvest):
+        _cancel_auto_harvest()
+        return Vector2.ZERO
+    var target_pos: Vector2 = selected_harvest["position"]
+    var harvest_radius: float = GameplaySession.HARVEST_RANGE + maxf(0.0, float(selected_harvest.get("radius", 0.0)))
+    if actor_world.distance_squared_to(target_pos) <= harvest_radius*harvest_radius:
+        _cancel_auto_harvest()
+        _try_harvest()
+        return Vector2.ZERO
+    if harvest_navigation.state == "searching":
+        harvest_navigation.advance(32, 900)
+    if harvest_navigation.state == "failed":
+        var fail_reason: String = harvest_navigation.reason
+        _cancel_auto_harvest()
+        _harvest_feedback("YOL BULUNAMADI: " + fail_reason)
+        return Vector2.ZERO
+    if harvest_navigation.state == "searching":
+        return Vector2.ZERO
+    if harvest_navigation.state == "ready" and not auto_path_loaded:
+        auto_route.assign(harvest_navigation.path)
+        auto_path_loaded = true
+        if auto_route.is_empty():
+            _cancel_auto_harvest()
+            _harvest_feedback("HEDEFE ULAŞILAMADI")
+            return Vector2.ZERO
+        _harvest_feedback("KAYNAĞA GİDİLİYOR…")
+    while not auto_route.is_empty() and actor_world.distance_squared_to(auto_route[0]) < 36.0:
+        auto_route.pop_front()
+    if auto_route.is_empty():
+        # The next frame either reaches harvesting range or fails explicitly.
+        if actor_world.distance_squared_to(target_pos) <= harvest_radius*harvest_radius:
+            _cancel_auto_harvest()
+            _try_harvest()
+        else:
+            _cancel_auto_harvest()
+            _harvest_feedback("YOL TAMAMLANDI, KAYNAK UZAKTA")
+        return Vector2.ZERO
+    return (auto_route[0] - actor_world).normalized()
+
 func _clear_harvest_selection() -> void:
+    _cancel_auto_harvest()
     selected_harvest = {}
     if forest_gui != null:
         forest_gui.call("close")
@@ -261,6 +320,21 @@ func _try_harvest() -> void:
         push_error("TAMU_HARVEST_SOURCE_MISMATCH")
         return
     var item: Dictionary=selected_harvest
+    var harvest_radius: float = GameplaySession.HARVEST_RANGE + maxf(0.0, float(item.get("radius", 0.0)))
+    var target_pos: Vector2 = item["position"]
+    if actor_world.distance_squared_to(target_pos) > harvest_radius * harvest_radius:
+        if auto_harvest_id == str(item["id"]):
+            return
+        _cancel_auto_harvest()
+        if not harvest_navigation.begin(actor_world, target_pos, harvest_radius,
+                ACTOR_COLLISION_RADIUS, Callable(gameplay, "movement_obstacles"),
+                Callable(authority, "surface"), world_bounds):
+            _harvest_feedback("YOL BULUNAMADI: " + harvest_navigation.reason)
+            return
+        auto_harvest_id = str(item["id"])
+        _harvest_feedback("YOL HESAPLANIYOR…")
+        print("TAMU_AUTO_HARVEST_ROUTE id=", auto_harvest_id)
+        return
     var result: Dictionary=gameplay.begin_harvest(item,actor_world,
         _next_gameplay_command("harvest"))
     var status := str(result.get("status","unknown"))
@@ -313,6 +387,7 @@ func _sync_building_visuals() -> void:
             placed_visuals.erase(instance_id)
 
 func _place_workbench() -> void:
+    _cancel_auto_harvest()
     if gameplay == null or authority == null:
         return
     # Use real domain validation: distance, terrain, collision, inventory and
@@ -329,6 +404,7 @@ func _place_workbench() -> void:
     print("TAMU_BUILD_COMMAND status=",result.get("status","unknown"))
 
 func _begin_craft(recipe_id: String) -> void:
+    _cancel_auto_harvest()
     var result: Dictionary = gameplay.begin_craft(_next_gameplay_command("craft"), recipe_id)
     print("TAMU_CRAFT_COMMAND recipe=", recipe_id, " status=", result["status"])
 
@@ -524,11 +600,38 @@ func _release_joystick() -> void:
     if joystick_knob != null:
         joystick_knob.position = Vector2(47,47)
 
+func _world_ui_hit(point: Vector2) -> bool:
+    # Decorative HUD textures are IGNORE for Godot GUI dispatch, but they
+    # must still shield the authored world from pointer selection/drag.
+    if modular_hud != null and bool(modular_hud.call("blocks_world_input", point)):
+        return true
+    if forest_gui != null:
+        var popup: Control = forest_gui.get("panel") as Control
+        if popup != null and popup.is_visible_in_tree() and popup.get_global_rect().has_point(point):
+            return true
+    var legacy: Control = get_node_or_null("HarvestTestUI/HarvestOverlay") as Control
+    if legacy != null:
+        for child in legacy.get_children():
+            if child is Control and child.is_visible_in_tree() and child.get_global_rect().has_point(point):
+                return true
+    if joystick_base != null and point.distance_to(_joystick_center()) <= 105.0:
+        return true
+    return false
+
 func _input(event: InputEvent) -> void:
+    if event is InputEventScreenTouch:
+        if event.pressed:
+            if _world_ui_hit(event.position):
+                ui_touch_ids[event.index] = true
+        else:
+            ui_touch_ids.erase(event.index)
+            if world_touch_pointer == event.index:
+                world_touch_pointer = -1
+                drag = false
     if joystick_base == null:
         return
     if event is InputEventScreenTouch:
-        if event.pressed and joystick_pointer < 0 and event.position.distance_to(_joystick_center()) <= 105.0:
+        if event.pressed and joystick_pointer < 0                 and event.position.distance_to(_joystick_center()) <= 105.0:
             joystick_pointer = event.index
             _set_joystick(event.position)
             get_viewport().set_input_as_handled()
@@ -850,7 +953,7 @@ func _ready() -> void:
     add_child(forest_gui)
     forest_gui.call("setup",self)
     print("TAMU_FOREST_GUI_READY")
-    var modular_hud := MODULAR_HUD.new()
+    modular_hud = MODULAR_HUD.new()
     modular_hud.name = "ModularReferenceHUD"
     add_child(modular_hud)
     if modular_hud.setup(self):
@@ -1167,9 +1270,17 @@ func _process(delta: float) -> void:
     var visual_delta: float = 1.0 / 60.0 if OS.get_environment("TAMU_VISUAL_CI") == "1" else delta
     _update_sun(visual_delta)
     elapsed += visual_delta
-    var direction := joystick_vector if joystick_vector.length_squared() > 0.01 else Input.get_vector("ui_left","ui_right","ui_up","ui_down")
+    var manual_direction: Vector2 = joystick_vector if joystick_vector.length_squared() > 0.01 else Input.get_vector("ui_left","ui_right","ui_up","ui_down")
+    if manual_direction.length_squared() > 0.01 and not auto_harvest_id.is_empty():
+        _cancel_auto_harvest()
+        _harvest_feedback("OTOMATİK YÜRÜYÜŞ DURDURULDU")
+    var automatic_direction: Vector2 = _auto_harvest_direction(delta) if manual_direction.length_squared() <= 0.01 else Vector2.ZERO
+    var direction: Vector2 = manual_direction if manual_direction.length_squared() > 0.01 else automatic_direction
     if direction.length_squared() > 0.01:
         var intended := direction * actor_speed * delta
+        if not auto_harvest_id.is_empty() and not auto_route.is_empty():
+            intended = intended.limit_length(actor_world.distance_to(auto_route[0]))
+        var position_before: Vector2 = actor_world
         if authority != null and OS.get_environment("TAMU_VISUAL_CI") != "1":
             var moved: Dictionary = R2Collision.move(actor_world,intended,ACTOR_COLLISION_RADIUS,
                 Callable(gameplay,"movement_obstacles"))
@@ -1179,6 +1290,14 @@ func _process(delta: float) -> void:
             actor_world += intended
         actor_world.x = clampf(actor_world.x,world_bounds.position.x,world_bounds.end.x)
         actor_world.y = clampf(actor_world.y,world_bounds.position.y,world_bounds.end.y)
+        if not auto_harvest_id.is_empty() and not auto_route.is_empty():
+            if actor_world.distance_squared_to(position_before) < 0.01:
+                auto_stuck_time += delta
+                if auto_stuck_time >= 0.9:
+                    _cancel_auto_harvest()
+                    _harvest_feedback("YOL ENGELLENDİ")
+            else:
+                auto_stuck_time = 0.0
         var next_direction := "NW" if direction.y < 0.0 else "SE"
         if direction.x < -0.05:
             next_direction = "NE" if direction.y < 0.0 else "SW"
@@ -1217,6 +1336,28 @@ func _process(delta: float) -> void:
                 if _select_harvest(candidate):
                     print("TAMU_GUI_VISUAL_SELECTION_OK id=",candidate["id"])
                     break
+    if OS.get_environment("TAMU_VISUAL_CI") == "1" \
+            and OS.get_environment("TAMU_VISUAL_CASE") == "gui" and frame_no == 60:
+        var art_origin: Vector2 = modular_hud.get("joystick_origin")
+        var art_span: float = float(modular_hud.get("joystick_span"))
+        var gui_tap := art_origin + Vector2.ONE * (art_span * 0.5)
+        var popup: Control = forest_gui.get("panel") as Control
+        if selected_harvest.is_empty() or not _world_ui_hit(gui_tap) or popup == null \
+                or not _world_ui_hit(popup.get_global_rect().get_center()):
+            push_error("TAMU_UI_POINTER_SHIELD_FAILED")
+            get_tree().quit(37)
+            return
+        var old_selected: String = str(selected_harvest["id"])
+        var fake_tap := InputEventScreenTouch.new()
+        fake_tap.index = 6
+        fake_tap.pressed = true
+        fake_tap.position = gui_tap
+        _unhandled_input(fake_tap)
+        if selected_harvest.is_empty() or str(selected_harvest["id"]) != old_selected:
+            push_error("TAMU_UI_LEAKED_TO_WORLD")
+            get_tree().quit(38)
+            return
+        print("TAMU_UI_POINTER_SHIELD_OK joystick=true popup=true selection_unchanged=true")
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and frame_no == 60 and merged_mode and OS.get_environment("TAMU_VISUAL_CASE") == "reload":
         var previous_node: Node2D = region_chunks.get("fisilti_ormani")
         var previous_id: int = previous_node.get_instance_id() if previous_node != null else -1
@@ -1402,30 +1543,48 @@ func _process(delta: float) -> void:
             get_tree().quit()
 
 func _unhandled_input(event: InputEvent) -> void:
-    # Taps select visible alpha; GUI and joystick keep their own controls.
+    # Only a pointer started on the authored world may select or pan it.
+    # Controls and art may belong to separate CanvasLayers; dispatch alone
+    # cannot prevent all ScreenTouch/mouse-emulation leaks on Android.
     if event is InputEventScreenTouch:
-        if event.index == joystick_pointer or event.position.distance_to(_joystick_center()) < 110.0:
-            return
         if event.pressed:
+            if ui_touch_ids.has(event.index) or _world_ui_hit(event.position)                     or world_touch_pointer >= 0:
+                return
+            world_touch_pointer = event.index
             if _harvest_at_screen(event.position):
-                drag=false
+                drag = false
                 get_viewport().set_input_as_handled()
                 return
             if not selected_harvest.is_empty():
                 _clear_harvest_selection()
                 print("TAMU_HARVEST_DISMISSED_ON_EMPTY")
-        drag=event.pressed
-    elif event is InputEventScreenDrag and drag:
-        $Camera2D.position -= event.relative / $Camera2D.zoom
-    elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+            drag = true
+        return
+    if event is InputEventScreenDrag:
+        if drag and event.index == world_touch_pointer:
+            if _world_ui_hit(event.position):
+                drag = false
+                world_touch_pointer = -1
+                return
+            $Camera2D.position -= event.relative / $Camera2D.zoom
+        return
+    if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
         if event.pressed:
+            if _world_ui_hit(event.position):
+                drag = false
+                return
             if _harvest_at_screen(event.position):
-                drag=false
+                drag = false
                 get_viewport().set_input_as_handled()
                 return
             if not selected_harvest.is_empty():
                 _clear_harvest_selection()
                 print("TAMU_HARVEST_DISMISSED_ON_EMPTY")
-        drag=event.pressed
+            drag = true
+        else:
+            drag = false
     elif event is InputEventMouseMotion and drag:
+        if _world_ui_hit(event.position):
+            drag = false
+            return
         $Camera2D.position -= event.relative / $Camera2D.zoom

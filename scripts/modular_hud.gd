@@ -216,5 +216,20 @@ func _process(_dt: float) -> void:
     var thumb: TextureRect = sprites["joystick_thumb"]
     var dimension := joystick_span*0.34
     thumb.position = joystick_origin+Vector2.ONE*(joystick_span-dimension)*0.5+direction*joystick_span*0.28
+func blocks_world_input(point: Vector2) -> bool:
+    if root == null or not root.is_visible_in_tree():
+        return false
+    for visual in sprites.values():
+        if visual is Control and visual.is_visible_in_tree()                 and visual.get_global_rect().has_point(point):
+            return true
+    for interactive in controls.values():
+        if interactive is Control and interactive.is_visible_in_tree()                 and interactive.get_global_rect().has_point(point):
+            return true
+    if minimap != null and minimap.is_visible_in_tree()             and minimap.get_global_rect().has_point(point):
+        return true
+    if alert != null and alert.is_visible_in_tree()             and alert.get_global_rect().has_point(point):
+        return true
+    return false
+
 func verify_contract() -> bool:
     return initialized and controls.has("interact") and controls.has("zoom_plus") and sprites.has("joystick_thumb") and minimap != null

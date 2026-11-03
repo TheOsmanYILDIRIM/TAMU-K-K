@@ -1,3 +1,9 @@
+### 2026-11-03 — UI pointer isolation and incremental auto-harvest (main)
+- `scripts/main.gd` now tracks GUI-owned touch pointers and only forwards world-started contacts to alpha-selection/pan. `scripts/modular_hud.gd` treats all visible HUD art and control rectangles as world-input shields, not just clickable buttons; selection popup and legacy overlay also shield input. Manual joystick movement cancels automatic travel.
+- New `scripts/harvest_pathfinder.gd` uses budgeted, incremental Cartesian A* (32 expansions / 900 µs target per frame, 4096 node and 1536 world-unit search caps); each edge is verified with authoritative `R2Collision.move` and `GameplaySession.movement_obstacles`, with terrain walkability samples. Failure, cancellation and movement stalls have explicit feedback.
+- TOPLA outside canonical `GameplaySession.HARVEST_RANGE` schedules a path to a safe point inside harvesting range; when close, the existing Stage6 begin_harvest/transaction/ID checks run without bypass. Real resource counts, world positions, inventory and saves are unchanged.
+- CI adds deterministic `harvest_navigation_ci.gd` route/obstacle/budget checks, GUI pointer leak guard in native GUI scene, export-script inclusion, and isolated PCK boot. GitHub CI/Android acceptance pending at commit preparation; do not equate static code with physical-device test.
+
 ### 2026-11-03 — Asset consolidation phase 3 (non-runtime references)
 - Quaternius Adventurer GLB, Walking FBX and ball-joint doll ZIP are preserved byte-for-byte and relocated from repository root to assets/characters/source/ (Git blob SHAs unchanged). No production game runtime reference to these filenames was found via repository code search; no model was rebuilt.
 - Historical alternate HUD layout moved byte-for-byte from assets/gui/hud/layout.json to assets/ui/hud/layout_legacy.json; it is a distinct snapshot from the active assets/ui/hud/layout.json, so do not deduplicate by filename or overwrite either.

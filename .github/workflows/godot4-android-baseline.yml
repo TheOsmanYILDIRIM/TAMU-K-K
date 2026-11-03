@@ -53,6 +53,9 @@ jobs:
           PY
           timeout --kill-after=3s 35s godot --headless --path . --script res://scripts/gameplay_contract_ci.gd 2>&1 | tee gameplay-native.log
           grep -q TAMU_NATIVE_GAMEPLAY_CONTRACT_OK gameplay-native.log
+          timeout --kill-after=3s 25s godot --headless --path . --script res://scripts/harvest_navigation_ci.gd 2>&1 | tee harvest-navigation.log
+          grep -q TAMU_NAV_INCREMENTAL_ASTAR_OK harvest-navigation.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_NAV_.*FAILED' harvest-navigation.log; then exit 1; fi
           mkdir -p /tmp/tamu-fast-save /tmp/tamu-fast-live /tmp/tamu-fast-mods
           for phase in write reopen recovery mod_reject; do
             XDG_DATA_HOME=/tmp/tamu-fast-save TAMU_SAVE_PHASE="$phase" timeout --kill-after=3s 20s godot --headless --path . --script res://scripts/stage6_contract_ci.gd 2>&1 | tee "save-$phase.log"
@@ -483,6 +486,7 @@ jobs:
           grep -q TAMU_FOREST_GUI_VISUAL_OK screenshots/gui-merged.log
           if test -s assets/ui/selection/parts/panel.png; then
             grep -q TAMU_SELECTION_CARD_VISUAL_OK screenshots/gui-merged.log
+            grep -q TAMU_UI_POINTER_SHIELD_OK screenshots/gui-merged.log
           fi
           grep -q TAMU_HARVEST_BUTTON_GATE_OK screenshots/gui-merged.log
           cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" screenshots/harvest-forest-gui.png
@@ -593,7 +597,7 @@ jobs:
           required=('chunks/r2_objects.json','chunks/merged_layer_1.verts','data/catalog/compiled_catalog.res','assets/terrain25d/atlas_00.png','assets/osman_rig/images/front_head.png')
           assert all(any(key in s for s in names) for key in required), 'PCK_REQUIRED_ASSET_MISSING'
           runtime_scripts=('domain_catalog','domain_inventory','domain_harvesting',
-              'domain_crafting','domain_building','gameplay_session',
+              'domain_crafting','domain_building','gameplay_session','harvest_pathfinder',
               'stage6_checkpoint','stage6_domain_restore','r2_authority',
               'r2_surface','world_source','world_stream','merged_terrain',
               'world_identity','impact_effects','audio_cues','performance_hud','shadow_volume','visual_environment','forest_harvest_gui')
