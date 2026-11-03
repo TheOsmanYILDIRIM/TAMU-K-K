@@ -481,7 +481,7 @@ jobs:
             godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 \
             | tee screenshots/gui-merged.log
           grep -q TAMU_FOREST_GUI_VISUAL_OK screenshots/gui-merged.log
-          if test -f ui/selection/packs/TAMU_Selection_GUI_Parts.zip; then
+          if test -s ui/selection/parts/panel.png; then
             grep -q TAMU_SELECTION_CARD_VISUAL_OK screenshots/gui-merged.log
           fi
           grep -q TAMU_HARVEST_BUTTON_GATE_OK screenshots/gui-merged.log

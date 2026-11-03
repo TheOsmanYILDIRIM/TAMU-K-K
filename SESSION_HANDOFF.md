@@ -1,3 +1,9 @@
+### 2026-11-03 — Selection v4 direct PNG integration (Termux)
+- Source: approved v4 transparent resource card, layout reference 124100.png. Godot labels render all text; tree/rock tool and resource icons are resolved by selection_card.gd.
+- Direct GitHub files: scripts/selection_card.gd and 11 ui/selection/parts/*.png; NO selection ZIP is uploaded to the repository. Export preset already includes the 11 PNG paths.
+- Existing forest_harvest_gui.gd preserves its gameplay callbacks/fallback. Godot CI selection visual gate now checks direct part files as well as the legacy ZIP route.
+- Pending verification: actual GitHub Actions run, native visual comparison, Android PCK and touch interactions.
+
 ### 2026-11-03 — TAMU selection resource card refactor (user 124069.png)
 - New component `scripts/selection_card.gd` uses separate alpha PNGs for panel, source title, subtitle, resource row, primary/detail/mark buttons and icons; no gameplay authority. Existing `forest_harvest_gui.gd` keeps blur/focus/bokeh and host selection/harvest logic; old panel skin/buttons hidden only after complete new art is loaded.
 - New package target: `ui/selection/packs/TAMU_Selection_GUI_Parts.zip` uploaded by Termux; CI unpacks only allowlisted PNGs into `ui/selection/parts` before Godot import, so production PCK uses imported textures. Until binary upload, old panel remains as explicit fallback; not visually accepted.

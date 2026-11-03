@@ -1,137 +1,206 @@
 extends Control
-# Selection card art layer only. Gameplay authority remains in main.gd.
-# Transparent images from the user's 124069 reference, not UI screenshots.
+# TAMU resource card: presentation only. forest_harvest_gui.gd and main.gd
+# retain canonical selection, inventory, harvesting, marking and Stage6 state.
 const ART_ROOT := "res://ui/selection/parts/"
-var is_initialized := false
+const PART_NAMES := ["panel", "title_tree", "subtitle_tree", "resource_bar",
+    "button_primary", "button_detail", "button_mark", "icon_wood",
+    "icon_axe", "icon_info", "icon_pin"]
+const FALLBACK_TOOL := "res://assets/gui/pick.png"
+var is_initialized: bool = false
+var textures: Dictionary = {}
 var buttons: Dictionary = {}
-var kind_heading: Label
-var tree_heading: TextureRect
+var font_sizes: Dictionary = {}
+var heading: Label
+var subtitle: Label
 var item_name: Label
 var quantity: Label
 var status: Label
 var mark_caption: Label
 var item_icon: TextureRect
-var textures: Dictionary = {}
+var action_icon: TextureRect
 
-func _texture(name: String) -> Texture2D:
-    if not ResourceLoader.exists(ART_ROOT + name + ".png"):
-        return null
-    return load(ART_ROOT + name + ".png")
+func _place(node: Control, where: Vector2, span: Vector2) -> void:
+    node.anchor_left = where.x
+    node.anchor_top = where.y
+    node.anchor_right = where.x + span.x
+    node.anchor_bottom = where.y + span.y
+    node.offset_left = 0.0
+    node.offset_top = 0.0
+    node.offset_right = 0.0
+    node.offset_bottom = 0.0
 
-func _place(node: Control, pos: Vector2, span: Vector2) -> void:
-    node.anchor_left = pos.x
-    node.anchor_top = pos.y
-    node.anchor_right = pos.x + span.x
-    node.anchor_bottom = pos.y + span.y
-    node.offset_left = 0
-    node.offset_top = 0
-    node.offset_right = 0
-    node.offset_bottom = 0
+func _sprite(name: String, where: Vector2, span: Vector2, is_icon: bool = false) -> TextureRect:
+    var node := TextureRect.new()
+    node.name = name
+    node.texture = textures[name]
+    node.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+    node.stretch_mode = (TextureRect.STRETCH_KEEP_ASPECT_CENTERED if is_icon
+        else TextureRect.STRETCH_SCALE)
+    node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    add_child(node)
+    _place(node, where, span)
+    return node
 
-func _image(name: String, pos: Vector2, span: Vector2) -> TextureRect:
-    var image := TextureRect.new()
-    image.name = name
-    image.texture = textures[name]
-    image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-    image.stretch_mode = TextureRect.STRETCH_SCALE
-    image.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    add_child(image)
-    _place(image,pos,span)
-    return image
+func _caption(name: String, value: String, where: Vector2, span: Vector2,
+        px: int, align: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT) -> Label:
+    var node := Label.new()
+    node.name = name
+    node.text = value
+    node.horizontal_alignment = align
+    node.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+    node.clip_text = true
+    node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    node.add_theme_font_size_override("font_size", px)
+    node.add_theme_color_override("font_color", Color(0.98, 0.92, 0.78))
+    node.add_theme_color_override("font_shadow_color", Color(0.08, 0.04, 0.015, 0.92))
+    node.add_theme_constant_override("shadow_offset_x", 1)
+    node.add_theme_constant_override("shadow_offset_y", 2)
+    add_child(node)
+    _place(node, where, span)
+    font_sizes[name] = px
+    return node
 
-func _label(name: String, value: String, pos: Vector2, span: Vector2,
-        font_size: int, centered: bool = false) -> Label:
-    var label := Label.new()
-    label.name = name
-    label.text = value
-    label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    label.add_theme_font_size_override("font_size",font_size)
-    label.add_theme_color_override("font_color",Color(0.98,0.91,0.74))
-    label.add_theme_color_override("font_shadow_color",Color(0.06,0.03,0.01,0.98))
-    label.add_theme_constant_override("shadow_offset_x",1)
-    label.add_theme_constant_override("shadow_offset_y",2)
-    label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if centered else HORIZONTAL_ALIGNMENT_LEFT
-    label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-    label.clip_text = true
-    add_child(label)
-    _place(label,pos,span)
-    return label
-
-func _button(name: String, skin: String, icon_name: String,
-        caption: String, pos: Vector2, span: Vector2, action: Callable) -> TextureButton:
-    var button := TextureButton.new()
-    button.name = name
-    button.texture_normal = textures[skin]
-    button.ignore_texture_size = true
-    button.stretch_mode = TextureButton.STRETCH_SCALE
-    button.mouse_filter = Control.MOUSE_FILTER_STOP
-    button.focus_mode = Control.FOCUS_NONE
-    button.pressed.connect(action)
-    add_child(button)
-    _place(button,pos,span)
+func _button(name: String, art: String, icon_name: String, value: String,
+        where: Vector2, span: Vector2, callback: Callable) -> TextureButton:
+    var node := TextureButton.new()
+    node.name = name
+    node.texture_normal = textures[art]
+    node.ignore_texture_size = true
+    node.stretch_mode = TextureButton.STRETCH_SCALE
+    node.mouse_filter = Control.MOUSE_FILTER_STOP
+    node.focus_mode = Control.FOCUS_NONE
+    node.tooltip_text = value
+    node.pressed.connect(callback)
+    add_child(node)
+    _place(node, where, span)
     var glyph := TextureRect.new()
     glyph.name = "Glyph"
     glyph.texture = textures[icon_name]
-    glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
     glyph.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
     glyph.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-    button.add_child(glyph)
-    _place(glyph,Vector2(0.11,0.14),Vector2(0.20,0.73))
+    glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    node.add_child(glyph)
+    if name == "PrimaryHarvest":
+        _place(glyph, Vector2(0.285, 0.16), Vector2(0.13, 0.69))
+    else:
+        _place(glyph, Vector2(0.18, 0.18), Vector2(0.19, 0.66))
     var label := Label.new()
     label.name = "Caption"
-    label.text = caption
-    label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    label.add_theme_color_override("font_color",Color(1.0,0.94,0.77))
-    label.add_theme_color_override("font_shadow_color",Color(0.08,0.04,0.015,0.95))
-    label.add_theme_constant_override("shadow_offset_y",2)
-    label.add_theme_font_size_override("font_size",22 if name=="PrimaryHarvest" else 15)
-    label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    label.text = value
     label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-    button.add_child(label)
-    _place(label,Vector2(0.32,0.10),Vector2(0.61,0.80))
-    buttons[name] = button
-    return button
+    label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    label.clip_text = true
+    label.add_theme_color_override("font_color", Color(1.0, 0.94, 0.80))
+    label.add_theme_color_override("font_shadow_color", Color(0.08, 0.04, 0.01, 0.95))
+    label.add_theme_constant_override("shadow_offset_y", 2)
+    var base_px := 26 if name == "PrimaryHarvest" else 15
+    label.add_theme_font_size_override("font_size", base_px)
+    node.add_child(label)
+    if name == "PrimaryHarvest":
+        _place(label, Vector2(0.43, 0.10), Vector2(0.46, 0.80))
+    else:
+        _place(label, Vector2(0.35, 0.10), Vector2(0.60, 0.80))
+    buttons[name] = node
+    font_sizes[name] = base_px
+    return node
+
+func _update_type() -> void:
+    if not is_initialized or size.x <= 1.0 or size.y <= 1.0:
+        return
+    # The existing popup is responsive; scale captions with its actual dimensions.
+    var factor := clampf(minf(size.x / 440.0, size.y / 330.0), 0.60, 1.30)
+    for name in ["Heading", "Subtitle", "ResourceName", "Amount", "Status"]:
+        var node := get_node_or_null(name) as Label
+        if node != null:
+            node.add_theme_font_size_override("font_size", maxi(10, roundi(int(font_sizes[name]) * factor)))
+    for name in buttons:
+        var lbl := (buttons[name] as TextureButton).get_node("Caption") as Label
+        lbl.add_theme_font_size_override("font_size", maxi(10, roundi(int(font_sizes[name]) * factor)))
+
+func _notification(what: int) -> void:
+    if what == NOTIFICATION_RESIZED:
+        _update_type()
 
 func initialize(on_harvest: Callable, on_detail: Callable, on_mark: Callable) -> bool:
-    var needed := ["panel","title_tree","subtitle_tree","resource_bar",
-        "button_primary","button_detail","button_mark",
-        "icon_wood","icon_axe","icon_info","icon_pin"]
-    for name in needed:
-        var image := _texture(name)
-        if image == null:
+    if is_initialized:
+        return true
+    var result: Dictionary = {}
+    for name in PART_NAMES:
+        var path := ART_ROOT + name + ".png"
+        if not ResourceLoader.exists(path):
+            push_warning("TAMU_SELECTION_ART_MISSING: " + path)
             return false
-        textures[name] = image
+        var tex: Texture2D = load(path)
+        if tex == null:
+            push_warning("TAMU_SELECTION_ART_INVALID: " + path)
+            return false
+        result[name] = tex
+    textures = result
     set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     mouse_filter = Control.MOUSE_FILTER_PASS
-    _image("panel",Vector2.ZERO,Vector2.ONE)
-    tree_heading = _image("title_tree",Vector2(0.38,0.115),Vector2(0.48,0.13))
-    kind_heading = _label("OtherHeading","KAYA",Vector2(0.29,0.10),Vector2(0.54,0.15),26)
-    kind_heading.visible = false
-    _image("subtitle_tree",Vector2(0.36,0.259),Vector2(0.56,0.077))
-    _image("resource_bar",Vector2(0.105,0.386),Vector2(0.81,0.145))
-    item_icon = _image("icon_wood",Vector2(0.14,0.402),Vector2(0.14,0.105))
-    item_name = _label("ResourceName","Odun",Vector2(0.32,0.394),Vector2(0.36,0.13),18)
-    quantity = _label("Amount","× 4–8",Vector2(0.73,0.394),Vector2(0.17,0.13),18,true)
-    _button("PrimaryHarvest","button_primary","icon_axe","TOPLA",
-        Vector2(0.10,0.55),Vector2(0.82,0.175),on_harvest)
-    _button("DetailAction","button_detail","icon_info","DETAY",
-        Vector2(0.10,0.745),Vector2(0.395,0.139),on_detail)
-    _button("MarkAction","button_mark","icon_pin","İŞARETLE",
-        Vector2(0.515,0.745),Vector2(0.395,0.139),on_mark)
-    mark_caption = buttons["MarkAction"].get_node("Caption")
-    status = _label("Status","",Vector2(0.16,0.89),Vector2(0.73,0.075),13,true)
+    _sprite("panel", Vector2.ZERO, Vector2.ONE)
+    # 124100.png is solely the measured layout reference; its baked text is NOT used.
+    heading = _caption("Heading", "AĞAÇ", Vector2(0.407, 0.115),
+        Vector2(0.50, 0.15), 30)
+    subtitle = _caption("Subtitle", "Toplanabilir Kaynak", Vector2(0.407, 0.240),
+        Vector2(0.52, 0.097), 17)
+    var divider := ColorRect.new()
+    divider.name = "Divider"
+    divider.color = Color(0.88, 0.74, 0.52, 0.38)
+    divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    add_child(divider)
+    _place(divider, Vector2(0.375, 0.353), Vector2(0.55, 0.003))
+    _sprite("resource_bar", Vector2(0.177, 0.391), Vector2(0.758, 0.147))
+    item_icon = _sprite("icon_wood", Vector2(0.219, 0.404), Vector2(0.12, 0.123), true)
+    item_name = _caption("ResourceName", "Odun", Vector2(0.358, 0.404),
+        Vector2(0.32, 0.121), 21)
+    quantity = _caption("Amount", "× 4", Vector2(0.735, 0.404),
+        Vector2(0.16, 0.121), 19, HORIZONTAL_ALIGNMENT_RIGHT)
+    _button("PrimaryHarvest", "button_primary", "icon_axe", "TOPLA",
+        Vector2(0.176, 0.555), Vector2(0.758, 0.192), on_harvest)
+    action_icon = (buttons["PrimaryHarvest"] as TextureButton).get_node("Glyph") as TextureRect
+    _button("DetailAction", "button_detail", "icon_info", "DETAY",
+        Vector2(0.176, 0.765), Vector2(0.355, 0.142), on_detail)
+    _button("MarkAction", "button_mark", "icon_pin", "İŞARETLE",
+        Vector2(0.557, 0.765), Vector2(0.373, 0.142), on_mark)
+    mark_caption = (buttons["MarkAction"] as TextureButton).get_node("Caption") as Label
+    status = _caption("Status", "", Vector2(0.19, 0.91),
+        Vector2(0.72, 0.057), 11, HORIZONTAL_ALIGNMENT_CENTER)
+    status.visible = false
     is_initialized = true
+    _update_type()
     return true
+
+func _load_icon(paths: Array[String]) -> Texture2D:
+    for path in paths:
+        if ResourceLoader.exists(path):
+            var tex: Texture2D = load(path)
+            if tex != null:
+                return tex
+    return null
+
+func set_icons(resource_tex: Texture2D, tool_tex: Texture2D) -> void:
+    # Optional mod/gameplay adapter. Does NOT mutate canonical inventory or IDs.
+    if is_initialized:
+        item_icon.texture = resource_tex
+        action_icon.texture = tool_tex
 
 func set_resource(kind: String, item_title: String, count: int) -> void:
     if not is_initialized:
         return
-    tree_heading.visible = kind=="tree"
-    kind_heading.visible = kind!="tree"
-    kind_heading.text = "KAYA" if kind=="rock" else kind.to_upper()
+    heading.text = "AĞAÇ" if kind == "tree" else ("KAYA" if kind == "rock" else kind.to_upper())
+    subtitle.text = "Toplanabilir Kaynak"
     item_name.text = item_title
-    quantity.text = "× " + str(count)
-    item_icon.texture = textures["icon_wood"] if kind=="tree" else load("res://assets/gui/pick.png")
+    quantity.text = "× " + str(maxi(0, count))
+    if kind == "tree":
+        set_icons(textures["icon_wood"], textures["icon_axe"])
+    elif kind == "rock":
+        # Rock is NOT represented as wood. Use actual engine assets if present.
+        set_icons(_load_icon(["res://assets/gui/stone.png", FALLBACK_TOOL]),
+            _load_icon([FALLBACK_TOOL]))
+    else:
+        set_icons(null, null)
     set_marked(false)
     set_status("")
 
@@ -142,6 +211,9 @@ func set_marked(value: bool) -> void:
 func set_status(value: String) -> void:
     if is_initialized:
         status.text = value
+        status.visible = not value.is_empty()
 
 func verify_contract() -> bool:
-    return is_initialized and buttons.has("PrimaryHarvest") and buttons.has("DetailAction") and buttons.has("MarkAction")
+    return (is_initialized and textures.size() == PART_NAMES.size()
+        and buttons.has("PrimaryHarvest") and buttons.has("DetailAction")
+        and buttons.has("MarkAction"))
