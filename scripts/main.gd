@@ -814,7 +814,13 @@ func _refresh_streaming_requests() -> void:
         # foliage/rock sprites and alpha shadows are culled by visible source cell.
         for stem in object_visuals_by_chunk:
             var show: bool = view_required.has(stem)
-            if not object_chunk_visibility.has(stem) or bool(object_chunk_visibility[stem]) != show:
+            # A world reload/harvest can change CanvasItem.visible without
+            # changing the camera cell. Heal stale visibility using the first
+            # authored item as a low-cost sentinel; avoid rewriting 832
+            # objects on every camera plan when they are already correct.
+            var nodes: Array = object_visuals_by_chunk[stem]
+            var stale: bool = not nodes.is_empty() and is_instance_valid(nodes[0]) and                 nodes[0].visible != (show and not bool(nodes[0].get_meta("tamu_collected", false)))
+            if stale or not object_chunk_visibility.has(stem) or bool(object_chunk_visibility[stem]) != show:
                 _set_chunk_visuals_visible(str(stem), show)
                 object_chunk_visibility[stem] = show
         camera_missing = 0
@@ -1452,17 +1458,22 @@ func _process(delta: float) -> void:
             push_error("TAMU_PERF_HUD_GATE_FAILED")
             get_tree().quit(10)
             return
+        # Gate the current viewport plan, not the historical all-visible
+        # merged-region assumption or an outdated dictionary sentinel.
+        if merged_mode:
+            _refresh_streaming_requests()
         var visible_faults := 0
+        var visible_fail_examples: Array[String] = []
         for stem in object_visuals_by_chunk:
             for node in object_visuals_by_chunk[stem]:
-                # Visibility is explicitly tracked per source chunk even in
-                # merged terrain mode; invisible objects are a mobile perf
-                # feature, not an authored-world parity failure.
-                var source_visible: bool = bool(object_chunk_visibility.get(stem, false)) if merged_mode else (chunk_nodes.has(stem) and chunk_nodes[stem].visible)
+                var source_visible: bool = view_required.has(stem) if merged_mode else (chunk_nodes.has(stem) and chunk_nodes[stem].visible)
                 var expected: bool = source_visible and not bool(node.get_meta("tamu_collected", false))
                 if node.visible != expected:
                     visible_faults += 1
+                    if visible_fail_examples.size() < 3:
+                        visible_fail_examples.append("%s expected=%s actual=%s" % [str(stem), str(expected), str(node.visible)])
         if visible_faults > 0:
+            print("TAMU_OBJECT_VISIBILITY_DIAGNOSTIC ", visible_fail_examples)
             push_error("TAMU_OBJECT_TERRAIN_REVEAL_FAILED faults=" + str(visible_faults))
             get_tree().quit(7)
             return
