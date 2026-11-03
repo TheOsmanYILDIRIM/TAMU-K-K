@@ -1,3 +1,12 @@
+## TAMU Godot asset yerleşimi (2026-11-03)
+
+- **Authoritative UI:** `assets/ui/selection/parts/*.png` (11 gerçek PNG), `assets/ui/hud/layout.json` ve `assets/ui/hud/packs/TAMU_HUD_Correct_Split.zip`. HUD ZIP yalnız import kaynağıdır; CI 29 PNG'yi `assets/ui/hud/parts/` altında üretir. Selection PNG'ler doğrudan repoda, selection ZIP yüklenmez.
+- **Kaynak 3D referansları:** `assets/characters/source/` (orijinal GLB/FBX/ZIP blob SHA korunur). Üçüncü taraf lisans kapısı geçilmeden oyuna otomatik yerleştirilmez.
+- **Tarihsel HUD snapshot:** `assets/ui/hud/layout_legacy.json` ayrı sürümdür, aktif dosya ile karıştırılmaz.
+- **Çalışma zamanı üretilenler:** Godot `assets/gui/`, `assets/terrain25d/`, `assets/osman_rig/` yolları mevcut build/CI tarafından oluşturulur; bu dizinleri topluca yeniden adlandırmak export, shader ve kaynak bütünlüğü testleri geçmeden yapılmaz.
+- **LÖVE source-of-truth:** `game/love/assets/` orijinal kaynakları korunur. Depo kökündeki `121227.png`, LÖVE balta/packaging testlerinde kullanıldığı için şimdilik taşınmaz.
+- Taşıma/isim değiştirmede aynı Git blob SHA ile Git tree move uygulanır; GDScript `res://` yolları, `export_presets.cfg`, workflow ve PCK içerik testleri aynı committe güncellenir. Her aşamada Godot CI ve LÖVE CI ayrı kabul kapısıdır; Android cihaz testi değildir.
+
 # 3D modelleme yükünü düşürme planı
 
 Üç kaynak birlikte kullanılabilir fakat varlıkların kaynak hakları ayrı ayrı kayıt edilir.

@@ -1,3 +1,9 @@
+### 2026-11-03 — Asset consolidation phase 3 (non-runtime references)
+- Quaternius Adventurer GLB, Walking FBX and ball-joint doll ZIP are preserved byte-for-byte and relocated from repository root to assets/characters/source/ (Git blob SHAs unchanged). No production game runtime reference to these filenames was found via repository code search; no model was rebuilt.
+- Historical alternate HUD layout moved byte-for-byte from assets/gui/hud/layout.json to assets/ui/hud/layout_legacy.json; it is a distinct snapshot from the active assets/ui/hud/layout.json, so do not deduplicate by filename or overwrite either.
+- Root 121227.png is deliberately NOT moved: LÖVE axe and packaging code still references it. LÖVE assets, world sources, data, saves, branches and generated texture pipeline remain unchanged.
+- Visual/PCK, Android and real-device acceptance must be assessed separately. No automatic deduplication or deletion of legacy references is authorized.
+
 ### 2026-11-03 — TAMU asset directory consolidation (staged)
 - Phase 1 commit 67a6a7f: selected 11 transparent resource card PNG blobs moved unchanged from ui/selection/parts to assets/ui/selection/parts; adjusted selection_card.gd, main.gd, export_presets.cfg and Godot workflow; old path removed without touching LÖVE assets. Source SHA preserved for each moved PNG. GitHub HEAD/tree and source paths were read back, new CI at #41618974633 pending when phase 2 was prepared.
 - Phase 2: authored HUD layout.json and HUD ZIP moved (same SHA) to assets/ui/hud, CI extracts 29 PNG textures to assets/ui/hud/parts; modular_hud.gd, export presets and PCK tests adapted. Historical assets/gui/hud/layout.json kept because it is a distinct layout version. Old LÖVE sources, authored map, saves and runtime material generation remain unchanged.
