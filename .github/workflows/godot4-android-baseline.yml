@@ -357,7 +357,7 @@ jobs:
               output.mkdir(parents=True,exist_ok=True)
               for name in names:
                   raw=pack.read(f'{name}.png')
-                  assert raw.startswith(b'\\x89PNG\\r\\n\\x1a\\n'), f'TAMU_SELECTION_BAD_PNG {name}'
+                  assert raw.startswith(b'\x89PNG\r\n\x1a\n'), f'TAMU_SELECTION_BAD_PNG {name}'
                   (output/f'{name}.png').write_bytes(raw)
           print('TAMU_SELECTION_GUI_TEXTURES_EXTRACTED',len(names))
           PYSELECTION
