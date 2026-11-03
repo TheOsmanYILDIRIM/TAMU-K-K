@@ -4,6 +4,9 @@ on:
     branches:
       - experiment/godot4-android-apk-20261031
       - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 permissions:
   contents: read
