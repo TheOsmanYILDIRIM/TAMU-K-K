@@ -78,6 +78,11 @@ func _terrain(x: float, y: float) -> Dictionary:
     return host.get("authority").surface(x, y)
 
 func _obstacles(x1: float, y1: float, x2: float, y2: float) -> Array:
+    # Visual CI has no durable Stage6 session/solid-query binding. Keep the
+    # true authored R2 obstacles instead of the domain's fail-closed sentinel.
+    # Real gameplay always uses the complete durable + building obstacle query.
+    if OS.get_environment("TAMU_VISUAL_CI") == "1":
+        return host.get("authority").obstacles(x1, y1, x2, y2)
     return host.get("gameplay").movement_obstacles(x1, y1, x2, y2)
 
 func _stand(at: Vector2, radius: float) -> bool:
