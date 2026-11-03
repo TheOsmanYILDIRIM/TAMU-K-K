@@ -817,7 +817,17 @@ func _ready() -> void:
     silhouette_material.shader = SHADOW_SHADER
     terrain_atlas = load("res://assets/terrain25d/atlas_00.png")
     env_visual_stage = VisualEnvironment.level()
-    if env_visual_stage >= 1:
+    var terrain_hires := OS.get_environment("TAMU_TERRAIN_HIRES") != "0" and ResourceLoader.exists("res://assets/terrain25d/atlas_00_hires.png")
+    if terrain_hires:
+        var terrain_path := "res://assets/terrain25d/atlas_00_mix_hires.png" if env_visual_stage >= 1 else "res://assets/terrain25d/atlas_00_hires.png"
+        if ResourceLoader.exists(terrain_path):
+            terrain_atlas = load(terrain_path)
+            print("TAMU_TERRAIN_HIRES_ACTIVE size=", terrain_atlas.get_size(), " stage=", env_visual_stage)
+        else:
+            push_error("TAMU_TERRAIN_HIRES_MIX_MISSING")
+            get_tree().quit(32)
+            return
+    if env_visual_stage >= 1 and not terrain_hires:
         # Build-time packed derivative: one texture fetch rather than the
         # four-lookups-per-pixel prototype shader, with no extra draw calls.
         var mixed_path := "res://assets/terrain25d/atlas_00_mix.png"
@@ -1196,7 +1206,7 @@ func _load_objects() -> void:
             visual_jitter = VisualEnvironment.variation(h, kind)
         var scale_value := float(scales.get(family, 0.5)) * visual_jitter
         if object_hires_active:
-            scale_value *= 0.25 # 512px source, original authored 128px world footprint
+            scale_value *= 128.0 / (size.x / 8.0) # Preserve 128px logical footprint across 512/384/256 atlas tiers
         sprite.scale = Vector2.ONE * scale_value
         if env_visual_stage >= 2:
             sprite.flip_h = posmod(h, 2) == 0
