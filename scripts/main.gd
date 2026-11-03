@@ -813,7 +813,17 @@ func _ready() -> void:
     silhouette_material.shader = SHADOW_SHADER
     terrain_atlas = load("res://assets/terrain25d/atlas_00.png")
     env_visual_stage = VisualEnvironment.level()
-    if env_visual_stage >= 1:
+    var terrain_hires := OS.get_environment("TAMU_TERRAIN_HIRES") != "0" and ResourceLoader.exists("res://assets/terrain25d/atlas_00_hires.png")
+    if terrain_hires:
+        var terrain_path := "res://assets/terrain25d/atlas_00_mix_hires.png" if env_visual_stage >= 1 else "res://assets/terrain25d/atlas_00_hires.png"
+        if ResourceLoader.exists(terrain_path):
+            terrain_atlas = load(terrain_path)
+            print("TAMU_TERRAIN_HIRES_ACTIVE size=", terrain_atlas.get_size(), " stage=", env_visual_stage)
+        else:
+            push_error("TAMU_TERRAIN_HIRES_MIX_MISSING")
+            get_tree().quit(32)
+            return
+    if env_visual_stage >= 1 and not terrain_hires:
         # Build-time packed derivative: one texture fetch rather than the
         # four-lookups-per-pixel prototype shader, with no extra draw calls.
         var mixed_path := "res://assets/terrain25d/atlas_00_mix.png"
@@ -916,7 +926,8 @@ func _ready() -> void:
     if env_visual_stage >= 3:
         var decor_manifest: Variant = JSON.parse_string(
             FileAccess.get_file_as_string("res://assets/terrain25d/manifest.json"))
-        var decor_atlas: Texture2D = load("res://assets/terrain25d/atlas_01.png")
+        var decor_hires_active: bool = VisualEnvironment.apply_highres_object_uvs(decor_manifest)
+        var decor_atlas: Texture2D = load(VisualEnvironment.HIRES_OBJECT_ATLAS if decor_hires_active else "res://assets/terrain25d/atlas_01.png")
         var decor: Dictionary = VisualEnvironment.detail_mesh(decor_manifest, decor_atlas, harvestables, authority)
         detail_count = int(decor.get("count",0))
         detail_environment = decor.get("node",null)
@@ -1124,6 +1135,8 @@ func _load_objects() -> void:
         get_tree().quit(4)
         return
     var manifest = JSON.parse_string(FileAccess.get_file_as_string("res://assets/terrain25d/manifest.json"))
+    var object_hires_active: bool = VisualEnvironment.apply_highres_object_uvs(manifest)
+    print("TAMU_OBJECT_HIRES_ACTIVE active=",object_hires_active," atlas=",("4096" if object_hires_active else "1056"))
     var variants := {}
     for item in manifest["assets"]:
         if item.get("kind") == "object" and item.get("atlas_page") == "atlas_01.png" and item.has("uv_rect"):
@@ -1145,7 +1158,7 @@ func _load_objects() -> void:
     shadow_layer.z_index = 2
     add_child(shadow_layer)
     object_layer.z_index = 3
-    var atlas: Texture2D = load("res://assets/terrain25d/atlas_01.png")
+    var atlas: Texture2D = load(VisualEnvironment.HIRES_OBJECT_ATLAS if object_hires_active else "res://assets/terrain25d/atlas_01.png")
     var size := atlas.get_size()
     for o in data["objects"]:
         var id: String = o["id"]
@@ -1188,6 +1201,8 @@ func _load_objects() -> void:
         if env_visual_stage >= 2:
             visual_jitter = VisualEnvironment.variation(h, kind)
         var scale_value := float(scales.get(family, 0.5)) * visual_jitter
+        if object_hires_active:
+            scale_value *= 128.0 / (size.x / 8.0) # Preserve 128px logical footprint across 512/384/256 atlas tiers
         sprite.scale = Vector2.ONE * scale_value
         if env_visual_stage >= 2:
             sprite.flip_h = posmod(h, 2) == 0
