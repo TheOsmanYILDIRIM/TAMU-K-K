@@ -106,6 +106,30 @@ func _find_spawn(origin: Vector2, index: int) -> Vector2:
                 break
         if clear:
             return p
+    # The player's starting shoreline can have no valid local candidates.
+    # Fall back only to validated, authored R2 chunk cells; never fake walkability.
+    var keys: Array = host.get("available_chunks").keys()
+    keys.sort_custom(func(a, b):
+        var pa: Vector2 = WorldProjection.chunk_center_from_key(str(a))
+        var pb: Vector2 = WorldProjection.chunk_center_from_key(str(b))
+        var da: float = pa.distance_squared_to(origin)
+        var db: float = pb.distance_squared_to(origin)
+        return str(a) < str(b) if is_equal_approx(da, db) else da < db)
+    for key in keys:
+        var center: Vector2 = WorldProjection.chunk_center_from_key(str(key))
+        for offset in [Vector2.ZERO, Vector2(64, 0), Vector2(-64, 0),
+                Vector2(0, 64), Vector2(0, -64)]:
+            var candidate: Vector2 = center + offset
+            if not _stand(candidate, float(SPECIES.radius)):
+                continue
+            var separate := true
+            for other in agents:
+                if candidate.distance_to(other["position"]) < float(SPECIES.radius) * 3.5:
+                    separate = false
+                    break
+            if separate:
+                print("TAMU_MOB_AUTHORED_SPAWN_FALLBACK key=", key, " species_index=", index)
+                return candidate
     return Vector2(INF, INF)
 
 func spawn(definition: Resource, at: Vector2, seed_offset: int = 0) -> bool:
