@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>World Builder · Region Studio V1</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui;background:#101918;color:#e9f0e5}*{box-sizing:border-box}body{margin:0}header{padding:13px max(14px,env(safe-area-inset-left));background:#1b2d27;display:flex;align-items:center;justify-content:space-between;gap:8px}h1{font-size:17px;margin:0}small{color:#acc4b4}a{color:#cfe8a2}main{display:grid;gap:12px;padding:12px;max-width:1400px;margin:auto}section{border:1px solid #3b5c4c;background:#1c2a24;border-radius:14px;padding:12px}canvas{width:100%;height:53vh;min-height:320px;display:block;touch-action:none;background:#243c35;border-radius:9px}button,input,select{font:inherit;min-height:44px;border-radius:9px;border:1px solid #557663;background:#304638;color:#f2f8ec;padding:8px}input,select{width:100%}button{cursor:pointer}button.active{background:#bbd68d;color:#172417}.controls{display:flex;flex-wrap:wrap;gap:7px}.controls button{flex:1 1 90px}.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}label{display:grid;gap:5px;font-size:12px;color:#cee0ce}.wide{grid-column:1/-1}p{font-size:13px;line-height:1.5;color:#b4c9bc}#status{min-height:36px;white-space:pre-wrap}#file{display:none}@media(min-width:950px){main{grid-template-columns:minmax(0,2fr) minmax(300px,1fr)}canvas{height:70vh}}
+</style></head><body><header><div><h1>◈ Region Studio V1</h1><small>World Builder · 45° ISO · authored contract</small></div><a href="./index.html">Eski editör ↗</a></header>
+<main><section><div class="controls"><button data-mode="pan" class="active">Gezin</button><button data-mode="vertex">Köşe taşı</button><button data-mode="anchor">Bağlantı taşı</button><button id="undo">Geri al</button><button id="fit">Sığdır</button></div>
+<canvas id="map" aria-label="Bölge geometrisi düzenleyicisi"></canvas><p>Tek dokunuş: en yakın köşeyi veya bağlantı merkezini seç. Sürükle: taşı. İki parmak: gezin/yakınlaştır. Bağlantı geçerliliği dışa aktarmadan önce doğrulanır; çizimde grid yoktur.</p>
+<div class="controls"><button id="addRegion">＋ Bölge</button><button id="deleteRegion">− Bölge</button><button id="addConnector">＋ Bağlantı</button><button id="deleteConnector">− Bağlantı</button></div><div class="controls"><button id="loadPilot">Fısıltı Ormanı pilotu</button><button id="import">JSON içe aktar</button><button id="export">JSON dışa aktar</button><button id="backup">Yedek indir</button><input type="file" id="file" accept=".json,application/json"></div>
+<p id="status" role="status"></p></section>
+<section><h2>Harita ve seçim</h2><div class="fields">
+<label class="wide">Harita adı<input id="mapName" maxlength="100"></label>
+<label class="wide">Harita ID (kalıcı)<input id="mapId" readonly></label>
+<label>Seed<input id="seed" type="number" min="0" max="2147483646"></label>
+<label>Seçim<select id="selection"></select></label>
+<label class="wide">Seçili ad<input id="name" maxlength="100"></label>
+<label>Biyom<select id="biome"><option>meadow</option><option>forest</option><option>rocky</option></select></label>
+<label>Varyant<input id="variant" pattern="[a-z][a-z0-9_]*"></label>
+<label>Bağlantı genişliği<input id="width" type="number" min="0.1" max="64" step="0.1"></label>
+<label>Bağlantı türü<select id="kind"><option>path</option><option>water</option></select></label>
+<label class="wide">Seçili ID (değişmez)<input id="identity" readonly></label>
+</div><p>Değişiklikler yalnız ayrı <code>osman-worldbuild-contract-v1-draft</code> anahtarında saklanır. Eski v1/v2 kayıtlarına dokunulmaz. Import başarısızsa aktif harita korunur.</p><button id="revert">Son kaydı yeniden yükle</button></section></main>
+<script type="module" src="./contract-editor.js"></script></body></html>

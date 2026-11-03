@@ -1,0 +1,1 @@
+{"type":"object","required":["save_version","player_id","world_id","inventory","settings"],"properties":{"save_version":{"const":1},"player_id":{"type":"string"},"world_id":{"type":"string"},"inventory":{"type":"array"},"settings":{"type":"object"}}}

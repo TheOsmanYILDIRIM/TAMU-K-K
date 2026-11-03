@@ -1,0 +1,115 @@
+{
+  "creatures": [
+    {
+      "name": "Fısıltı Tavşanı",
+      "slug": "fisilti-tavsani",
+      "image": "images/Fisilti_Tavsani_Konsept.png",
+      "category": "Küçük otçul",
+      "habitat": "Orman zemini",
+      "description": "Yaprak damarlı döner kulaklar, titreşim algılayan yanak yelpazeleri ve yana sıçramaya uygun güçlü arka bacaklar.",
+      "rig": "images/Fisilti_Tavsani_Yan_Profil_RGBA.png"
+    },
+    {
+      "name": "Kabuk Sırtı",
+      "slug": "kabuk-sirti",
+      "image": "images/Kabuk_Sirti_Konsept.png",
+      "category": "Orta otçul",
+      "habitat": "Dere kenarı",
+      "description": "Üst sırtı organik kabuk katmanlarıyla korunan, çalıları yarıp ilerleyen, alçak ağırlık merkezli otçul.",
+      "rig": null
+    },
+    {
+      "name": "Taşkabuk",
+      "slug": "taskabuk",
+      "image": "images/Taskabuk_Konsept.png",
+      "category": "Büyük otçul",
+      "habitat": "Orman açıklığı",
+      "description": "Mineralize taşsı plakalı, açık renk yumuşak karın bölgesi bulunan ağır ve dirençli megafauna.",
+      "rig": null
+    },
+    {
+      "name": "Yosun Gezginciği",
+      "slug": "yosun-gezgincigi",
+      "image": "images/Yosun_Gezgincigi_Konsept.png",
+      "category": "Küçük otçul",
+      "habitat": "Nemli orman zemini",
+      "description": "Yosun yastıklarını taklit eden keratin kabarcıklı, dört yürüyüş ve iki beslenme uzvu olan küçük tarayıcı.",
+      "rig": null
+    },
+    {
+      "name": "İz Avcısı",
+      "slug": "iz-avcisi",
+      "image": "images/Iz_Avcisi_Konsept.png",
+      "category": "Orta yırtıcı",
+      "habitat": "Derin orman",
+      "description": "Yanaklarından açılan çift koku yelpazesi, sessiz ayak tabanları ve uzun denge kuyruğuyla takipçi.",
+      "rig": null
+    },
+    {
+      "name": "Diken Omuz",
+      "slug": "diken-omuz",
+      "image": "images/Diken_Omuz_Konsept.png",
+      "category": "Büyük yırtıcı",
+      "habitat": "Orman kenarı",
+      "description": "Kazmaya uygun iri ön pençeler ve geriye dönük kısa dikenler taşıyan çift omuz kalkanı.",
+      "rig": null
+    },
+    {
+      "name": "Dere Pusucusu",
+      "slug": "dere-pusucusu",
+      "image": "images/Dere_Pusucusu_Konsept.png",
+      "category": "Yarı sucul yırtıcı",
+      "habitat": "Akarsu",
+      "description": "Yassı başlı, su çizgisinde görebilen gözlü ve kuyruktan güçlü itiş alan pusu avcısı.",
+      "rig": null
+    },
+    {
+      "name": "Kırıkdiş",
+      "slug": "kirikdis",
+      "image": "images/Kirikdis_Konsept.png",
+      "category": "Orta yırtıcı",
+      "habitat": "Orman kenarı",
+      "description": "Asimetrik kırık dişleri, güçlü koşucu arka bacakları ve küçük mineralize kuyruk topuzu olan fırsatçı.",
+      "rig": null
+    },
+    {
+      "name": "Saz Sırtı",
+      "slug": "saz-sirti",
+      "image": "images/Saz_Sirti_Konsept.png",
+      "category": "Yarı sucul hepçil",
+      "habitat": "Sazlık",
+      "description": "Yumuşak saz biçimli sırt saçakları, kısmen perdeli ayakları ve yüzme kuyruğuyla sosyal gezgin.",
+      "rig": null
+    },
+    {
+      "name": "Közboğaz",
+      "slug": "kozbogaz",
+      "image": "images/Kozbogaz_Konsept.png",
+      "category": "Isı yırtıcısı",
+      "habitat": "Kayalık orman",
+      "description": "Boynunda iki ısı kesesi ve sırtında ısı tahliye zarları bulunan biyomagik avcı.",
+      "rig": null
+    }
+  ],
+  "source_archive": "TAMU_Yaratiklar_ve_Referanslar.zip",
+  "source_files_sha256": {
+    "Harita_Genis.png": "8c94a5babe415acb29b686890153e035516c260d8beacb4fdedc5ef5f8d323d3",
+    "Kozbogaz_Konsept.png": "ecc84653c758dcf58454cae106b0644748f26d3055d3b87e20fb7733d7d4b54d",
+    "Harita_Yakin.png": "b577769360d264625bad234c0793b949509525217865b318d7fd917f414c06fe",
+    "Fisilti_Tavsani_Kaynak.png": "1c32d2d6acd6e882382d8acd6c62110cb210df7bed729413a5ae9245845a3a7e",
+    "Kabuk_Sirti_Konsept.png": "9b00e3895c1915f5177d02b774281c147a5990566d3a8f0d38acc2778caa69de",
+    "Fisilti_Tavsani_Yan_Profil_RGBA.png": "93c206a17f5faa98cc36a6ceb291b5ccd183722747332478994b8fceecb49e33",
+    "Kirikdis_Konsept.png": "66806b252533976bb4333234f08ecae60740f0f27e97da685136a0eb7dbffc0e",
+    "Saz_Sirti_Konsept.png": "1da0ffe224f31ebf5d32c03d6fb52931920ba4fa4a892fe37b0bba3be016df4f",
+    "Fisilti_Tavsani_Konsept.png": "3b97d31e753bf303326d215984cd7e4a434d9d0a171217b9be8560ae9b82c327",
+    "Yosun_Gezgincigi_Konsept.png": "3d73135fc7ae6ec7cf60a02301930e994986d72c14b204e2f51dc8b45f809690",
+    "Dere_Pusucusu_Konsept.png": "c0958d3e532932865fb9ee77c714cf224b0829ed5570110e61cdb5c1eb328f94",
+    "Diken_Omuz_Konsept.png": "85b6305f689903b92d19d45db88fddb77977fcf274f5ed2e376c9a14e11a947b",
+    "Iz_Avcisi_Konsept.png": "d144f10cf012fa37fc901919dbbeef3228a839ffde0d9457d5430c0f8d9a049d",
+    "Kirikdis_Alternatif_Konsept.png": "5f8a330052f9b3ccf066134db44d52c9b78c720614d77d527a9e083cb4533235",
+    "Taskabuk_Konsept.png": "9e2c43300e41d45b63ac7c85e645c9b3402234594f4f2221b6c07a5d6ca9c7ca"
+  },
+  "additional_uploaded_concepts": {
+    "kirikdis-alternative": "images/Kirikdis_Alternatif_Konsept.png"
+  }
+}

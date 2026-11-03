@@ -1,0 +1,12 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/mob_policy.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "core:defensive_herbivore"
+diet = "herbivore"
+temperament = "defensive"
+social = true
+bravery = 0.75
+carrion_preference = 0.0

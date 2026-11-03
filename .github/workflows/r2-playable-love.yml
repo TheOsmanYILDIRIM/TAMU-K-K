@@ -1,0 +1,277 @@
+name: R2 portable playable LOVE package
+on:
+  push:
+    branches:
+      - experiment/r2-persistent-chunk-cache-20261020
+    paths:
+      - .github/workflows/r2-playable-love.yml
+      - game/love/tests/portable_r2_hud_patch.py
+      - game/love/world/stream.lua
+      - game/love/world/terrain_renderer.lua
+      - game/love/tests/r2_viewport.lua
+      - game/love/core/r2_android_probe.lua
+      - game/love/tests/r2_android_probe.lua
+  workflow_dispatch:
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install real LÖVE runtime and ZIP
+        run: sudo apt-get update -qq && sudo apt-get install -y love xvfb lua5.4 luajit python3-pil zip
+      - name: Validate mobile probe percentiles and diagnostic mode isolation
+        run: |
+          (cd game/love && lua5.4 tests/r2_android_probe.lua)
+          (cd game/love && lua5.4 tests/r2_topography_surface.lua && luajit tests/r2_topography_surface.lua)
+      - name: Make standalone R2 package in a disposable staging copy
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/gamepkg/data/worldbuild" "$RUNNER_TEMP/export"
+          cp -a game/love/. "$RUNNER_TEMP/gamepkg/"
+          cp data/worldbuild/fisilti_ormani.r2.v1.json "$RUNNER_TEMP/gamepkg/data/worldbuild/"
+          cp data/worldbuild/osman_overworld.v2.json "$RUNNER_TEMP/gamepkg/data/worldbuild/"
+          python3 - <<'PY'
+          import hashlib,pathlib,re
+          root=pathlib.Path(__import__('os').environ['RUNNER_TEMP'])/'gamepkg'
+          p=root/'main.lua'
+          text=p.read_text()
+          opts=[
+            ('local r2_pilot_enabled=os.getenv("OSMAN_R2_PILOT")=="1"',
+             'local r2_pilot_enabled=os.getenv("OSMAN_R2_PILOT")~="0"'),
+            ('local cache_pilot_enabled=os.getenv("OSMAN_CHUNK_CACHE_PILOT")=="1"',
+             'local cache_pilot_enabled=os.getenv("OSMAN_CHUNK_CACHE_PILOT")~="0"')]
+          for a,b in opts:
+            assert text.count(a)==1,'launch flag changed: '+a
+            text=text.replace(a,b)
+          p.write_text(text)
+          p=root/'world/r2_playable.lua'
+          source=p.read_text()
+          old=r'local function source_read\(name\)\n.*?\nend\nlocal function read_doc'
+          replacement='''local function source_read(name)
+            -- Package-only adapter; SHA256 hash checks in read_doc remain exact.
+            assert(files[name],"unknown R2 authored map")
+            local bytes,err=love.filesystem.read("data/worldbuild/"..name)
+            assert(bytes,"R2 authored map missing from LOVE package: "..tostring(err))
+            return bytes
+          end
+          local function read_doc'''
+          source,n=re.subn(old,replacement,source,flags=re.S)
+          assert n==1,'R2 source-read anchor changed'
+          p.write_text(source)
+          for name,expected in {
+            'fisilti_ormani.r2.v1.json':'df5d0eeca59030e6585558c15d8f1e7bf049638ea8032dc17c1b80c74106f598',
+            'osman_overworld.v2.json':'ac5903fd22cd466cfc1786cbeef44f2679be87317c6bfd757a05a282172f78dc'
+          }.items():
+            blob=(root/'data/worldbuild'/name).read_bytes()
+            assert hashlib.sha256(blob).hexdigest()==expected,'R2 authored source hash mismatch'
+          assert (root/'world/chunk_cache_worker.lua').is_file()
+          assert (root/'core/r2_android_probe.lua').is_file()
+          assert (root/'assets/core_plasma_front_spritesheet_32x512.png').is_file()
+          assert (root/'conf.lua').is_file()
+          assert (root/'main.lua').is_file()
+          print('PORTABLE_LOVE_SOURCE_HASH_OK')
+          PY
+          cat > "$RUNNER_TEMP/gamepkg/PORTABLE_BUILD_README.txt" <<'EOF'
+          Osman Oyun - R2 Fisilti Ormani
+          Experimental playable prototype (not production save).
+          Launch using LÖVE 11.x: love Osman_Oyun_R2_Guncel.love
+          R2 authored world and persistent disposable terrain cache start enabled.
+          Use WASD / touch controls. Game progress is session-only.
+          To disable preview R2 at desktop: OSMAN_R2_PILOT=0.
+          No Stage6 real player save is modified by this package.
+          Build branch: experiment/r2-persistent-chunk-cache-20261020
+          EOF
+          (cd "$RUNNER_TEMP/gamepkg" && zip -qr "$RUNNER_TEMP/export/Osman_Oyun_R2_Guncel.love" .)
+          python3 - <<'PY'
+          import os,zipfile,pathlib
+          z=pathlib.Path(os.environ['RUNNER_TEMP'])/'export/Osman_Oyun_R2_Guncel.love'
+          with zipfile.ZipFile(z) as f:
+            assert f.testzip() is None
+            for name in ('main.lua','conf.lua','world/r2_playable.lua',
+               'world/chunk_cache_worker.lua',
+               'data/worldbuild/fisilti_ormani.r2.v1.json',
+               'data/worldbuild/osman_overworld.v2.json'):
+               assert name in f.namelist(),name
+          print('PORTABLE_LOVE_ZIP_OK',z.stat().st_size)
+          PY
+          sha256sum "$RUNNER_TEMP/export/Osman_Oyun_R2_Guncel.love" | tee "$RUNNER_TEMP/export/SHA256.txt"
+      - name: Bake 156 authored R2 chunks offline and add on-screen FPS diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 game/love/tests/portable_r2_hud_patch.py "$RUNNER_TEMP/gamepkg"
+          cp "$RUNNER_TEMP/gamepkg/main.lua" "$RUNNER_TEMP/r2-game-main.lua"
+          cp game/love/tests/prebake_r2_cache.lua "$RUNNER_TEMP/gamepkg/main.lua"
+          export XDG_DATA_HOME="$RUNNER_TEMP/r2-prebake-user"
+          mkdir -p "$XDG_DATA_HOME"
+          timeout 240s xvfb-run -a love "$RUNNER_TEMP/gamepkg" 2>&1 | tee "$RUNNER_TEMP/export/prebake.log"
+          grep -q 'R2_PREBAKE_DONE chunks=156 writes=156' "$RUNNER_TEMP/export/prebake.log"
+          cached="$(find "$XDG_DATA_HOME" -type d -name 'experimental-chunk-cache-1' -print -quit)"
+          test -n "$cached"
+          test "$(find "$cached" -type f -name '*.osc' | wc -l)" -eq 156
+          cp -a "$cached" "$RUNNER_TEMP/gamepkg/"
+          mv "$RUNNER_TEMP/r2-game-main.lua" "$RUNNER_TEMP/gamepkg/main.lua"
+          rm "$RUNNER_TEMP/export/Osman_Oyun_R2_Guncel.love"
+          (cd "$RUNNER_TEMP/gamepkg" && zip -qr "$RUNNER_TEMP/export/Osman_Oyun_R2_Guncel.love" .)
+          python3 - <<'PY'
+          import os,zipfile,pathlib
+          archive=pathlib.Path(os.environ["RUNNER_TEMP"])/"export/Osman_Oyun_R2_Guncel.love"
+          with zipfile.ZipFile(archive) as z:
+            assert z.testzip() is None
+            baked=[n for n in z.namelist() if n.endswith(".osc")]
+            assert len(baked)==156,len(baked)
+            main=z.read("main.lua").decode()
+            assert 'local r2_pilot_enabled=os.getenv("OSMAN_R2_PILOT")~="0"' in main
+            assert "Ready %d/%d" in main and "FPS %d" in main
+          print("R2_PREBAKED_LOVE_OK count",len(baked),"size",archive.stat().st_size)
+          PY
+          sha256sum "$RUNNER_TEMP/export/Osman_Oyun_R2_Guncel.love" > "$RUNNER_TEMP/export/SHA256.txt"
+      - name: Real LÖVE/Xvfb smoke opens the packaged .love, not checkout source
+        shell: bash
+        run: |
+          set -euo pipefail
+          export XDG_DATA_HOME="$RUNNER_TEMP/portable-love-disposable-user"
+          mkdir -p "$XDG_DATA_HOME"
+          OSMAN_CHUNK_CACHE_SMOKE=1 OSMAN_CACHE_DISPLAY=360x780 timeout 180s \
+            xvfb-run -a love "$RUNNER_TEMP/export/Osman_Oyun_R2_Guncel.love" \
+            2>&1 | tee "$RUNNER_TEMP/export/portable-runtime.log"
+          grep -q 'CHUNK_CACHE_GAME_READY' "$RUNNER_TEMP/export/portable-runtime.log"
+          grep -q 'CHUNK_CACHE_GAME_SMOKE_OK' "$RUNNER_TEMP/export/portable-runtime.log"
+          grep -q 'R2_PERF_PROFILE mode=CULL FAST' "$RUNNER_TEMP/export/portable-runtime.log"
+          grep -E 'CHUNK_CACHE_GAME_READY.*hits=42 misses=0' "$RUNNER_TEMP/export/portable-runtime.log"
+          screenshot="$(find "$XDG_DATA_HOME" -name chunk-cache-game.png -print -quit)"
+          test -n "$screenshot" && test -s "$screenshot"
+          cp "$screenshot" "$RUNNER_TEMP/export/R2_Guncel_Goruntu.png"
+          file "$RUNNER_TEMP/export/R2_Guncel_Goruntu.png" | grep -q 'PNG image data'
+          echo PORTABLE_LOVE_REAL_ENGINE_OK
+      - name: Validate pre-baked coverage with tall portrait viewport
+        shell: bash
+        run: |
+          set -euo pipefail
+          export XDG_DATA_HOME="$RUNNER_TEMP/portable-love-tall-disposable"
+          mkdir -p "$XDG_DATA_HOME"
+          OSMAN_CHUNK_CACHE_SMOKE=1 OSMAN_CACHE_DISPLAY=691x1536 timeout 120s \
+            xvfb-run -a -s '-screen 0 1280x2000x24' \
+            love "$RUNNER_TEMP/export/Osman_Oyun_R2_Guncel.love" \
+            2>&1 | tee "$RUNNER_TEMP/export/portrait-runtime.log"
+          grep -E 'CHUNK_CACHE_GAME_READY.*hits=48 misses=0' "$RUNNER_TEMP/export/portrait-runtime.log"
+          grep -q 'CHUNK_CACHE_GAME_SMOKE_OK' "$RUNNER_TEMP/export/portrait-runtime.log"
+          screenshot="$(find "$XDG_DATA_HOME" -name chunk-cache-game.png -print -quit)"
+          test -n "$screenshot" && test -s "$screenshot"
+          cp "$screenshot" "$RUNNER_TEMP/export/R2_Mobil_Dikey_Onizleme.png"
+          file "$RUNNER_TEMP/export/R2_Mobil_Dikey_Onizleme.png" | grep -q 'PNG image data'
+          echo R2_PORTRAIT_PREBAKE_OK
+      - name: Real R2 CULL FAST mode smoke (same pinned world, visible foreground)
+        shell: bash
+        run: |
+          set -euo pipefail
+          export XDG_DATA_HOME="$RUNNER_TEMP/portable-cull-disposable-user"
+          mkdir -p "$XDG_DATA_HOME"
+          OSMAN_R2_DIAG_CULL_SMOKE=1 OSMAN_CHUNK_CACHE_SMOKE=1 \
+            OSMAN_CACHE_DISPLAY=691x1536 timeout 120s \
+            xvfb-run -a -s '-screen 0 1280x2000x24' \
+            love "$RUNNER_TEMP/export/Osman_Oyun_R2_Guncel.love" \
+            2>&1 | tee "$RUNNER_TEMP/export/cull-runtime.log"
+          grep -q 'R2_PERF_PROFILE mode=CULL FAST' "$RUNNER_TEMP/export/cull-runtime.log"
+          grep -q 'CHUNK_CACHE_GAME_SMOKE_OK' "$RUNNER_TEMP/export/cull-runtime.log"
+          screenshot="$(find "$XDG_DATA_HOME" -name chunk-cache-game.png -print -quit)"
+          test -n "$screenshot" && test -s "$screenshot"
+          cp "$screenshot" "$RUNNER_TEMP/export/R2_CULL_FAST_Goruntu.png"
+          file "$RUNNER_TEMP/export/R2_CULL_FAST_Goruntu.png" | grep -q 'PNG image data'
+          echo R2_CULL_FAST_REAL_ENGINE_OK
+      - name: Low-resource 720x1600 Linux proxy benchmark (not Tecno hardware)
+        shell: bash
+        run: |
+          set -euo pipefail
+          first_cpu="$(awk '/Cpus_allowed_list:/ {split($2,a,",");split(a[1],b,"-");print b[1]}' /proc/self/status)"
+          test -n "$first_cpu"
+          for mode in FULL CULL; do
+            export XDG_DATA_HOME="$RUNNER_TEMP/lowresource-$mode"
+            mkdir -p "$XDG_DATA_HOME"
+            if [ "$mode" = FULL ]; then
+              export OSMAN_R2_FORCE_FULL=1
+              unset OSMAN_R2_DIAG_CULL_SMOKE || true
+            else
+              unset OSMAN_R2_FORCE_FULL || true
+              export OSMAN_R2_DIAG_CULL_SMOKE=1
+            fi
+            (ulimit -v 1572864; OSMAN_R2_PROXY_BENCH=1 OSMAN_CACHE_DISPLAY=720x1600 \
+              timeout 150s taskset -c "$first_cpu" \
+              xvfb-run -a -s '-screen 0 1024x1800x24' \
+              love "$RUNNER_TEMP/export/Osman_Oyun_R2_Guncel.love") \
+              2>&1 | tee "$RUNNER_TEMP/export/proxy-$mode.log"
+            grep -q "R2_PROXY_RESULT mode=$([ "$mode" = FULL ] && echo 1 || echo 2) samples=180" "$RUNNER_TEMP/export/proxy-$mode.log"
+          done
+          echo "R2_PROXY_LINUX_OK viewport=720x1600 affinity=1core virtual_memory_limit=1536MiB gpu=software_or_runner_not_mobile"
+      - name: Fixed-camera 720x1600 R2 terrain DIRECT/CANVAS, present and drawcalls
+        shell: bash
+        run: |
+          set -euo pipefail
+          for mode in DIRECT CANVAS; do
+            export XDG_DATA_HOME="$RUNNER_TEMP/render-bench-$mode"
+            mkdir -p "$XDG_DATA_HOME"
+            export OSMAN_R2_VIEWPORT_EXPERIMENT=1
+            if [ "$mode" = CANVAS ]; then export OSMAN_R2_CANVAS_CACHE=1; else export OSMAN_R2_CANVAS_CACHE=0; fi
+            OSMAN_R2_RENDER_BENCH=1 OSMAN_CACHE_DISPLAY=720x1600 \
+              timeout 120s xvfb-run -a -s '-screen 0 1024x1800x24' \
+              love "$RUNNER_TEMP/export/Osman_Oyun_R2_Guncel.love" \
+              2>&1 | tee "$RUNNER_TEMP/export/render-$mode.log"
+            grep -q "R2_RENDER_BENCH mode=$mode samples=180 fb=" "$RUNNER_TEMP/export/render-$mode.log"
+            shot="$(find "$XDG_DATA_HOME" -name "r2-terrain-$(echo "$mode" | tr '[:upper:]' '[:lower:]').png" -print -quit)"
+            test -n "$shot" && test -s "$shot"
+            cp "$shot" "$RUNNER_TEMP/export/terrain-$mode.png"
+          done
+          /usr/bin/python3 - <<'PY'
+          import os,pathlib
+          from PIL import Image,ImageChops
+          root=pathlib.Path(os.environ["RUNNER_TEMP"])/"export"
+          off=Image.open(root/"terrain-DIRECT.png").convert("RGB")
+          on=Image.open(root/"terrain-CANVAS.png").convert("RGB")
+          assert off.size==on.size==(720,1600), (off.size,on.size)
+          w,h=off.size
+          # Check margins away from avatar; do not assert entire animated HUD.
+          boxes=[(0,int(h*.36),int(w*.12),int(h*.82)),
+                 (int(w*.88),int(h*.36),w,int(h*.82)),
+                 (int(w*.2),int(h*.85),int(w*.8),h)]
+          differences=0;pixels=0
+          for box in boxes:
+              a=off.crop(box);b=on.crop(box)
+              diff=ImageChops.difference(a,b)
+              differences+=sum(1 for pixel in diff.getdata() if max(pixel)>15)
+              pixels+=a.width*a.height
+          ratio=differences/max(1,pixels)
+          print(f"R2_VIEWPORT_PNG_EDGE_COMPARE changed_ratio={ratio:.5f} pixels={pixels}")
+          assert ratio<.025,"static Canvas changed too many visible edge pixels"
+          print("R2_CANVAS_SAME_CAMERA_PNG_OK")
+          import re
+          direct=(root/"render-DIRECT.log").read_text(errors="replace")
+          cached=(root/"render-CANVAS.log").read_text(errors="replace")
+          def result(text):
+              line=next((line for line in text.splitlines() if "R2_RENDER_BENCH mode=" in line),None)
+              assert line,"missing render benchmark"
+              return {k:float(v) for k,v in re.findall(r"([a-z][a-z0-9_]*)=(\d+(?:\.\d+)?)",line)}
+          a,b=result(direct),result(cached)
+          assert a["material_calls_p50"]>100,a
+          assert b["material_calls_p50"]==0 and b["canvas_hits"]>=180,b
+          assert b["canvas_builds"]>=1,b
+          print("R2_CANVAS_BENCH_VERIFIED material_p50",a["material_calls_p50"],
+                b["material_calls_p50"],"cpu_draw_p50",a["draw_p50"],b["draw_p50"])
+          PY
+      - name: Viewport render regression, Lua 5.4 and LuaJIT
+        run: |
+          set -euo pipefail
+          (cd game/love && lua5.4 tests/r2_viewport.lua && luajit tests/r2_viewport.lua)
+      - name: Explicit Stage3 regression, Lua 5.4 and LuaJIT
+        run: |
+          set -euo pipefail
+          (cd game/love && lua5.4 tests/player_stage3.lua && luajit tests/player_stage3.lua)
+      - name: Upload verified playable LOVE and evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Osman-Oyun-R2-Guncel-LOVE
+          path: |
+            ${{ runner.temp }}/export/
+          if-no-files-found: error

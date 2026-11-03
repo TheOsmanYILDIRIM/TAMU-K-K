@@ -1,0 +1,264 @@
+{
+  "format": "osman-worldmap-v2",
+  "schema_version": 2,
+  "map_id": "worldmap:osman-overworld",
+  "name": "Osman Dünya — ilk yüzey haritası",
+  "coordinate_space": "world",
+  "projection": "iso-45",
+  "seed": 20261018,
+  "generator_version": 1,
+  "bounds": {
+    "min_x": -4096,
+    "min_y": -4096,
+    "max_x": 28672,
+    "max_y": 28672,
+    "units": "world",
+    "enforcement": "design_only"
+  },
+  "frontiers": [
+    {
+      "edge": "west",
+      "form": "highlands",
+      "blocking_intent": true
+    },
+    {
+      "edge": "north",
+      "form": "mountain_ridge",
+      "blocking_intent": true
+    },
+    {
+      "edge": "east",
+      "form": "sea_cliffs",
+      "blocking_intent": true
+    },
+    {
+      "edge": "south",
+      "form": "coastline",
+      "blocking_intent": true
+    }
+  ],
+  "generation": {
+    "authored_target_min": 0.1,
+    "authored_target_max": 0.2,
+    "target_horizon": "world_maturity",
+    "fallback": "generator-v1",
+    "map_activation": "opt_in_future_adapter"
+  },
+  "expansion": {
+    "policy": "adjacent_versioned_worldmaps",
+    "preserve_global_coordinates": true,
+    "preserve_existing_ids": true
+  },
+  "areas": [
+    {
+      "id": "area:fisilti-havzasi",
+      "name": "Fısıltı Havzası / Güneybatı",
+      "polygon": [
+        [
+          -4096,
+          -4096
+        ],
+        [
+          12288,
+          -4096
+        ],
+        [
+          12288,
+          12288
+        ],
+        [
+          -4096,
+          12288
+        ]
+      ],
+      "development": "authored_anchor"
+    },
+    {
+      "id": "area:guneykiyi",
+      "name": "Güney Kıyıları",
+      "polygon": [
+        [
+          12288,
+          -4096
+        ],
+        [
+          28672,
+          -4096
+        ],
+        [
+          28672,
+          12288
+        ],
+        [
+          12288,
+          12288
+        ]
+      ],
+      "development": "procedural_first"
+    },
+    {
+      "id": "area:kuzey-sirtlari",
+      "name": "Kuzey Sırtları",
+      "polygon": [
+        [
+          -4096,
+          12288
+        ],
+        [
+          12288,
+          12288
+        ],
+        [
+          12288,
+          28672
+        ],
+        [
+          -4096,
+          28672
+        ]
+      ],
+      "development": "procedural_first"
+    },
+    {
+      "id": "area:dogu-yaylalari",
+      "name": "Doğu Yaylaları",
+      "polygon": [
+        [
+          12288,
+          12288
+        ],
+        [
+          28672,
+          12288
+        ],
+        [
+          28672,
+          28672
+        ],
+        [
+          12288,
+          28672
+        ]
+      ],
+      "development": "procedural_first"
+    }
+  ],
+  "authored_maps": [
+    {
+      "id": "worldmap:fisilti-ormani",
+      "area_id": "area:fisilti-havzasi",
+      "path": "data/worldbuild/fisilti_ormani.r2.v1.json"
+    }
+  ],
+  "sites": [
+    {
+      "id": "site:fisilti-uyanis",
+      "name": "Uyanış Açıklığı",
+      "region_id": "region:fisilti-giris",
+      "anchor": [
+        64,
+        128
+      ],
+      "role": "spawn",
+      "discover_step": 0
+    },
+    {
+      "id": "site:fisilti-yol-ayrimi",
+      "name": "Eski Yol Ayrımı",
+      "region_id": "region:fisilti-koruluk",
+      "anchor": [
+        384,
+        128
+      ],
+      "role": "crossroads",
+      "discover_step": 1
+    },
+    {
+      "id": "site:fisilti-kalinti",
+      "name": "Unutulmuş Kalıntı",
+      "region_id": "region:fisilti-kalinti",
+      "anchor": [
+        320,
+        420
+      ],
+      "role": "ruin",
+      "discover_step": 2
+    },
+    {
+      "id": "site:fisilti-dere",
+      "name": "Dere Geçidi",
+      "region_id": "region:fisilti-dere",
+      "anchor": [
+        704,
+        128
+      ],
+      "role": "crossing",
+      "discover_step": 2
+    },
+    {
+      "id": "site:fisilti-kuzey-gozetleme",
+      "name": "Kuzey Gözetleme",
+      "region_id": "region:fisilti-kuzey-iz",
+      "anchor": [
+        600,
+        -150
+      ],
+      "role": "vista",
+      "discover_step": 2
+    },
+    {
+      "id": "site:fisilti-kayalik-cikis",
+      "name": "Kayalık Çıkış",
+      "region_id": "region:fisilti-kayalik-gecit",
+      "anchor": [
+        1130,
+        350
+      ],
+      "role": "pass",
+      "discover_step": 3
+    },
+    {
+      "id": "site:fisilti-dere-kiyisi",
+      "name": "Dere Kıyısı",
+      "region_id": "region:fisilti-dere",
+      "anchor": [
+        616,
+        62
+      ],
+      "role": "waterfront",
+      "discover_step": 2
+    }
+  ],
+  "routes": [
+    {
+      "id": "route:fisilti-ana",
+      "kind": "main",
+      "feature_id": "feature:fisilti-ana-patika",
+      "sites": [
+        "site:fisilti-uyanis",
+        "site:fisilti-yol-ayrimi",
+        "site:fisilti-dere",
+        "site:fisilti-kayalik-cikis"
+      ]
+    },
+    {
+      "id": "route:fisilti-kalinti",
+      "kind": "optional",
+      "feature_id": "feature:fisilti-kalinti-kolu",
+      "sites": [
+        "site:fisilti-yol-ayrimi",
+        "site:fisilti-kalinti"
+      ]
+    },
+    {
+      "id": "route:fisilti-kuzey",
+      "kind": "optional",
+      "feature_id": "feature:fisilti-kuzey-kestirme",
+      "sites": [
+        "site:fisilti-yol-ayrimi",
+        "site:fisilti-kuzey-gozetleme",
+        "site:fisilti-dere"
+      ]
+    }
+  ]
+}

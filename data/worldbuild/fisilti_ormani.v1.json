@@ -1,0 +1,258 @@
+{
+  "format": "osman-worldbuild-v1",
+  "schema_version": 1,
+  "map_id": "worldmap:fisilti-ormani",
+  "name": "Fısıltı Ormanı — bağlantılı pilot",
+  "coordinate_space": "world",
+  "projection": "iso-45",
+  "seed": 20261018,
+  "generator_version": 1,
+  "regions": [
+    {
+      "id": "region:fisilti-giris",
+      "name": "Giriş Çayırı",
+      "biome": "meadow",
+      "variant": "wildflower",
+      "polygon": [
+        [
+          0,
+          0
+        ],
+        [
+          132,
+          -24
+        ],
+        [
+          246,
+          0
+        ],
+        [
+          265,
+          76
+        ],
+        [
+          256,
+          110
+        ],
+        [
+          256,
+          146
+        ],
+        [
+          267,
+          184
+        ],
+        [
+          256,
+          256
+        ],
+        [
+          165,
+          268
+        ],
+        [
+          58,
+          254
+        ],
+        [
+          -24,
+          160
+        ]
+      ]
+    },
+    {
+      "id": "region:fisilti-koruluk",
+      "name": "Fısıltılı Koruluk",
+      "biome": "forest",
+      "variant": "dense",
+      "polygon": [
+        [
+          246,
+          0
+        ],
+        [
+          390,
+          -27
+        ],
+        [
+          505,
+          0
+        ],
+        [
+          530,
+          64
+        ],
+        [
+          512,
+          110
+        ],
+        [
+          512,
+          146
+        ],
+        [
+          534,
+          190
+        ],
+        [
+          512,
+          256
+        ],
+        [
+          398,
+          278
+        ],
+        [
+          256,
+          256
+        ],
+        [
+          267,
+          184
+        ],
+        [
+          256,
+          146
+        ],
+        [
+          256,
+          110
+        ],
+        [
+          265,
+          76
+        ]
+      ]
+    },
+    {
+      "id": "region:fisilti-dere",
+      "name": "Dere Kıyısı",
+      "biome": "forest",
+      "variant": "clearing",
+      "polygon": [
+        [
+          505,
+          0
+        ],
+        [
+          650,
+          -10
+        ],
+        [
+          785,
+          20
+        ],
+        [
+          802,
+          160
+        ],
+        [
+          768,
+          256
+        ],
+        [
+          655,
+          282
+        ],
+        [
+          512,
+          256
+        ],
+        [
+          534,
+          190
+        ],
+        [
+          512,
+          146
+        ],
+        [
+          512,
+          110
+        ],
+        [
+          530,
+          64
+        ]
+      ]
+    }
+  ],
+  "connectors": [
+    {
+      "id": "connector:fisilti-giris-koruluk",
+      "regions": [
+        "region:fisilti-giris",
+        "region:fisilti-koruluk"
+      ],
+      "kind": "path",
+      "anchor": [
+        256,
+        128
+      ],
+      "width": 18
+    },
+    {
+      "id": "connector:fisilti-dere-koruluk",
+      "regions": [
+        "region:fisilti-dere",
+        "region:fisilti-koruluk"
+      ],
+      "kind": "path",
+      "anchor": [
+        512,
+        128
+      ],
+      "width": 18
+    }
+  ],
+  "features": [
+    {
+      "id": "feature:fisilti-ana-patika",
+      "kind": "path",
+      "intent_only": true,
+      "width": 18,
+      "points": [
+        [
+          64,
+          128
+        ],
+        [
+          256,
+          128
+        ],
+        [
+          384,
+          128
+        ],
+        [
+          512,
+          128
+        ],
+        [
+          704,
+          128
+        ]
+      ]
+    },
+    {
+      "id": "feature:fisilti-dere-izi",
+      "kind": "water",
+      "intent_only": true,
+      "width": 22,
+      "points": [
+        [
+          536,
+          56
+        ],
+        [
+          616,
+          62
+        ],
+        [
+          735,
+          74
+        ]
+      ]
+    }
+  ]
+}

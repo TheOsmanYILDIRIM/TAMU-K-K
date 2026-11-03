@@ -1,0 +1,789 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OSMAN · Animation Compare</title><style>
+:root{font:14px system-ui;color:#e9f1e7;background:#111b16}*{box-sizing:border-box}body{margin:0}header{padding:14px;background:#192c20;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}a{color:#cde9ac}main{max-width:1200px;margin:auto;padding:12px}section{border:1px solid #526b53;border-radius:14px;background:#213329;padding:13px;margin:12px 0}h1{font-size:20px;margin:0}h2{font-size:16px;margin:0 0 10px}button,input,select{background:#2b4435;border:1px solid #607f64;border-radius:9px;color:inherit;padding:9px;font:inherit}button{cursor:pointer}.row{display:flex;flex-wrap:wrap;gap:9px;align-items:center}.row label{display:flex;gap:6px;align-items:center}.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.card{min-width:0;background:#1a2b20;border:1px solid #526b53;padding:10px;border-radius:12px}.card h3{font-size:13px;margin:0 0 8px}.card canvas{width:100%;aspect-ratio:1;background:repeating-conic-gradient(#324536 0 25%,#243629 0 50%) 50%/26px 26px;border-radius:8px;display:block}.muted{font-size:12px;color:#b4c6b3;line-height:1.5}.directions button.active{background:#c8dfa5;color:#15271a;font-weight:700}.hidden{display:none}.cards{grid-template-columns:repeat(auto-fit,minmax(165px,1fr))}.card{cursor:pointer}.card:focus-visible{outline:3px solid #c8dfa5}.card.focused{grid-column:1/-1;cursor:default}.card.focused canvas{width:min(100%,720px);margin:auto}.cards.solo{grid-template-columns:1fr}.card .remove{float:right;padding:3px 8px;font-size:12px}.focusbar{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:10px}@media(max-width:620px){.cards{gap:5px}.card{padding:5px}.card h3{font-size:11px}.row{gap:5px}}.editorCanvas{width:min(100%,720px);aspect-ratio:1;display:block;margin:10px auto;background:repeating-conic-gradient(#324536 0 25%,#243629 0 50%) 50%/24px 24px;border:1px solid #678069;border-radius:10px;touch-action:none}.editorGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.editorGrid label{display:flex;flex-direction:column;gap:5px}.editorGrid input{min-width:0}.selectedFinal{border:2px solid #c8dfa5}.card .finalButton{font-size:12px;margin:5px 0}.card .finalButton:disabled{opacity:.55}</style></head><body>
+<header><h1>ANIMATION STUDIO / VARYANT KARŞILAŞTIRMA</h1><nav><a href="./animation.html">← Ana animasyon ekranı</a></nav></header><div id="versionBar" style="padding:8px 14px;background:#172c23;border-bottom:1px solid #668366;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font:12px system-ui"><strong>ANIMATION BUILD <code id="pageBuild">__ANIMATION_BUILD_SHA__</code></strong><span id="versionState">Sürüm kontrol ediliyor…</span><button id="versionRefresh" type="button" style="padding:5px 9px">Yeni sürümü aç ↻</button></div>
+<main><p class="muted">Bu ikinci ekran ana stüdyodaki orijinal ve düzenlenmiş kareleri yalnızca okur. Yeni spritesheet varyantlarını buraya yükleyip aynı hızda karşılaştırabilirsin. Ana ekranın verileri değiştirilmez.</p>
+<section><div class="row directions" id="dirs"></div><button id="refresh">Ana stüdyodan tekrar oku</button><span id="status" class="muted">Kayıtlar okunuyor…</span></section>
+<section><div class="row"><button id="addVariant">＋ Varyant ekle</button><button id="clear">Varyantları temizle</button><span id="variantInfo" class="muted">Henüz varyant eklenmedi</span></div><div class="row"><label>Sütun <input id="cols" type="number" min="1" max="128" value="4" style="width:65px"></label><label>Satır <input id="rows" type="number" min="1" max="128" value="2" style="width:65px"></label><label>PNG başına dolu kare (0 = otomatik) <input id="defaultFilledFrames" type="number" min="0" max="512" value="0" style="width:75px"></label><button id="reapply">Tüm varyantları yeniden böl</button></div><p class="muted">＋ ile sınırsız sayıda varyant kartı ekleyebilirsin. Her varyanta birden fazla PNG yükleyip sırayla birleştirebilirsin (cihaz belleği sınırları geçerlidir). Her PNG için 3×3 dahil özgün grid korunur. Örneğin 3×3 içindeki 8 kareyi almak için dolu kareyi 8 seç: 9. boş slot animasyona eklenmez. Her PNG için sayıyı kartından ayrıca değiştirebilirsin. Orijinal kayıtlar değişmez.</p></section>
+<section><div class="row"><label>Hız <input id="fps" type="range" min="1" max="60" value="8"><span id="fpsText">8 FPS</span></label><button id="play">⏸ Duraklat</button><button id="prev">◀</button><button id="next">▶</button><label>Hizalama <select id="align"><option value="original">Kaynak konumu</option><option value="feet">Ayak tabanı</option><option value="center">Merkez</option><option value="average">Ortalama konum</option></select></label><label>Görüntü <select id="view"><option value="animation">Animasyon</option><option value="average">Ortalama kare (üst üste)</option></select></label><span id="counter" class="muted">0 / 0</span></div></section>
+<section><div class="focusbar"><b id="focusTitle">Tüm animasyonlar</b><button id="back" class="hidden">← Tümünü göster</button></div><div id="cards" class="cards"></div><p class="muted">Bir önizlemeye dokun: tek başına büyük gösterilir. Geri dönerek hepsini aynı anda karşılaştırabilirsin. Ortalama kare görünümü, tüm kareleri üst üste bindirir; Ortalama konum seçimi ise karakterlerin ağırlık merkezini hizalar.</p></section>
+<section><h2>Nihai varyant · Kare kare hizalama</h2><p class="muted">Bir varyant kartında “Nihai seç” düğmesine bas. Her kareyi orijinal referansla üst üste görüp parmağınla sürükleyerek hizala. Sadece nihai varyant hareket eder; orijinal hiç değişmez.</p><div class="row"><strong id="finalName">Henüz nihai varyant seçilmedi</strong><label>Varyant ölçeği <input id="editorScale" type="range" min="50" max="200" value="100"><span id="editorScaleText">100%</span></label><button id="autoScale" type="button">Bu karenin boyutunu eşitle</button><button id="autoScaleAll" type="button">Tüm karelerin boyutunu eşitle</button><button id="autoAlignOne" type="button">Bu kareyi otomatik hizala</button><button id="autoAlignAll" type="button">Tüm kareleri otomatik hizala (Rigid V9)</button><label><input id="v9Appearance" type="checkbox"> Korumacı renk/kenar tutarlılığı</label><label>İterasyon <input id="autoIterations" type="number" min="1" max="30" value="8" style="width:64px"></label><label><input id="autoLockSize" type="checkbox" checked> Boyutu alpha ile sabitle</label><button id="autoAgain" type="button">Bir tur daha iyileştir</button><label>Renk ağırlığı <input id="colorWeight" type="range" min="0" max="100" value="70"><span id="colorWeightText">70%</span></label><label>Arama hassasiyeti<select id="autoQuality"><option value="fast">Hızlı</option><option value="balanced" selected>Dengeli</option><option value="fine">Hassas</option></select></label><label>Hayalet referans<select id="ghostMode"><option value="original">Orijinal aynı kare</option><option value="previous">Nihai varyantın önceki karesi</option></select></label><label>Referans saydamlığı <input id="refOpacity" type="range" min="0" max="100" value="40"></label><label><input id="showReference" type="checkbox" checked> Referansı göster</label><label>Çıktı <select id="singlePixels"><option>512</option><option selected>1024</option><option>2048</option></select></label></div><p id="autoStatus" class="muted">Otomatik hizalama: bekliyor</p><p id="ghostInfo" class="muted">Referans: Orijinal aynı kare</p><canvas id="editor" class="editorCanvas" width="768" height="768"></canvas><div class="row"><button id="editorPrev">◀ Önceki kare</button><span id="editorFrame">0 / 0</span><button id="editorNext">Sonraki kare ▶</button><label>Kareye git <input id="editorJump" type="number" min="1" value="1" style="width:70px"></label><button id="editorReset">Kare hizalamasını sıfırla</button><button id="editorExport">Seçili kareyi şeffaf PNG indir</button></div><div class="row" style="margin:14px 0;padding:12px;border:1px solid #607f64;border-radius:12px"><strong>Hizalanmış nihai animasyonu dışa aktar</strong><label>Spritesheet düzeni <select id="alignedCols"><option value="auto">Otomatik</option><option>4</option><option>8</option><option>16</option></select></label><label>Spritesheet boyutu <select id="alignedSheetSize"><option>1024</option><option>2048</option><option selected>4096</option><option>8192</option></select></label><button id="alignedSheetExport" type="button">Şeffaf spritesheet PNG</button><label>Tek kare çözünürlüğü <select id="alignedFrameSize"><option>512</option><option selected>1024</option><option>2048</option></select></label><button id="alignedZipExport" type="button">Hizalanmış kareler ZIP</button></div><div class="muted" id="exportProgress">Tüm kareler mevcut X/Y ve ölçek düzeltmeleriyle aktarılır. Orijinal referans dışa aktarılmaz.</div><div class="editorGrid"><label>Yatay X (kaynak piksel)<input id="offsetX" type="number" value="0"></label><label>Dikey Y (kaynak piksel)<input id="offsetY" type="number" value="0"></label></div><p class="muted">Hizalama bu ekrandaki varyant için tutulur. Nihai kare PNG'si referans olmadan, şeffaf arka planla çıkar. Her kareyi ayrı ayrı indirebilirsin.</p></section></main>
+<script>
+'use strict';(()=>{
+const $=id=>document.getElementById(id),D=['NE','NW','SE','SW'];
+let finalId=null,editorIndex=0,drag=null;let dir='SE',stored={NE:[],NW:[],SE:[],SW:[]},variants=[],nextId=1,focus=null,index=0,playing=true,last=0,acc=0,drawSerial=0;
+const cache=new WeakMap();
+function msg(t){$('status').textContent=t}
+
+ // UI settings are saved separately from main Animation Studio's original DB.
+ // Browsers cannot restore <input type=file> selections after a page reload.
+ const COMPARE_PREFS='osman:animation-compare:v1:ui';
+ const PART_COUNTS='osman:animation-compare:v1:part-counts';
+ const COMPARE_IDS=[
+  'cols','rows','defaultFilledFrames','fps','align','view','editorScale',
+  'autoIterations','autoLockSize','v9Appearance','colorWeight','autoQuality',
+  'ghostMode','refOpacity','showReference','singlePixels','alignedCols',
+  'alignedSheetSize','alignedFrameSize'
+ ];
+ function comparePrefValue(id){
+  const el=$(id);return el?.type==='checkbox'?el.checked:el?.value;
+ }
+ function persistComparePrefs(){
+  const values={dir};
+  for(const id of COMPARE_IDS)values[id]=comparePrefValue(id);
+  try{localStorage.setItem(COMPARE_PREFS,JSON.stringify(values))}catch{}
+ }
+ function restoreComparePrefs(){
+  let saved={};
+  try{saved=JSON.parse(localStorage.getItem(COMPARE_PREFS)||'{}')||{}}catch{}
+  if(!saved||typeof saved!=='object'||Array.isArray(saved))return;
+  if(D.includes(saved.dir))dir=saved.dir;
+  for(const id of COMPARE_IDS){
+   const el=$(id),value=saved[id];
+   if(!el||value===undefined||value===null)continue;
+   if(el.type==='checkbox'){if(typeof value==='boolean')el.checked=value;continue}
+   if(el.tagName==='SELECT'){
+    if([...el.options].some(option=>option.value===String(value)))el.value=String(value);
+    continue;
+   }
+   if(el.type==='number'||el.type==='range'){
+    const n=Number(value),lo=el.min===''?-Infinity:Number(el.min),hi=el.max===''?Infinity:Number(el.max);
+    if(Number.isFinite(n)&&n>=lo&&n<=hi)el.value=String(n);
+   }
+  }
+  $('fpsText').textContent=$('fps').value+' FPS';
+  $('colorWeightText').textContent=$('colorWeight').value+'%';
+  $('editorScaleText').textContent=$('editorScale').value+'%';
+ }
+ function initComparePrefs(){
+  restoreComparePrefs();
+  for(const id of COMPARE_IDS){
+   const el=$(id);if(!el)continue;
+   el.addEventListener('input',persistComparePrefs);
+   el.addEventListener('change',persistComparePrefs);
+  }
+ }
+ function partPrefKey(name,image){
+  return JSON.stringify([String(name).replace(/\\/g,'/').split('/').pop().toLowerCase(),image.width,image.height]);
+ }
+ function partPrefMap(){
+  try{
+   const obj=JSON.parse(localStorage.getItem(PART_COUNTS)||'{}');
+   return obj&&typeof obj==='object'&&!Array.isArray(obj)?obj:{};
+  }catch{return {}}
+ }
+ function savePartFrameCount(part){
+  const map=partPrefMap();
+  const key=partPrefKey(part.name,part.image);
+  map[key]={
+   usedFrames:part.usedFrames,
+   cols:part.cols,rows:part.rows,
+   manualFrameCount:!!part.manualFrameCount
+  };
+  try{localStorage.setItem(PART_COUNTS,JSON.stringify(map))}catch{}
+ }
+ function savedPartFrameCount(name,image,cols,rows){
+  const saved=partPrefMap()[partPrefKey(name,image)];
+  if(!saved||saved.cols!==cols||saved.rows!==rows)return null;
+  const count=Number(saved.usedFrames);
+  return Number.isInteger(count)&&count>=1&&count<=cols*rows?count:null;
+ }
+
+function dirButtons(){$('dirs').replaceChildren();for(const d of D){let b=document.createElement('button');b.textContent=d+' · '+stored[d].length;b.className=d===dir?'active':'';b.onclick=()=>{dir=d;index=0;dirButtons();draw();updateEditor();persistComparePrefs()};$('dirs').append(b)}}
+function loadImage(blob){if(!blob)return Promise.resolve(null);if(cache.has(blob))return Promise.resolve(cache.get(blob));return new Promise((ok,no)=>{let url=URL.createObjectURL(blob),im=new Image;im.onload=()=>{URL.revokeObjectURL(url);cache.set(blob,im);ok(im)};im.onerror=()=>{URL.revokeObjectURL(url);no(Error('Görsel açılamadı'))};im.src=url})}
+function split(im,c,r){let a=[];c=Math.max(1,Math.floor(c||1));r=Math.max(1,Math.floor(r||1));if(c*r>512)throw Error('Bir varyantta en fazla 512 kare');for(let y=0;y<r;y++)for(let x=0;x<c;x++){let x0=Math.round(x*im.width/c),x1=Math.round((x+1)*im.width/c),y0=Math.round(y*im.height/r),y1=Math.round((y+1)*im.height/r),w=Math.max(1,x1-x0),h=Math.max(1,y1-y0),cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.getContext('2d').drawImage(im,x0,y0,w,h,0,0,w,h);a.push(cv)}return a}
+function getEntries(){return [{id:'original',name:'Orijinal referans',records:stored[dir],kind:'original'},{id:'edited',name:'Üretilen / düzenlenen',records:stored[dir],kind:'edited'},...variants.map(v=>({id:v.id,name:v.name,frames:v.frames,kind:'variant',v}))]}
+function frameCount(e){return e.kind==='variant'?e.frames.length:e.records.length}
+function maxCount(){return Math.max(1,...getEntries().map(frameCount))}
+function frameAt(e,i){let n=frameCount(e);return n?Math.min(n-1,Math.floor((i/maxCount())*n)):0}
+async function resolveFrame(e,i){let k=frameAt(e,i);if(e.kind==='variant')return {im:e.frames[k]||null,dx:0,dy:0};let r=e.records[k];if(!r)return {im:null,dx:0,dy:0};return {im:await loadImage(e.kind==='original'?(r.source||r.blob):r.blob),dx:e.kind==='edited'?(+r.x||0):0,dy:e.kind==='edited'?(+r.y||0):0}}
+function alphaBounds(im){
+ if(!im)return null;
+ const w=im.width,h=im.height,c=document.createElement('canvas');c.width=w;c.height=h;
+ const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(im,0,0);
+ const p=ctx.getImageData(0,0,w,h).data,step=Math.max(1,Math.floor(Math.max(w,h)/320));
+ let x0=w,y0=h,x1=-1,y1=-1;
+ for(let y=0;y<h;y+=step)for(let x=0;x<w;x+=step){
+  const i=(y*w+x)*4,a=p[i+3],grid=p[i]>226&&p[i+1]<53&&p[i+2]>218;
+  if(a>24&&!grid){x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y)}
+ }
+ return x1<0?[0,0,w,h]:[x0,y0,x1-x0+1,y1-y0+1];
+}
+const boundCache=new WeakMap();function bounds(im){if(!im)return null;if(boundCache.has(im))return boundCache.get(im);let b=alphaBounds(im);boundCache.set(im,b);return b}
+function paint(ctx,im,dx,dy,opacity=1){if(!im)return;let W=ctx.canvas.width,H=ctx.canvas.height,s=Math.min(W/im.width,H/im.height)*.92,b=bounds(im),align=$('align').value,x=(W-im.width*s)/2,y=(H-im.height*s)/2;
+if(align==='feet')y=H*.94-(b[1]+b[3])*s;
+if(align==='center'){x=W/2-(b[0]+b[2]/2)*s;y=H/2-(b[1]+b[3]/2)*s}
+if(align==='average'){x=W/2-(b[0]+b[2]/2)*s;y=H/2-(b[1]+b[3]/2)*s}
+ctx.save();ctx.globalAlpha=opacity;ctx.drawImage(im,x+dx*s,y+dy*s,im.width*s,im.height*s);ctx.restore()}
+async function paintEntry(ctx,e,at,opacity=1){
+ if(e.kind==='variant'&&finalId===e.id){
+  const i=frameAt(e,at),im=e.frames[i],v=e.v;
+  if(!im)return;
+  const ref=await getOriginalDisplayReference(v,i);
+  const o=offset(v,i),g=editorGeometry(im,ref,ctx.canvas.width,{scale:o.scale||v.scale||1});
+  ctx.save();ctx.globalAlpha=opacity;
+  ctx.drawImage(im,g.x+o.x*g.s,g.y+o.y*g.s,im.width*g.s,im.height*g.s);
+  ctx.restore();
+ }else{
+  const f=await resolveFrame(e,at);
+  if(f.im){ctx.save();ctx.globalAlpha=opacity;paint(ctx,f.im,f.dx,f.dy);ctx.restore()}
+ }
+}
+async function draw(){
+ const serial=++drawSerial,entries=getEntries(),max=maxCount(),pos=index%max;
+ for(const e of entries){
+  const cv=document.getElementById('cv-'+e.id);if(!cv)continue;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);
+  const count=frameCount(e);if(!count)continue;
+  if($('view').value==='average'){
+   const n=Math.min(count,128);
+   for(let k=0;k<n;k++){
+    await paintEntry(ctx,e,Math.floor(k*max/n),1/n);
+    if(serial!==drawSerial)return;
+   }
+  }else{
+   await paintEntry(ctx,e,pos,1);
+   if(serial!==drawSerial)return;
+  }
+ }
+ $('counter').textContent=(pos+1)+' / '+max;
+}
+function rebuild(){let list=getEntries(),cards=$('cards');cards.replaceChildren();cards.classList.toggle('solo',focus!==null);$('back').classList.toggle('hidden',focus===null);$('focusTitle').textContent=focus===null?'Tüm animasyonlar':(list.find(e=>e.id===focus)?.name||'Büyük önizleme');for(let e of list){if(focus!==null&&focus!==e.id)continue;let card=document.createElement('div');card.className='card'+(focus===e.id?' focused':'')+(finalId===e.id?' selectedFinal':'');card.tabIndex=0;let title=document.createElement('h3');title.textContent=e.name+' · '+frameCount(e)+' kare';card.append(title);if(e.kind!=='variant'){let names=document.createElement('p');names.className='muted';names.style.overflowWrap='anywhere';let records=e.records||[],first=records[frameAt(e,index)];names.textContent=e.kind==='original'?'Dosya: '+(first?.source?.name||first?.name||'Kaynak dosya adı bulunamadı'):'AI çıktısı: '+(first?.editedName||((first?.blob&&first.blob.name)||'Eski kayıtta dosya adı saklanmamış'))+' · Kaynak: '+(first?.source?.name||first?.name||'—');card.append(names)}if(e.kind==='variant'){let remove=document.createElement('button');remove.textContent='Sil';remove.className='remove';remove.onclick=ev=>{ev.stopPropagation();variants=variants.filter(v=>v.id!==e.id);if(focus===e.id)focus=null;if(finalId===e.id)finalId=null;rebuild();updateEditor();msg('Varyant silindi; orijinaller korundu')};title.append(remove);let choose=document.createElement('button');choose.className='finalButton';choose.textContent=finalId===e.id?'✓ Nihai seçildi':'Nihai seç';choose.disabled=!e.frames.length;choose.onclick=ev=>{ev.stopPropagation();finalId=e.id;editorIndex=0;rebuild();updateEditor()};card.append(choose)}let cv=document.createElement('canvas');cv.width=cv.height=focus===e.id?768:480;cv.id='cv-'+e.id;card.append(cv);if(e.kind==='variant'){let input=document.createElement('input');input.type='file';input.multiple=true;input.accept='image/png,image/webp';input.style.width='100%';input.onclick=ev=>ev.stopPropagation();input.onchange=ev=>{ev.stopPropagation();loadVariant(e.v,[...ev.target.files]);ev.target.value=''};card.append(input);let text=document.createElement('small');text.style.display='block';text.style.overflowWrap='anywhere';text.textContent='Dosyalar: '+((e.v.parts||[]).map(p=>p.name+' ('+p.cols+'×'+p.rows+' • '+(p.usedFrames??p.cols*p.rows)+'/'+(p.cols*p.rows)+' dolu kare)').join(' + ')||'Henüz yüklenmedi')+' · Kare aralıkları: '+(e.v.ranges||[]).map(p=>p.start+'–'+p.end).join(' + ');card.append(text);
+  if(e.v.parts?.length){
+   const control=document.createElement('div');control.className='muted';
+   control.style.marginTop='8px';
+   control.textContent='PNG başına gerçek animasyon kareleri (kalan grid hücreleri boş sayılır):'+(e.v.parts.length>1?' Parça sırası (elle değiştir):':'');
+   e.v.parts.forEach((part,partIndex)=>{
+    const line=document.createElement('div');line.className='row';
+    line.style.padding='6px 0';
+    const name=document.createElement('span');
+    name.style.overflowWrap='anywhere';name.textContent=(partIndex+1)+'. '+part.name+' ('+part.cols+'×'+part.rows+')';
+    const countLabel=document.createElement('label');
+    countLabel.textContent='Dolu kare: ';
+    const countInput=document.createElement('input');
+    countInput.type='number';countInput.min='1';countInput.max=String(part.cols*part.rows);
+    countInput.value=String(part.usedFrames??part.cols*part.rows);
+    countInput.style.width='72px';countInput.title='Bu PNG içindeki gerçek frame sayısı, sondaki boş slotlar atlanır';
+    countInput.onclick=ev=>ev.stopPropagation();
+    countInput.onchange=ev=>{
+     ev.stopPropagation();
+     const used=Math.floor(+countInput.value);
+     if(!Number.isFinite(used)||used<1||used>part.cols*part.rows){
+      countInput.value=String(part.usedFrames??part.cols*part.rows);
+      msg('Gerçek kare sayısı 1–'+(part.cols*part.rows)+' arasında olmalı');
+      return;
+     }
+     if(used===(part.usedFrames??part.cols*part.rows))return;
+     const edits=e.v.offsets?.some(o=>o&&(o.x||o.y||(o.scale&&o.scale!==1)));
+     if(edits&&!confirm('Kare indeksleri değişebilir. Bu varyantın manuel hizalama ayarları sıfırlansın mı?')){
+      countInput.value=String(part.usedFrames??part.cols*part.rows);return;
+     }
+     const next=e.v.parts.map(p=>({...p}));
+     next[partIndex].usedFrames=used;
+     next[partIndex].manualFrameCount=true;
+     savePartFrameCount(next[partIndex]);
+     try{
+      const merged=assembleParts(next);
+      e.v.parts=merged.parts;e.v.frames=merged.frames;e.v.ranges=merged.positions;e.v.offsets=[];
+      editorIndex=0;rebuild();updateEditor();
+      msg(part.name+': '+used+'/'+(part.cols*part.rows)+' dolu kare; boş hücreler atlandı');
+     }catch(err){countInput.value=String(part.usedFrames??part.cols*part.rows);msg(err.message)}
+    };
+    countLabel.append(countInput);
+    line.append(name,countLabel);
+    if(e.v.parts.length>1){
+     const up=document.createElement('button');up.textContent='↑';up.disabled=partIndex===0;
+     const down=document.createElement('button');down.textContent='↓';down.disabled=partIndex===e.v.parts.length-1;
+     const move=delta=>{
+      const next=[...e.v.parts],other=partIndex+delta;
+      [next[partIndex],next[other]]=[next[other],next[partIndex]];
+      next.forEach((p,i)=>{p.order=i;p.manualOrder=true});
+      try{const merged=assembleParts(next);e.v.parts=merged.parts;e.v.frames=merged.frames;
+       e.v.ranges=merged.positions;e.v.offsets=[];editorIndex=0;rebuild();updateEditor()}
+      catch(err){msg(err.message)}
+     };
+     up.onclick=ev=>{ev.stopPropagation();move(-1)};
+     down.onclick=ev=>{ev.stopPropagation();move(1)};
+     line.append(up,down);
+    }
+    control.append(line);
+   });
+   card.append(control);
+  }
+ }card.onclick=ev=>{if(ev.target.closest('button,input'))return;if(focus!==e.id){focus=e.id;rebuild()}};card.onkeydown=ev=>{if(ev.key==='Enter'){focus=e.id;rebuild()}};cards.append(card)}$('variantInfo').textContent=variants.length+' varyant';draw()}
+function partRange(name){
+ const base=String(name).replace(/\\/g,'/').split('/').pop();
+ const m=base.match(/(?:^|[_-])frames?[_-]?(\d+)[_-](\d+)(?:[_-]\d+)?\.(?:png|webp)$/i);
+ return m?{start:Number(m[1]),end:Number(m[2])}:null;
+}
+function partStart(name){return partRange(name)?.start??null}
+function partOrder(parts){return [...parts].sort((a,b)=>((a.manualOrder??a.order??0)-(b.manualOrder??b.order??0)))}
+function assembleParts(parts){
+ const ordered=partOrder(parts),frames=[],positions=[],labels=[];let cursor=1;
+ for(const part of ordered){
+  const slots=split(part.image,part.cols,part.rows),capacity=slots.length;
+  const range=part.manualOrder===true?null:partRange(part.name);
+  const rangeCount=range?range.end-range.start+1:null;
+  const filled=part.usedFrames==null?(rangeCount>=1&&rangeCount<=capacity?rangeCount:capacity):Number(part.usedFrames);
+  if(!Number.isInteger(filled)||filled<1||filled>capacity)
+   throw Error(part.name+' için dolu kare sayısı 1–'+capacity+' olmalı (şu an '+filled+')');
+  const extracted=slots.slice(0,filled);
+  // User-set filled count takes priority over filename, e.g. 3×3 grid with 8 frames.
+  if(range&&!part.manualFrameCount){
+   if(range.start!==cursor)throw Error(range.start<cursor?'Kare aralıkları çakışıyor: '+part.name:'Eksik kare: '+cursor+'–'+(range.start-1));
+   if(rangeCount!==filled)throw Error(part.name+' '+rangeCount+' kare olarak adlandırılmış ama '+filled+' dolu kare seçilmiş.');
+  }
+  frames.push(...extracted);labels.push(part.name);
+  positions.push({start:cursor,end:cursor+filled-1,name:part.name,filled,slots:capacity});
+  cursor+=filled;
+ }
+ if(frames.length>512)throw Error('En fazla 512 kare');
+ return {frames,positions,labels,parts:ordered};
+}
+function combineParts(v){
+ const result=assembleParts(v.parts);
+ v.frames=result.frames;v.parts=result.parts;v.ranges=result.positions;v.offsets=[];
+}
+async function loadVariant(v,files){
+ if(!files?.length)return;
+ try{
+  const incoming=[];
+  for(const file of files){
+   const image=await loadImage(file);
+   const cols=Math.max(1,Math.floor(+$('cols').value||4)),rows=Math.max(1,Math.floor(+$('rows').value||2));
+   const slots=cols*rows,declared=Math.max(0,Math.floor(+$('defaultFilledFrames').value||0));
+   const range=partRange(file.name),namedCount=range?range.end-range.start+1:0;
+   const savedFilled=savedPartFrameCount(file.name,image,cols,rows);
+   const filled=declared>0?Math.min(declared,slots):(savedFilled??(namedCount>=1&&namedCount<=slots?namedCount:slots));
+   incoming.push({name:file.name,image,cols,rows,usedFrames:filled,manualFrameCount:declared>0||savedFilled!==null});
+  }
+  // A second file selection APPENDS, instead of replacing the first 16 frames.
+  // If the same named part is selected again, replace only that part.
+  const previous=v.parts||[];
+  for(let i=0;i<incoming.length;i++)incoming[i].order=previous.length+i;
+  const merged=assembleParts([...previous,...incoming]);
+  v.parts=merged.parts;v.frames=merged.frames;v.ranges=merged.positions;v.offsets=[];
+  v.name=v.parts.length===1?v.parts[0].name.replace(/\.[^.]+$/,''):'Birleşik varyant ('+v.parts.length+' parça)';
+  editorIndex=0;rebuild();updateEditor();
+  msg(v.name+': '+v.frames.length+' kare; '+v.ranges.map(p=>p.start+'–'+p.end).join(' + '));
+ }catch(e){msg('Birleştirme hatası: '+e.message)}
+}
+
+$('addVariant').onclick=()=>{let id='variant'+nextId++,v={id,name:'Varyant '+(nextId-1),parts:[],ranges:[],frames:[],offsets:[],scale:1,cols:4,rows:2};variants.push(v);rebuild()};
+$('clear').onclick=()=>{variants=[];focus=null;finalId=null;rebuild();updateEditor()};
+$('reapply').onclick=()=>{
+ try{
+  const cols=Math.max(1,Math.floor(+$('cols').value||4)),rows=Math.max(1,Math.floor(+$('rows').value||2));
+  const updates=variants.filter(v=>v.parts?.length).map(v=>{
+   const parts=v.parts.map(p=>({...p,cols,rows,usedFrames:Math.min(cols*rows,p.usedFrames??p.cols*p.rows)}));
+   return {v,merged:assembleParts(parts)};
+  });
+  for(const {v,merged} of updates){
+   v.parts=merged.parts;v.frames=merged.frames;v.ranges=merged.positions;v.offsets=[];
+  }
+  rebuild();updateEditor();
+ }catch(e){msg('Grid düzeni hatası: '+e.message)}
+};
+$('back').onclick=()=>{focus=null;rebuild()};
+$('align').onchange=draw;$('view').onchange=draw;
+$('fps').oninput=()=>{$('fpsText').textContent=$('fps').value+' FPS'};
+$('play').onclick=()=>{playing=!playing;$('play').textContent=playing?'⏸ Duraklat':'▶ Oynat'};
+function advance(k){index=(index+k+maxCount())%maxCount();draw()}
+$('prev').onclick=()=>{playing=false;$('play').textContent='▶ Oynat';advance(-1)};
+$('next').onclick=()=>{playing=false;$('play').textContent='▶ Oynat';advance(1)};
+async function reload(){try{let db=await new Promise((ok,no)=>{let r=indexedDB.open('OsmanAnimationStudioFramesV1',1);r.onsuccess=()=>ok(r.result);r.onerror=()=>no(Error('Yerel kayıt okunamadı'));r.onupgradeneeded=()=>{r.transaction.abort();no(Error('Ana stüdyoda henüz kayıt yok'))}});let records=await new Promise((ok,no)=>{let t=db.transaction('frames','readonly').objectStore('frames').getAll();t.onsuccess=()=>ok(t.result);t.onerror=()=>no(Error('Kayıt okunamadı'))});stored={NE:[],NW:[],SE:[],SW:[]};for(let r of records){let p=String(r.slot).split(':'),d=p.length===2?p[0]:'SE',n=p.length===2?+p[1]:+p[0];if(D.includes(d)&&Number.isInteger(n)&&n>=0&&n<256)stored[d][n]=r}for(let d of D)stored[d]=stored[d].filter(Boolean);dirButtons();rebuild();updateEditor();msg(D.map(d=>d+': '+stored[d].length).join(' · '))}catch(e){msg(e.message)}}
+
+function finalVariant(){return variants.find(v=>v.id===finalId)||null}
+function refreshChunkSource(){}
+function saveCanvas(canvas,name){return new Promise((ok,no)=>canvas.toBlob(blob=>{if(!blob){no(Error('PNG kodlanamadı'));return}let url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);ok()},'image/png'))}
+function editorGeometry(im,ref,size,v){const ib=bounds(im),rb=ref?bounds(ref):ib;const visibleW=Math.max(1,ib[2],rb[2]),visibleH=Math.max(1,ib[3],rb[3]);const refScale=Math.min(size*.78/visibleW,size*.78/visibleH);const scale=refScale*(v?.scale||1);return {s:scale,x:size/2-(ib[0]+ib[2]/2)*scale,y:size/2-(ib[1]+ib[3]/2)*scale,refScale,rx:ref?size/2-(rb[0]+rb[2]/2)*refScale:0,ry:ref?size/2-(rb[1]+rb[3]/2)*refScale:0}}
+function referenceScaleFactor(im,ref){if(!ref)return 1;let a=bounds(im),b=bounds(ref);return Math.min(4,Math.max(.25,(b[3]||ref.height)/(a[3]||im.height)))} 
+$('editorScale').oninput=()=>{let v=finalVariant();if(v){offset(v,editorIndex).scale=+$('editorScale').value/100;updateEditor()}};
+// ALIGNMENT_SEQUENCE_BEGIN
+function buildAlignmentPlan(frameCount,referenceCount,mode='original',single=null,ranges=[]){
+ const total=Math.max(0,Math.floor(frameCount)),refs=Math.max(0,Math.floor(referenceCount));
+ const indices=single===null?Array.from({length:total},(_,i)=>i):[Math.max(0,Math.min(total-1,Math.floor(single)))];
+ return indices.filter(i=>i>=0&&i<total).map(i=>{
+  let type='anchor',referenceIndex=-1;
+  if(mode==='previous'&&i>0){type='previous';referenceIndex=i-1}
+  else if(refs>0){
+   type=refs===total?'original-exact':'original-phase';
+   referenceIndex=Math.min(refs-1,Math.floor((i+.5)*refs/total));
+  }else if(i>0){type='previous';referenceIndex=i-1}
+  const part=ranges.find(p=>i+1>=p.start&&i+1<=p.end);
+  return {index:i,type,referenceIndex,partName:part?.name||'Varyant',partStart:part?.start||1};
+ });
+}
+async function executeAlignmentPlan(plan,work,progress=null){
+ const results=[];
+ for(let k=0;k<plan.length;k++){
+  const job=plan[k],value=await work(job);
+  results.push({job,value});
+  if(progress)await progress(job,value,k+1,plan.length);
+ }
+ return results;
+}
+// ALIGNMENT_SEQUENCE_END
+function medianOf(numbers){
+ if(!numbers.length)return null;
+ const a=[...numbers].sort((a,b)=>a-b);
+ return a[Math.floor(a.length/2)];
+}
+async function getAlignmentReference(v,job){
+ if(job.type==='previous')return v.frames[job.referenceIndex]||null;
+ if(job.type==='original-exact'||job.type==='original-phase'){
+  const rec=stored[dir][job.referenceIndex];
+  return rec?await loadImage(rec.source||rec.blob):null;
+ }
+ return null;
+}
+async function getOriginalDisplayReference(v,i){
+ const job=buildAlignmentPlan(v.frames.length,stored[dir].length,'original',i,v.ranges||[])[0];
+ return job?await getAlignmentReference(v,job):null;
+}
+async function buildScaleTargets(v){
+ const plan=buildAlignmentPlan(v.frames.length,stored[dir].length,'original',null,v.ranges||[]);
+ const partSamples=new Map(),allRefHeights=[],ownHeights=[];
+ const raw=new Array(v.frames.length).fill(null);
+ for(const job of plan){
+  const i=job.index,mh=bounds(v.frames[i])[3];ownHeights.push(mh);
+  const ref=await getAlignmentReference(v,job);
+  if(ref&&mh>2){
+   const rh=bounds(ref)[3];
+   if(rh>2){
+    const ratio=rh/mh;raw[i]=ratio;allRefHeights.push(rh);
+    if(!partSamples.has(job.partStart))partSamples.set(job.partStart,[]);
+    partSamples.get(job.partStart).push(ratio);
+   }
+  }
+ }
+ const targetH=medianOf(allRefHeights)||medianOf(ownHeights)||1;
+ const result=new Array(v.frames.length);
+ for(const job of plan){
+  const i=job.index,ownH=Math.max(1,bounds(v.frames[i])[3]);
+  const med=medianOf(partSamples.get(job.partStart)||[]);
+  const ratio=raw[i]??(targetH/ownH);
+  // A separate median for each imported PNG is essential when their resolutions differ.
+  const smoothed=med?Math.max(med*.85,Math.min(med*1.15,ratio)):ratio;
+  result[i]=Math.max(.25,Math.min(4,smoothed));
+ }
+ return result;
+}
+
+async function matchFrameSize(v,i,targets=null){
+ if(!v.frames[i])return false;
+ const scalePlan=targets||await buildScaleTargets(v);
+ const factor=scalePlan[i];
+ if(!Number.isFinite(factor)||factor<=0)return false;
+ const o=offset(v,i);
+ o.scale=factor;
+ delete o.registrationSeed;
+ return true;
+}
+let matchingAllSizes=false;
+$('autoScale').onclick=async()=>{
+ const v=finalVariant();if(!v)return;
+ try{const plan=await buildScaleTargets(v),ok=await matchFrameSize(v,editorIndex,plan);if(!ok)throw Error('Boyut hesabı yapılamadı');await updateEditor();msg('Kare '+(editorIndex+1)+' boyutu güncellendi')}
+ catch(e){msg(e.message)}
+};
+$('autoScaleAll').onclick=async()=>{
+ const v=finalVariant();if(!v||matchingAllSizes)return;
+ matchingAllSizes=true;$('autoScaleAll').disabled=true;
+ try{
+  const targets=await buildScaleTargets(v);
+  const jobs=buildAlignmentPlan(v.frames.length,stored[dir].length,'original',null,v.ranges||[]);
+  let matched=0;
+  await executeAlignmentPlan(jobs,async job=>{const ok=await matchFrameSize(v,job.index,targets);if(ok)matched++;return ok},
+   async(job,ok,count,total)=>{
+    $('autoStatus').textContent='Boyut eşitleme: '+count+'/'+total+' • '+job.partName+(ok?'':' (atlandı)');
+    if(count%4===0)await new Promise(done=>setTimeout(done,0));
+   });
+  await updateEditor();
+  msg(matched+'/'+v.frames.length+' kareye boyut düzeltmesi uygulandı. '+(v.ranges||[]).map(p=>p.start+'–'+p.end).join(' + '));
+ }catch(e){msg('Toplu boyut eşitleme hatası: '+e.message)}
+ finally{matchingAllSizes=false;$('autoScaleAll').disabled=false}
+};
+
+const registrationCache=new WeakMap();
+function alphaSample(image){
+ if(registrationCache.has(image))return registrationCache.get(image);
+ const N=144,canvas=document.createElement('canvas');canvas.width=canvas.height=N;
+ const c=canvas.getContext('2d',{willReadFrequently:true}),b=bounds(image);
+ const factor=N*.79/Math.max(1,b[3]);
+ // Keep natural width-to-height ratio, unlike the old 128x128 stretched crop.
+ c.drawImage(image,b[0],b[1],Math.max(1,b[2]),Math.max(1,b[3]),N/2-b[2]*factor/2,N/2-b[3]*factor/2,b[2]*factor,b[3]*factor);
+ const pixels=c.getImageData(0,0,N,N).data,alpha=new Uint8Array(N*N),rgb=new Uint8Array(N*N*3);
+ let area=0,cx=0,cy=0,topSum=0,topX=0,topY=0;
+ for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+  const i=y*N+x,a=pixels[i*4+3];
+  const R=pixels[i*4],G=pixels[i*4+1],B=pixels[i*4+2],grid=R>226&&G<53&&B>218,valid=a>24&&!grid;
+  alpha[i]=valid?a:0;
+  if(valid){area++;cx+=x;cy+=y;if(y<N*.60){topSum++;topX+=x;topY+=y}}
+  const m=Math.max(1,R,G,B);
+  rgb[i*3]=Math.round(255*R/m);rgb[i*3+1]=Math.round(255*G/m);rgb[i*3+2]=Math.round(255*B/m);
+ }
+ const result={n:N,alpha,rgb,b,area,cx:area?cx/area:N/2,cy:area?cy/area:N/2,hx:topSum?topX/topSum:N/2,hy:topSum?topY/topSum:N/2};
+ registrationCache.set(image,result);return result;
+}
+// ALIGNMENT_CORE_BEGIN
+function registrationScore(ref,mov,tx,ty,scale,weight,step=3){
+ const n=ref.n;let inter=0,union=0,colorDist=0,overlapWeight=0;
+ for(let y=0;y<n;y+=step)for(let x=0;x<n;x+=step){
+  const i=y*n+x,xx=Math.round((x-n/2-tx)/scale+n/2),yy=Math.round((y-n/2-ty)/scale+n/2);
+  const j=xx>=0&&xx<n&&yy>=0&&yy<n?yy*n+xx:-1,a=ref.alpha[i]>24,b=j>=0&&mov.alpha[j]>24;
+  const region=y<n*.63?1.6:.9;
+  if(a||b)union+=region;
+  if(a&&b){
+   inter+=region;
+   const ri=i*3,mj=j*3;
+   const chroma=(Math.abs(ref.rgb[ri]-mov.rgb[mj])+Math.abs(ref.rgb[ri+1]-mov.rgb[mj+1])+Math.abs(ref.rgb[ri+2]-mov.rgb[mj+2]))/765;
+   colorDist+=chroma*region;overlapWeight+=region;
+  }
+ }
+ if(!union)return -1;
+ const overlap=inter/union,similarity=overlapWeight?Math.max(0,1-colorDist/overlapWeight):0;
+ // Color cannot win by matching empty pixels; silhouette always anchors alignment.
+ return overlap*(1-weight+weight*similarity);
+}
+async function optimizeDescriptors(ref,mov,passes=12,weight=.45,seed=null,lockSize=true,step=3,onPass=null){
+ const initial=[
+  {tx:0,ty:0,scale:1},
+  {tx:ref.hx-mov.hx,ty:ref.hy-mov.hy,scale:1}
+ ];
+ if(seed)initial.push({tx:seed.tx,ty:seed.ty,scale:lockSize?1:seed.scale});
+ let best={score:-Infinity,tx:0,ty:0,scale:1};
+ // Search both alpha-center and torso/head-center hypotheses.
+ for(const first of initial)for(const dx of [-16,-8,0,8,16])for(const dy of [-16,-8,0,8,16]){
+  const tx=first.tx+dx,ty=first.ty+dy;
+  if(Math.abs(tx)>32||Math.abs(ty)>32)continue;
+  const score=registrationScore(ref,mov,tx,ty,first.scale,weight,step);
+  if(score>best.score)best={score,tx,ty,scale:first.scale};
+ }
+ for(let p=0;p<passes;p++){
+  const d=Math.max(.45,4*Math.pow(.69,p)),ds=lockSize?0:Math.max(.001,.02*Math.pow(.75,p));
+  const old=best;
+  for(const dx of [-d,0,d])for(const dy of [-d,0,d])for(const ss of (lockSize?[0]:[-ds,0,ds])){
+   const tx=old.tx+dx,ty=old.ty+dy,scale=lockSize?1:Math.max(.97,Math.min(1.03,old.scale+ss));
+   const score=registrationScore(ref,mov,tx,ty,scale,weight,step);
+   if(score>best.score+1e-8)best={score,tx,ty,scale};
+  }
+  if(onPass)onPass(p+1,best);
+  await new Promise(ok=>setTimeout(ok,0));
+ }
+ return {...best,passes};
+}
+// ALIGNMENT_CORE_END
+async function registerColor(moving,reference,quality,iterations,weight,seed=null,lockSize=true,onPass=null){
+ const m=alphaSample(moving),r=alphaSample(reference);
+ if(!m.area||!r.area)throw Error('Boş alpha maskesi');
+ return optimizeDescriptors(r,m,iterations,Math.min(.6,weight),seed,lockSize,quality==='fine'?2:quality==='fast'?5:3,onPass);
+}
+async function autoRegisterFrame(v,job,quality,onPass,scales){
+ const i=job.index,moving=v.frames[i],off=offset(v,i);
+ let ref=null,previous=job.type==='previous';
+ try{ref=await getAlignmentReference(v,job)}catch(e){console.warn('Reference missing',job.index,e)}
+ if(!ref&&i>0){ref=v.frames[i-1];previous=true}
+ const baseScale=scales[i]||off.scale||1;
+ if(!ref){
+  off.scale=baseScale;off.score=null;off.alignmentType='anchor';off.alignmentPart=job.partName;
+  return {score:null,anchored:true};
+ }
+ const iterations=Math.max(1,Math.min(30,+$('autoIterations').value||8)),weight=(+$('colorWeight').value)/100,lockSize=$('autoLockSize').checked;
+ const rb=bounds(ref),prior=off.registrationType===(previous?'previous':job.type)?(off.registrationSeed||null):null;
+ const match=await registerColor(moving,ref,quality,iterations,weight,prior,lockSize,onPass);
+ const scale=Math.max(.25,Math.min(4,baseScale*(lockSize?1:match.scale)));
+ // Coordinates are normalized to 144x144, at a natural-aspect viewport with 79% character height.
+ const dx=match.tx*rb[3]/(144*.79)/Math.max(.001,scale);
+ const dy=match.ty*rb[3]/(144*.79)/Math.max(.001,scale);
+ off.scale=scale;
+ off.x=Math.round(dx+(previous?(offset(v,i-1).x||0):0));
+ off.y=Math.round(dy+(previous?(offset(v,i-1).y||0):0));
+ off.score=match.score;
+ off.alignmentType=previous?'previous':job.type;
+ off.alignmentPart=job.partName;
+ off.registrationType=off.alignmentType;
+ off.registrationSeed={tx:match.tx,ty:match.ty,scale:match.scale};
+ return match;
+}
+function stabilizePartSeams(v){
+ if(!v.ranges||v.ranges.length<2)return 0;
+ let adjusted=0;
+ for(const part of v.ranges.slice(1)){
+  const i=part.start-1;
+  if(i<=1||i>=v.frames.length-2)continue;
+  // Compare a short neighborhood on BOTH sides, not just one boundary pose.
+  const med=(axis,indices)=>medianOf(indices.map(n=>offset(v,n)[axis]||0));
+  for(const axis of ['x','y']){
+   const left=med(axis,[i-3,i-2,i-1].filter(j=>j>=0)),right=med(axis,[i,i+1,i+2].filter(j=>j<v.frames.length));
+   const delta=left-right;
+   if(Math.abs(delta)>9){
+    const correction=Math.round(Math.max(-9,Math.min(9,delta*.45)));
+    // Apply one shared small correction to the next imported part, avoiding a seam discontinuity.
+    for(let j=i;j<Math.min(v.frames.length,part.end);j++)offset(v,j)[axis]=(offset(v,j)[axis]||0)+correction;
+    adjusted++;
+   }
+  }
+ }
+ return adjusted;
+}
+let autoRunning=false;
+async function runAutoAlignment(all){
+ const v=finalVariant();if(!v||autoRunning||!v.frames.length)return;
+ autoRunning=true;
+ const buttons=[$('autoAlignOne'),$('autoAlignAll'),$('autoAgain')];
+ buttons.forEach(b=>b.disabled=true);
+ try{
+  const jobs=buildAlignmentPlan(v.frames.length,stored[dir].length,$('ghostMode').value,all?null:editorIndex,v.ranges||[]);
+  const scales=await buildScaleTargets(v);
+  const results=await executeAlignmentPlan(jobs,async job=>await autoRegisterFrame(v,job,$('autoQuality').value,(pass,best)=>{
+    $('autoStatus').textContent='Kare '+(job.index+1)+'/'+v.frames.length+' • '+job.partName+' • iterasyon '+pass+'/'+$('autoIterations').value+' • '+Math.round(best.score*100)+'%';
+  },scales),async(job,result,count,total)=>{
+    $('autoStatus').textContent='Hizalama '+count+'/'+total+' • '+job.partName+' • kare '+(job.index+1)+' • '+(result?.anchored?'ilk kare sabitlendi':result?.score==null?'referans eksik':Math.round(result.score*100)+'%');
+    if(count%4===0)await new Promise(ok=>setTimeout(ok,0));
+  });
+  const anchors=results.filter(r=>r.value?.anchored).length;
+  const seams=all?stabilizePartSeams(v):0;
+  await updateEditor();
+  const pieces=(v.ranges||[]).map(p=>p.start+'–'+p.end+' '+p.name).join(' | ');
+  msg(results.length+'/'+jobs.length+' kare işlendi'+(anchors?' • '+anchors+' ilk kare referanssız sabitlendi':'')+(seams?' • '+seams+' parça sınırı düzeltildi':'')+'. Parçalar: '+pieces);
+ }catch(e){msg('Toplu hizalama hatası: '+e.message)}
+ finally{autoRunning=false;buttons.forEach(b=>b.disabled=false)}
+}
+$('colorWeight').oninput=()=>{$('colorWeightText').textContent=$('colorWeight').value+'%'};
+$('autoAlignOne').onclick=()=>runAutoAlignment(false);
+$('autoAlignAll').onclick=()=>runAutoAlignment(true);
+$('autoAgain').onclick=()=>runAutoAlignment(false);
+
+/* MINECLONIE RIGID SEQUENCE V9 — no warp, no pose deformation, no blur.
+   Whole-series estimation, stable head/body anchor, bounded scale, optional appearance pass. */
+function v9Sample(im){
+ const N=256,cv=document.createElement('canvas');cv.width=cv.height=N;
+ const cx=cv.getContext('2d',{willReadFrequently:true});cx.drawImage(im,0,0,N,N);
+ const d=cx.getImageData(0,0,N,N).data,columns=[];
+ let x0=N,y0=N,x1=0,y1=0,area=0;
+ for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+  const k=(y*N+x)*4;
+  if(d[k+3]<35 || (d[k]>226&&d[k+1]<53&&d[k+2]>218))continue;
+  x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);area++;
+ }
+ if(!area)return {valid:false};
+ const h=y1-y0+1;
+ let headX=0,headN=0,headLeft=N,headRight=0,coreX=0,coreN=0,coreY=0;
+ for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+  let k=(y*N+x)*4;if(d[k+3]<35 || (d[k]>226&&d[k+1]<53&&d[k+2]>218))continue;
+  const t=(y-y0)/h;
+  if(t>=.035&&t<=.17){headX+=x;headN++;headLeft=Math.min(headLeft,x);headRight=Math.max(headRight,x)}
+  if(t>=.24&&t<=.54){coreX+=x;coreY+=y;coreN++}
+ }
+ return {valid:true,headX:headN?headX/headN:(x0+x1)/2,headW:headN?headRight-headLeft+1:0,
+  coreX:coreN?coreX/coreN:(x0+x1)/2,coreY:coreN?coreY/coreN:(y0+y1)/2,
+  h,sourceWidth:im.width,sourceHeight:im.height,
+  footY:y1,x0,y0,x1,y1};
+}
+function v9Median(a){if(!a.length)return 0;const b=[...a].sort((x,y)=>x-y);return b[Math.floor(b.length/2)]}
+function v9Smooth(a,i,radius=2){
+ let vals=[];for(let j=Math.max(0,i-radius);j<=Math.min(a.length-1,i+radius);j++)vals.push(a[j]);
+ return v9Median(vals);
+}
+function v9Appearance(frames){
+ // Conservative frame-wide chroma matching: only globally meaningful outliers.
+ // Keeps the alpha mask and all spatial pixels unchanged; never blends neighboring frames.
+ const stats=frames.map(im=>{
+  const cv=document.createElement('canvas');cv.width=im.width;cv.height=im.height;
+  const ctx=cv.getContext('2d',{willReadFrequently:true});ctx.drawImage(im,0,0);
+  const id=ctx.getImageData(0,0,cv.width,cv.height),d=id.data;
+  let sums=[0,0,0],count=0;
+  for(let k=0;k<d.length;k+=16){
+   if(d[k+3]<220)continue;
+   let mx=Math.max(d[k],d[k+1],d[k+2]),mn=Math.min(d[k],d[k+1],d[k+2]);
+   if(mx-mn<9)continue;
+   for(let p=0;p<3;p++)sums[p]+=d[k+p];
+   count++;
+  }
+  return {cv,ctx,id,mean:sums.map(x=>count?x/count:128)};
+ });
+ const target=[0,1,2].map(ch=>v9Median(stats.map(s=>s.mean[ch])));
+ return stats.map(s=>{
+  const shifts=target.map((t,ch)=>Math.max(-5,Math.min(5,(t-s.mean[ch])*.20)));
+  const d=s.id.data;
+  for(let k=0;k<d.length;k+=4){
+   const a=d[k+3];if(a===0)continue;
+   if(a<12){d[k+3]=0;d[k]=d[k+1]=d[k+2]=0;continue}
+   if(a>=160)for(let ch=0;ch<3;ch++)d[k+ch]=Math.max(0,Math.min(255,Math.round(d[k+ch]+shifts[ch])));
+  }
+  s.ctx.putImageData(s.id,0,0);return s.cv;
+ });
+}
+let v9Busy=false;
+async function v9Run(all=false,scaleOnly=false){
+ const v=finalVariant();if(!v||!v.frames.length||v9Busy)return;
+ v9Busy=true;
+ const buttons=['autoScale','autoScaleAll','autoAlignOne','autoAlignAll','autoAgain'].map($);
+ buttons.forEach(b=>b.disabled=true);
+ try{
+  const frames=v.frames,n=frames.length,descs=frames.map(v9Sample);
+  const valid=descs.filter(d=>d.valid);if(!valid.length)throw Error('Görünür karakter bulunamadı');
+  const headW=v9Median(valid.map(d=>d.headW).filter(x=>x>4)),headH=v9Median(valid.map(d=>d.h));
+  // Natural walk poses change silhouette height. Stabilize by head width first,
+  // and cap changes. No limb shape or non-uniform scaling.
+  const scales=descs.map(d=>{
+    if(!d.valid)return 1;
+    const head=d.headW>4?headW/d.headW:1;
+    const vscale=Math.max(.91,Math.min(1.09,head));
+    return Math.abs(vscale-1)<.012?1:vscale;
+  });
+  const hx=descs.map(d=>d.valid?d.headX:128),cx=descs.map(d=>d.valid?d.coreX:128);
+  const cy=descs.map(d=>d.valid?d.coreY:128);
+  const rawAnchor=hx.map((x,i)=>x*.65+cx[i]*.35);
+  const targetX=v9Median(rawAnchor);
+  const yTargets=cy.map((y,i)=>cy[i]*.6+v9Smooth(cy,i)*.4);
+  const chosen=all?Array.from({length:n},(_,i)=>i):[editorIndex];
+  for(const i of chosen){
+   const d=descs[i];if(!d.valid)continue;
+   const o=offset(v,i);
+   // Preserve original per-frame motion in Y. Only remove horizontal camera jitter.
+   const desiredX=targetX;
+   const deltaX=(desiredX-(d.headX*.65+d.coreX*.35))*d.sourceWidth/256;
+   const deltaY=(yTargets[i]-d.coreY)*d.sourceHeight/256;
+   // Stable target across all frames; idempotent, no cumulative previous-frame offsets.
+   o.scale=scales[i];
+   if(!scaleOnly){o.x=Math.round(deltaX / Math.max(.1,o.scale));o.y=Math.round(deltaY / Math.max(.1,o.scale))}
+   o.alignmentType='rigid-v9';o.score=null;o.registrationSeed=null;
+   $('autoStatus').textContent='Rigid V9 • '+(i+1)+'/'+n+' • ölçek '+Math.round(o.scale*100)+'%';
+   if(i%8===7)await new Promise(r=>setTimeout(r,0));
+  }
+  if(!scaleOnly && all && $('v9Appearance')?.checked){
+   v.frames=v9Appearance(v.frames);
+  }
+  await updateEditor();
+  msg('Rigid V9: '+chosen.length+' kare işlendi • warp yok • poz korunur • 32 FPS kaynağı değiştirilmez');
+ }catch(e){msg('Rigid V9 hatası: '+e.message)}
+ finally{v9Busy=false;buttons.forEach(b=>b.disabled=false)}
+}
+$('autoScale').onclick=()=>v9Run(false,true);
+$('autoScaleAll').onclick=()=>v9Run(true,true);
+$('autoAlignOne').onclick=()=>v9Run(false,false);
+$('autoAlignAll').onclick=()=>v9Run(true,false);
+$('autoAgain').onclick=()=>v9Run(true,false);
+
+function ghostRecord(v,i,originalRef){
+ if($('ghostMode').value==='previous'&&i>0)return {im:v.frames[i-1],kind:'previous',label:'Nihai varyant · '+i+'. kare'};
+ const total=stored[dir].length;
+ if(originalRef)return {im:originalRef,kind:'original',label:total===v.frames.length?'Orijinal · '+(i+1)+'. kare':'Orijinal faz eşlemesi · '+(Math.floor((i+.5)*total/v.frames.length)+1)+'/'+total};
+ if(i>0)return {im:v.frames[i-1],kind:'previous',label:'Orijinal referans yok · önceki kare kullanılıyor'};
+ return {im:null,kind:'anchor',label:'İlk kare referanssız sabit'};
+}
+function offset(v,i){return v.offsets[i]||(v.offsets[i]={x:0,y:0})}
+let editorDrawId=0;
+async function updateEditor(){
+ const serial=++editorDrawId,v=finalVariant(),canvas=$('editor'),ctx=canvas.getContext('2d');
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+ $('finalName').textContent=v?'Nihai: '+v.name:'Henüz nihai varyant seçilmedi';
+ if(!v||!v.frames.length){$('editorFrame').textContent='0 / 0';$('ghostInfo').textContent='Referans seçilmedi';return}
+ editorIndex=Math.min(editorIndex,v.frames.length-1);
+ const im=v.frames[editorIndex],o=offset(v,editorIndex),original=await getOriginalDisplayReference(v,editorIndex);
+ if(serial!==editorDrawId)return;
+ const ghost=ghostRecord(v,editorIndex,original),frameScale=o.scale||v.scale||1,g=editorGeometry(im,original,canvas.width,{scale:frameScale});
+ $('ghostInfo').textContent='Hayalet: '+ghost.label+' · Nihai kaynak: '+(v.ranges?.find(p=>editorIndex+1>=p.start&&editorIndex+1<=p.end)?.name||'—');
+ if(ghost.im&&$('showReference').checked){
+  ctx.save();ctx.globalAlpha=(+$('refOpacity').value)/100;
+  if(ghost.kind==='previous'){
+   const prevOffset=offset(v,editorIndex-1),prevRef=await getOriginalDisplayReference(v,editorIndex-1),pg=editorGeometry(ghost.im,prevRef,canvas.width,{scale:prevOffset.scale||v.scale||1});
+   ctx.drawImage(ghost.im,pg.x+prevOffset.x*pg.s,pg.y+prevOffset.y*pg.s,ghost.im.width*pg.s,ghost.im.height*pg.s);
+  }else ctx.drawImage(ghost.im,g.rx,g.ry,ghost.im.width*g.refScale,ghost.im.height*g.refScale);
+  ctx.restore();
+ }
+ ctx.drawImage(im,g.x+o.x*g.s,g.y+o.y*g.s,im.width*g.s,im.height*g.s);
+ $('editorJump').max=v.frames.length;$('editorJump').value=editorIndex+1;
+ $('editorFrame').textContent=(editorIndex+1)+' / '+v.frames.length+' · '+(v.ranges?.find(p=>editorIndex+1>=p.start&&editorIndex+1<=p.end)?.name||'');
+ $('offsetX').value=o.x;$('offsetY').value=o.y;$('editorScale').value=Math.round(frameScale*100);$('editorScaleText').textContent=Math.round(frameScale*100)+'%';
+ draw(); // The selected variant preview uses this exact editor transform live.
+}
+$('editorPrev').onclick=()=>{editorIndex=Math.max(0,editorIndex-1);updateEditor()};
+$('editorNext').onclick=()=>{let v=finalVariant();if(v)editorIndex=Math.min(v.frames.length-1,editorIndex+1);updateEditor()};
+$('editorJump').onchange=()=>{let v=finalVariant();if(!v)return;editorIndex=Math.max(0,Math.min(v.frames.length-1,(+$('editorJump').value||1)-1));updateEditor()};
+$('editorReset').onclick=()=>{let v=finalVariant();if(v){v.offsets[editorIndex]={x:0,y:0};updateEditor()}};
+for(let id of ['offsetX','offsetY'])$(id).onchange=()=>{let v=finalVariant();if(!v)return;let o=offset(v,editorIndex);o.x=+$('offsetX').value||0;o.y=+$('offsetY').value||0;updateEditor()};
+$('ghostMode').onchange=updateEditor;$('showReference').onchange=updateEditor;$('refOpacity').oninput=updateEditor;
+$('editor').addEventListener('pointerdown',e=>{let v=finalVariant();if(!v)return;let im=v.frames[editorIndex],s=editorGeometry(im,null,768,{scale:offset(v,editorIndex).scale||v.scale||1}).s;drag={x:e.clientX,y:e.clientY,s,ox:offset(v,editorIndex).x,oy:offset(v,editorIndex).y};e.currentTarget.setPointerCapture(e.pointerId)});
+$('editor').addEventListener('pointermove',e=>{if(!drag)return;let v=finalVariant();if(!v)return;let rect=$('editor').getBoundingClientRect(),scale=768/rect.width,o=offset(v,editorIndex);o.x=Math.round(drag.ox+(e.clientX-drag.x)*scale/drag.s);o.y=Math.round(drag.oy+(e.clientY-drag.y)*scale/drag.s);updateEditor()});
+for(let event of ['pointerup','pointercancel'])$('editor').addEventListener(event,()=>drag=null);
+$('editorExport').onclick=async()=>{try{let v=finalVariant();if(!v)throw Error('Önce nihai varyant seç');let im=v.frames[editorIndex],o=offset(v,editorIndex),size=+$('singlePixels').value,canvas=document.createElement('canvas');canvas.width=canvas.height=size;let ref=await getOriginalDisplayReference(v,editorIndex),g=editorGeometry(im,ref,size,{scale:o.scale||v.scale||1});canvas.getContext('2d').drawImage(im,g.x+o.x*g.s,g.y+o.y*g.s,im.width*g.s,im.height*g.s);await saveCanvas(canvas,'mineclonie_'+dir+'_frame_'+String(editorIndex+1).padStart(2,'0')+'.png');msg('Tek kare şeffaf PNG indirildi')}catch(e){msg(e.message)}};
+
+
+async function paintAlignedFrame(canvas,v,i,x,y,size){
+ const im=v.frames[i];if(!im)return;
+ const ref=await getOriginalDisplayReference(v,i);
+ const o=offset(v,i),g=editorGeometry(im,ref,size,{scale:o.scale||v.scale||1});
+ canvas.getContext('2d').drawImage(im,x+g.x+o.x*g.s,y+g.y+o.y*g.s,im.width*g.s,im.height*g.s);
+}
+function createSquare(n){const c=document.createElement('canvas');c.width=c.height=n;return c}
+async function canvasPNG(canvas){
+ const b=await new Promise(ok=>canvas.toBlob(ok,'image/png'));
+ if(!b)throw Error('PNG kodlanamadı; daha küçük çözünürlük deneyin');
+ return b;
+}
+function downloadBlob(blob,name){
+ const link=document.createElement('a'),url=URL.createObjectURL(blob);
+ link.href=url;link.download=name;document.body.append(link);link.click();link.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
+function zipStored(files){
+ const e=new TextEncoder(),local=[],central=[],u16=(dv,k,v)=>dv.setUint16(k,v,true),u32=(dv,k,v)=>dv.setUint32(k,v>>>0,true);
+ const crc=bytes=>{let n=0xffffffff;for(const b of bytes){n^=b;for(let i=0;i<8;i++)n=(n>>>1)^((n&1)?0xedb88320:0)}return (n^0xffffffff)>>>0};
+ let offset=0;
+ for(const file of files){
+  const name=e.encode(file.name),data=file.data,hash=crc(data);
+  const head=new ArrayBuffer(30+name.length),h=new DataView(head),hb=new Uint8Array(head);
+  u32(h,0,0x04034b50);u16(h,4,20);u32(h,14,hash);u32(h,18,data.length);u32(h,22,data.length);u16(h,26,name.length);hb.set(name,30);
+  local.push(head,data);
+  const centralHead=new ArrayBuffer(46+name.length),ch=new DataView(centralHead),cb=new Uint8Array(centralHead);
+  u32(ch,0,0x02014b50);u16(ch,4,20);u16(ch,6,20);u32(ch,16,hash);u32(ch,20,data.length);u32(ch,24,data.length);u16(ch,28,name.length);u32(ch,42,offset);cb.set(name,46);
+  central.push(centralHead);offset+=head.byteLength+data.length;
+ }
+ const cdlen=central.reduce((sum,b)=>sum+b.byteLength,0),end=new ArrayBuffer(22),dv=new DataView(end);
+ u32(dv,0,0x06054b50);u16(dv,8,files.length);u16(dv,10,files.length);u32(dv,12,cdlen);u32(dv,16,offset);
+ return new Blob([...local,...central,end],{type:'application/zip'});
+}
+async function exportAligned(kind){
+ const v=finalVariant();if(!v||!v.frames.length){msg('Önce nihai varyant seç');return}
+ const btns=[$('alignedSheetExport'),$('alignedZipExport')];btns.forEach(b=>b.disabled=true);
+ try{
+  const n=v.frames.length;
+  if(kind==='sheet'){
+   const size=+$('alignedSheetSize').value,cs=$('alignedCols').value,cols=cs==='auto'?Math.ceil(Math.sqrt(n)):Math.min(n,+cs),rows=Math.ceil(n/cols);
+   const cell=Math.floor(Math.min(size/cols,size/rows));
+   const sheet=createSquare(size),ox=Math.floor((size-cols*cell)/2),oy=Math.floor((size-rows*cell)/2);
+   for(let i=0;i<n;i++){
+    await paintAlignedFrame(sheet,v,i,ox+(i%cols)*cell,oy+Math.floor(i/cols)*cell,cell);
+    $('exportProgress').textContent='Spritesheet: '+(i+1)+' / '+n+' kare';
+    if(i%4===0)await new Promise(ok=>setTimeout(ok,0));
+   }
+   downloadBlob(await canvasPNG(sheet),'mineclonie_'+dir+'_nihai_'+n+'kare_'+size+'.png');
+  }else{
+   const size=+$('alignedFrameSize').value,files=[];
+   for(let i=0;i<n;i++){
+    const single=createSquare(size);
+    await paintAlignedFrame(single,v,i,0,0,size);
+    const bytes=new Uint8Array(await(await canvasPNG(single)).arrayBuffer());
+    files.push({name:dir+'/frame_'+String(i+1).padStart(2,'0')+'.png',data:bytes});
+    $('exportProgress').textContent='ZIP: '+(i+1)+' / '+n+' kare';
+    await new Promise(ok=>setTimeout(ok,0));
+   }
+   const meta={format:'mineclonie-aligned-frames',direction:dir,frameCount:n,frameSize:size,sourceParts:(v.parts||[]).map(p=>p.name),transforms:v.frames.map((f,i)=>({frame:i+1,dx:offset(v,i).x||0,dy:offset(v,i).y||0,scale:offset(v,i).scale||v.scale||1}))};
+   files.push({name:'manifest.json',data:new TextEncoder().encode(JSON.stringify(meta,null,2))});
+   downloadBlob(zipStored(files),'mineclonie_'+dir+'_nihai_'+n+'kare.zip');
+  }
+  $('exportProgress').textContent=n+' hizalanmış kare aktarıldı. Orijinal referanslar korunuyor.';
+ }catch(err){msg('Dışa aktarma hatası: '+err.message);$('exportProgress').textContent='Aktarım başarısız; daha düşük çözünürlük seç.'}
+ finally{btns.forEach(b=>b.disabled=false)}
+}
+$('alignedSheetExport').onclick=()=>exportAligned('sheet');
+$('alignedZipExport').onclick=()=>exportAligned('zip');
+
+$('refresh').onclick=reload;
+function tick(t){acc+=Math.min(200,t-(last||t));last=t;let step=1000/(+$('fps').value);if(playing&&acc>=step){let n=Math.floor(acc/step);acc%=step;advance(n)}requestAnimationFrame(tick)}requestAnimationFrame(tick);
+initComparePrefs();dirButtons();rebuild();updateEditor();reload();
+})();
+</script><script>
+(()=>{const stamp='__ANIMATION_BUILD_SHA__',label=document.getElementById('versionState'),button=document.getElementById('versionRefresh');document.getElementById('pageBuild').textContent=stamp.slice(0,10);async function check(){if(stamp==='local-dev'){label.textContent='Yerel geliştirme';return}try{const response=await fetch('./build.json?version_check='+Date.now(),{cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);const latest=(await response.json()).sha;if(!latest)throw Error('SHA bulunamadı');if(latest===stamp){label.textContent='✓ Güncel yayın · cache sorunu yok';label.style.color='#b6e7a3'}else{label.textContent='⚠ Eski HTML / cache: yayın '+latest.slice(0,10);label.style.color='#ffd48b'}}catch(e){label.textContent='Sürüm doğrulanamadı: '+e.message}}button.onclick=()=>{const url=new URL(location.href);url.searchParams.set('build',Date.now().toString());location.replace(url.toString())};check()})();
+</script></body></html>

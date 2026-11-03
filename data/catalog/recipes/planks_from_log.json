@@ -1,0 +1,1 @@
+{"schema_version":1,"id":"core:planks_from_log","inputs":[{"def_id":"core:wood_log","count":1}],"outputs":[{"def_id":"core:wood_plank","count":4}],"station_tags":[],"duration_ticks":30}

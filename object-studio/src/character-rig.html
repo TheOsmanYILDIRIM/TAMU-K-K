@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mineclonie · Character Rig Studio</title>
+<style>
+:root{color-scheme:dark;--bg:#101714;--panel:#19231f;--line:#33443a;--text:#e8efdf;--muted:#9bad9d;--accent:#b6da86}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px system-ui,sans-serif}
+header{padding:15px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+h1{font-size:19px;margin:0}h2{font-size:15px;margin:0 0 12px}p{color:var(--muted);line-height:1.5}a{color:var(--accent)}
+main{display:grid;grid-template-columns:minmax(285px,340px) minmax(320px,1fr) minmax(270px,340px);gap:14px;padding:14px;max-width:1800px;margin:auto}
+section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;min-width:0}
+button,select,input[type=number]{background:#26352c;border:1px solid #496049;border-radius:8px;color:var(--text);padding:9px;cursor:pointer}
+button:hover{border-color:var(--accent)}button.primary{background:var(--accent);color:#17221a;font-weight:700}
+button.active{background:#466643;border-color:var(--accent)}input[type=file]{max-width:100%;font-size:12px}input[type=range]{accent-color:var(--accent);width:100%}
+label{display:block;margin:9px 0;color:var(--muted);font-size:12px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pad{border:1px solid var(--line);border-radius:10px;overflow:hidden;background-color:#26302a;background-image:linear-gradient(45deg,#303a33 25%,transparent 25%),linear-gradient(-45deg,#303a33 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#303a33 75%),linear-gradient(-45deg,transparent 75%,#303a33 75%);background-size:22px 22px;background-position:0 0,0 11px,11px -11px,-11px 0}
+canvas{display:block;width:100%;height:auto;touch-action:none}#stage{max-width:640px;margin:auto}#refPreview{max-width:220px;max-height:190px;object-fit:contain;display:block;margin:10px auto}
+.part{display:flex;align-items:center;justify-content:space-between;gap:6px;border-bottom:1px solid var(--line);padding:7px 0}
+.part b{font-size:12px}.part small{color:var(--muted)}.part input{width:128px}
+pre{white-space:pre-wrap;max-height:300px;overflow:auto;background:#101913;border:1px solid #354a3a;border-radius:8px;padding:12px;font:12px/1.5 monospace}
+details{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}summary{cursor:pointer}
+.status{font-size:12px;color:var(--accent);padding-top:6px}#partList{max-height:440px;overflow:auto}
+@media(max-width:1100px){main{grid-template-columns:1fr 1fr}main section:nth-child(2){grid-row:span 2}}
+@media(max-width:690px){main{grid-template-columns:1fr}main section:nth-child(2){grid-row:auto}header{padding:12px}main{padding:8px;gap:8px}}
+
+/* First-class MRIG package controls: legacy manual rig remains intact below */
+.rig-package-main{grid-column:1/-1;background:linear-gradient(135deg,#1e3027,#1b2921);border-color:#68866b}
+.rig-package-main h2{font-size:17px;margin-bottom:8px}
+.rig-package-main .rig-package-grid{display:grid;grid-template-columns:minmax(240px,1fr) minmax(280px,1.6fr);gap:16px}
+.rig-package-main .rig-box{padding:12px;background:#15251d;border:1px solid #3b5540;border-radius:10px;min-width:0}
+.rig-package-main input[type=file]{display:block;margin:10px 0;padding:10px 0;min-height:44px}
+.rig-package-main button{min-height:40px}
+#rigInfo{font:12px/1.5 system-ui;color:#cce5bf;overflow-wrap:anywhere}
+#rigErrors{white-space:pre-wrap;background:#442c2a;color:#ffd6cf;border:1px solid #985c4e;border-radius:8px;padding:10px;margin-top:8px}
+#rigPatchText{width:100%;min-height:175px;resize:vertical;color:#deedde;background:#0e1d14;border:1px solid #526d54;border-radius:8px;padding:11px;font:12px/1.45 ui-monospace,monospace}
+#rigPatchDiff{font-size:12px;color:#b5dcab;white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0}
+.rig-compare{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.rig-compare figure{margin:0;border:1px solid #425b45;border-radius:8px;overflow:hidden}
+.rig-compare figcaption{background:#263b2b;padding:6px 9px;font-size:12px}
+.rig-compare img{display:block;width:100%;aspect-ratio:1/1;background:#27332b;object-fit:contain}
+@media(max-width:790px){.rig-package-main .rig-package-grid{grid-template-columns:1fr}.rig-compare{grid-template-columns:1fr 1fr}}
+</style></head><body>
+<header><div><h1>MINECLONIE / CHARACTER RIG STUDIO</h1><div style="color:var(--muted);font-size:12px">2 referans yönü · 6 vücut parçası · 4 görüntü yönü · yerel 2D animasyon önizleme</div></div><div class="row"><a href="./world-builder.html">Eski World Builder</a><a href="./object-studio/latest.html">Object Studio</a><a href="./object-studio/animation.html">Eski Animasyon</a></div></header>
+<main>
+<section class="rig-package-main" aria-label="Karakter paketleri ve güvenli güncellemeler">
+ <h2>Karakter paketi ve animasyon güncellemeleri</h2>
+ <p>Tek dosyalık .mrig yükle; baş, gövde, anatomik L/R kollar ve bacaklar, mesh, pivot, Z sıralaması ve üç animasyon birlikte açılsın. PNG yükleme araçları aşağıda gelişmiş seçenek olarak korunur.</p>
+ <div class="rig-package-grid">
+  <div class="rig-box">
+   <h2>Karakter</h2>
+   <label for="rigPackageFile">Karakter Paketi Yükle (.mrig)</label>
+   <input id="rigPackageFile" type="file" accept=".mrig,application/octet-stream">
+   <div class="row"><button id="rigLoadSaved">Kayıtlı Karakteri Aç</button><button id="rigExport" class="primary">Karakter Paketi İndir</button></div>
+   <p id="rigInfo">Henüz .mrig yüklenmedi. Eski Character Rig Studio dosyaları değiştirilmez.</p>
+   <div id="rigErrors" role="alert" aria-live="assertive" hidden></div>
+  </div>
+  <div class="rig-box">
+   <h2>Rig / Animasyon Güncellemesi Uygula</h2>
+   <label for="rigPatchText">Revision kontrollü JSON patch (kopyala–yapıştır)</label>
+   <textarea id="rigPatchText" spellcheck="false" placeholder='{"format":"mineclonie-rig-patch","schemaVersion":1,...}'></textarea>
+   <div class="row"><button id="rigSamplePatch">Örnek Walk Patch</button><button id="rigPatchValidate">Güncellemeyi Doğrula</button><button id="rigPatchApply" class="primary">Güncellemeyi Uygula</button><button id="rigUndo">Geri Al</button></div>
+   <div id="rigPatchDiff" role="status" aria-live="polite">Değişiklik önizlemesi doğrulamadan sonra gösterilir.</div>
+   <div class="rig-compare"><figure><figcaption>Önce</figcaption><img id="rigBefore" alt="Patch öncesi karakter görüntüsü"></figure><figure><figcaption>Sonra</figcaption><img id="rigAfter" alt="Patch sonrası karakter görüntüsü"></figure></div>
+  </div>
+ </div>
+</section>
+<section><h2>Gelişmiş · Referans ve GPT Image 2.5</h2>
+<p>Ön çapraz ve arka çapraz yönleri ayrı ayrı üret. Karşı yönler yatay aynalanır. Referansları ve AI çıktısı parçaları burada yükle. Görseller cihazından dışarı gönderilmez.</p>
+<div class="row"><button id="vFront" class="active">Ön çapraz</button><button id="vBack">Arka çapraz</button></div>
+<label>Seçili yöne ait bütün karakter görseli <input id="reference" type="file" accept="image/png,image/webp,image/jpeg"></label>
+<img id="refPreview" alt="Referans önizleme" hidden>
+<label>GPT Image 2.5 ile üretilecek hedef parça</label>
+<select id="partSelect" style="width:100%"></select>
+<div class="row" style="margin-top:10px"><button id="copyPrompt" class="primary">Parça promptunu kopyala</button><button id="copyAll">Tüm promptları kopyala</button></div>
+<details open><summary>Üretim promptu</summary><pre id="prompt"></pre></details>
+<p><b>Önerilen sıra:</b> Önce gövdeyi, sonra kolları ve bacakları, en son başı tamamla. Her çıktı tek parçalı, şeffaf PNG olsun. Kol ve bacakların eklem altında kalan dokusunu AI tamamlasın.</p>
+</section>
+<section><div class="row" style="justify-content:space-between"><h2>2 · Birleştirme ve animasyon</h2><span id="status" class="status">Hazır</span></div>
+<div class="row"><button data-view="front" class="view active">Ön</button><button data-view="frontMirror" class="view">Ön ayna</button><button data-view="back" class="view">Arka</button><button data-view="backMirror" class="view">Arka ayna</button></div>
+<div class="row" style="margin-top:10px"><label style="margin:0"><input type="checkbox" id="gridOn" checked> İzometrik 2:1 grid</label><label style="margin:0"><input type="checkbox" id="guidesOn" checked> Eksenler ve ayak izleri</label><label style="margin:0"><input type="checkbox" id="nodesOn" checked> Eklem düğümleri</label><label style="margin:0"><input type="checkbox" id="meshOn"> Vertex ağı</label></div><div class="pad" id="stage" style="margin-top:12px"><canvas id="canvas" width="640" height="640"></canvas></div>
+<div class="row" style="margin-top:12px"><button data-anim="idle" class="anim active">Bekleme</button><button data-anim="walk" class="anim">Yürüme</button><button data-anim="chop" class="anim">Odun kesme</button><button id="toggle" class="primary">Durdur</button></div>
+<label>Animasyon hızı <input id="speed" type="range" min="25" max="200" value="100"><span id="speedText">100%</span></label>
+<label>Karakter ölçeği <input id="scale" type="range" min="25" max="180" value="100"><span id="scaleText">100%</span></label>
+<div class="row"><button id="reset">Yerleşimleri sıfırla</button><button id="snap">PNG kare kaydet</button><button id="saveJson">Rig JSON indir</button><button id="reviewExport" class="primary">Görsel denetim paketi üret</button></div>
+<p id="reviewNote">Denetim: dört yön × üç animasyon × dört faz = 48 karelik karşılaştırma sayfası. PNG ile JSON raporunu birlikte bu sohbete yükleyebilirsin.</p><p>Anatomik L/R kimliği aynalamada korunur. Gövde kök düğüm; boyun, omuz ve kalçalar gövdeye bağlıdır. Parçalar vertex ağıyla yumuşak bükülür. Düğüm ve ağ görünümünü açarak birleşim yerlerini incele.</p>
+</section>
+<section><h2>Gelişmiş · Manuel parça hizalama</h2>
+<p>Toplam 6 parça: <b>baş, gövde, sağ/sol kol, sağ/sol bacak</b>. Her iki yönde de aynı isimler kullanılır. Şeffaf PNG’ler ayrı yüklenir.</p>
+<div id="partList"></div>
+<div style="margin-top:12px"><b id="selectedLabel">Seçilen: gövde</b><label>X konumu <input id="x" type="range" min="-240" max="240" value="0"></label><label>Y konumu <input id="y" type="range" min="-240" max="240" value="0"></label><label>Pivot X (parça genişliği %) <input id="px" type="range" min="0" max="100" value="50"></label><label>Pivot Y (parça yüksekliği %) <input id="py" type="range" min="0" max="100" value="50"></label><label>Vertex bükülmesi <input id="bend" type="range" min="-35" max="35" value="0"></label><label>Elle dönüş (derece) <input id="angle" type="range" min="-180" max="180" value="0"></label></div>
+<details><summary>Dosyalar ve kayıt</summary><p>Resimler tarayıcı IndexedDB içine kaydedilir. Konumlar ve yön ayarları da yerel saklanır. Bu sayfa GPT Image API'ye bağlanmaz; promptu kopyalayıp çıktı PNG'yi içe aktarırsın.</p><button id="clear">Bu stüdyonun kayıtlarını temizle</button></details>
+</section>
+</main>
+<script>
+(() => {
+'use strict';
+const names=['head','torso','armL','armR','legL','legR'];
+const labels={head:'Baş',torso:'Gövde',armL:'Anatomik sol kol (L)',armR:'Anatomik sağ kol (R)',legL:'Anatomik sol bacak (L)',legR:'Anatomik sağ bacak (R)'};
+// L/R always means the character's anatomy, never screen-left/screen-right.
+const depth={front:['legR','armR','torso','legL','armL','head'],back:['legL','armL','torso','legR','armR','head']};
+const parents={head:'neck',armL:'shoulderL',armR:'shoulderR',legL:'hipL',legR:'hipR',torso:'root'};
+const bases={head:{x:0,y:-126,px:50,py:85},torso:{x:0,y:-25,px:50,py:28},armL:{x:-52,y:-45,px:60,py:12},armR:{x:52,y:-45,px:40,py:12},legL:{x:-24,y:62,px:50,py:12},legR:{x:24,y:62,px:50,py:12}};
+const state={dir:'front',view:'front',selected:'torso',anim:'idle',running:true,time:0,speed:1,scale:1,parts:{front:{},back:{}},images:{front:{},back:{}},refs:{}};
+const $=id=>document.getElementById(id),canvas=$('canvas'),ctx=canvas.getContext('2d');let db;
+function dir(){return state.view.startsWith('back')?'back':'front'}
+function layer(d,n){if(!state.parts[d][n])state.parts[d][n]={...bases[n],angle:0};return state.parts[d][n]}
+function key(d,n){return d+':'+n}
+function persist(){localStorage.setItem('mineclonie:rig:v1',JSON.stringify({parts:state.parts,scale:state.scale,speed:state.speed}))}
+try{const v=JSON.parse(localStorage.getItem('mineclonie:rig:v1')||'null');if(v){state.parts=v.parts||state.parts;state.scale=v.scale||1;state.speed=v.speed||1}}catch(e){}
+function openDB(){return new Promise((ok,fail)=>{let r=indexedDB.open('MineclonieRigStudioV1',1);r.onupgradeneeded=()=>r.result.createObjectStore('png');r.onsuccess=()=>ok(r.result);r.onerror=()=>fail(r.error)})}
+function dbWrite(k,b){if(!db)return;const t=db.transaction('png','readwrite');t.objectStore('png').put(b,k)}
+function blobImage(b){return new Promise(ok=>{const url=URL.createObjectURL(b),im=new Image;im.onload=()=>{URL.revokeObjectURL(url);ok(im)};im.onerror=()=>{URL.revokeObjectURL(url);ok(null)};im.src=url})}
+async function loadDB(){if(!db)return;const t=db.transaction('png','readonly');const store=t.objectStore('png');for(const d of ['front','back'])for(const n of names){const k=key(d,n);const r=store.get(k);r.onsuccess=async()=>{if(r.result){state.images[d][n]=await blobImage(r.result);renderList()}}}for(const d of ['front','back']){const r=store.get('ref:'+d);r.onsuccess=async()=>{if(r.result){state.refs[d]=await blobImage(r.result);updateRef()}}}}
+async function upload(d,n,file){if(!file)return;if(!file.type.startsWith('image/')){alert('Görsel dosyası seç.');return}const im=await blobImage(file);if(!im){alert('PNG açılamadı');return}state.images[d][n]=im;dbWrite(key(d,n),file);renderList();setStatus(labels[n]+' yüklendi')}
+async function uploadRef(d,file){if(!file)return;const im=await blobImage(file);if(!im)return;state.refs[d]=im;dbWrite('ref:'+d,file);updateRef();setStatus('Referans kaydedildi')}
+function setStatus(s){$('status').textContent=s}
+function updateRef(){const i=state.refs[state.dir];$('refPreview').hidden=!i;if(i)$('refPreview').src=i.src}
+function setupDirections(){for(const id of ['vFront','vBack'])$(id).onclick=()=>{state.dir=id==='vFront'?'front':'back';$('vFront').classList.toggle('active',state.dir==='front');$('vBack').classList.toggle('active',state.dir==='back');$('reference').value='';updateRef();renderList();prompt()};$('reference').onchange=e=>uploadRef(state.dir,e.target.files[0]);document.querySelectorAll('.view').forEach(b=>b.onclick=()=>{state.view=b.dataset.view;state.dir=dir();document.querySelectorAll('.view').forEach(a=>a.classList.toggle('active',a===b));$('vFront').classList.toggle('active',state.dir==='front');$('vBack').classList.toggle('active',state.dir==='back');renderList();updateRef();prompt()})}
+function renderList(){const d=state.dir;const list=$('partList');list.replaceChildren();for(const n of names){const div=document.createElement('div');div.className='part';const b=document.createElement('button');b.textContent=labels[n];b.classList.toggle('active',state.selected===n);b.onclick=()=>select(n);const small=document.createElement('small');small.textContent=state.images[d][n]?'✓':'—';const f=document.createElement('input');f.type='file';f.accept='image/png,image/webp';f.title=labels[n]+' PNG yükle';f.onchange=e=>upload(d,n,e.target.files[0]);div.append(b,small,f);list.append(div)}syncSliders()}
+function select(n){state.selected=n;$('partSelect').value=n;renderList();prompt()}
+function syncSliders(){const p=layer(state.dir,state.selected);$('selectedLabel').textContent='Seçilen: '+labels[state.selected];for(const k of ['x','y','px','py','angle','bend'])$(k).value=p[k]||0}
+function promptText(n,d){const direction=d==='front'?'FRONT THREE-QUARTER ISOMETRIC VIEW':'BACK THREE-QUARTER ISOMETRIC VIEW';const description={head:'complete head, hair, face/beard where visible and neck overlap',torso:'complete torso, tunic, belt and fabric concealed behind arms and head; no limbs',armL:'CHARACTER ANATOMICAL LEFT ARM from shoulder through hand, as ONE piece',armR:'CHARACTER ANATOMICAL RIGHT ARM from shoulder through hand, as ONE piece',legL:'CHARACTER ANATOMICAL LEFT LEG from hip through boot, as ONE piece',legR:'CHARACTER ANATOMICAL RIGHT LEG from hip through boot, as ONE piece'}[n];return `MINECLONIE — GPT IMAGE 2.5 / SINGLE RIG PART
+SOURCE IMAGE: The uploaded character reference is the ONLY appearance authority.
+VIEW: ${direction}
+TARGET PART: ${n} — ${description}
+
+Extract ONLY this target part as a separate intact 2D puppet cutout.
+Preserve the reference's exact anatomy, colors, materials, texture, worn medieval clothing, shading, scale, isometric camera and visual identity.
+Keep the visible original surface as faithful as possible. Do not redesign or stylize.
+RECONSTRUCT the normally hidden section of this SAME body part: under fabric overlaps, at shoulder/hip/neck joints, and where other body parts occlude it. Continue natural textures and anatomy. Allow generous hidden overlap for rotation without holes.
+One complete continuous anatomical part; NO other body parts or disconnected fragments.
+Keep the original viewing direction, not front-on, not profile, not a newly rotated angle.
+Output exactly ONE isolated PNG on fully transparent background, with clean antialiased edges, no outlines, shadows, white/checkerboard background, guides, labels, text or extra assets.
+Center the part in a square transparent canvas with enough margin to avoid clipping.
+This is an ASSET EXTRACTION task, NOT a new character design or animation frame.`}
+function prompt(){const n=$('partSelect').value||state.selected;$('prompt').textContent=promptText(n,state.dir)}
+function copy(s){navigator.clipboard.writeText(s).then(()=>setStatus('Prompt kopyalandı')).catch(()=>{const t=document.createElement('textarea');t.value=s;document.body.append(t);t.select();document.execCommand('copy');t.remove();setStatus('Prompt kopyalandı')})}
+function setupPrompt(){for(const n of names){let o=new Option(labels[n],n);$('partSelect').add(o)}$('partSelect').value=state.selected;$('partSelect').onchange=e=>select(e.target.value);$('copyPrompt').onclick=()=>copy(promptText($('partSelect').value,state.dir));$('copyAll').onclick=()=>copy(names.map(n=>promptText(n,state.dir)).join('\n\n---------------------\n\n'));prompt()}
+// 2:1 ground plane: diagonal projected world axes (2 horizontal : 1 vertical).
+const walking=(n,t,d)=>{
+  const phase=t*6.2+(n.endsWith('R')?Math.PI:0),s=Math.sin(phase),lift=Math.max(0,Math.cos(phase));
+  // Feet travel on the ground's projected depth axis, not in a side-view pendulum.
+  const back=d==='back'?-1:1;
+  const lateral=n==='legL'?-1:1;
+  return {dx:back*s*8+lateral*1.5,dy:back*s*4-lift*11,rot:s*.095,footX:back*s*8+lateral*1.5,footY:back*s*4-lift*11};
+};
+function groundGuides(d,mirrored,t){
+ const grid=$('gridOn').checked,guides=$('guidesOn').checked;
+ if(!grid&&!guides)return;
+ ctx.save();ctx.translate(320,345);ctx.scale(state.scale*(mirrored?-1:1),state.scale);
+ const Y=185; // floor plane below canvas rig origin
+ if(grid){
+   ctx.lineWidth=1/state.scale;ctx.strokeStyle='rgba(170,210,170,.20)';
+   // projected 2:1 ground lattice centered at the character.
+   for(let i=-8;i<=8;i++){
+     ctx.beginPath();ctx.moveTo(-310,Y-155+i*22);ctx.lineTo(310,Y+155+i*22);ctx.stroke();
+     ctx.beginPath();ctx.moveTo(-310,Y+155+i*22);ctx.lineTo(310,Y-155+i*22);ctx.stroke();
+   }
+ }
+ if(guides){
+   ctx.setLineDash([6,5]);ctx.lineWidth=1.5/state.scale;
+   ctx.strokeStyle='rgba(116,215,241,.85)';ctx.beginPath();ctx.moveTo(-190,Y-95);ctx.lineTo(190,Y+95);ctx.stroke();
+   ctx.strokeStyle='rgba(244,197,103,.85)';ctx.beginPath();ctx.moveTo(-190,Y+95);ctx.lineTo(190,Y-95);ctx.stroke();ctx.setLineDash([]);
+   ctx.strokeStyle='rgba(255,255,255,.7)';ctx.beginPath();ctx.moveTo(0,Y-140);ctx.lineTo(0,Y+40);ctx.stroke();
+   for(const n of ['legL','legR']){
+     const p=layer(d,n),w=walking(n,t,d),moving=state.anim==='walk',fx=p.x+(moving?w.dx:0),fy=Y+(moving?w.dy:0);
+     ctx.fillStyle=n==='legL'?'#9cd2ef':'#f3c77b';
+     ctx.beginPath();ctx.ellipse(fx,fy,10,5,-Math.PI/4,0,Math.PI*2);ctx.fill();
+     ctx.font='12px system-ui';ctx.fillText(n==='legL'?'L':'R',fx+12,fy);
+   }
+   ctx.font='12px system-ui';ctx.fillStyle='#d1e3d0';ctx.fillText('2:1 IZOMETRIK ZEMIN',-288,Y-130);
+ }
+ ctx.restore();
+}
+// Each limb is attached to a single anatomical node on the torso.
+// The final mesh is a tessellated PNG quad. Vertices bend locally; no extra sprite assets needed.
+function nodes(d,t){
+ const torso=layer(d,'torso'),walk=state.anim==='walk',phase=t*6.2;
+ const sway=walk?Math.sin(phase)*1.5:0,bob=walk?Math.abs(Math.sin(phase))*1.5:state.anim==='idle'?Math.sin(t*2)*1.1:0;
+ const root={x:torso.x,y:torso.y+bob};
+ const left=-1,right=1,anchor=(x,y)=>({x:root.x+x+sway,y:root.y+y});
+ return {root,neck:anchor(0,-101),shoulderL:anchor(-53,-22),shoulderR:anchor(53,-22),hipL:anchor(-24,87),hipR:anchor(24,87)};
+}
+function pointFor(d,n,joints,t){
+ const p=layer(d,n),base=bases[n];
+ if(n==='torso')return {x:joints.root.x,y:joints.root.y};
+ const attached=joints[parents[n]];
+ const origin=n==='head'?{x:base.x,y:base.y}:base;
+ const rest=layer(d,'torso'),torsoBase=bases.torso;
+ // Stored position is still an editable coordinate in character-local space.
+ // The joint follows body translation, so moving the torso never tears the limbs apart.
+ return {x:attached.x+(p.x-origin.x),y:attached.y+(p.y-origin.y)};
+}
+function motion(n,t,d){
+ let dx=0,dy=0,rot=0,bend=0;
+ if(state.anim==='walk'){
+  const step=Math.sin(t*6.2);
+  if(n.startsWith('leg')){
+   const a=walking(n,t,d);
+   dx=a.dx;dy=a.dy;rot=a.rot;bend=Math.sin(t*6.2+(n.endsWith('R')?Math.PI:0))*.085;
+  } else if(n.startsWith('arm')){rot=(n==='armL'?1:-1)*step*.13;bend=-rot*.7}
+  else if(n==='head')dy=Math.abs(step)*.5;
+  else if(n==='torso')bend=step*.012;
+ } else if(state.anim==='chop'){
+  const wind=Math.sin(t*1.25*Math.PI*2);
+  if(n.startsWith('arm')){rot=-.5-.65*wind;bend=.12*wind}
+  else if(n==='torso')bend=.065*wind;
+  else if(n==='head')rot=.04*wind;
+ } else if(n==='head')dy=Math.sin(t*2)*.5;
+ return {dx,dy,rot,bend};
+}
+// Image uv triangle -> deformed triangle, with antialiased clip.
+// This produces actual changing vertex positions instead of rotating a rigid PNG.
+function triangle(im,source,target){
+ const [a,b,c]=source,[A,B,C]=target;
+ const det=(a.x*(b.y-c.y)+b.x*(c.y-a.y));
+ if(Math.abs(det)<1e-6)return;
+ const m11=(A.x*(b.y-c.y)+B.x*(c.y-a.y)+C.x*(a.y-b.y))/det;
+ const m12=(A.y*(b.y-c.y)+B.y*(c.y-a.y)+C.y*(a.y-b.y))/det;
+ const m21=(A.x*(c.x-b.x)+B.x*(a.x-c.x)+C.x*(b.x-a.x))/det;
+ const m22=(A.y*(c.x-b.x)+B.y*(a.x-c.x)+C.y*(b.x-a.x))/det;
+ const tx=(A.x*(b.x*c.y-c.x*b.y)+B.x*(c.x*a.y-a.x*c.y)+C.x*(a.x*b.y-b.x*a.y))/det;
+ const ty=(A.y*(b.x*c.y-c.x*b.y)+B.y*(c.x*a.y-a.x*c.y)+C.y*(a.x*b.y-b.x*a.y))/det;
+ ctx.save();ctx.beginPath();
+ ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.lineTo(C.x,C.y);ctx.closePath();ctx.clip();
+ ctx.transform(m11,m12,m21,m22,tx,ty);
+ ctx.drawImage(im,0,0);ctx.restore();
+}
+function meshDraw(im,w,h,px,py,bend,n,highlight){
+ const cols=3,rows=5,verts=[],uv=[];
+ const amp=Math.max(-.55,Math.min(.55,bend));
+ for(let y=0;y<=rows;y++){
+  const v=y/rows,rr=[],ss=[];
+  for(let x=0;x<=cols;x++){
+   const u=x/cols,ax=(u-px)*w,ay=(v-py)*h;
+   // Anchor row stays at its joint. Lower vertices bend increasingly.
+   const weight=n==='head'?1-v:v;
+   const displacedX=ax+amp*weight*weight*h*.34;
+   const displacedY=ay+amp*(u-.5)*weight*w*.14;
+   rr.push({x:displacedX,y:displacedY});ss.push({x:u*im.width,y:v*im.height});
+  }verts.push(rr);uv.push(ss);
+ }
+ for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){
+  const p00=verts[y][x],p10=verts[y][x+1],p01=verts[y+1][x],p11=verts[y+1][x+1];
+  const s00=uv[y][x],s10=uv[y][x+1],s01=uv[y+1][x],s11=uv[y+1][x+1];
+  triangle(im,[s00,s10,s01],[p00,p10,p01]);
+  triangle(im,[s10,s11,s01],[p10,p11,p01]);
+ }
+ if($('meshOn').checked){
+  ctx.strokeStyle='rgba(68,236,226,.65)';ctx.lineWidth=.8/state.scale;
+  for(let y=0;y<=rows;y++)for(let x=0;x<=cols;x++){
+   if(x<cols){const a=verts[y][x],b=verts[y][x+1];ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()}
+   if(y<rows){const a=verts[y][x],b=verts[y+1][x];ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()}
+  }
+ }
+ if(highlight){
+  ctx.fillStyle='#e9a86d';ctx.beginPath();ctx.arc(0,0,3/state.scale,0,Math.PI*2);ctx.fill();
+ }
+}
+function drawPart(d,n,t,joints){
+ const im=state.images[d][n];if(!im)return;
+ const p=layer(d,n),point=pointFor(d,n,joints,t),m=motion(n,t,d);
+ const ratio=Math.min(155/im.width,195/im.height,1.3),w=im.width*ratio,h=im.height*ratio;
+ ctx.save();
+ ctx.translate(point.x+m.dx,point.y+m.dy);
+ ctx.rotate((p.angle*Math.PI/180)+m.rot);
+ meshDraw(im,w,h,p.px/100,p.py/100,(Number(p.bend)||0)*Math.PI/180+m.bend,n,n===state.selected);
+ ctx.restore();
+}
+function drawNodes(d,joints){
+ if(!$('nodesOn').checked)return;
+ ctx.save();ctx.strokeStyle='#eed77c';ctx.fillStyle='#ffeaa3';ctx.lineWidth=1.5/state.scale;
+ for(const name of ['neck','shoulderL','shoulderR','hipL','hipR']){
+  const p=joints[name];ctx.beginPath();ctx.moveTo(joints.root.x,joints.root.y);ctx.lineTo(p.x,p.y);ctx.stroke();
+  ctx.beginPath();ctx.arc(p.x,p.y,4/state.scale,0,Math.PI*2);ctx.fill();
+  ctx.font='10px system-ui';ctx.fillText(name,p.x+7,p.y-7);
+ }
+ ctx.restore();
+}
+function draw(){
+ if(state.rigDocument && window.MineclonieRigBridge?.drawModern?.())return;
+ const d=dir(),mirrored=state.view.endsWith('Mirror'),joints=nodes(d,state.time);
+ ctx.clearRect(0,0,640,640);
+ groundGuides(d,mirrored,state.time);
+ ctx.save();ctx.translate(320,345);ctx.scale(state.scale*(mirrored?-1:1),state.scale);
+ for(const n of depth[d])drawPart(d,n,state.time,joints);
+ drawNodes(d,joints);
+ ctx.restore();
+ if(!names.some(n=>state.images[d][n])){
+  ctx.fillStyle='#a6bba8';ctx.textAlign='center';ctx.font='15px system-ui';
+  ctx.fillText('Sağ panelden PNG parçalarını yükle',320,310);
+  ctx.fillText('Anatomik L/R ve eklem düğümleri korundu',320,334);
+ }
+}
+let prev=performance.now();function tick(now){const delta=Math.min(.05,(now-prev)/1000);prev=now;if(state.running)state.time+=delta*state.speed;draw();requestAnimationFrame(tick)}
+function setupControls(){for(const k of ['x','y','px','py','angle','bend'])$(k).oninput=e=>{layer(state.dir,state.selected)[k]=Number(e.target.value);if(state.rigDocument)state.rigDocument.pivots[state.dir][state.selected][k]=Number(e.target.value);persist()};document.querySelectorAll('.anim').forEach(b=>b.onclick=()=>{state.anim=b.dataset.anim;state.time=0;document.querySelectorAll('.anim').forEach(a=>a.classList.toggle('active',a===b))});$('toggle').onclick=()=>{state.running=!state.running;$('toggle').textContent=state.running?'Durdur':'Oynat'};$('speed').value=state.speed*100;$('scale').value=state.scale*100;for(const n of ['speed','scale'])$(n).oninput=e=>{state[n]=Number(e.target.value)/100;$(n+'Text').textContent=e.target.value+'%';persist()};$('reset').onclick=()=>{for(const n of names)state.parts[state.dir][n]={...bases[n],angle:0};persist();syncSliders()};$('snap').onclick=()=>{canvas.toBlob(b=>download(b,'mineclonie-rig-'+state.view+'.png'),'image/png')};$('reviewExport').onclick=exportReview;$('saveJson').onclick=()=>download(new Blob([JSON.stringify({version:1,parts:state.parts,view:state.view,scale:state.scale,animations:['idle','walk','chop']},null,2)],{type:'application/json'}),'mineclonie-rig.json');$('clear').onclick=()=>{if(!confirm('Yalnızca Character Rig Studio yerel kayıtları silinsin mi?'))return;localStorage.removeItem('mineclonie:rig:v1');if(db){db.close();indexedDB.deleteDatabase('MineclonieRigStudioV1')}location.reload()};let drag=null;canvas.onpointerdown=e=>{const r=canvas.getBoundingClientRect();const x=(e.clientX-r.left)*640/r.width,y=(e.clientY-r.top)*640/r.height;const mx=(x-320)/(state.scale*(state.view.endsWith('Mirror')?-1:1)),my=(y-345)/state.scale;let nearest=null,min=65;for(const n of [...names].reverse()){if(!state.images[dir()][n])continue;const p=layer(dir(),n),dist=Math.hypot(mx-p.x,my-p.y);if(dist<min){nearest=n;min=dist}}if(!nearest)return;state.dir=dir();select(nearest);drag={x:mx,y:my,px:layer(state.dir,nearest).x,py:layer(state.dir,nearest).y};canvas.setPointerCapture(e.pointerId)};canvas.onpointermove=e=>{if(!drag)return;const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*640/r.width,y=(e.clientY-r.top)*640/r.height;const mx=(x-320)/(state.scale*(state.view.endsWith('Mirror')?-1:1)),my=(y-345)/state.scale,p=layer(state.dir,state.selected);p.x=Math.max(-240,Math.min(240,Math.round(drag.px+mx-drag.x)));p.y=Math.max(-240,Math.min(240,Math.round(drag.py+my-drag.y)));syncSliders();persist()};canvas.onpointerup=()=>{drag=null};canvas.onpointercancel=()=>{drag=null}}
+
+function inspectionReport(){
+ const missing={front:names.filter(n=>!state.images.front[n]),back:names.filter(n=>!state.images.back[n])};
+ const badCoords=[];
+ for(const d of ['front','back'])for(const n of names){
+  const p=layer(d,n);
+  if(!['x','y','px','py','angle','bend'].every(k=>Number.isFinite(Number(p[k]||0))))badCoords.push(d+'/'+n);
+ }
+ return {format:'mineclonie-visual-review-v1',generatedAt:new Date().toISOString(),source:'Character Rig Studio',viewSemantics:'L/R anatomical, mirror flips image only',depthOrder:depth,missing,badCoords,parts:JSON.parse(JSON.stringify(state.parts)),scale:state.scale,gridEnabled:$('gridOn').checked,nodeGuides:$('nodesOn').checked,meshEnabled:$('meshOn').checked,frames:{views:['front','frontMirror','back','backMirror'],animations:['idle','walk','chop'],phaseCount:4},instructions:'Upload the review PNG and this JSON in the same ChatGPT message. Inspect anatomical L/R, Z ordering, intersection, alpha gaps, foot sliding, vertex distortion and frame-to-frame consistency.'};
+}
+async function exportReview(){
+ const report=inspectionReport();
+ const missingCount=report.missing.front.length+report.missing.back.length;
+ if(missingCount&&!confirm(missingCount+' PNG parçası henüz yüklenmedi. Eksik görüntülerin boş göründüğü kısmi rapor üretilsin mi?'))return;
+ const was={view:state.view,dir:state.dir,anim:state.anim,time:state.time,selected:state.selected};
+ const guideWas={grid:$('gridOn').checked,nodes:$('nodesOn').checked,mesh:$('meshOn').checked,guides:$('guidesOn').checked};
+ const tile=240,head=38,cols=4,rows=12,margin=18;
+ const sheet=document.createElement('canvas');sheet.width=cols*tile+2*margin;sheet.height=rows*(tile+head)+2*margin;
+ const g=sheet.getContext('2d');g.fillStyle='#121c17';g.fillRect(0,0,sheet.width,sheet.height);
+ const views=['front','frontMirror','back','backMirror'],anims=['idle','walk','chop'];
+ const phases=[0,.25,.50,.75];let row=0;
+ try{
+  state.selected='__none__';
+  $('gridOn').checked=true;$('guidesOn').checked=true;$('nodesOn').checked=true;$('meshOn').checked=false;
+  for(const anim of anims)for(const phase of phases){
+   for(let c=0;c<4;c++){
+    state.view=views[c];state.dir=dir();state.anim=anim;
+    // Four deterministic samples across one loop, independent of current play time.
+    state.time=anim==='walk'?phase*(Math.PI*2/6.2):anim==='chop'?phase/1.25:phase*Math.PI;
+    draw();
+    const x=margin+c*tile,y=margin+row*(tile+head);
+    g.fillStyle='#23382a';g.fillRect(x,y,tile,head);
+    g.font='bold 13px system-ui';g.fillStyle='#dce8d1';
+    g.fillText(views[c]+'  •  '+anim+'  '+Math.round(phase*100)+'%',x+8,y+24);
+    g.fillStyle='#26302a';g.fillRect(x,y+head,tile,tile);
+    g.drawImage(canvas,0,0,640,640,x,y+head,tile,tile);
+   }
+   row++;
+  }
+ }finally{
+  Object.assign(state,was);
+  $('gridOn').checked=guideWas.grid;$('nodesOn').checked=guideWas.nodes;$('meshOn').checked=guideWas.mesh;$('guidesOn').checked=guideWas.guides;
+  draw();
+ }
+ const png=await new Promise(resolve=>sheet.toBlob(resolve,'image/png'));
+ if(!png){setStatus('PNG paketi oluşturulamadı');return}
+ download(png,'mineclonie-rig-visual-review.png');
+ download(new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),'mineclonie-rig-visual-review.json');
+ setStatus('48 karelik denetim PNG + JSON hazır');
+}
+function download(blob,name){if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000)}
+window.MineclonieRigBridge={state,canvas,ctx,renderList,setStatus,layer,persist};
+setupDirections();setupPrompt();setupControls();renderList();requestAnimationFrame(tick);openDB().then(async d=>{db=d;loadDB()}).catch(()=>setStatus('IndexedDB kullanılamıyor; görseller geçici'));
+})();
+</script><script type="module" src="./rig-workspace.js"></script></body></html>

@@ -1,0 +1,53 @@
+name: User Core PNG and Axe isolated visual acceptance
+on:
+  push:
+    branches: [experiment/core-axe-corepng-integration-20261017]
+    paths:
+      - 'game/love/**'
+      - '.github/workflows/core-axe-corepng-integration.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  core-axe-visual:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install actual LOVE, Xvfb and Lua
+        run: sudo apt-get update -qq && sudo apt-get install -y love xvfb lua5.4 luajit
+      - name: Production Core Axe regression
+        working-directory: game/love
+        run: |
+          luac5.4 -p tests/core_axe_visual_smoke.lua
+          lua5.4 tests/core_tool_integration.lua
+          luajit tests/core_tool_integration.lua
+          lua5.4 tests/core_avatar.lua
+          luajit tests/core_avatar.lua
+      - name: Capture actual LÖVE four-phase views
+        run: |
+          set -euo pipefail
+          for viewport in 320x700 360x780; do
+            root="$(mktemp -d)"
+            cp -a game/love/. "$root/"
+            cp "$root/tests/core_axe_visual_smoke.lua" "$root/main.lua"
+            OSMAN_CORE_AXE_VIEWPORT="$viewport" timeout 70s xvfb-run -a love "$root" 2>&1 | tee "/tmp/axe-$viewport.log"
+            grep -q "CORE_AXE_VISUAL_OK viewport=$viewport" "/tmp/axe-$viewport.log"
+            find "$HOME/.local/share/love" -name "core-axe-$viewport.png" -exec cp {} "/tmp/core-axe-$viewport.png" \;
+            test -s "/tmp/core-axe-$viewport.png"
+          done
+          python3 - <<'PY'
+          import struct
+          for w,h in [(320,700),(360,780)]:
+              p=f'/tmp/core-axe-{w}x{h}.png'
+              with open(p,'rb') as f: data=f.read(24)
+              assert data[:8]==bytes([137,80,78,71,13,10,26,10])
+              assert struct.unpack('>II',data[16:24])==(w,h)
+          print('CORE_AXE_TWO_VIEWPORT_PNG_OK')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: core-axe-original-png-four-phase
+          path: |
+            /tmp/core-axe-320x700.png
+            /tmp/core-axe-360x780.png
+          if-no-files-found: error

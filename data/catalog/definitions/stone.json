@@ -1,0 +1,1 @@
+{"schema_version":1,"id":"core:stone","kind":"item","name_key":"item.stone","tags":["core:mineral"],"components":{"core:stackable":{"max_count":99}},"visual":{"kind":"primitive","shape":"sphere","color":"#858A87"}}

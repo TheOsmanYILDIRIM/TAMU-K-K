@@ -1,0 +1,33 @@
+name: Core crystal shader isolated smoke
+on:
+  push:
+    branches:
+      - experiment/core-crystal-shader-integration-20261016
+  workflow_dispatch:
+
+jobs:
+  love-shader:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install LÖVE and Xvfb
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y love xvfb
+      - name: Verify shader compile and screenshot with synthetic mask
+        run: |
+          mkdir -p /tmp/love-crystal-test
+          cp game/love/tests/crystal_shader_smoke.lua /tmp/love-crystal-test/main.lua
+          cp -R game/love/player /tmp/love-crystal-test/player
+          SDL_AUDIODRIVER=dummy xvfb-run -a -s "-screen 0 360x640x24" timeout 60s love /tmp/love-crystal-test
+          find "$HOME/.local/share/love" -name core-crystal-shader-smoke.png -print -exec cp {} ./core-crystal-shader-smoke.png \;
+          test -s core-crystal-shader-smoke.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: core-crystal-shader-synthetic-smoke
+          path: |
+            core-crystal-shader-smoke.png
+            /tmp/love-crystal-test/core-crystal-shader-smoke.png
+          if-no-files-found: warn

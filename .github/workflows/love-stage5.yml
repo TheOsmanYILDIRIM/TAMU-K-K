@@ -1,0 +1,105 @@
+name: LOVE Stage 5 inventory crafting building
+on:
+  push:
+    branches: [main, experiment/stage5-inventory-crafting-v1]
+    paths:
+      - 'game/love/**'
+      - 'data/catalog/**'
+      - 'scripts/generate_love_stage5_catalog.py'
+      - 'docs/18_LOVE_STAGE5_AND_SAVE_V2.md'
+      - 'schemas/love-world-v2.schema.json'
+      - 'data/templates/empty_love_world_v2.json'
+      - 'tests/test_love_world_v2_contract.py'
+      - '.github/workflows/love-stage5.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  stage5-domain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lua 5.4 LuaJIT LOVE and Xvfb
+        run: sudo apt-get update -qq && sudo apt-get install -y lua5.4 luajit love xvfb
+      - name: Verify generated Lua and canonical JSON
+        run: |
+          python -m pip install jsonschema
+          python scripts/generate_love_catalog.py --check
+          python scripts/generate_love_stage5_catalog.py --check
+          python -m unittest discover -s tests -v
+      - name: Syntax and existing game regressions
+        working-directory: game/love
+        run: |
+          find . -name '*.lua' -print0 | xargs -0 -n1 luac5.4 -p
+          lua5.4 tests/run.lua
+          lua5.4 tests/runtime.lua
+          lua5.4 tests/world_stage2.lua
+          lua5.4 tests/player_stage3.lua
+          lua5.4 tests/integration.lua
+          lua5.4 tests/stage4_objects.lua
+          lua5.4 tests/stage4_deep.lua
+          lua5.4 tests/liquid_traversal.lua
+      - name: Inventory crafting building Lua parity
+        working-directory: game/love
+        run: |
+          lua5.4 tests/stage5_systems.lua
+          luajit tests/stage5_systems.lua
+          lua5.4 tests/stage5_end_to_end.lua
+          luajit tests/stage5_end_to_end.lua
+          lua5.4 tests/stage5_transactions.lua
+          luajit tests/stage5_transactions.lua
+          lua5.4 tests/stage5_hud_layout.lua
+          luajit tests/stage5_hud_layout.lua
+      - name: Real LÖVE Stage4 gameplay smoke (no regression)
+        env:
+          OSMAN_LOVE_STAGE4_SMOKE: "1"
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120s xvfb-run -a love game/love 2>&1 | tee /tmp/stage5-stage4-regression.log
+          grep -q 'LOVE_STAGE4_SMOKE_OK' /tmp/stage5-stage4-regression.log
+      - name: Real LÖVE Stage5 seeded vertical-slice PNG smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$(mktemp -d)"
+          cp -a game/love/. "$root/"
+          cp "$root/systems/demo_stage5.lua" "$root/main.lua"
+          OSMAN_LOVE_STAGE5_SMOKE=1 timeout 120s xvfb-run -a love "$root" 2>&1 | tee /tmp/stage5-love.log
+          grep -q LOVE_STAGE5_SMOKE_OK /tmp/stage5-love.log
+          find "$HOME/.local/share/love" -name stage5-workbench-smoke.png -exec cp {} /tmp/stage5-workbench-smoke.png \;
+          test -s /tmp/stage5-workbench-smoke.png
+      - name: Real production main.lua touch-HUD harvest-to-build PNG
+        shell: bash
+        run: |
+          set -euo pipefail
+          OSMAN_LOVE_STAGE5_RUNTIME_SMOKE=1 timeout 120s xvfb-run -a love game/love 2>&1 | tee /tmp/stage5-runtime.log
+          grep -q LOVE_STAGE5_RUNTIME_SMOKE_OK /tmp/stage5-runtime.log
+          find "$HOME/.local/share/love" -name stage5-production-touch.png -exec cp {} /tmp/stage5-production-touch.png \;
+          test -s /tmp/stage5-production-touch.png
+          world_file="$(find "$HOME/.local/share/love" -name stage5-production-world.png -print -quit)"
+          test -n "$world_file"
+          cp "$world_file" /tmp/stage5-production-world.png
+          test -s /tmp/stage5-production-world.png
+          for viewport in 320x700 360x780; do
+            OSMAN_LOVE_STAGE5_RUNTIME_SMOKE=1 OSMAN_STAGE5_DISPLAY="$viewport" timeout 120s xvfb-run -a love game/love 2>&1 | tee "/tmp/stage5-runtime-${viewport}.log"
+            grep -q LOVE_STAGE5_RUNTIME_SMOKE_OK "/tmp/stage5-runtime-${viewport}.log"
+            found="$(find "$HOME/.local/share/love" -name "stage5-production-touch-${viewport}.png" -print -quit)"
+            test -n "$found"
+            cp "$found" "/tmp/stage5-production-touch-${viewport}.png"
+            test -s "/tmp/stage5-production-touch-${viewport}.png"
+            found_world="$(find "$HOME/.local/share/love" -name "stage5-production-world-${viewport}.png" -print -quit)"
+            test -n "$found_world"
+            cp "$found_world" "/tmp/stage5-production-world-${viewport}.png"
+            test -s "/tmp/stage5-production-world-${viewport}.png"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: love-stage5-production-touch
+          path: /tmp/stage5-production-*.png
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: love-stage5-workbench-prototype
+          path: /tmp/stage5-workbench-smoke.png
+          if-no-files-found: error

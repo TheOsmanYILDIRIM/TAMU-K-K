@@ -1,0 +1,470 @@
+{
+  "format": "osman-worldbuild-v1",
+  "schema_version": 1,
+  "map_id": "worldmap:fisilti-ormani",
+  "name": "Fısıltı Ormanı — Raund 2 authored çekirdek",
+  "coordinate_space": "world",
+  "projection": "iso-45",
+  "seed": 20261018,
+  "generator_version": 1,
+  "regions": [
+    {
+      "id": "region:fisilti-giris",
+      "name": "Giriş Çayırı",
+      "biome": "meadow",
+      "variant": "wildflower",
+      "polygon": [
+        [
+          0,
+          0
+        ],
+        [
+          132,
+          -24
+        ],
+        [
+          246,
+          0
+        ],
+        [
+          265,
+          76
+        ],
+        [
+          256,
+          110
+        ],
+        [
+          256,
+          146
+        ],
+        [
+          267,
+          184
+        ],
+        [
+          256,
+          256
+        ],
+        [
+          165,
+          268
+        ],
+        [
+          58,
+          254
+        ],
+        [
+          -24,
+          160
+        ]
+      ]
+    },
+    {
+      "id": "region:fisilti-koruluk",
+      "name": "Fısıltılı Koruluk",
+      "biome": "forest",
+      "variant": "dense",
+      "polygon": [
+        [
+          246,
+          0
+        ],
+        [
+          390,
+          -27
+        ],
+        [
+          505,
+          0
+        ],
+        [
+          530,
+          64
+        ],
+        [
+          512,
+          110
+        ],
+        [
+          512,
+          146
+        ],
+        [
+          534,
+          190
+        ],
+        [
+          512,
+          256
+        ],
+        [
+          398,
+          278
+        ],
+        [
+          256,
+          256
+        ],
+        [
+          267,
+          184
+        ],
+        [
+          256,
+          146
+        ],
+        [
+          256,
+          110
+        ],
+        [
+          265,
+          76
+        ]
+      ]
+    },
+    {
+      "id": "region:fisilti-dere",
+      "name": "Dere Kıyısı",
+      "biome": "forest",
+      "variant": "clearing",
+      "polygon": [
+        [
+          505,
+          0
+        ],
+        [
+          650,
+          -10
+        ],
+        [
+          785,
+          20
+        ],
+        [
+          802,
+          160
+        ],
+        [
+          768,
+          256
+        ],
+        [
+          655,
+          282
+        ],
+        [
+          512,
+          256
+        ],
+        [
+          534,
+          190
+        ],
+        [
+          512,
+          146
+        ],
+        [
+          512,
+          110
+        ],
+        [
+          530,
+          64
+        ]
+      ]
+    },
+    {
+      "id": "region:fisilti-kalinti",
+      "name": "Unutulmuş Kalıntı",
+      "biome": "forest",
+      "variant": "clearing",
+      "polygon": [
+        [
+          256,
+          256
+        ],
+        [
+          398,
+          278
+        ],
+        [
+          398,
+          540
+        ],
+        [
+          240,
+          540
+        ]
+      ]
+    },
+    {
+      "id": "region:fisilti-kuzey-iz",
+      "name": "Kuzey Sırtı Patikası",
+      "biome": "forest",
+      "variant": "default",
+      "polygon": [
+        [
+          785,
+          20
+        ],
+        [
+          650,
+          -10
+        ],
+        [
+          505,
+          0
+        ],
+        [
+          390,
+          -27
+        ],
+        [
+          246,
+          0
+        ],
+        [
+          300,
+          -450
+        ],
+        [
+          600,
+          -550
+        ],
+        [
+          850,
+          -350
+        ]
+      ]
+    },
+    {
+      "id": "region:fisilti-kayalik-gecit",
+      "name": "Kayalık Geçit",
+      "biome": "rocky",
+      "variant": "ridge",
+      "polygon": [
+        [
+          768,
+          256
+        ],
+        [
+          802,
+          160
+        ],
+        [
+          1120,
+          100
+        ],
+        [
+          1450,
+          220
+        ],
+        [
+          1470,
+          540
+        ],
+        [
+          1120,
+          700
+        ],
+        [
+          800,
+          520
+        ]
+      ]
+    }
+  ],
+  "connectors": [
+    {
+      "id": "connector:fisilti-giris-koruluk",
+      "regions": [
+        "region:fisilti-giris",
+        "region:fisilti-koruluk"
+      ],
+      "kind": "path",
+      "anchor": [
+        256,
+        128
+      ],
+      "width": 18
+    },
+    {
+      "id": "connector:fisilti-dere-koruluk",
+      "regions": [
+        "region:fisilti-dere",
+        "region:fisilti-koruluk"
+      ],
+      "kind": "path",
+      "anchor": [
+        512,
+        128
+      ],
+      "width": 18
+    },
+    {
+      "id": "connector:fisilti-kalinti-koruluk",
+      "regions": [
+        "region:fisilti-kalinti",
+        "region:fisilti-koruluk"
+      ],
+      "kind": "path",
+      "anchor": [
+        327,
+        267
+      ],
+      "width": 16
+    },
+    {
+      "id": "connector:fisilti-koruluk-kuzey",
+      "regions": [
+        "region:fisilti-koruluk",
+        "region:fisilti-kuzey-iz"
+      ],
+      "kind": "path",
+      "anchor": [
+        447.5,
+        -13.5
+      ],
+      "width": 16
+    },
+    {
+      "id": "connector:fisilti-dere-kuzey",
+      "regions": [
+        "region:fisilti-dere",
+        "region:fisilti-kuzey-iz"
+      ],
+      "kind": "path",
+      "anchor": [
+        577.5,
+        -5
+      ],
+      "width": 16
+    },
+    {
+      "id": "connector:fisilti-dere-kayalik",
+      "regions": [
+        "region:fisilti-dere",
+        "region:fisilti-kayalik-gecit"
+      ],
+      "kind": "path",
+      "anchor": [
+        785,
+        208
+      ],
+      "width": 18
+    }
+  ],
+  "features": [
+    {
+      "id": "feature:fisilti-ana-patika",
+      "kind": "path",
+      "intent_only": true,
+      "width": 18,
+      "points": [
+        [
+          64,
+          128
+        ],
+        [
+          256,
+          128
+        ],
+        [
+          384,
+          128
+        ],
+        [
+          512,
+          128
+        ],
+        [
+          704,
+          128
+        ],
+        [
+          785,
+          208
+        ],
+        [
+          1130,
+          350
+        ]
+      ]
+    },
+    {
+      "id": "feature:fisilti-dere-izi",
+      "kind": "water",
+      "intent_only": true,
+      "width": 22,
+      "points": [
+        [
+          536,
+          56
+        ],
+        [
+          616,
+          62
+        ],
+        [
+          704,
+          128
+        ],
+        [
+          735,
+          74
+        ]
+      ]
+    },
+    {
+      "id": "feature:fisilti-kalinti-kolu",
+      "kind": "path",
+      "intent_only": true,
+      "width": 16,
+      "points": [
+        [
+          384,
+          128
+        ],
+        [
+          327,
+          267
+        ],
+        [
+          320,
+          420
+        ]
+      ]
+    },
+    {
+      "id": "feature:fisilti-kuzey-kestirme",
+      "kind": "path",
+      "intent_only": true,
+      "width": 16,
+      "points": [
+        [
+          384,
+          128
+        ],
+        [
+          447.5,
+          -13.5
+        ],
+        [
+          600,
+          -150
+        ],
+        [
+          577.5,
+          -5
+        ],
+        [
+          704,
+          128
+        ]
+      ]
+    }
+  ]
+}

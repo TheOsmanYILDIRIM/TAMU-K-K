@@ -1,0 +1,15 @@
+.godot/
+.import/
+build/
+.cache/
+*.tmp
+*.bak
+*.apk
+*.aab
+*.keystore
+*.jks
+.env
+__pycache__/
+.pytest_cache/
+*.pyc
+user_data/

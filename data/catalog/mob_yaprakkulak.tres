@@ -1,0 +1,14 @@
+[gd_resource type="Resource" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/mob_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/catalog/mob_policy_herd_herbivore.tres" id="2"]
+[ext_resource type="Resource" path="res://assets/characters/yaprakkulak/rig.tres" id="3"]
+
+[resource]
+script = ExtResource("1")
+id = "core:yaprakkulak"
+label = "Yaprakkulak"
+policy = ExtResource("2")
+rig = ExtResource("3")
+tags = PackedStringArray("herbivore", "prey", "small")
+spawn_count = 6

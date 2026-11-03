@@ -1,0 +1,58 @@
+name: LOVE data contract audit
+on:
+  push:
+    branches: [main, experiment/data-architecture-audit-20261015]
+    paths:
+      - 'game/love/**'
+      - 'data/catalog/**'
+      - 'schemas/**'
+      - 'scripts/generate_love_catalog.py'
+      - 'tests/**'
+      - '.github/workflows/love-data-contract.yml'
+  workflow_dispatch:
+jobs:
+  data-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lua 5.4, LuaJIT and LÖVE
+        run: sudo apt-get update && sudo apt-get install -y lua5.4 luajit love xvfb
+      - name: Verify JSON and generated runtime registry
+        run: |
+          python -m pip install jsonschema
+          python scripts/generate_love_catalog.py --check
+          python -m unittest discover -s tests -v
+      - name: Regression Lua 5.4
+        working-directory: game/love
+        run: |
+          lua5.4 tests/run.lua
+          lua5.4 tests/runtime.lua
+          lua5.4 tests/world_stage2.lua
+          lua5.4 tests/player_stage3.lua
+          lua5.4 tests/integration.lua
+          lua5.4 tests/stage4_objects.lua
+          lua5.4 tests/stage4_deep.lua
+          lua5.4 tests/liquid_traversal.lua
+          lua5.4 tests/stage4_hash_fixture.lua > /tmp/hash54.txt
+      - name: Regression LuaJIT and seed fixture parity
+        working-directory: game/love
+        run: |
+          luajit tests/stage4_objects.lua
+          luajit tests/stage4_deep.lua
+          luajit tests/liquid_traversal.lua
+          luajit tests/stage4_hash_fixture.lua > /tmp/hashjit.txt
+          diff -u /tmp/hash54.txt /tmp/hashjit.txt
+      - name: Real LÖVE water screenshot smoke
+        env:
+          OSMAN_LOVE_LIQUID_SMOKE: "1"
+        run: |
+          set -o pipefail
+          timeout 120s xvfb-run -a love game/love 2>&1 | tee /tmp/love-audit.log
+          grep -q LOVE_LIQUID_SMOKE_OK /tmp/love-audit.log
+          find "$HOME/.local/share/love" -name water-immersion-smoke.png -exec cp {} /tmp/love-audit-water.png \;
+          test -s /tmp/love-audit-water.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: love-data-audit-water
+          path: /tmp/love-audit-water.png
+          if-no-files-found: error

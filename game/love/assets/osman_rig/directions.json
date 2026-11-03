@@ -1,0 +1,143 @@
+{
+  "format": "osman-isometric-4dir/5",
+  "project": "osman_saglak_4yon_v5.rigby",
+  "handedness": "right",
+  "directions": {
+    "SE": {
+      "label": "Ön-sağ",
+      "prefix": "",
+      "rightHandBone": "hand_l",
+      "leftHandBone": "hand_r",
+      "mirrorBaked": false,
+      "sourceRightUpperarm": "upperarm_l",
+      "flipX": false,
+      "animations": {
+        "idle": "idle",
+        "nod": "nod",
+        "head_tilt": "head_tilt",
+        "shrug": "shrug",
+        "walk": "walk",
+        "run": "run",
+        "punch": "punch",
+        "mine": "mine",
+        "chop": "chop",
+        "slash": "slash",
+        "thrust": "thrust"
+      },
+      "itemAttachment": {
+        "bone": "hand_l",
+        "localX": 26.856098,
+        "localY": 0,
+        "inherit": "normal",
+        "space": "bone-local",
+        "axis": "Local +X follows the fingers; item-specific rotation to be fitted later."
+      }
+    },
+    "SW": {
+      "label": "Ön-sol",
+      "prefix": "mirror_",
+      "rightHandBone": "hand_r",
+      "leftHandBone": "hand_l",
+      "mirrorBaked": true,
+      "sourceRightUpperarm": "upperarm_r",
+      "flipX": false,
+      "animations": {
+        "idle": "mirror_idle",
+        "nod": "mirror_nod",
+        "head_tilt": "mirror_head_tilt",
+        "shrug": "mirror_shrug",
+        "walk": "mirror_walk",
+        "run": "mirror_run",
+        "punch": "mirror_punch",
+        "mine": "mirror_mine",
+        "chop": "mirror_chop",
+        "slash": "mirror_slash",
+        "thrust": "mirror_thrust"
+      },
+      "itemAttachment": {
+        "bone": "hand_r",
+        "localX": 20.615528,
+        "localY": 0,
+        "inherit": "normal",
+        "space": "bone-local",
+        "axis": "Local +X follows the fingers; item-specific rotation to be fitted later."
+      }
+    },
+    "NW": {
+      "label": "Arka-sol",
+      "prefix": "back_",
+      "rightHandBone": "back_hand_l",
+      "leftHandBone": "back_hand_r",
+      "mirrorBaked": false,
+      "sourceRightUpperarm": "back_upperarm_l",
+      "flipX": false,
+      "animations": {
+        "idle": "back_idle",
+        "nod": "back_nod",
+        "head_tilt": "back_head_tilt",
+        "shrug": "back_shrug",
+        "walk": "back_walk",
+        "run": "back_run",
+        "punch": "back_punch",
+        "mine": "back_mine",
+        "chop": "back_chop",
+        "slash": "back_slash",
+        "thrust": "back_thrust"
+      },
+      "itemAttachment": {
+        "bone": "back_hand_l",
+        "localX": 13.453624,
+        "localY": 0,
+        "inherit": "normal",
+        "space": "bone-local",
+        "axis": "Local +X follows the fingers; item-specific rotation to be fitted later."
+      }
+    },
+    "NE": {
+      "label": "Arka-sağ",
+      "prefix": "mirror_back_",
+      "rightHandBone": "back_hand_r",
+      "leftHandBone": "back_hand_l",
+      "mirrorBaked": true,
+      "sourceRightUpperarm": "back_upperarm_r",
+      "flipX": false,
+      "animations": {
+        "idle": "mirror_back_idle",
+        "nod": "mirror_back_nod",
+        "head_tilt": "mirror_back_head_tilt",
+        "shrug": "mirror_back_shrug",
+        "walk": "mirror_back_walk",
+        "run": "mirror_back_run",
+        "punch": "mirror_back_punch",
+        "mine": "mirror_back_mine",
+        "chop": "mirror_back_chop",
+        "slash": "mirror_back_slash",
+        "thrust": "mirror_back_thrust"
+      },
+      "itemAttachment": {
+        "bone": "back_hand_r",
+        "localX": 23.200216,
+        "localY": 0,
+        "inherit": "normal",
+        "space": "bone-local",
+        "axis": "Local +X follows the fingers; item-specific rotation to be fitted later."
+      }
+    }
+  },
+  "loop": [
+    "idle",
+    "walk",
+    "run"
+  ],
+  "facingTransition": {
+    "mixDuration": 0,
+    "resetPoseBeforeApply": true,
+    "reason": "Do not interpolate negative and positive root scales across facing changes; preserve normalized clip time if needed."
+  },
+  "notes": [
+    "Yansıma animasyonun içinde; dışarıdan flipX uygulamayın.",
+    "Kemiklerin eski l/r adları uyumluluk için korunmuştur; anatomik sağ el için rightHandBone alanını kullanın.",
+    "Eşyayı seçilen kemiğe normal kalıtımla bağlayın; ayrıca aynalamayın.",
+    "Rig ve dokular v4 ile aynı. 44 klip = 11 hareket x 4 izometrik yön; klip başına 3-6 anahtar zaman."
+  ]
+}

@@ -1,0 +1,42 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.osman.godotloader'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.osman.godotloader'
+        minSdk 24
+        targetSdk 35
+        versionCode 1
+        versionName '0.1.0'
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging true
+        }
+        resources {
+            excludes += ['META-INF/AL2.0', 'META-INF/LGPL2.1']
+        }
+    }
+}
+
+dependencies {
+    // Populated by CI with Godot 4.6 SCons disable_path_overrides=no.
+    implementation files('libs/godot-lib.template_debug.aar')
+    implementation 'androidx.fragment:fragment:1.8.9'
+    implementation 'androidx.documentfile:documentfile:1.1.0'
+    implementation 'androidx.core:core-splashscreen:1.2.0'
+    testImplementation 'junit:junit:4.13.2'
+}

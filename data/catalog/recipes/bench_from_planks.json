@@ -1,0 +1,1 @@
+{"schema_version":1,"id":"core:bench_from_planks","inputs":[{"def_id":"core:wood_plank","count":4}],"outputs":[{"def_id":"core:workbench","count":1}],"station_tags":[],"duration_ticks":60}

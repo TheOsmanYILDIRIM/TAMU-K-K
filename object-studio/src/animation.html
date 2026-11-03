@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#142219">
+<title>OSMAN · Animation Studio</title>
+<style>
+:root{font:14px system-ui,-apple-system,sans-serif;color:#e9f0e8;background:#0d1510;--panel:#1b2a20;--line:#36503e;--pale:#cde8aa;--muted:#a5b9a8}
+*{box-sizing:border-box}
+body{margin:0;min-height:100dvh;background:#0d1510;color:#e9f0e8}
+button,label,summary{touch-action:manipulation}
+button,input{font:inherit}button{border:1px solid var(--line);background:#26392d;color:inherit;border-radius:11px;padding:11px 12px;cursor:pointer;font-weight:650}
+button:disabled{opacity:.4;cursor:not-allowed}button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--pale);outline-offset:2px}
+button.primary{background:var(--pale);color:#17271b;border-color:var(--pale)}
+header{display:flex;justify-content:space-between;gap:10px;align-items:center;background:#18271c;border-bottom:1px solid var(--line);padding:10px max(12px,env(safe-area-inset-right));position:relative}
+header h1{margin:0;font-size:17px}header .sub{font-size:11px;color:var(--muted)}
+.header-actions{display:flex;align-items:center;gap:6px}#buildBadge{font-size:10px;color:var(--muted)}#refresh{padding:7px 11px}
+main{max-width:760px;margin:auto;padding:10px 10px calc(20px + env(safe-area-inset-bottom))}
+.panel{border:1px solid var(--line);background:var(--panel);border-radius:17px;padding:12px;margin-bottom:10px}
+.topline{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:9px}
+#frameMeta{font-weight:750;font-size:15px}#frameState{font-size:11px;color:var(--pale)}
+.directionbar,.modes,.playbar,.actiongrid,.footbar{display:flex;gap:7px;align-items:center}
+.directionbar{overflow-x:auto;padding-bottom:7px}.directionbar button{flex:1;white-space:nowrap;padding:8px 11px}
+.modes{margin:8px 0}.modes button{flex:1;min-width:0;font-size:12px;padding:10px 4px}
+button.active{background:var(--pale);color:#142318}
+.stagewrap{width:100%;aspect-ratio:1;max-width:560px;margin:0 auto;border:1px solid #405345;background:#0a100c;border-radius:13px;overflow:hidden;position:relative}
+#stage{width:100%;height:100%;display:block}
+#compareLabels{pointer-events:none;display:none;position:absolute;top:0;left:0;right:0;padding:8px;justify-content:space-around;font-size:12px;font-weight:750;text-shadow:0 1px 3px #000}
+#compareLabels.visible{display:flex}
+.playbar{justify-content:center;margin:9px 0}.playbar button{min-width:54px}
+.playbar #play{flex:1;max-width:190px}.playbar{flex-wrap:wrap}.playbar button{flex-shrink:0}.ratebar{display:flex;gap:7px;align-items:center;justify-content:center;width:100%;flex-wrap:wrap;margin:5px 0}.ratebar button{flex:0 1 80px;padding:9px 6px}.ratebar #speed{min-width:75px;max-width:140px}#speed{max-width:105px;flex:1;accent-color:#cde8aa}
+#speedText{min-width:41px;color:var(--muted);font-variant-numeric:tabular-nums;font-size:12px}
+#strip{display:flex;gap:7px;overflow-x:auto;scroll-snap-type:x mandatory;padding:5px 1px}
+.framechip{flex:0 0 75px;scroll-snap-align:start;display:flex;flex-direction:column;gap:4px;padding:5px;background:#1b2b20;border:1px solid #3c5744;text-align:center}
+.framechip.active{outline:2px solid var(--pale);background:#274530}
+.framechip.sampled-out{opacity:.32;filter:grayscale(1)}.framechip.sampled-out.active{outline:2px dashed #9eb49f}
+.framechip canvas{width:100%;aspect-ratio:1;background:#0d150f;border-radius:7px}
+.framechip span{font-size:10px;font-weight:700}
+.framechip small{font-size:10px;color:var(--muted)}
+h2{font-size:13px;letter-spacing:.03em;margin:0 0 9px}
+.actiongrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.actiongrid button,.actiongrid label{width:100%;text-align:center}
+.filebutton{position:relative;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);background:#26392d;border-radius:11px;min-height:45px;font-weight:650;font-size:13px;cursor:pointer;padding:7px}
+.filebutton input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+details{border:1px solid var(--line);background:#18261d;border-radius:12px;margin-top:9px}
+summary{padding:12px;font-weight:750;cursor:pointer;list-style:none}summary:before{content:'▸  ';color:var(--pale)}details[open]>summary:before{content:'▾  '}
+.detailbody{padding:2px 10px 12px;display:grid;gap:8px}
+.full{width:100%}
+#status{font-size:12px;color:var(--muted);min-height:20px;line-height:1.5;margin:6px 0}
+#status.error{color:#ffbba1}
+.mini{font-size:11px;color:var(--muted)}
+kbd{font-family:inherit;color:var(--pale)}
+@media(min-width:700px){main{padding-top:16px}.panel{padding:16px}.framechip{flex-basis:91px}.modes button{font-size:14px}}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>OSMAN · ANIMATION STUDIO</h1><div class="sub">Blender yürüyüşü · tek kare AI</div></div>
+  <div class="header-actions"><span id="buildBadge">__ANIMATION_BUILD_SHA__</span><button id="refresh" type="button" aria-label="Yayını yenile">↻</button></div>
+</header>
+<main>
+  <section class="panel" aria-label="Animasyon önizleme">
+    <div class="topline"><div id="frameMeta">SE · Kare yok</div><div id="frameState">Kaynak bekleniyor</div></div>
+    <div id="directions" class="directionbar" aria-label="Kamera yönü"></div>
+    <div class="modes" role="group" aria-label="Önizleme">
+      <button type="button" data-mode="original" class="active">Orijinal</button>
+      <button type="button" data-mode="variant">AI Varyantı</button>
+      <button type="button" data-mode="compare">Karşılaştır</button>
+    </div>
+    <div class="stagewrap"><canvas id="stage" width="720" height="720" aria-label="Tek animasyon önizleme"></canvas><div id="compareLabels"><span>ORİJİNAL</span><span>AI VARYANTI</span></div></div>
+    <div class="playbar">
+      <button type="button" id="prev" aria-label="Önceki kare">◀</button>
+      <button type="button" id="play" class="primary">▶ Oynat</button>
+      <button type="button" id="next" aria-label="Sonraki kare">▶</button>
+      </div>
+    <div class="ratebar"><button type="button" id="rate100" data-rate="100" class="active">100%</button><button type="button" id="rate50" data-rate="50">50%</button><button type="button" id="rate25" data-rate="25">25%</button><input id="speed" type="range" min="1" max="24" value="12" aria-label="Oynatma hızı"><span id="speedText">12 FPS</span></div>
+    <div id="strip" role="group" aria-label="Yürüyüş kareleri"></div>
+  </section>
+  <section class="panel" aria-label="Seçili kare işlemleri">
+    <h2>SEÇİLİ KARE</h2>
+    <div class="actiongrid">
+      <button type="button" id="exportOriginal">↓ Orijinal PNG</button>
+      <button type="button" id="exportMask">↓ AI maskesi PNG</button>
+      <label class="filebutton" for="variantInput">↑ AI varyantını yükle<input id="variantInput" type="file" accept="image/png"></label>
+      <button type="button" id="exportVariant">↓ Varyant PNG</button>
+    </div>
+    <div class="footbar" style="margin-top:8px">
+      <button type="button" id="copyPrompt" class="full">📋 Tek kare AI promptunu kopyala</button>
+      <button type="button" id="removeVariant">Varyantı sil</button>
+    </div>
+  </section>
+  <section class="panel" aria-label="Blender karelerini yükleme">
+    <h2>YÜRÜYÜŞ KARELERİ</h2>
+    <div class="actiongrid">
+      <label class="filebutton primary" for="sourceInput">↑ ZIP veya PNG yükle<input id="sourceInput" type="file" accept=".zip,image/png" multiple></label>
+      <button type="button" id="openBlender">↓ Blender 16 kare</button>
+    </div>
+    <details><summary>Toplu PNG indir</summary>
+      <div class="detailbody">
+        <button type="button" id="zipOriginal" class="full">↓ Tüm orijinal kareler ZIP</button>
+        <button type="button" id="zipMasks" class="full">↓ Tüm otomatik AI maskeleri ZIP</button>
+      </div>
+    </details>
+    <details><summary>Kayıtlar</summary><div class="detailbody">
+      <button type="button" id="clearDirection" class="full">Seçili yönün kayıtlarını sil</button>
+      <div class="mini">Diğer stüdyo kayıtlarına dokunulmaz.</div>
+    </div></details>
+  </section>
+<section class="panel" id="batchStudio" aria-label="Toplu üretim ve maskeli düzeltme">
+  <h2>TOPLU ÜRETİM → MASKELİ DÜZELTME</h2>
+  <div class="actiongrid" style="margin-bottom:8px">
+   <label style="display:flex;flex-direction:column;gap:5px">Kare sayısı
+    <select id="batchCount" style="width:100%;background:#26392d;color:#e9f0e8;border:1px solid #45624e;border-radius:9px;padding:9px"><option>8</option><option selected>16</option><option>32</option></select>
+   </label>
+   <button type="button" id="batchOriginal">1 · Referans sheet indir</button>
+  </div>
+  <div class="actiongrid" style="margin-bottom:8px">
+   <label class="filebutton" for="batchAIInput">2 · AI spritesheet yükle<input type="file" id="batchAIInput" accept="image/png"></label>
+   <button type="button" id="batchSplit">Sheet'i karelere böl</button>
+  </div>
+  <div class="mini" id="batchInfo" role="status">Yön ve kare sayısını seçerek başla.</div>
+  <div style="margin:8px 0">
+   <div class="modes" role="group" aria-label="Sheet görünümü">
+    <button type="button" id="sheetViewSource" class="active">Orijinal sheet</button>
+    <button type="button" id="sheetViewAI">AI sheet</button><button type="button" id="sheetViewAnimate">▶ AI animasyonunu izle</button>
+   </div>
+   <canvas id="batchCanvas" width="512" height="512" style="display:block;width:100%;max-height:450px;object-fit:contain;background:#0b130e;border:1px solid #42614a;border-radius:9px" aria-label="Tıklanabilir spritesheet önizlemesi"></canvas>
+  </div>
+  <div style="display:flex;gap:6px;overflow-x:auto;margin:9px 0" id="batchCells" aria-label="Sheet karelerinin durumu"></div>
+  <div class="actiongrid">
+   <button type="button" id="repairPackage">3 · Kare + maske indir</button>
+   <label class="filebutton" for="repairInput">4 · Düzeltilmiş PNG yükle<input type="file" id="repairInput" accept="image/png"></label>
+  </div>
+  <details><summary>Toplu dışa aktar / kayıt</summary><div class="detailbody">
+   <button type="button" id="batchAllRepair">Tüm kareler: PNG + maske indir</button>
+   <button type="button" id="batchFinalZip">Onaylı ve üretilmiş kareler ZIP</button>
+   <button type="button" id="batchBackup">Çalışmayı yedekle (ZIP)</button>
+  </div></details>
+</section>
+  <div id="status" role="status" aria-live="polite">Hazır.</div>
+</main>
+<script>
+'use strict';
+(()=>{
+const $=id=>document.getElementById(id);
+const DB='OsmanAnimationStudioFramesV1',STORE='frames',PREF='osman:animation-scene:clean:v1';
+const DIRS=['SE','SW','NE','NW'],MAX_FILE=24*1024*1024,MAX_FRAMES=128,PREVIEW=720;
+const sets={SE:[],SW:[],NE:[],NW:[]},cache=new Map();
+const state={direction:'SE',selected:0,mode:'original',playing:false,fps:12,rate:100,last:0,drawTicket:0,db:null,serial:0};
+const ctx=$('stage').getContext('2d',{alpha:false});
+const createCanvas=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c};
+function status(msg,bad=false){$('status').textContent=msg;$('status').classList.toggle('error',bad)}
+function frameList(){return sets[state.direction]}
+function activeFrame(){return frameList()[state.selected]||null}
+function filename(path){return String(path).replace(/\\/g,'/').split('/').pop()}
+function frameNumber(name){const m=filename(name).match(/(\d+)(?=\.png$)/i);return m?Number(m[1]):0}
+function sortFiles(a,b){return frameNumber(a.name)-frameNumber(b.name)||a.name.localeCompare(b.name,'tr',{numeric:true})}
+function directionOf(path){const name=String(path).replace(/\\/g,'/'),m=name.match(/(?:^|\/)(SE|SW|NE|NW)\//i)||filename(name).match(/^(SE|SW|NE|NW)[_-]/i);return m?m[1].toUpperCase():state.direction}
+function savePrefs(){try{localStorage.setItem(PREF,JSON.stringify({direction:state.direction,mode:state.mode,fps:state.fps,rate:state.rate}))}catch{}}
+function readPrefs(){try{const p=JSON.parse(localStorage.getItem(PREF)||'{}');if(DIRS.includes(p.direction))state.direction=p.direction;if(['original','variant','compare'].includes(p.mode))state.mode=p.mode;if(p.fps>=1&&p.fps<=24)state.fps=Number(p.fps);if([25,50,100].includes(p.rate))state.rate=p.rate}catch{}}
+function openDB(){return new Promise(resolve=>{if(!('indexedDB' in window)){resolve(null);return}try{const r=indexedDB.open(DB,1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(STORE))r.result.createObjectStore(STORE,{keyPath:'slot'})};r.onsuccess=()=>resolve(r.result);r.onerror=()=>resolve(null)}catch{resolve(null)}})}
+function readRecords(){return new Promise(resolve=>{if(!state.db){resolve([]);return}try{const r=state.db.transaction(STORE).objectStore(STORE).getAll();r.onsuccess=()=>resolve(r.result||[]);r.onerror=()=>resolve([])}catch{resolve([])}})}
+function transaction(work){return new Promise((resolve,reject)=>{if(!state.db){resolve();return}try{const tx=state.db.transaction(STORE,'readwrite');tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error||Error('Kayıt hatası'));tx.onabort=()=>reject(tx.error||Error('Kayıt iptal'));work(tx.objectStore(STORE))}catch(e){reject(e)}})}
+function record(d,i,frame){return {slot:d+':'+i,name:frame.name,source:frame.source,blob:frame.variant||frame.source,editedName:frame.variant?frame.editedName||'AI varyantı':null,x:0,y:0}}
+function resetCache(){cache.clear();state.serial++}
+async function restore(){
+ const records=await readRecords();for(const r of records){
+   const d=typeof r.slot==='number'?'SE':String(r.slot).split(':')[0];
+   const i=typeof r.slot==='number'?r.slot:Number(String(r.slot).split(':')[1]);
+   if(!DIRS.includes(d)||!Number.isSafeInteger(i)||i<0||i>=MAX_FRAMES||!(r.source instanceof Blob))continue;
+   sets[d][i]={name:r.name||('frame_'+String(i+1).padStart(2,'0')+'.png'),source:r.source,variant:r.editedName&&r.blob instanceof Blob?r.blob:null,editedName:r.editedName||null};
+ }
+ for(const d of DIRS)sets[d]=sets[d].filter(Boolean);
+ if(!frameList().length){const found=DIRS.find(d=>sets[d].length);if(found)state.direction=found}
+ if(frameList().length)status('Yerel kareler geri yüklendi.');
+ updateAll();
+}
+async function decode(blob){
+ if(!(blob instanceof Blob)||blob.size>MAX_FILE)throw Error('PNG en fazla 24 MB olabilir');
+ const image=await createImageBitmap(blob);try{
+   if(image.width<16||image.height<16||image.width>8192||image.height>8192)throw Error('PNG ölçüsü desteklenmiyor');
+   const c=createCanvas(image.width,image.height),g=c.getContext('2d',{willReadFrequently:true});g.drawImage(image,0,0);
+   const out=g.getImageData(0,0,c.width,c.height),p=out.data,w=c.width,h=c.height;
+   // A previously saved PNG may contain magenta guidance or an opaque black studio matte.
+   // Cleanup acts on an in-memory copy; its original Blob is never changed.
+   for(let k=0;k<p.length;k+=4)if(p[k]>217&&p[k+2]>201&&p[k+1]<85){p[k]=p[k+1]=p[k+2]=0;p[k+3]=0}
+   const known=new Uint8Array(w*h),stack=[],dark=k=>{let n=k*4;return p[n+3]>248&&p[n]<18&&p[n+1]<18&&p[n+2]<18};
+   // Pass across transparent former guide pixels so each old black grid cell
+   // cannot remain an opaque rectangle. Only remove near-black pixels.
+   const passable=k=>p[k*4+3]===0||dark(k);
+   const add=k=>{if(!known[k]&&passable(k)){known[k]=1;stack.push(k)}};
+   for(let x=0;x<w;x++){add(x);add((h-1)*w+x)}
+   for(let y=0;y<h;y++){add(y*w);add(y*w+w-1)}
+   for(let n=0;n<stack.length;n++){const k=stack[n],x=k%w,y=(k/w)|0;if(x)add(k-1);if(x<w-1)add(k+1);if(y)add(k-w);if(y<h-1)add(k+w)}
+   for(const k of stack)if(dark(k)){const n=k*4;p[n]=p[n+1]=p[n+2]=p[n+3]=0}
+   g.putImageData(out,0,0);return c;
+ }finally{image.close()}
+}
+function bbox(c){
+ const {data}=c.getContext('2d',{willReadFrequently:true}).getImageData(0,0,c.width,c.height);let a=c.width,b=c.height,x=-1,y=-1;
+ for(let j=0;j<c.height;j++)for(let i=0;i<c.width;i++)if(data[(j*c.width+i)*4+3]>18){a=Math.min(a,i);b=Math.min(b,j);x=Math.max(x,i);y=Math.max(y,j)}
+ return x<0?null:{x:a,y:b,w:x-a+1,h:y-b+1};
+}
+async function raster(d,i,kind='original'){
+ const f=sets[d][i];if(!f)throw Error('Kare bulunamadı');const blob=kind==='variant'?(f.variant||f.source):f.source;
+ const key=d+':'+i+':'+kind+':'+state.serial;
+ if(cache.has(key)){const v=cache.get(key);cache.delete(key);cache.set(key,v);return v}
+ const decoded=await decode(blob);const c=(decoded.width>1024||decoded.height>1024)?(()=>{const ratio=Math.min(1024/decoded.width,1024/decoded.height),cv=createCanvas(Math.round(decoded.width*ratio),Math.round(decoded.height*ratio));cv.getContext('2d').drawImage(decoded,0,0,cv.width,cv.height);return cv})():decoded;const v={canvas:c,box:bbox(c)};
+ cache.set(key,v);while(cache.size>Math.max(48,DIRS.reduce((n,d)=>n+sets[d].length,0)*2))cache.delete(cache.keys().next().value);
+ return v;
+}
+function clearStage(){
+ ctx.fillStyle='#0b110d';ctx.fillRect(0,0,PREVIEW,PREVIEW);ctx.textAlign='left';
+}
+function messageStage(message){
+ ctx.fillStyle='#bed4bb';ctx.textAlign='center';ctx.font='19px system-ui';ctx.fillText(message,PREVIEW/2,PREVIEW/2);ctx.textAlign='left';
+}
+function drawPose(r,x,y,w,h){
+ if(!r||!r.box)return;
+ // The Blender camera defines a shared, fixed canvas coordinate system.
+ // Never crop/recenter each individual pose by its changing alpha bounds.
+ const scale=Math.min(w/r.canvas.width,h/r.canvas.height);
+ const dw=r.canvas.width*scale,dh=r.canvas.height*scale;
+ ctx.drawImage(r.canvas,x+(w-dw)/2,y+(h-dh)/2,dw,dh);
+}
+async function render(){
+ const ticket=++state.drawTicket,d=state.direction,i=state.selected,frame=activeFrame();
+ clearStage();$('compareLabels').classList.toggle('visible',state.mode==='compare'&&!!frame);
+ if(!frame){messageStage('Yürüyüş ZIP veya PNG yükle');return}
+ try{
+   const src=await raster(d,i),variant=state.mode==='original'?null:await raster(d,i,'variant');
+   if(ticket!==state.drawTicket)return;
+   clearStage();
+   if(state.mode==='compare'){drawPose(src,0,0,PREVIEW/2,PREVIEW);ctx.fillStyle='#526754';ctx.fillRect(PREVIEW/2-1,0,2,PREVIEW);
+     if(frame.variant)drawPose(variant,PREVIEW/2,0,PREVIEW/2,PREVIEW);
+     else{ctx.fillStyle='#c5d7c2';ctx.font='17px system-ui';ctx.textAlign='center';ctx.fillText('AI varyantı yükle',PREVIEW*.75,PREVIEW*.5);ctx.textAlign='left'}}
+   else drawPose(state.mode==='original'?src:(variant||src),0,0,PREVIEW,PREVIEW);
+   if(!src.box)messageStage('Bu karede görünür alfa bulunamadı');
+ }catch(e){if(ticket!==state.drawTicket)return;clearStage();messageStage('Görüntü çözülemedi');status(e.message,true)}
+}
+function controls(){
+ const len=frameList().length,frame=activeFrame();
+ $('frameMeta').textContent=len?state.direction+' · Kare '+String(state.selected+1).padStart(2,'0')+' / '+len:state.direction+' · Kare yok';
+ $('frameState').textContent=frame?(frame.variant?'AI varyantı var':'Orijinal'):'Kaynak bekleniyor';
+ $('play').textContent=state.playing?'⏸ Durdur':'▶ Oynat';
+ $('speedText').textContent=state.fps+' FPS';$('speed').value=state.fps;
+ document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===state.mode));document.querySelectorAll('[data-rate]').forEach(b=>b.classList.toggle('active',Number(b.dataset.rate)===state.rate));
+ for(const id of ['prev','next','play','exportOriginal','exportMask','copyPrompt','zipOriginal','zipMasks'])$(id).disabled=!len;
+ for(const id of ['exportVariant','removeVariant'])$(id).disabled=!frame?.variant;
+ $('variantInput').disabled=!len;
+ const bar=$('directions');bar.replaceChildren();for(const d of DIRS){if(!sets[d].length)continue;
+   const b=document.createElement('button');b.type='button';b.textContent=d+' · '+sets[d].length;b.classList.toggle('active',d===state.direction);
+   b.onclick=()=>{state.direction=d;state.selected=0;state.playing=false;savePrefs();updateAll()};bar.append(b)}
+}
+let thumbObserver=null;
+function strip(){
+ const list=frameList(),holder=$('strip');thumbObserver?.disconnect();holder.replaceChildren();
+ thumbObserver=new IntersectionObserver(entries=>{for(const entry of entries){if(!entry.isIntersecting)continue;
+   const chip=entry.target,cv=chip.querySelector('canvas'),i=Number(chip.dataset.index),d=state.direction,serial=state.serial;
+   thumbObserver.unobserve(chip);
+   raster(d,i,sets[d][i]?.variant?'variant':'original').then(r=>{if(serial!==state.serial||!cv.isConnected||!r.box)return;
+     const g=cv.getContext('2d'),bb=r.box,k=Math.min(84/bb.w,84/bb.h);
+     g.drawImage(r.canvas,bb.x,bb.y,bb.w,bb.h,(92-bb.w*k)/2,(92-bb.h*k)/2,bb.w*k,bb.h*k);
+   }).catch(()=>{});
+ }},{root:holder,rootMargin:'80px',threshold:.05});
+ for(let i=0;i<list.length;i++){
+   const f=list[i],b=document.createElement('button');b.type='button';b.dataset.index=String(i);b.className='framechip';b.classList.toggle('active',i===state.selected);b.classList.toggle('sampled-out',i%Math.max(1,Math.round(100/state.rate))!==0);
+   const cv=createCanvas(92,92),title=document.createElement('span'),note=document.createElement('small');
+   title.textContent=state.direction+' '+String(i+1).padStart(2,'0');note.textContent=f.variant?'AI ✓':'Orijinal';
+   b.append(cv,title,note);b.onclick=()=>{state.selected=i;state.playing=false;updateAll()};holder.append(b);
+   thumbObserver.observe(b);
+ }
+}
+function updateAll(){controls();render();strip();if(batchDb)batchRefresh().catch(e=>status(e.message,true))}
+function step(n){const len=frameList().length;if(!len)return;
+ state.selected=(state.selected+n*Math.max(1,Math.round(100/state.rate))+len*8)%len;
+ controls();
+ for(const [index,element] of [...$('strip').children].entries())element.classList.toggle('active',index===state.selected);
+ render();
+}
+function tick(t){if(state.playing&&frameList().length&&t-state.last>=1000/state.fps){state.last=t;step(1)}requestAnimationFrame(tick)}
+function png(canvas){return new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(Error('PNG oluşturulamadı')),'image/png'))}
+function labeledExport(source,index,direction){
+ const out=createCanvas(source.width,source.height),g=out.getContext('2d');g.drawImage(source,0,0);
+ const bb=bbox(source);if(!bb)return out;
+ const font=Math.max(28,Math.round(source.width*.065)),gap=Math.round(font*.35);
+ const right=bb.x+bb.w+gap,left=bb.x-font*2.5-gap;
+ const x=right+font*2.2<source.width?right:Math.max(8,left);
+ const y=Math.max(font+12,Math.min(source.height-font,bb.y+font));
+ g.textBaseline='alphabetic';g.textAlign='left';g.font='800 '+font+'px system-ui';
+ g.lineWidth=Math.max(3,Math.round(font*.07));g.strokeStyle='rgba(10,18,13,.9)';g.fillStyle='#e8f4db';
+ const number=String(index+1).padStart(2,'0');g.strokeText(number,x,y);g.fillText(number,x,y);
+ g.font='700 '+Math.round(font*.46)+'px system-ui';g.fillText(direction,x,y+font*.55);
+ return out;
+}
+function download(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}
+async function makeMask(d,i){
+ const c=(await raster(d,i)).canvas,mask=createCanvas(c.width,c.height),mg=mask.getContext('2d',{willReadFrequently:true});
+ const data=c.getContext('2d',{willReadFrequently:true}).getImageData(0,0,c.width,c.height),out=mg.createImageData(c.width,c.height);
+ for(let k=0;k<data.data.length;k+=4){out.data[k]=255;out.data[k+1]=255;out.data[k+2]=255;out.data[k+3]=255-data.data[k+3]}
+ mg.putImageData(out,0,0);return mask;
+}
+async function constrainVariant(file,src){
+ const ai=await decode(file);
+ const c=createCanvas(src.width,src.height),g=c.getContext('2d');
+ // AI art is an independent RGBA variant. Never copy original pixels or
+ // force the old mannequin silhouette onto the new character.
+ g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';
+ g.drawImage(ai,0,0,ai.width,ai.height,0,0,src.width,src.height);
+ return png(c);
+}
+
+/* Batch stage: source sheet -> AI sheet -> exact row/column split -> per-frame mask repair.
+   This is an isolated IndexedDB store. Source frames/legacy user records never overwritten. */
+const BATCH_DB='OsmanAnimationBatchStudioV1',BATCH_STORE='work';
+let batchDb=null,batchCache={},batchSelected=0,batchSheetPending=null,batchKey='',batchView='source',batchDrawSequence=0,batchPlaying=false,batchPlayLast=0;
+const batchSelect=()=>$('batchCount').value;
+const batchIdentity=(d=state.direction,n=Number(batchSelect()))=>d+'-'+n;
+const batchIds=n=>Array.from({length:n},(_,i)=>Math.floor(i*32/n));
+const batchFrameId=(d,n,i)=>d+'-'+String(n).padStart(2,'0')+'-'+String(i+1).padStart(2,'0');
+function batchOpen(){return new Promise((resolve,reject)=>{const r=indexedDB.open(BATCH_DB,1);r.onupgradeneeded=()=>r.result.createObjectStore(BATCH_STORE,{keyPath:'key'});r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(Error('Batch kayıt alanı açılamadı'))})}
+async function batchGet(key){if(!batchDb)return null;return new Promise((resolve,reject)=>{let r=batchDb.transaction(BATCH_STORE).objectStore(BATCH_STORE).get(key);r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(Error('Batch okuma hatası'))})}
+async function batchSave(obj){if(!batchDb)throw Error('Batch veritabanı kapalı');return new Promise((resolve,reject)=>{const t=batchDb.transaction(BATCH_STORE,'readwrite');t.oncomplete=resolve;t.onerror=()=>reject(Error('Batch kaydı başarısız'));t.objectStore(BATCH_STORE).put(obj)})}
+function batchNew(d,n){return {key:batchIdentity(d,n),schema:'osman-animation-batch-v1',direction:d,count:n,cols:Math.ceil(Math.sqrt(n)),rows:Math.ceil(n/Math.ceil(Math.sqrt(n))),frameIndices:[],sources:[],generated:null,split:[],repaired:[],revision:1,updatedAt:new Date().toISOString()}}
+async function batchCurrent(){const key=batchIdentity();if(batchCache[key])return batchCache[key];return batchCache[key]=await batchGet(key)||batchNew(state.direction,Number(batchSelect()))}
+function batchGrid(n){const cols=Math.ceil(Math.sqrt(n));return {cols,rows:Math.ceil(n/cols)}}
+function batchSetInfo(s){$('batchInfo').textContent=s}
+function batchDrawLabel(canvas,title){const g=canvas.getContext('2d');const pad=Math.max(7,Math.round(canvas.width*.009));g.fillStyle='rgba(0,0,0,.8)';g.fillRect(pad,pad,Math.max(115,canvas.width*.145),Math.max(25,canvas.height*.035));g.fillStyle='#fff';g.font='700 '+Math.max(14,Math.round(canvas.width*.018))+'px system-ui';g.fillText(title,pad+6,pad+Math.max(19,canvas.height*.027))}
+function batchCanvasSheet(canvases,n,labels=false){const {cols,rows}=batchGrid(n),cell=512,out=createCanvas(cols*cell,rows*cell),g=out.getContext('2d');
+ for(let i=0;i<n;i++){const canvas=canvases[i];if(!canvas)continue;const x=(i%cols)*cell,y=Math.floor(i/cols)*cell;const k=Math.min(cell/canvas.width,cell/canvas.height);
+ g.drawImage(canvas,x+(cell-canvas.width*k)/2,y+(cell-canvas.height*k)/2,canvas.width*k,canvas.height*k);
+ if(labels){g.save();g.translate(x,y);const label=createCanvas(cell,cell);batchDrawLabel(label,batchFrameId(state.direction,n,i));g.drawImage(label,0,0);g.restore()}}
+ return out}
+async function batchSourceFrames(){const n=Number(batchSelect()),ids=batchIds(n),list=frameList();if(!list.length)throw Error('Önce Blender 32 kare ZIP kaynağını yükle');
+ // Input may have n frames or all 32, but never silently mix source positions.
+ const selected=list.length===n?Array.from({length:n},(_,i)=>i):list.length>=32?ids:null;
+ if(!selected)throw Error('Bu yön için '+n+' veya 32 kaynak kare olmalı; mevcut '+list.length);
+ const sources=[];for(const i of selected){const f=list[i];sources.push(await png((await raster(state.direction,i,'original')).canvas))}
+ return {indices:selected,sources}
+}
+async function batchExportSource(){const n=Number(batchSelect()),obj=await batchCurrent(),src=await batchSourceFrames();
+ if(obj.generated&&!confirm('Bu çalışma için sheet ve bölünmüş AI kareleri kayıtlı. Yeni referans export bunları korur; devam?'))return;
+ const cv=[];for(const b of src.sources)cv.push(await decode(b));const sheet=batchCanvasSheet(cv,n,false);
+ obj.frameIndices=src.indices;obj.sources=src.sources;obj.updatedAt=new Date().toISOString();obj.revision++;
+ await batchSave(obj);batchCache[obj.key]=obj;await download(await png(sheet),obj.key+'_SOURCE_SHEET.png');
+ batchSetInfo(obj.key+' · Referans sheet indirildi. AI çıktı sheet’ini yükle.');batchRefresh()
+}
+async function batchLoadGenerated(file){const obj=await batchCurrent();if(!obj.sources.length)throw Error('Önce referans spritesheet export et');
+ const bitmap=await createImageBitmap(file);
+ const {cols,rows}=batchGrid(obj.count);if(bitmap.width<cols*48||bitmap.height<rows*48)throw Error('AI sheet çözünürlüğü çok küçük');
+ bitmap.close();
+ if(obj.generated&&!confirm('Mevcut generated sheet değiştirilsin mi? Split ve final kareler korunur; yeniden split için ayrı onay gerekecek.'))return;
+ obj.generated=file;obj.generatedName=file.name;obj.updatedAt=new Date().toISOString();obj.revision++;await batchSave(obj);batchCache[obj.key]=obj;
+ batchSetInfo('Generated sheet kayıtlı. Şimdi karelere böl.');batchRefresh()
+}
+async function batchSplit(){const obj=await batchCurrent();if(!obj.generated||!obj.sources.length)throw Error('Önce referans ve üretilmiş spritesheet yükle');
+ if(obj.split?.length&&!confirm('Bölünmüş AI kareleri yeniden oluşturulsun mu? Mevcut final düzeltmeler korunacak.'))return;
+ const bmp=await createImageBitmap(obj.generated);const {cols,rows}=batchGrid(obj.count),cellW=bmp.width/cols,cellH=bmp.height/rows;
+ const split=[];try{for(let i=0;i<obj.count;i++){
+ const sx=Math.round((i%cols)*cellW),sy=Math.round(Math.floor(i/cols)*cellH),ex=Math.round((i%cols+1)*cellW),ey=Math.round((Math.floor(i/cols)+1)*cellH);
+ const source=await decode(obj.sources[i]);const cv=createCanvas(source.width,source.height),g=cv.getContext('2d');
+ // Resize the sheet cell as a whole; never crop its content bbox or infer frame order.
+ g.drawImage(bmp,sx,sy,ex-sx,ey-sy,0,0,cv.width,cv.height);split.push(await png(cv))
+ }}finally{bmp.close()}
+ obj.split=split;obj.updatedAt=new Date().toISOString();obj.revision++;await batchSave(obj);batchCache[obj.key]=obj;
+ batchSetInfo(obj.count+' kare bölündü. Her kareyi kendi maskesiyle ayrı onar.');batchRefresh()
+}
+const batchRepairPrompt=(id,w,h)=>'IMAGE A is the generated split frame ('+id+'). The attached PNG edit mask is the exact original Blender pose silhouette: transparent pixels are editable, opaque pixels are protected. Adjust the generated character to fit the transparent region, preserve its identity, clothing, limb anatomy and exact pose. Return ONE transparent RGBA PNG at '+w+'x'+h+' pixels. Do not add labels, grids, scenery or extra frames. Preserve frame ID '+id+'.';
+async function batchRepairEntries(obj,i){const id=batchFrameId(obj.direction,obj.count,i),source=await decode(obj.sources[i]),generated=await decode(obj.split[i]),mask=createCanvas(source.width,source.height),m=mask.getContext('2d',{willReadFrequently:true});
+ const alpha=source.getContext('2d',{willReadFrequently:true}).getImageData(0,0,source.width,source.height).data,dt=m.createImageData(source.width,source.height);
+ for(let p=0;p<dt.data.length;p+=4){dt.data[p]=dt.data[p+1]=dt.data[p+2]=255;dt.data[p+3]=255-alpha[p+3]}
+ m.putImageData(dt,0,0);
+ return {id,generated:await png(generated),mask:await png(mask),prompt:batchRepairPrompt(id,source.width,source.height)}
+}
+async function batchCopyPrompt(text){try{await navigator.clipboard.writeText(text);return true}catch{return false}}
+async function batchRepairZip(all=false){const obj=await batchCurrent();if(obj.split?.length!==obj.count)throw Error('Önce spritesheet böl');
+ const indices=all?Array.from({length:obj.count},(_,i)=>i):[batchSelected];
+ // Download two independent PNG files per frame; do not include source or ZIP.
+ for(const i of indices){const entry=await batchRepairEntries(obj,i);
+  download(entry.generated,entry.id+'_GENERATED.png');
+  download(entry.mask,entry.id+'_EDIT_MASK.png');
+  if(!all){const copied=await batchCopyPrompt(entry.prompt);
+   batchSetInfo(entry.id+' · 2 PNG indirildi. '+(copied?'Prompt kopyalandı.':'Prompt kopyalanamadı; tarayıcı izni gerekli.'))}
+ }
+ if(all)batchSetInfo(indices.length+' kare için '+(indices.length*2)+' PNG indirme isteği gönderildi. Tarayıcı çoklu indirme izni isteyebilir.');
+}
+async function batchSaveRepaired(file){const obj=await batchCurrent();if(!obj.split?.[batchSelected])throw Error('Önce sheet böl');
+ const base=await decode(obj.sources[batchSelected]);const image=await decode(file),out=createCanvas(base.width,base.height);
+ out.getContext('2d').drawImage(image,0,0,image.width,image.height,0,0,out.width,out.height);
+ obj.repaired[batchSelected]=await png(out);obj.updatedAt=new Date().toISOString();obj.revision++;
+ await batchSave(obj);batchCache[obj.key]=obj;batchSetInfo(batchFrameId(obj.direction,obj.count,batchSelected)+' · Final kaydedildi.');batchRefresh()
+}
+async function batchFinal(){const obj=await batchCurrent(),entries=[];
+ for(let i=0;i<obj.count;i++){const b=obj.repaired[i]||obj.split[i];if(!b)continue;entries.push({name:batchFrameId(obj.direction,obj.count,i)+(obj.repaired[i]?'_FINAL.png':'_FIRST_PASS.png'),data:new Uint8Array(await b.arrayBuffer())})}
+ if(!entries.length)throw Error('Dışa aktarılacak varyant bulunamadı');await download(makeZip(entries),obj.key+'_RESULTS.zip')}
+async function batchBackup(){const obj=await batchCurrent(),entries=[{name:'manifest.json',data:new TextEncoder().encode(JSON.stringify({schema:obj.schema,key:obj.key,direction:obj.direction,count:obj.count,cols:obj.cols,rows:obj.rows,frameIndices:obj.frameIndices,revision:obj.revision,updatedAt:obj.updatedAt},null,2))}];
+ for(let i=0;i<obj.count;i++){const id=batchFrameId(obj.direction,obj.count,i);for(const [key,tag] of [['sources','source'],['split','generated'],['repaired','final']])if(obj[key]?.[i])entries.push({name:id+'/'+tag+'.png',data:new Uint8Array(await obj[key][i].arrayBuffer())})}
+ if(obj.generated)entries.push({name:'generated_spritesheet.png',data:new Uint8Array(await obj.generated.arrayBuffer())});
+ await download(makeZip(entries),obj.key+'_BACKUP.zip')}
+
+async function batchPreview(obj){
+ const token=++batchDrawSequence,canvas=$('batchCanvas'),g=canvas.getContext('2d');
+ const {cols,rows}=batchGrid(obj.count);canvas.width=cols*200;canvas.height=rows*200;
+ g.fillStyle='#0b130e';g.fillRect(0,0,canvas.width,canvas.height);
+ let image=null;
+ if(batchView==='ai'&&obj.generated){
+   image=await createImageBitmap(obj.generated);
+ }else if(obj.sources?.length){
+   const source=[];
+   for(const blob of obj.sources)source.push(await decode(blob));
+   if(token!==batchDrawSequence)return;
+   image=batchCanvasSheet(source,obj.count,false);
+ }
+ if(token!==batchDrawSequence){image?.close?.();return}
+ if(image)g.drawImage(image,0,0,canvas.width,canvas.height);
+ image?.close?.();
+ for(let i=0;i<obj.count;i++){
+   const x=(i%cols)*200,y=Math.floor(i/cols)*200,selected=i===batchSelected;
+   g.strokeStyle=selected?'#d1efa0':'rgba(255,255,255,.24)';g.lineWidth=selected?4:1;
+   g.strokeRect(x+2,y+2,196,196);
+   g.fillStyle='rgba(0,0,0,.85)';g.fillRect(x+6,y+6,116,28);
+   g.font='bold 15px system-ui';g.fillStyle='#fff';g.textAlign='left';
+   g.fillText(batchFrameId(obj.direction,obj.count,i),x+11,y+26);
+   if(obj.repaired[i]){g.fillStyle='#b9ef95';g.fillText('✓',x+174,y+26)}
+ }
+}
+
+async function batchAnimateTick(now){
+ if(!batchPlaying)return;
+ if(now-batchPlayLast>=1000/Math.max(1,state.fps)){
+   batchPlayLast=now;
+   const obj=await batchCurrent();
+   if(!batchPlaying)return;
+   if(obj.split?.length===obj.count){
+     batchSelected=(batchSelected+1)%obj.count;
+     const canvas=$('batchCanvas'),g=canvas.getContext('2d');
+     canvas.width=512;canvas.height=512;g.fillStyle='#0b130e';g.fillRect(0,0,512,512);
+     const img=await decode(obj.repaired[batchSelected]||obj.split[batchSelected]);
+     if(!batchPlaying)return;
+     const k=Math.min(512/img.width,512/img.height);
+     g.drawImage(img,(512-img.width*k)/2,(512-img.height*k)/2,img.width*k,img.height*k);
+     batchSetInfo(batchFrameId(obj.direction,obj.count,batchSelected)+' · AI animasyon önizleme');
+   }else{batchPlaying=false;$('sheetViewAnimate').textContent='▶ AI animasyonunu izle';batchSetInfo('Önce AI spritesheet karelere bölünmeli.');return}
+ }
+ requestAnimationFrame(batchAnimateTick);
+}
+$('sheetViewAnimate').onclick=()=>{
+ batchPlaying=!batchPlaying;$('sheetViewAnimate').textContent=batchPlaying?'⏸ Animasyonu durdur':'▶ AI animasyonunu izle';
+ if(batchPlaying){batchPlayLast=0;requestAnimationFrame(batchAnimateTick)}
+ else action(batchRefresh)
+};
+$('sheetViewSource').onclick=()=>{batchView='source';$('sheetViewSource').classList.add('active');$('sheetViewAI').classList.remove('active');action(batchRefresh)};
+$('sheetViewAI').onclick=()=>{batchView='ai';$('sheetViewAI').classList.add('active');$('sheetViewSource').classList.remove('active');action(batchRefresh)};
+$('batchCanvas').onclick=e=>{
+ const canvas=e.currentTarget,rect=canvas.getBoundingClientRect(),n=Number(batchSelect()),cols=batchGrid(n).cols;
+ const x=(e.clientX-rect.left)*canvas.width/rect.width,y=(e.clientY-rect.top)*canvas.height/rect.height;
+ const i=Math.floor(x/200)+Math.floor(y/200)*cols;
+ if(i>=0&&i<n){batchSelected=i;action(batchRefresh)}
+};
+
+async function batchRefresh(){if(!batchDb||batchPlaying)return;const obj=await batchCurrent();const div=$('batchCells');div.replaceChildren();
+ if(obj.sources.length)batchSetInfo(obj.key+' · Ref '+obj.sources.length+' / Sheet '+(obj.generated?'✓':'—')+' / Split '+(obj.split?.length||0)+' / Final '+obj.repaired.filter(Boolean).length);
+ await batchPreview(obj);
+ for(let i=0;i<obj.count;i++){
+ const b=document.createElement('button');b.type='button';b.style.cssText='flex:0 0 auto;min-width:83px;padding:8px;font-size:12px';
+ b.textContent=String(i+1).padStart(2,'0')+' · '+(obj.repaired[i]?'✓ Final':obj.split[i]?'◐ Split':obj.generated?'○ Sheet':'—');
+ b.title=batchFrameId(obj.direction,obj.count,i);b.classList.toggle('active',i===batchSelected);
+ b.onclick=()=>{batchSelected=i;batchRefresh()};div.append(b)
+ }}
+$('batchOriginal').onclick=()=>action(batchExportSource);
+$('batchAIInput').onchange=e=>{const f=e.target.files?.[0];e.target.value='';if(f)action(()=>batchLoadGenerated(f))};
+$('batchSplit').onclick=()=>action(batchSplit);
+$('repairPackage').onclick=()=>action(()=>batchRepairZip(false));
+$('batchAllRepair').onclick=()=>action(()=>batchRepairZip(true));
+$('repairInput').onchange=e=>{const f=e.target.files?.[0];e.target.value='';if(f)action(()=>batchSaveRepaired(f))};
+$('batchFinalZip').onclick=()=>action(batchFinal);
+$('batchBackup').onclick=()=>action(batchBackup);
+$('batchCount').onchange=()=>{batchSelected=0;action(batchRefresh)};
+async function batchBoot(){batchDb=await batchOpen();await batchRefresh()}
+
+const crcTable=(()=>{const t=new Uint32Array(256);for(let i=0;i<256;i++){let k=i;for(let z=0;z<8;z++)k=(k>>>1)^((k&1)?0xedb88320:0);t[i]=k>>>0}return t})();
+function crc32(data){let k=0xffffffff;for(const b of data)k=(k>>>8)^crcTable[(k^b)&255];return (k^0xffffffff)>>>0}
+function makeZip(files){
+ const enc=new TextEncoder(),parts=[],central=[];let offset=0,centerLength=0;
+ for(const f of files){
+   const name=enc.encode(f.name),data=f.data,crc=crc32(data),h=new ArrayBuffer(30+name.length),v=new DataView(h);
+   v.setUint32(0,0x04034b50,true);v.setUint16(4,20,true);v.setUint32(14,crc,true);v.setUint32(18,data.length,true);v.setUint32(22,data.length,true);v.setUint16(26,name.length,true);new Uint8Array(h,30).set(name);
+   parts.push(h,data);const c=new ArrayBuffer(46+name.length),z=new DataView(c);
+   z.setUint32(0,0x02014b50,true);z.setUint16(4,20,true);z.setUint16(6,20,true);z.setUint32(16,crc,true);z.setUint32(20,data.length,true);z.setUint32(24,data.length,true);z.setUint16(28,name.length,true);z.setUint32(42,offset,true);new Uint8Array(c,46).set(name);central.push(c);offset+=h.byteLength+data.length;centerLength+=c.byteLength;
+ }
+ const end=new ArrayBuffer(22),v=new DataView(end);v.setUint32(0,0x06054b50,true);v.setUint16(8,files.length,true);v.setUint16(10,files.length,true);v.setUint32(12,centerLength,true);v.setUint32(16,offset,true);
+ return new Blob([...parts,...central,end],{type:'application/zip'});
+}
+async function unzip(file){
+ if(file.size>350*1024*1024)throw Error('ZIP boyutu 350 MB sınırını aşıyor');const buf=await file.arrayBuffer(),v=new DataView(buf),bytes=new Uint8Array(buf);
+ const u16=i=>v.getUint16(i,true),u32=i=>v.getUint32(i,true),text=new TextDecoder();let end=-1;
+ for(let p=buf.byteLength-22;p>=Math.max(0,buf.byteLength-65557);p--)if(u32(p)===0x06054b50){end=p;break}
+ if(end<0)throw Error('ZIP dizini okunamadı');const n=u16(end+10);if(n>400)throw Error('ZIP çok fazla öğe içeriyor');
+ let at=u32(end+16),out=[];
+ for(let i=0;i<n;i++){
+   if(at+46>buf.byteLength||u32(at)!==0x02014b50)throw Error('ZIP dizini bozuk');
+   const method=u16(at+10),crc=u32(at+16),size=u32(at+20),expanded=u32(at+24),nameLen=u16(at+28),extra=u16(at+30),comment=u16(at+32),offset=u32(at+42);
+   const name=text.decode(bytes.subarray(at+46,at+46+nameLen));at+=46+nameLen+extra+comment;
+   if(!/\.png$/i.test(name)||/(\.\.|\\)/.test(name)||/mask|sheet|atlas|preview|grid/i.test(name))continue;
+   if(size>MAX_FILE||expanded>MAX_FILE||![0,8].includes(method)||offset+30>buf.byteLength||u32(offset)!==0x04034b50)throw Error('ZIP PNG geçersiz: '+name);
+   const first=offset+30+u16(offset+26)+u16(offset+28);if(first+size>buf.byteLength)throw Error('ZIP PNG sınırı bozuk');
+   let data=bytes.slice(first,first+size);
+   if(method===8){if(typeof DecompressionStream==='undefined')throw Error('ZIP sıkıştırması desteklenmiyor; Blender ZIP kullan');
+     const stream=new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));data=new Uint8Array(await new Response(stream).arrayBuffer())}
+   if(data.length!==expanded||crc32(data)!==crc)throw Error('ZIP doğrulaması başarısız: '+name);
+   out.push(new File([data],name,{type:'image/png'}));
+ }
+ if(!out.length)throw Error('ZIP içinde numaralı PNG kare bulunamadı');return out;
+}
+async function oldDirectionKeys(){
+ if(!state.db)return [];
+ return new Promise(resolve=>{const r=state.db.transaction(STORE).objectStore(STORE).getAllKeys();
+ r.onsuccess=()=>resolve(r.result||[]);r.onerror=()=>resolve([])});
+}
+async function sourceFiles(files){
+ const list=[];for(const f of files){if(/\.zip$/i.test(f.name))list.push(...await unzip(f));else if(/\.png$/i.test(f.name))list.push(f)}
+ if(!list.length)throw Error('PNG veya ZIP seç');
+ const groups={SE:[],SW:[],NE:[],NW:[]};for(const file of list)groups[directionOf(file.name)].push(file);
+ const incoming={};for(const d of DIRS)if(groups[d].length){
+   groups[d].sort(sortFiles);
+   if(groups[d].length>MAX_FRAMES)throw Error('128 kare sınırı aşıldı');
+   incoming[d]=[];
+   for(const file of groups[d]){const bitmap=await createImageBitmap(file);const ok=bitmap.width>=16&&bitmap.height>=16&&bitmap.width<=8192&&bitmap.height<=8192;bitmap.close();if(!ok)throw Error('PNG ölçüsü geçersiz');
+     incoming[d].push({name:filename(file.name),source:file,variant:null,editedName:null})}
+ }
+ const directions=Object.keys(incoming);
+ if(directions.some(d=>sets[d].length)&&!confirm('Mevcut kaynak kareler bu yönlerde değiştirilecek: '+directions.join(', ')+'. AI varyantları da bu yönlerde sıfırlanacak. Devam?'))return;
+ const storedKeys=await oldDirectionKeys();
+ await transaction(store=>{for(const d of directions){
+   // Replacing one direction explicitly clears its old numeric SE and named
+   // keys, including sparse legacy records; unrelated directions are untouched.
+   for(const key of storedKeys)if((d==='SE'&&typeof key==='number')||(typeof key==='string'&&key.startsWith(d+':')))store.delete(key);
+   for(let i=0;i<incoming[d].length;i++)store.put(record(d,i,incoming[d][i]));
+ }});
+ for(const d of directions)sets[d]=incoming[d];
+ state.direction=directions[0]||state.direction;state.selected=0;state.playing=false;resetCache();savePrefs();updateAll();
+ status(directions.map(d=>d+': '+sets[d].length+' gerçek kare').join(' · ')+' yüklendi.');
+}
+async function action(fn){try{await fn()}catch(e){console.error(e);status(e.message||String(e),true)}}
+$('sourceInput').onchange=e=>{const files=[...e.target.files||[]];e.target.value='';if(files.length)action(()=>sourceFiles(files))};
+$('variantInput').onchange=e=>{const file=e.target.files?.[0];e.target.value='';if(!file||!activeFrame())return;
+ action(async()=>{const d=state.direction,i=state.selected,fr=activeFrame(),src=(await raster(d,i)).canvas,blob=await constrainVariant(file,src);
+   const changed={...fr,variant:blob,editedName:file.name};await transaction(store=>store.put(record(d,i,changed)));
+   sets[d][i]=changed;resetCache();updateAll();status(d+' · '+String(i+1).padStart(2,'0')+' AI varyantı ölçeklenip maskeyle hizalandı. Orijinal korunuyor.')})};
+$('exportOriginal').onclick=()=>action(async()=>{const f=activeFrame();if(!f)return;download(await png(labeledExport((await raster(state.direction,state.selected)).canvas,state.selected,state.direction)),state.direction+'_'+String(state.selected+1).padStart(2,'0')+'_ORIGINAL.png')});
+$('exportMask').onclick=()=>action(async()=>{if(!activeFrame())return;download(await png(await makeMask(state.direction,state.selected)),state.direction+'_'+String(state.selected+1).padStart(2,'0')+'_AI_EDIT_MASK.png');status('AI maskesi indirildi: şeffaf karakter alanı düzenlenebilir.')});
+$('exportVariant').onclick=()=>action(async()=>{const f=activeFrame();if(!f?.variant)return;download(await png((await raster(state.direction,state.selected,'variant')).canvas),state.direction+'_'+String(state.selected+1).padStart(2,'0')+'_VARIANT.png')});
+$('removeVariant').onclick=()=>action(async()=>{const f=activeFrame();if(!f?.variant||!confirm('Yalnız seçili karenin AI varyantı silinsin mi? Orijinal korunur.'))return;const fresh={...f,variant:null,editedName:null};await transaction(store=>store.put(record(state.direction,state.selected,fresh)));sets[state.direction][state.selected]=fresh;resetCache();updateAll();status('AI varyantı kaldırıldı, orijinal korundu.')});
+$('zipOriginal').onclick=()=>action(async()=>{const d=state.direction,files=[];for(let i=0;i<frameList().length;i++)files.push({name:d+'/frame_'+String(i+1).padStart(2,'0')+'.png',data:new Uint8Array(await (await png((await raster(d,i)).canvas)).arrayBuffer())});download(makeZip(files),d+'_all_original_frames.zip');status(files.length+' orijinal kare ZIP olarak indirildi.')});
+$('zipMasks').onclick=()=>action(async()=>{const d=state.direction,files=[];for(let i=0;i<frameList().length;i++)files.push({name:d+'/frame_'+String(i+1).padStart(2,'0')+'_AI_EDIT_MASK.png',data:new Uint8Array(await (await png(await makeMask(d,i))).arrayBuffer())});download(makeZip(files),d+'_all_auto_masks.zip');status(files.length+' otomatik maske ZIP olarak indirildi.')});
+$('prev').onclick=()=>{state.playing=false;step(-1)};$('next').onclick=()=>{state.playing=false;step(1)};
+$('play').onclick=()=>{state.playing=!state.playing;state.last=performance.now();controls()};
+$('speed').oninput=e=>{state.fps=Number(e.target.value);savePrefs();controls()};document.querySelectorAll('[data-rate]').forEach(b=>b.onclick=()=>{state.rate=Number(b.dataset.rate);savePrefs();updateAll()});
+document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{state.mode=b.dataset.mode;savePrefs();controls();render()});
+$('copyPrompt').onclick=()=>action(async()=>{
+ const text='Three inputs: IMAGE A = the target character reference (identity, outfit, proportions, colors). IMAGE B = the ORIGINAL Blender walking frame (exact pose, arms, legs, limb overlap, anatomy, fixed orthographic isometric camera, position, canvas dimensions). IMAGE C = the API EDIT MASK generated from Image B (transparent alpha=editable character; opaque alpha=protected background). Transfer the character design from A onto the exact pose in B, respecting C as the edit boundary. Preserve every limb, original silhouette, foreshortening, contact position, and fixed camera. Output exactly ONE transparent RGBA PNG with precisely the same pixel dimensions and alignment as Image B. Do not add numbers, grid, labels, background, extra limbs or extra frames. Frame number and direction shown in the editor are UI labels only and must NOT be painted into the exported PNG.';
+ try{await navigator.clipboard.writeText(text);status('Tek kare AI promptu kopyalandı.')}catch{const t=document.createElement('textarea');t.value=text;document.body.append(t);t.select();document.execCommand('copy');t.remove();status('Prompt kopyalandı.')}});
+$('openBlender').onclick=()=>window.open('https://github.com/TheOsmanYILDIRIM/oyun/actions/runs/39279553854','_blank','noopener,noreferrer');
+$('clearDirection').onclick=()=>action(async()=>{const d=state.direction;if(!sets[d].length||!confirm(d+' yönündeki tüm kareler ve AI varyantları kalıcı olarak silinsin mi?'))return;
+ const storedKeys=await oldDirectionKeys();
+ await transaction(store=>{for(const key of storedKeys)if((d==='SE'&&typeof key==='number')||(typeof key==='string'&&key.startsWith(d+':')))store.delete(key)});
+ sets[d]=[];state.selected=0;state.playing=false;resetCache();updateAll();status('Yalnız '+d+' yönünün kayıtları silindi.')});
+$('refresh').onclick=()=>{const u=new URL(location.href);u.searchParams.set('refresh',Date.now().toString());location.assign(u.href)};
+async function bootstrap(){
+ readPrefs();state.db=await openDB();await restore();requestAnimationFrame(tick);
+ const sha='__ANIMATION_BUILD_SHA__';$('buildBadge').textContent=sha.slice(0,8);
+ if(sha!=='local-dev')try{const r=await fetch('./build.json?version_check='+Date.now(),{cache:'no-store'});const j=await r.json();if(j.sha!==sha)status('Yeni sürüm yayında. Sağ üstte ↻ ile açabilirsin.')}catch{}
+}
+batchBoot().catch(e=>status('Batch alanı açılamadı: '+e.message,true));
+bootstrap().catch(e=>{console.error(e);status('Başlatma hatası: '+e.message,true);clearStage();messageStage('Yürüyüş karelerini yükle')});
+})();
+</script>
+</body>
+</html>

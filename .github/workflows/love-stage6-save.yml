@@ -1,0 +1,150 @@
+name: LOVE Stage 6 save/recovery
+on:
+  push:
+    branches:
+      - main
+      - experiment/stage6-save-v2
+      - experiment/stage5-stage6-integration-v1
+    paths:
+      - 'game/love/save/**'
+      - 'game/love/main.lua'
+      - 'game/love/tests/save_*'
+      - 'game/love/tests/stage5_save_adapter.lua'
+      - 'game/love/tests/stage5_checkpoint.lua'
+      - 'game/love/tests/stage5_transaction_boundary.lua'
+      - 'game/love/tests/stage5_transaction_bridge.lua'
+      - 'game/love/tests/stage5_domain_clone.lua'
+      - 'game/love/tests/stage5_domain_operations.lua'
+      - 'game/love/tests/stage5_domain_restore.lua'
+      - 'game/love/tests/production_session.lua'
+      - '.github/workflows/love-stage6-save.yml'
+      - 'docs/19_LOVE_STAGE6_SAVE_ENGINE.md'
+  workflow_dispatch:
+jobs:
+  save_v2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lua 5.4, LuaJIT, LÖVE and virtual display
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lua5.4 luajit love xvfb
+      - name: SHA-256, schema, transactional and recovery regression (Lua 5.4)
+        run: set -o pipefail; cd game/love && lua5.4 tests/save_v2_spec.lua | tee ../../stage6-lua54.log
+      - name: SHA-256, schema, transactional and recovery regression (LuaJIT)
+        run: set -o pipefail; cd game/love && luajit tests/save_v2_spec.lua | tee ../../stage6-luajit.log
+      - name: Stage5/Stage6 adapter contract (Lua 5.4 + LuaJIT)
+        run: |
+          set -o pipefail
+          cd game/love
+          lua5.4 tests/stage5_save_adapter.lua | tee ../../stage5-save-lua54.log
+          luajit tests/stage5_save_adapter.lua | tee ../../stage5-save-luajit.log
+      - name: Stage5 candidate checkpoint and failure-injection (Lua 5.4 + LuaJIT)
+        run: |
+          set -o pipefail
+          cd game/love
+          lua5.4 tests/stage5_checkpoint.lua | tee ../../stage5-checkpoint-lua54.log
+          luajit tests/stage5_checkpoint.lua | tee ../../stage5-checkpoint-luajit.log
+      - name: Transaction boundary and fail-closed publish (Lua 5.4 + LuaJIT)
+        run: |
+          set -o pipefail
+          cd game/love
+          lua5.4 tests/stage5_transaction_boundary.lua | tee ../../stage5-transaction-lua54.log
+          luajit tests/stage5_transaction_boundary.lua | tee ../../stage5-transaction-luajit.log
+      - name: Detached Stage5 operations fail-closed (Lua 5.4 + LuaJIT)
+        run: |
+          set -o pipefail
+          cd game/love
+          lua5.4 tests/stage5_transaction_bridge.lua
+          luajit tests/stage5_transaction_bridge.lua
+      - name: Real Stage5 domain graph detached clone (Lua 5.4 + LuaJIT)
+        run: |
+          set -o pipefail
+          cd game/love
+          lua5.4 tests/stage5_domain_clone.lua
+          luajit tests/stage5_domain_clone.lua
+      - name: Real Stage5 operation detached commit and replay (Lua 5.4 + LuaJIT)
+        run: |
+          set -o pipefail
+          cd game/love
+          lua5.4 tests/stage5_domain_operations.lua
+          luajit tests/stage5_domain_operations.lua
+      - name: Stage6 restore actual Stage5 objects and fail closed (Lua 5.4 + LuaJIT)
+        run: |
+          set -o pipefail
+          cd game/love
+          lua5.4 tests/stage5_domain_restore.lua
+          luajit tests/stage5_domain_restore.lua
+      - name: Production save session explicit create/reopen/quarantine (Lua 5.4 + LuaJIT)
+        run: |
+          set -o pipefail
+          cd game/love
+          lua5.4 tests/production_session.lua
+          luajit tests/production_session.lua
+      - name: Production main.lua syntax
+        run: |
+          luac5.4 -p game/love/main.lua
+          luajit -b game/love/main.lua /tmp/stage6-main.luac
+      - name: Merged main world, Core and Stage5 Lua regressions
+        run: |
+          set -euo pipefail
+          cd game/love
+          find . -name '*.lua' -print0 | xargs -0 -n1 luac5.4 -p
+          for interpreter in lua5.4 luajit; do
+            "$interpreter" tests/run.lua
+            "$interpreter" tests/runtime.lua
+            "$interpreter" tests/integration.lua
+            "$interpreter" tests/core_avatar.lua
+            "$interpreter" tests/core_plasma_sheet.lua
+            "$interpreter" tests/core_tool_integration.lua
+            "$interpreter" tests/stage5_end_to_end.lua
+            "$interpreter" tests/stage5_transactions.lua
+          done
+      - name: Real LÖVE filesystem smoke
+        run: |
+          set -o pipefail
+          mkdir -p "$RUNNER_TEMP/stage6-love"
+          cp -R game/love/save "$RUNNER_TEMP/stage6-love/"
+          cp game/love/tests/save_v2_fixture.lua "$RUNNER_TEMP/stage6-love/fixture.lua"
+          cp game/love/tests/save_love_smoke.lua "$RUNNER_TEMP/stage6-love/main.lua"
+          xvfb-run -a timeout 45 love "$RUNNER_TEMP/stage6-love" 2>&1 | tee stage6-love-fs.log
+          grep -q LOVE_FS_SAVE_V2_OK stage6-love-fs.log
+          grep -q LOVE_FS_RECOVERY_OK stage6-love-fs.log
+      - name: Production main.lua two-process save, close, reopen and live graph smoke
+        run: |
+          set -euo pipefail
+          export XDG_DATA_HOME="$RUNNER_TEMP/stage6-two-process-user"
+          mkdir -p "$XDG_DATA_HOME"
+          export OSMAN_STAGE6_EXPLICIT=1
+          export OSMAN_STAGE6_WORLD_ID=12345678-1234-4abc-8abc-123456789abd
+          OSMAN_STAGE6_CREATE=1 OSMAN_LOVE_STAGE5_RUNTIME_SMOKE=1 \
+            xvfb-run -a timeout 120 love game/love 2>&1 | tee stage6-production-create.log
+          grep -q LOVE_STAGE5_RUNTIME_SMOKE_OK stage6-production-create.log
+          OSMAN_STAGE6_CREATE=0 OSMAN_STAGE6_REOPEN_SMOKE=1 OSMAN_LOVE_SMOKE=1 \
+            xvfb-run -a timeout 90 love game/love 2>&1 | tee stage6-production-reopen.log
+          grep -q LOVE_STAGE6_REOPEN_OK stage6-production-reopen.log
+          grep -q LOVE_INTEGRATION_SMOKE_OK stage6-production-reopen.log
+      - name: Python save schema contract (unchanged production data)
+        run: |
+          set -o pipefail
+          python -m pip install jsonschema
+          python -m unittest discover -s tests -p 'test_love_world_v2_contract.py' -v 2>&1 | tee stage6-schema.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stage6-save-checkpoint-evidence
+          path: |
+            stage6-lua54.log
+            stage6-luajit.log
+            stage6-love-fs.log
+            stage6-schema.log
+            stage6-production-create.log
+            stage6-production-reopen.log
+            stage5-save-lua54.log
+            stage5-save-luajit.log
+            stage5-checkpoint-lua54.log
+            stage5-checkpoint-luajit.log
+            stage5-transaction-lua54.log
+            stage5-transaction-luajit.log
+          if-no-files-found: warn

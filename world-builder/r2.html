@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#15221e"><title>World Builder · Raund 2 / Mobil</title>
+<style>
+:root{font-family:system-ui,-apple-system,Arial;color-scheme:dark;background:#101c19;color:#e9f3e8;--line:#3c6050;--muted:#a8c0b2;--accent:#c4e49f}*{box-sizing:border-box}body{margin:0}header{padding:12px max(14px,env(safe-area-inset-left));background:#1b3129;display:flex;align-items:center;justify-content:space-between;gap:12px}header h1{font-size:17px;margin:0}header small{font-size:11px;color:var(--muted)}a{color:#d0e4b2}main{display:grid;gap:12px;margin:auto;max-width:1440px;padding:12px}section{border-radius:15px;border:1px solid var(--line);background:#172922;padding:12px;min-width:0}#canvas{display:block;width:100%;height:52dvh;min-height:325px;max-height:850px;touch-action:none;border-radius:9px;background:#223d33}button,select,input{font:inherit;min-height:44px;border-radius:9px;background:#274237;border:1px solid #527861;color:#f2f7eb;padding:8px 10px;max-width:100%}button{cursor:pointer}button.active{background:var(--accent);color:#163022;font-weight:700}.bar{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}.bar button{flex:1 1 84px}h2{font-size:15px;margin:6px 0 10px}.layers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.layers label{font-size:12px;display:flex;align-items:center;gap:6px;min-height:35px}input[type=checkbox]{min-height:22px;width:22px;accent-color:#c4e49f}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>*{flex:1}.field{display:grid;gap:5px;font-size:12px;color:var(--muted);margin:9px 0}.field select{width:100%}#status{white-space:pre-wrap;min-height:44px;font-size:13px;line-height:1.4}#stats{font-size:12px;color:#bcd8c6}p{font-size:12px;line-height:1.55;color:var(--muted)}#files{display:none}#progress{font-size:12px;color:#a8c0b2}#loadStatus{font-size:12px;color:#e5d09e}@media(max-width:399px){.layers{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(min-width:930px){main{grid-template-columns:minmax(0,1.7fr) minmax(345px,.75fr)}#canvas{height:73dvh}.primary{position:sticky;top:12px;align-self:start}}
+</style></head>
+<body><header><div><h1>◈ OSMAN · WORLD BUILDER R2</h1><small>45° ISO · Hibrit mobil dünya düzenleme · authoring-only</small></div><a href="./contract.html">V1 editör ↗</a></header>
+<main><section class="primary">
+<div class="bar"><button class="active" data-tool="pan">✥ Gezin</button><button data-tool="vertex">◇ Poligon</button><button data-tool="node">⋯ Düğüm</button><button data-tool="paint">⌁ Fırça</button><button data-tool="site">⌖ Site</button><button data-tool="connector">⤳ Geçiş</button></div>
+<canvas id="canvas" aria-label="Mobil dünya ve v1 authored harita düzenleyicisi"></canvas>
+<div class="bar"><button id="fitAuthored">Fısıltı'ya sığdır</button><button id="fitWorld">Tüm dünya</button><button id="zoomOut">−</button><button id="zoomIn">+</button><button id="undo">↶ Geri</button></div>
+<div id="stats" role="status"></div><p>Tek parmakla düzenle, iki parmakla kaydır/yakınlaştır. Hassas koordinatlar world unit'tir. Önizleme oyun fiziği değildir.</p>
+<div class="bar"><button id="regionNew">＋ Bölge çiz</button><button id="regionFinish">✓ Bölgeyi bitir</button><button id="featureNew">＋ Yol/dere fırçası</button><button id="routeNew">＋ Rota</button></div>
+</section>
+<section><h2>Harita ve katmanlar</h2><div class="field"><label for="selection">Seçili varlık · kalıcı ID</label><select id="selection"></select></div>
+<div id="selectionInfo"></div><div class="layers">
+<label><input type="checkbox" data-layer="areas" checked> Alanlar</label>
+<label><input type="checkbox" data-layer="regions" checked> Bölgeler</label>
+<label><input type="checkbox" data-layer="features" checked> Yol/su</label>
+<label><input type="checkbox" data-layer="connectors" checked> Geçiş</label>
+<label><input type="checkbox" data-layer="sites" checked> Site</label>
+<label><input type="checkbox" data-layer="routes" checked> Rotalar</label>
+</div><div class="field"><label for="brushWidth">Fırça genişliği (world unit)</label><input id="brushWidth" type="range" min="2" max="64" value="16"><output id="brushValue">16</output></div>
+<div class="bar"><button id="routeEdit">Rota sitelerini düzenle</button><button id="rename">Ad değiştir</button><button id="remove">Varlığı sil</button></div>
+<h2>Sürüm ve veri güvenliği</h2><p id="loadStatus">Başlangıç haritası okunuyor…</p>
+<div class="bar"><button id="import">↑ JSON içe aktar</button><input id="files" type="file" accept=".json,application/json" multiple><button id="exportBundle">↓ Paket + yedek</button></div>
+<div class="bar"><button id="exportMap">↓ V2 manifest</button><button id="exportAuthored">↓ V1 authored</button><button id="previewPng">↓ PNG önizleme</button></div>
+<div class="field"><label for="history">Yerel sürümlü yedekler (IndexedDB ayrı alan)</label><select id="history"></select></div>
+<div class="bar"><button id="restore">Seçili yedeği kurtar</button><button id="backup">Güncel yedek indir</button></div>
+<p>Eski localStorage/IndexedDB ve oyun kayıtları değiştirilmez. V2 manifest + V1 alt harita ayrı doğrulanır; hatalı içe aktarma mevcut taslağa dokunmaz. Ana dünya, Generator v1 ve seed korunur. Dışa aktarılan JSON otomatik oyuna uygulanmaz.</p>
+<div id="status" role="status"></div><div id="progress"></div>
+</section></main><script type="module" src="./r2-app.mjs"></script></body></html>

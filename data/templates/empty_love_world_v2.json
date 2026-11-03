@@ -1,0 +1,30 @@
+{
+  "format": "love-world-2d",
+  "save_version": 2,
+  "world_id": "12345678-1234-4abc-8abc-123456789abd",
+  "seed": 20261015,
+  "generator_version": 1,
+  "catalog_version": 1,
+  "world_revision": 0,
+  "player": {
+    "id": "player:local",
+    "x": 0,
+    "y": 0,
+    "inventory": {
+      "version": 1,
+      "catalog_version": 1,
+      "capacity": 12,
+      "slots": []
+    }
+  },
+  "generated_object_delta": {
+    "version": 1,
+    "seed": 20261015,
+    "generator_version": 1,
+    "objects": {}
+  },
+  "placed_instances": {},
+  "applied_commands": {},
+  "applied_transactions": {},
+  "journal_sequence": 0
+}

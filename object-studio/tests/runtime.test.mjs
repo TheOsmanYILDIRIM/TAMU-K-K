@@ -1,0 +1,30 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import {spawnSync} from 'node:child_process';
+import path from 'node:path';
+const root=path.resolve(import.meta.dirname,'..');
+test('built editor boots with a 390dp canvas and no required image assets',async()=>{
+ const build=spawnSync(process.execPath,['scripts/build.mjs'],{cwd:root,env:{...process.env,BUILD_SHA:'0123456789abcdef0123456789abcdef01234567'},encoding:'utf8'});
+ assert.equal(build.status,0,build.stderr);
+ const html=fs.readFileSync(path.join(root,'dist/latest.html'),'utf8'),script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+ assert(script);
+ const context2d=new Proxy({createLinearGradient:()=>({addColorStop(){}})},{get(target,key){if(key in target)return target[key];return ()=>{}},set(target,key,value){target[key]=value;return true}});
+ const elements=new Map();
+ function element(id){if(!elements.has(id))elements.set(id,{id,style:{},classList:{add(){},remove(){},toggle(){}},innerHTML:'',textContent:'',value:'',checked:true,width:390,height:390,clientWidth:390,clientHeight:390,disabled:false,onchange:null,addEventListener(){},getContext:()=>context2d,getBoundingClientRect:()=>({width:390,height:390,left:0,top:0}),setAttribute(){}});return elements.get(id)}
+ const storage=new Map();
+ const localStorage={getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)};
+ const document={getElementById:element,querySelectorAll:()=>[],createElement:()=>({width:0,height:0,getContext:()=>context2d})};
+ const w={devicePixelRatio:1,addEventListener(){}};
+ const cx={window:w,document,localStorage,ResizeObserver:class{observe(){}},setTimeout,clearTimeout,console,Promise,Map,Set,Date,Math,URL,Blob,navigator:{clipboard:{}},confirm:()=>true};
+ vm.runInNewContext(script,cx,{timeout:2000});
+ await new Promise(r=>setTimeout(r,10));
+ assert.match(element('previewTitle').textContent,/Yaşlı geniş yapraklı/);
+ assert.match(element('contract').textContent,/T-01/);
+ assert.match(element('catalogList').innerHTML,/T-01/);
+ assert.match(element('catalogList').innerHTML,/R-04/);
+ assert.match(element('promptText').value,/T-01 · Broadleaf oak/);
+ assert.match(element('buildTag').textContent,/012345678/);
+ assert.equal(storage.size,0,'app must not modify prior local records during boot');
+});
