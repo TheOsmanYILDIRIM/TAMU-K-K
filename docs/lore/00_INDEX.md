@@ -22,6 +22,11 @@ tags: [lore, index]
 - [[07_KALINTILAR/INDEX|Kalıntılar]] — yapılar ve kadim eserler
 - [[08_GIZEMLER/INDEX|Gizemler]] — çözülmemiş sorular
 
+## Görsel yaratık atlası
+
+- [TAMU Canlılar Atlası — 10 tür ve mevcut 5 konsept görseli](../bestiary/README.md) · [Görsel katalog](../bestiary/index.html)
+- **Otorite ayrımı:** [[README|Üretim yöntemi/tutorial]] Lore Wiki'dedir; atlas tür referanslarını tutar. Henüz onaylanmamış türler kanon olarak kabul edilmez.
+
 ## Yönetim
 
 - [[90_KARARLAR|Kararlar]] — kanon onayı ve değişen kararlar

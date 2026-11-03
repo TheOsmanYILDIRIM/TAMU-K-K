@@ -14,6 +14,11 @@ tags: [lore, index]
 ## Mevcut sayfalar
 - Henüz ayrıntılı lore sayfası yok.
 
+## Referans kataloğu (kanon değil)
+- [TAMU Canlılar Atlası](../../bestiary/README.md) — 10 özgün mob adayı; mevcut 5 konsept, eksik 5 görsel ve tür bazlı anatomi notları.
+- [Görsel katalog](../../bestiary/index.html) — mevcut yüklenmiş görseller ve tür sayfaları.
+- [[README|Fenotipik organlar ve üretim yöntemi]] — kapsamlı ana tutorial.
+
 ## Planlanan içerik
 - **OPEN-BEI-001** — Canlı türleri: Doğal ve Sistem kaynaklı varlıkların ayrımı. Ayrıntı için [[91_BOSLUKLAR|Boşluklar]].
 
