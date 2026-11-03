@@ -4,6 +4,7 @@ const WorldSource = preload("res://scripts/world_source.gd")
 const WorldStream = preload("res://scripts/world_stream.gd")
 const MergedTerrain = preload("res://scripts/merged_terrain.gd")
 const RigbySkinned = preload("res://scripts/rigby_skinned.gd")
+const ProfileRig = preload("res://scripts/profile_rig.gd")
 const GameplaySession = preload("res://scripts/gameplay_session.gd")
 const R2Authority = preload("res://scripts/r2_authority.gd")
 const R2Collision = preload("res://scripts/r2_collision.gd")
@@ -110,6 +111,7 @@ var actor_direction := "SE"
 var actor_action := "idle"
 var active_source_clip := ""
 var native_rig: Skeleton2D
+var profile_rig: Node2D
 
 func _update_sun(delta: float) -> void:
     day_clock = fposmod(day_clock + delta * 24.0 / DAY_SECONDS, 24.0)
@@ -680,6 +682,19 @@ func _make_avatar() -> void:
         if rigby_skin.is_empty():
             push_error("TAMU_RIGBY_SKIN_BUILD_FAILED")
             get_tree().quit(21)
+    # Dedicated authored profile: six original PNGs, runtime weighted meshes.
+    # Keep the legacy Rigby source and its visual-parity fixture intact in CI.
+    if OS.get_environment("TAMU_VISUAL_CI") != "1" or OS.get_environment("TAMU_VISUAL_CASE") == "profile":
+        profile_rig = ProfileRig.new()
+        profile_rig.name = "TAMUProfileWeightedRig"
+        avatar.add_child(profile_rig)
+        if not profile_rig.setup() or not profile_rig.verify_contract():
+            push_error("TAMU_PROFILE_GAMEPLAY_SETUP_FAILED")
+            get_tree().quit(73)
+            return
+        for legacy_part in avatar_parts.values():
+            legacy_part.visible = false
+        print("TAMU_PROFILE_GAMEPLAY_RIG_ACTIVE bones=23 parts=6")
 
 func _set_actor_clip(direction: String, action: String) -> void:
     if not rig_directions.has(direction):
@@ -696,6 +711,8 @@ func _set_actor_clip(direction: String, action: String) -> void:
     active_source_clip = source_name
     if native_rig != null:
         native_rig.play_clip(source_name)
+    if profile_rig != null:
+        profile_rig.set_clip(action)
     _set_actor_facing(direction == "NW" or direction == "NE")
     avatar.scale.x = (-1.0 if direction == "SW" or direction == "NE" else 1.0) * avatar_visual_scale
 
@@ -1306,6 +1323,8 @@ func _process(delta: float) -> void:
     _tick_gameplay(delta)
     if native_rig != null:
         native_rig.advance(visual_delta)
+    if profile_rig != null:
+        profile_rig.advance(visual_delta)
     var rig_end := Time.get_ticks_usec()
     if direction.length_squared() > 0.01:
         $Camera2D.position = $Camera2D.position.lerp(avatar.position, minf(delta * 4.0, 1.0))

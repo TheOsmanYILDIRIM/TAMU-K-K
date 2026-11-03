@@ -1,0 +1,58 @@
+{
+  "format": "tamu-native-profile-source/v1",
+  "description": "User-supplied original Rigby six transparent PNG layers + mobile editor 23-bone weighted meshes and sampled numeric pose curves. No spritesheet playback.",
+  "original_rigby_sha256": "5745eed01a8b78d604bdbd5d2e72f58f9fc0e8790762ce337e41a8c2086b6d07",
+  "editor_rigId": "5745eed01a8b78d604bdbd5d2e72f58f9fc0e8790762ce337e41a8c2086b6d07",
+  "source_images_sha256": {
+    "01_bas.png": "0037ba568e711be9f7f8ab19563203f9e0bb1c55ba1686602c6dea3c7457f941",
+    "02_sol_kol.png": "48a38b132019ed50c47eaf8cec79bf1caef0a07a9fe73427da77c0281c9a048d",
+    "03_sag_kol.png": "1c1c5abd7dd2bf69d59b4d3bb36d5bd667e30f9971e4886c65ff3a0b0d0d30a4",
+    "04_sol_bacak.png": "3f3b535edd9a4565463d8408da3734ebb6c95e507c354d99cb40fc24a8a12113",
+    "05_sag_bacak.png": "32b56a30507173739b412b4e0dff09c931b461d25d1793642926564f2f5fb554",
+    "06_govde.png": "24696e3ee29f2b17b2143e6de360686473c76333ad0d4055887cdc7d1ba52747"
+  },
+  "motion_sha256": "6f23953105bc435db2e27ffb75ef0f1614f73a04406d2d0c0f497f6dc8a40f7d",
+  "bones": 23,
+  "parts": 6,
+  "clips": {
+    "smooth_walk": {
+      "frames": 48,
+      "ms": 34,
+      "loop": true
+    },
+    "smooth_run": {
+      "frames": 40,
+      "ms": 26,
+      "loop": true
+    },
+    "slash": {
+      "frames": 34,
+      "ms": 34,
+      "loop": false
+    },
+    "stab": {
+      "frames": 34,
+      "ms": 34,
+      "loop": false
+    },
+    "die": {
+      "frames": 42,
+      "ms": 40,
+      "loop": false
+    },
+    "sit": {
+      "frames": 48,
+      "ms": 42,
+      "loop": false
+    },
+    "idle": {
+      "frames": 64,
+      "ms": 40,
+      "loop": true
+    }
+  },
+  "source_warnings": [
+    "The original .rigby snapshot contains one root bone; the editor assets.json provides 23 weighted bones and numeric animation.",
+    "Right/left view is horizontally mirrored; no distinct four-direction art."
+  ]
+}
