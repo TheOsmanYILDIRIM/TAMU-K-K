@@ -21,7 +21,7 @@
     {
       "name": "Taşkabuk",
       "slug": "taskabuk",
-      "image": null,
+      "image": "images/Taskabuk_Konsept.png",
       "category": "Büyük otçul",
       "habitat": "Orman açıklığı",
       "description": "Mineralize taşsı plakalı, açık renk yumuşak karın bölgesi bulunan ağır ve dirençli megafauna.",
@@ -30,7 +30,7 @@
     {
       "name": "Yosun Gezginciği",
       "slug": "yosun-gezgincigi",
-      "image": null,
+      "image": "images/Yosun_Gezgincigi_Konsept.png",
       "category": "Küçük otçul",
       "habitat": "Nemli orman zemini",
       "description": "Yosun yastıklarını taklit eden keratin kabarcıklı, dört yürüyüş ve iki beslenme uzvu olan küçük tarayıcı.",
@@ -39,7 +39,7 @@
     {
       "name": "İz Avcısı",
       "slug": "iz-avcisi",
-      "image": null,
+      "image": "images/Iz_Avcisi_Konsept.png",
       "category": "Orta yırtıcı",
       "habitat": "Derin orman",
       "description": "Yanaklarından açılan çift koku yelpazesi, sessiz ayak tabanları ve uzun denge kuyruğuyla takipçi.",
@@ -48,7 +48,7 @@
     {
       "name": "Diken Omuz",
       "slug": "diken-omuz",
-      "image": null,
+      "image": "images/Diken_Omuz_Konsept.png",
       "category": "Büyük yırtıcı",
       "habitat": "Orman kenarı",
       "description": "Kazmaya uygun iri ön pençeler ve geriye dönük kısa dikenler taşıyan çift omuz kalkanı.",
@@ -57,7 +57,7 @@
     {
       "name": "Dere Pusucusu",
       "slug": "dere-pusucusu",
-      "image": null,
+      "image": "images/Dere_Pusucusu_Konsept.png",
       "category": "Yarı sucul yırtıcı",
       "habitat": "Akarsu",
       "description": "Yassı başlı, su çizgisinde görebilen gözlü ve kuyruktan güçlü itiş alan pusu avcısı.",
@@ -101,6 +101,15 @@
     "Fisilti_Tavsani_Yan_Profil_RGBA.png": "93c206a17f5faa98cc36a6ceb291b5ccd183722747332478994b8fceecb49e33",
     "Kirikdis_Konsept.png": "66806b252533976bb4333234f08ecae60740f0f27e97da685136a0eb7dbffc0e",
     "Saz_Sirti_Konsept.png": "1da0ffe224f31ebf5d32c03d6fb52931920ba4fa4a892fe37b0bba3be016df4f",
-    "Fisilti_Tavsani_Konsept.png": "3b97d31e753bf303326d215984cd7e4a434d9d0a171217b9be8560ae9b82c327"
+    "Fisilti_Tavsani_Konsept.png": "3b97d31e753bf303326d215984cd7e4a434d9d0a171217b9be8560ae9b82c327",
+    "Yosun_Gezgincigi_Konsept.png": "3d73135fc7ae6ec7cf60a02301930e994986d72c14b204e2f51dc8b45f809690",
+    "Dere_Pusucusu_Konsept.png": "c0958d3e532932865fb9ee77c714cf224b0829ed5570110e61cdb5c1eb328f94",
+    "Diken_Omuz_Konsept.png": "85b6305f689903b92d19d45db88fddb77977fcf274f5ed2e376c9a14e11a947b",
+    "Iz_Avcisi_Konsept.png": "d144f10cf012fa37fc901919dbbeef3228a839ffde0d9457d5430c0f8d9a049d",
+    "Kirikdis_Alternatif_Konsept.png": "5f8a330052f9b3ccf066134db44d52c9b78c720614d77d527a9e083cb4533235",
+    "Taskabuk_Konsept.png": "9e2c43300e41d45b63ac7c85e645c9b3402234594f4f2221b6c07a5d6ca9c7ca"
+  },
+  "additional_uploaded_concepts": {
+    "kirikdis-alternative": "images/Kirikdis_Alternatif_Konsept.png"
   }
 }

@@ -10,11 +10,11 @@ Fantastik ekoloji, konsept varlıkları ve rigleme **hazırlığı** için refer
 |---|---|---|
 | [Fısıltı Tavşanı](fisilti-tavsani.md) | Küçük otçul | Var |
 | [Kabuk Sırtı](kabuk-sirti.md) | Orta otçul | Var |
-| [Taşkabuk](taskabuk.md) | Büyük otçul | Arşivde eksik |
-| [Yosun Gezginciği](yosun-gezgincigi.md) | Küçük otçul | Arşivde eksik |
-| [İz Avcısı](iz-avcisi.md) | Orta yırtıcı | Arşivde eksik |
-| [Diken Omuz](diken-omuz.md) | Büyük yırtıcı | Arşivde eksik |
-| [Dere Pusucusu](dere-pusucusu.md) | Yarı sucul yırtıcı | Arşivde eksik |
+| [Taşkabuk](taskabuk.md) | Büyük otçul | Var |
+| [Yosun Gezginciği](yosun-gezgincigi.md) | Küçük otçul | Var |
+| [İz Avcısı](iz-avcisi.md) | Orta yırtıcı | Var |
+| [Diken Omuz](diken-omuz.md) | Büyük yırtıcı | Var |
+| [Dere Pusucusu](dere-pusucusu.md) | Yarı sucul yırtıcı | Var |
 | [Kırıkdiş](kirikdis.md) | Orta yırtıcı | Var |
 | [Saz Sırtı](saz-sirti.md) | Yarı sucul hepçil | Var |
 | [Közboğaz](kozbogaz.md) | Isı yırtıcısı | Var |
@@ -22,7 +22,7 @@ Fantastik ekoloji, konsept varlıkları ve rigleme **hazırlığı** için refer
 ## Durum ve doğrulama sınırları
 
 - **10 tür** isim ve ekolojik rolü, şu an **konsept adayı** olarak belgelenmiştir; türlerin kesin kanon onayı yoktur.
-- **5 türün konsept görseli mevcut**: Fısıltı Tavşanı, Kabuk Sırtı, Kırıkdiş, Saz Sırtı, Közboğaz. Diğer 5 tür görsel bekler.
+- **10 türün konsept görseli mevcut**: Fısıltı Tavşanı, Kabuk Sırtı, Kırıkdiş, Saz Sırtı, Közboğaz. Bu aşamada tüm 10 türün konsept görseli mevcuttur.
 - Fısıltı Tavşanı için ayrı bir **yan profil RGBA referansı** da vardır. Bu yalnız rigleme girdisidir; rig, ağırlıklandırma, animasyon ya da oyun entegrasyonu kanıtı değildir.
 - `manifest.json` türlere ait görsel bağlantıları ve yükleme sırasında bildirilen kaynak SHA-256 değerlerini içerir. GitHub'daki dosya yolları/commit varlığı doğrulandı; ikili PNG içeriklerinin SHA-256 değerleri bu incelemede bağımsız yeniden hesaplanmadı.
 - Harita görselleri arşivde korunmuştur; bunların yeni dünya verisi olarak oyuna entegre edildiği anlamına gelmez.
@@ -41,3 +41,5 @@ GitHub deposunda `docs/bestiary/index.html` ile birlikte görseller tutulur. Git
 
 ## Kaynak notu
 Yüklenen kaynak PNG'ler korunur; yalnız dokümantasyon ve bağlantılar uzlaştırılmıştır. Tür açıklamaları tasarım adayıdır, bilimsel tür tanımları veya oynanabilir mob kabulü değildir.
+
+Kırıkdiş için ikinci alternatif görsel: [alternatif konsept](images/Kirikdis_Alternatif_Konsept.png).

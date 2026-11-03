@@ -1,10 +1,12 @@
 # İz Avcısı
 
-**Görsel:** Bu sohbetin mevcut arşivinde bulunamadı; yerine yeni tasarım üretilmedi.
+**Görsel:** Tam vücut konsept referansı arşive eklendi.
 
 **Rol:** Orta yırtıcı · **Habitat:** Derin orman
 
 
+
+![İz Avcısı](images/Iz_Avcisi_Konsept.png)
 
 ## Anatomik fikir
 Yanaklarından açılan çift koku yelpazesi, sessiz ayak tabanları ve uzun denge kuyruğuyla takipçi.

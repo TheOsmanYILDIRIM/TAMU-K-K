@@ -1,10 +1,12 @@
 # Yosun Gezginciği
 
-**Görsel:** Bu sohbetin mevcut arşivinde bulunamadı; yerine yeni tasarım üretilmedi.
+**Görsel:** Tam vücut konsept referansı arşive eklendi.
 
 **Rol:** Küçük otçul · **Habitat:** Nemli orman zemini
 
 
+
+![Yosun Gezginciği](images/Yosun_Gezgincigi_Konsept.png)
 
 ## Anatomik fikir
 Yosun yastıklarını taklit eden keratin kabarcıklı, dört yürüyüş ve iki beslenme uzvu olan küçük tarayıcı.

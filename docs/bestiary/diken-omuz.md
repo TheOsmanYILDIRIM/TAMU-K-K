@@ -1,10 +1,12 @@
 # Diken Omuz
 
-**Görsel:** Bu sohbetin mevcut arşivinde bulunamadı; yerine yeni tasarım üretilmedi.
+**Görsel:** Tam vücut konsept referansı arşive eklendi.
 
 **Rol:** Büyük yırtıcı · **Habitat:** Orman kenarı
 
 
+
+![Diken Omuz](images/Diken_Omuz_Konsept.png)
 
 ## Anatomik fikir
 Kazmaya uygun iri ön pençeler ve geriye dönük kısa dikenler taşıyan çift omuz kalkanı.

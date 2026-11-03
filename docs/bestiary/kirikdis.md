@@ -19,3 +19,9 @@ Asimetrik kırık dişleri, güçlü koşucu arka bacakları ve küçük mineral
 
 ## Kullanım notu
 Bu sayfa konsept tasarım yöntemini açıklar; gerçek hayatta var olan bir tür veya doğrulanmış evrimsel model iddiası taşımaz.
+
+## Alternatif konsept referansı
+
+![Kırıkdiş alternatif görünüş](images/Kirikdis_Alternatif_Konsept.png)
+
+Bu, mevcut ana konseptin yerine geçen bir tasarım değildir; anatomi karşılaştırması içindir.

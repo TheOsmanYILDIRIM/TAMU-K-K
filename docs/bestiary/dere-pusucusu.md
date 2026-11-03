@@ -1,10 +1,12 @@
 # Dere Pusucusu
 
-**Görsel:** Bu sohbetin mevcut arşivinde bulunamadı; yerine yeni tasarım üretilmedi.
+**Görsel:** Tam vücut konsept referansı arşive eklendi.
 
 **Rol:** Yarı sucul yırtıcı · **Habitat:** Akarsu
 
 
+
+![Dere Pusucusu](images/Dere_Pusucusu_Konsept.png)
 
 ## Anatomik fikir
 Yassı başlı, su çizgisinde görebilen gözlü ve kuyruktan güçlü itiş alan pusu avcısı.

@@ -1,10 +1,12 @@
 # Taşkabuk
 
-**Görsel:** Bu sohbetin mevcut arşivinde bulunamadı; yerine yeni tasarım üretilmedi.
+**Görsel:** Tam vücut konsept referansı arşive eklendi.
 
 **Rol:** Büyük otçul · **Habitat:** Orman açıklığı
 
 
+
+![Taşkabuk](images/Taskabuk_Konsept.png)
 
 ## Anatomik fikir
 Mineralize taşsı plakalı, açık renk yumuşak karın bölgesi bulunan ağır ve dirençli megafauna.
