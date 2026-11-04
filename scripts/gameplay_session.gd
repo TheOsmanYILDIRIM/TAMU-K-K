@@ -10,6 +10,7 @@ const DomainBuilding = preload("res://scripts/domain_building.gd")
 const DomainTransaction = preload("res://scripts/domain_transaction.gd")
 const CAPACITY := 12
 const HARVEST_RANGE := 38.0
+const GROUND_LOOT_LIMIT := 48
 
 var catalog: RefCounted
 var inventory: RefCounted
@@ -162,6 +163,11 @@ func harvest_drop(kind: String) -> Dictionary:
     return drops[0] if drops.size() == 1 else {}
 
 func begin_harvest(item: Dictionary, player_pos: Vector2, command_id: String) -> Dictionary:
+    if ground_loot_enabled:
+        var expected: Dictionary = catalog.harvest(str(item.get("kind", "")))
+        var pending_count := pending_ground_loot().size()
+        if not expected.is_empty() and pending_count + expected.get("drops", []).size() > GROUND_LOOT_LIMIT:
+            return {"ok": false, "status": "ground_loot_full"}
     if durable_slot != "":
         if durable_fault:
             return {"ok": false, "status": "restore_required"}
