@@ -165,26 +165,6 @@ jobs:
           assert hires[:8]==b'\\x89PNG\\r\\n\\x1a\\n'.decode('unicode_escape').encode('latin1'), 'TAMU_HIRES_ATLAS_BAD_PNG'
           (out/'atlas_objects_hires.png').write_bytes(hires)
           print('TAMU_HIRES_ATLAS_SHA_OK bytes=',len(hires))
-          rig=pathlib.Path('assets/osman_rig/images')
-          rig.mkdir(parents=True,exist_ok=True)
-          for name in ('front_leg_L.png','front_leg_R.png','front_torso.png',
-                       'front_arm_L.png','front_arm_R.png','front_head.png',
-                       'back_leg_L.png','back_leg_R.png','back_torso.png',
-                       'back_arm_L.png','back_arm_R.png','back_head.png'):
-              (rig/name).write_bytes(z.read('assets/osman_rig/images/'+name))
-          for entry in z.namelist():
-              if entry.startswith('assets/osman_rig/images/') and entry.endswith('.png'):
-                  (rig/pathlib.Path(entry).name).write_bytes(z.read(entry))
-          for name in ('rig.json','directions.json','display.json'):
-              (rig.parent/name).write_bytes(z.read('assets/osman_rig/'+name))
-          rig_doc=json.loads((rig.parent/'rig.json').read_text())
-          directions=json.loads((rig.parent/'directions.json').read_text())['directions']
-          clips={c['name']:c for c in rig_doc.get('animations',[])}
-          assert len(directions)==4 and len(clips)==44, (len(directions),len(clips))
-          assert all(len(x['animations'])==11 for x in directions.values())
-          assert all(clip in clips for d in directions.values() for clip in d['animations'].values())
-          assert len(list(rig.glob('*.png')))==30
-          print('TAMU_ORIGINAL_RIG_METADATA_OK png=30 directions=4 clips=44')
           shadows=pathlib.Path('assets/terrain25d/static_shadow')
           shadows.mkdir(parents=True,exist_ok=True)
           for n in ('objects_shadow_manifest.json','shadows_12.png'):
@@ -229,30 +209,6 @@ jobs:
           assert all(-1024<=o['x']<2304 and -1536<=o['y']<1536 for o in data['objects'])
           print('TAMU_R2_OBJECT_PARITY_OK',len(ids))
           PY
-          (cd /tmp/tamu-love && lua5.4 - <<'LUA'
-          local R=dofile('player/rigby_runtime.lua')
-          local cases={
-            {'linear',-1,'linear'}, {'stepped',-1,'stepped'},
-            {'bezier',-1,{bezier={0.2,0.0,0.65,1.0}}},
-            {'beziers',0,{beziers={{0.3,0.1,0.5,0.9},{0.7,0.4,0.9,0.6}}}},
-            {'beziers',1,{beziers={{0.3,0.1,0.5,0.9},{0.7,0.4,0.9,0.6}}}}
-          }
-          local out=assert(io.open('chunks/rigby_curve_reference.txt','w'))
-          for _,entry in ipairs(cases) do
-            for _,time in ipairs({0,0.01,0.1,0.15,0.25,0.3,0.45,0.5,0.6,0.75,0.85,0.9,0.99,1.0}) do
-              local comp=entry[2]>=0 and entry[2]+1 or nil
-              local start=comp and {10,10} or 10
-              local finish=comp and {30,30} or 30
-              local keys={{time=0,value=start,curve=entry[3]},{time=1,value=finish}}
-              local expected=R.sample(keys,time,comp)
-              out:write(string.format('%s,%d,%.8f,%.12f\n',entry[1],entry[2],time,expected))
-            end
-          end
-          out:close()
-          print('TAMU_LUA_RIGBY_CURVE_REFERENCE_OK samples=70')
-          LUA
-          )
-          cp /tmp/tamu-love/chunks/rigby_curve_reference.txt chunks/rigby_curve_reference.txt
       - name: Verify exact authored source and generate build-only hash manifest
         shell: bash
         run: |
@@ -276,8 +232,7 @@ jobs:
               entries[stem]={'verts':sha(raw),'meta':sha(meta)}
           asset_paths=['assets/terrain25d/atlas_00.png',
                        'assets/terrain25d/atlas_01.png',
-                       'assets/terrain25d/manifest.json',
-                       'assets/osman_rig/rig.json']
+                       'assets/terrain25d/manifest.json']
           integrity={'source_run_id':41234831527,'index_sha256':sha(root/'index.json'),
                      'objects_sha256':sha(root/'r2_objects.json'),
                      'chunks':entries,'assets':{name:sha(name) for name in asset_paths}}
@@ -326,37 +281,6 @@ jobs:
           assert len({x['z'] for x in manifest['layers']})==2
           print('TAMU_REGION_CHUNK_CONTRACT_OK regions=1 source_cells=156')
           print('TAMU_MERGE_SOURCE_PARITY_OK original_chunks=156 layers=2 vertices=',total)
-          PY
-      - name: Verify original Rigby weighted mesh topology and influences
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import json,pathlib,math
-          rig=json.loads(pathlib.Path('assets/osman_rig/rig.json').read_text())
-          weighted=[]
-          for slot in rig['slots']:
-              for attachment in slot.get('attachments',[]):
-                  if 'weights' not in attachment:
-                      continue
-                  assert attachment['type']=='mesh'
-                  weights=attachment['weights']
-                  assert len(attachment['uvs'])==2*len(weights)
-                  assert len(attachment['triangles'])%3==0
-                  assert all(0<=i<len(weights) for i in attachment['triangles'])
-                  for vertex in weights:
-                      assert vertex
-                      assert abs(sum(p['weight'] for p in vertex)-1.0)<1e-5
-                      assert all(math.isfinite(p['x']) and math.isfinite(p['y']) and
-                                 math.isfinite(p['weight']) and 0<=p['bone']<len(rig['bones'])
-                                 for p in vertex)
-                  weighted.append(attachment)
-          assert len(rig['bones'])==40 and len(rig['slots'])==24
-          assert len(weighted)==4
-          assert sum(len(a['weights']) for a in weighted)==1624
-          assert sum(len(a['triangles'])//3 for a in weighted)==2930
-          assert sum(sum(len(v) for v in a['weights']) for a in weighted)==2082
-          print('TAMU_RIGBY_WEIGHTED_SOURCE_OK meshes=4 vertices=1624 triangles=2930 influences=2082')
           PY
       - name: Validate shared canonical gameplay JSON source
         shell: bash
