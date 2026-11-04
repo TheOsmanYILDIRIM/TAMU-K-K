@@ -165,7 +165,10 @@ func spawn(definition: Resource, at: Vector2, seed_offset: int = 0) -> bool:
 func _place_visual(a: Dictionary) -> void:
     var p: Vector2 = a["position"]
     var height: float = float(host.get("authority").terrain.height_at(p.x, p.y))
-    a["visual"].position = WorldProjection.to_screen(p) - Vector2(0.0, height * 0.35)
+    # Y-sort at the same unraised ground anchor as the player.
+    # Separately lift side-view artwork and ground contact by terrain height.
+    a["visual"].position = WorldProjection.to_screen(p)
+    a["visual"].set_ground_height(height * 0.35)
 
 func _key(p: Vector2, size: float) -> Vector2i:
     return Vector2i(floori(p.x / size), floori(p.y / size))
