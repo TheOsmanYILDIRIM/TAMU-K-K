@@ -37,6 +37,7 @@ jobs:
           cp -a "$(dirname "$manifest")/." addons/limboai/
           test -s addons/limboai/limboai.gdextension
           find addons/limboai -type f | head -20
+          timeout --kill-after=3s 75s godot --headless --editor --path . --import --quit 2>&1 | tee limbo-import.log
           timeout --kill-after=3s 40s godot --headless --path . --script res://scripts/mob_limboai_probe_ci.gd 2>&1 | tee limbo-native.log
           grep -q 'TAMU_LIMBOAI_BT_CONTRACT_OK tasks=3 manual=true class=BTPlayer' limbo-native.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_LIMBOAI_.*FAILED|TAMU_LIMBOAI_EXTENSION_MISSING' limbo-native.log; then exit 1; fi
