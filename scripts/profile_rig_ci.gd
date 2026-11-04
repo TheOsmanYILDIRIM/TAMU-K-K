@@ -32,6 +32,16 @@ func _run() -> void:
             push_error("TAMU_PROFILE_POSE_OR_MESH_FAILED " + action)
             quit(72)
             return
+        if action in ["idle", "walk", "run"]:
+            var contact_y := maxf(character._toe_position(10).y, character._toe_position(14).y)
+            if absf(contact_y - ProfileRig.SOURCE_GROUND_Y) > 1.5:
+                push_error("TAMU_PROFILE_FOOT_CONTACT_FAILED " + action + " y=" + str(contact_y))
+                quit(72)
+                return
+            if absf(character.scale.y - ProfileRig.SOURCE_SCALE) > 0.001:
+                push_error("TAMU_PROFILE_SCALE_FAILED")
+                quit(72)
+                return
         for bone in character.bone_nodes:
             if not bone.global_position.is_finite() or not is_finite(bone.global_rotation):
                 push_error("TAMU_PROFILE_NONFINITE_BONE " + str(bone.name))
@@ -42,6 +52,7 @@ func _run() -> void:
                 push_error("TAMU_PROFILE_MESH_RECREATED")
                 quit(72)
                 return
+    print("TAMU_PROFILE_FOOT_CONTACT_OK ground=", ProfileRig.SOURCE_GROUND_Y, " scale=", ProfileRig.SOURCE_SCALE)
     print("TAMU_PROFILE_NATIVE_SKELETON_TEST_OK bones=23 parts=6 clips=7 frames=310 cpu_mesh_rebuilds=0")
     # Legacy marker retained for existing CI diagnostics, not evidence of CPU skinning.
     print("TAMU_PROFILE_NUMERIC_SKIN_OK bones=23 parts=6 clips=7 frames=310")
