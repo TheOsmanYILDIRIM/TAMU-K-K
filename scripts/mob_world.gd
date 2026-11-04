@@ -137,12 +137,21 @@ func _terrain(x: float, y: float) -> Dictionary:
     return host.get("authority").surface(x, y)
 
 func _obstacles(x1: float, y1: float, x2: float, y2: float) -> Array:
-    # Visual CI has no durable Stage6 session/solid-query binding. Keep the
-    # true authored R2 obstacles instead of the domain's fail-closed sentinel.
-    # Real gameplay always uses the complete durable + building obstacle query.
-    if OS.get_environment("TAMU_VISUAL_CI") == "1":
-        return host.get("authority").obstacles(x1, y1, x2, y2)
-    return host.get("gameplay").movement_obstacles(x1, y1, x2, y2)
+    # Same canonical authored R2 + placed-building collision on Android and CI.
+    # No alternate test path; no fail-closed sentinel from an unbound Stage6
+    # callback may suppress all authored creature spawns.
+    var solids: Array = host.get("authority").obstacles(x1, y1, x2, y2)
+    var building = host.get("gameplay").building
+    if building.placed.is_empty():
+        return solids
+    var query_box := Rect2(Vector2(x1, y1), Vector2(x2 - x1, y2 - y1))
+    for id in building.placed:
+        var placed_box: Rect2 = building.placed[id]["box"]
+        if placed_box.intersects(query_box):
+            solids.append({"id": str(id), "x": placed_box.position.x,
+                "y": placed_box.position.y, "w": placed_box.size.x,
+                "h": placed_box.size.y})
+    return solids
 
 func _stand(at: Vector2, radius: float) -> bool:
     if not at.is_finite():
