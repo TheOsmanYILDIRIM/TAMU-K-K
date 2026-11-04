@@ -137,7 +137,7 @@ func _bind_host() -> void:
     limbo_requested = OS.get_environment("TAMU_LIMBOAI") == "1" or bool(ProjectSettings.get_setting("tamu/ai/use_limboai", false))
     # Native Android uses a fixed-cost state machine by default; explicit
     # developer override keeps full LimboAI available for A/B profiling.
-    lite_enabled = OS.has_feature("mobile") and OS.get_environment("TAMU_AI_CLASSIC") != "1"
+    lite_enabled = (OS.has_feature("mobile") or OS.get_environment("TAMU_AI_LITE") == "1") and OS.get_environment("TAMU_AI_CLASSIC") != "1"
     if lite_enabled:
         print("TAMU_MOB_LITE_ACTIVE native_bt=false nav=direct_budgeted decisions=central")
     if diagnostic_layer == null and (limbo_requested or OS.has_feature("mobile")):
@@ -969,7 +969,7 @@ func _update_mob_diagnostics(force: bool = false) -> void:
             and OS.get_environment("TAMU_VISUAL_CASE") in ["mobs", "combo"] \
             and VisualEnvironment.mobile_fast_mode() and Engine.get_process_frames() >= 30:
         mobile_visibility_checked = true
-        if visible_count <= 0 or not limbo_enabled:
+        if visible_count <= 0 or not (limbo_enabled or lite_enabled):
             push_error("TAMU_MOB_MOBILE_VISIBLE_FAILED total=%d visible=%d limbo=%s" %
                 [agents.size(), visible_count, status])
         else:
