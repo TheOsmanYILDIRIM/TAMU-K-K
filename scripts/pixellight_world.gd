@@ -20,7 +20,6 @@ static func install(items: Array[Dictionary], layer: Node2D, actor_world: Vector
         if distance <= MAX_DISTANCE:
             candidates.append({"item": item, "distance": distance})
     candidates.sort_custom(func(a, b): return float(a["distance"]) < float(b["distance"]))
-    var atlas_images := {}
     var baked := {}
     var count := 0
     var occluders := 0
@@ -35,14 +34,12 @@ static func install(items: Array[Dictionary], layer: Node2D, actor_world: Vector
             continue
         var key := "%s/%s" % [str(base.resource_path), str(atlas.region)]
         if not baked.has(key):
-            if not atlas_images.has(base):
-                atlas_images[base] = base.get_image()
-            var source_image: Image = atlas_images[base]
-            if source_image == null or source_image.is_empty():
+            # AtlasTexture.get_image returns only its authored region;
+            # never decode the entire 4096px parent atlas on Android.
+            var region_image: Image = atlas.get_image()
+            if region_image == null or region_image.is_empty():
                 continue
-            var rect := Rect2i(atlas.region)
-            var region_image := source_image.get_region(rect)
-            if region_image.is_empty():
+            if region_image.is_compressed() and region_image.decompress() != OK:
                 continue
             # Build a bounded preview normal map, never the full 4096px atlas.
             var sample := region_image.duplicate()
