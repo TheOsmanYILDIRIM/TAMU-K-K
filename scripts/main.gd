@@ -1532,7 +1532,12 @@ func _process(delta: float) -> void:
     if perf_hud != null:
         var mob_node: Node = get_node_or_null("MobWorld")
         var mob_usec: int = int(mob_node.get("last_process_usec")) if mob_node != null else 0
-        perf_hud.record(delta,loaded,total_cached,object_count,vertices,actor_world,stream_end-rig_end,rig_end-frame_start,"walk" if direction.length_squared()>0.01 else "idle",mob_usec)
+        perf_hud.record(delta,loaded,total_cached,object_count,vertices,actor_world,
+            stream_end-rig_end,rig_end-frame_start,"walk" if direction.length_squared()>0.01 else "idle",
+            mob_usec,int(mob_node.get("last_think_usec")) if mob_node != null else 0,
+            int(mob_node.get("last_scan_usec")) if mob_node != null else 0,
+            int(mob_node.get("last_navigation_usec")) if mob_node != null else 0,
+            int(mob_node.get("last_movement_usec")) if mob_node != null else 0)
     # HUD string formatting and inventory queries are diagnostic only;
     # avoid running them every frame on Android.
     if frame_no % 15 == 0:

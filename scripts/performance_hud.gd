@@ -103,7 +103,8 @@ func _percentile(data: Array[float], percentile: float) -> float:
     ordered.sort()
     return ordered[clampi(ceili(percentile * ordered.size())-1,0,ordered.size()-1)]
 
-func record(delta: float, terrain_chunks: int, available_chunks: int, objects: int, vertices: int, actor_position: Vector2, streaming_usec: int, rig_usec: int, mode: String, mob_usec: int = 0) -> void:
+func record(delta: float, terrain_chunks: int, available_chunks: int, objects: int, vertices: int, actor_position: Vector2, streaming_usec: int, rig_usec: int, mode: String, mob_usec: int = 0, mob_think_usec: int = 0, mob_scan_usec: int = 0,
+        mob_nav_usec: int = 0, mob_move_usec: int = 0) -> void:
     if not enabled:
         return
     count += 1
@@ -120,6 +121,10 @@ func record(delta: float, terrain_chunks: int, available_chunks: int, objects: i
         "rig_main_ms": snappedf(rig_usec/1000.0,0.001),
         # MobWorld has process_priority=10; one-frame lag versus main._process.
         "mob_cpu_ms_previous_frame": snappedf(float(mob_usec)/1000.0,0.001),
+        "mob_think_ms_previous_frame": snappedf(float(mob_think_usec)/1000.0,0.001),
+        "mob_resource_scan_ms_previous_frame": snappedf(float(mob_scan_usec)/1000.0,0.001),
+        "mob_navigation_ms_previous_frame": snappedf(float(mob_nav_usec)/1000.0,0.001),
+        "mob_movement_ms_previous_frame": snappedf(float(mob_move_usec)/1000.0,0.001),
         "chunks_loaded": terrain_chunks,
         "chunks_available": available_chunks,
         "objects_total": objects,
@@ -213,7 +218,10 @@ func test_gate() -> bool:
     if samples.size() < 30:
         return false
     for row in samples:
-        if row["schema"] != "tamu.perf.godot.v1" or not row.has("streaming_main_ms"):
+        if row["schema"] != "tamu.perf.godot.v1" or not row.has("streaming_main_ms") \
+                or not row.has("mob_resource_scan_ms_previous_frame") \
+                or not row.has("mob_navigation_ms_previous_frame") \
+                or not row.has("mob_movement_ms_previous_frame"):
             return false
     var records := build_jsonl().split("\n", false)
     if records.size() != samples.size():

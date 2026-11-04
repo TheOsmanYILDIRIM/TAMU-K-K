@@ -39,6 +39,11 @@ var player_damage_receiver: Callable
 # Reversible render/AI isolation, no gameplay IDs/save changes.
 var isolation_mode := "full"
 var last_process_usec := 0
+# Previous-frame CPU phase timings. Keep all simulation and stable IDs unchanged.
+var last_think_usec := 0
+var last_scan_usec := 0
+var last_navigation_usec := 0
+var last_movement_usec := 0
 
 func set_isolation_mode(mode: String) -> void:
     isolation_mode = mode
@@ -388,7 +393,9 @@ func _think() -> void:
         var scanned: Dictionary = agents[resource_scan_cursor % agents.size()]
         resource_scan_cursor += 1
         if scanned["brain"].health > 0.0 and elapsed >= float(scanned["scan_at"]):
+            var scan_started := Time.get_ticks_usec()
             _scan_resources(scanned)
+            last_scan_usec = Time.get_ticks_usec() - scan_started
     for a in agents:
         var senses := _senses(a) if a["brain"].health > 0.0 else {"position": a["position"]}
         var intent: Dictionary = a["brain"].tick(FIXED_STEP, senses)
@@ -424,7 +431,8 @@ func _think() -> void:
         var requested_clip := str(intent["clip"])
         var mapped_clip := str(a["definition"].animation_map.get(requested_clip, requested_clip))
         a["visual"].play(mapped_clip)
-    max_frame_ai_usec = maxi(max_frame_ai_usec, Time.get_ticks_usec() - started)
+    last_think_usec = Time.get_ticks_usec() - started
+    max_frame_ai_usec = maxi(max_frame_ai_usec, last_think_usec)
 
 func _prepare_route(a: Dictionary) -> void:
     var intent: Dictionary = a["intent"]
@@ -486,13 +494,16 @@ func _move_agent(a: Dictionary, dt: float) -> void:
     delta += separation.limit_length(speed * dt * 0.3)
     var moved: Dictionary = Collision.move(from, delta, float(a["definition"].radius), Callable(self, "_obstacles"))
     var to: Vector2 = moved.get("position", from)
-    if not moved.get("ok", false) or not _stand(to, float(a["definition"].radius)):
+    # The last swept sample already validates the destination footprint.
+    # Avoid re-running five terrain probes and the obstacle query at the same point.
+    if not bool(moved.get("ok", false)):
         to = from
-    var samples := maxi(1, ceili(from.distance_to(to) / 3.0))
-    for step in range(1, samples + 1):
-        if not _stand(from.lerp(to, float(step) / samples), float(a["definition"].radius)):
-            to = from
-            break
+    else:
+        var samples := maxi(1, ceili(from.distance_to(to) / 3.0))
+        for step in range(1, samples + 1):
+            if not _stand(from.lerp(to, float(step) / samples), float(a["definition"].radius)):
+                to = from
+                break
     for other in _neighbors(from, 40.0):
         if other["id"] == a["id"] or other["brain"].health <= 0.0:
             continue
@@ -578,6 +589,10 @@ func player_attack() -> void:
 func _process(delta: float) -> void:
     if not bound:
         return
+    last_think_usec = 0
+    last_scan_usec = 0
+    last_navigation_usec = 0
+    last_movement_usec = 0
     # A frozen creature stays rendered in mob_ai_off: isolate CPU only.
     if isolation_mode in ["mob_ai_off", "mob_all_off"]:
         last_process_usec = 0
@@ -609,7 +624,10 @@ func _process(delta: float) -> void:
     if accumulator >= FIXED_STEP:
         accumulator -= FIXED_STEP
         _think()
+    var nav_started := Time.get_ticks_usec()
     _advance_navigation()
+    last_navigation_usec = Time.get_ticks_usec() - nav_started
+    var movement_started := Time.get_ticks_usec()
     for a in agents:
         var distance: float = (a["position"] as Vector2).distance_to(pos)
         var near_hz := 12.0 if mobile_fast else 30.0
@@ -617,6 +635,7 @@ func _process(delta: float) -> void:
         a["visual"].lod_seconds = 1.0 / (near_hz if distance < 650.0 else far_hz)
         _move_agent(a, dt)
         _resolve_attack(a)
+    last_movement_usec = Time.get_ticks_usec() - movement_started
     last_process_usec = Time.get_ticks_usec() - start_usec
 
 func _exit_tree() -> void:
