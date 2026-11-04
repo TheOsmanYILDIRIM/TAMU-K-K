@@ -387,7 +387,10 @@ func _try_nearby_loot() -> bool:
                 best_distance = d
                 best_id = drop_id
             break
-    return not best_id.is_empty() and _collect_ground_loot(best_id)
+    if best_id.is_empty():
+        return false
+    _collect_ground_loot(best_id)
+    return true
 
 func _ground_loot_at_screen(screen_point: Vector2) -> bool:
     var closest := ""
@@ -1758,7 +1761,7 @@ func _unhandled_input(event: InputEvent) -> void:
             if _world_ui_hit(event.position):
                 drag = false
                 return
-            if _harvest_at_screen(event.position):
+            if _ground_loot_at_screen(event.position) or _harvest_at_screen(event.position):
                 drag = false
                 get_viewport().set_input_as_handled()
                 return
