@@ -958,6 +958,27 @@ jobs:
           grep -q TAMU_PROFILE_ONLY_VISIBLE_OK screenshots/128-only-profile.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_PROFILE_.*FAILED' screenshots/128-only-profile.log; then exit 1; fi
           sha256sum build/tamu-android-content-128.pck
+      - name: LimboAI native BTPlayer active in real authored Yaprakkulak scene
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 'https://github.com/limbonaut/limboai/releases/download/v1.8.1/limboai%2Bv1.8.1.gdextension-4.6.zip' -o /tmp/tamu-actual-limbo.zip
+          echo '0910411f8dbc0da8920f6c8bbbb6397c347cd9f2f193942468a702dfb11d5f0e  /tmp/tamu-actual-limbo.zip' | sha256sum -c -
+          mkdir -p /tmp/tamu-full-limbo addons/limboai/bin
+          unzip -q /tmp/tamu-actual-limbo.zip -d /tmp/tamu-full-limbo
+          manifest="$(find /tmp/tamu-full-limbo -type f -name '*.gdextension' -print -quit)"
+          test -n "$manifest"
+          cp -a "$(dirname "$manifest")/." addons/limboai/bin/
+          test -s addons/limboai/bin/limboai.gdextension
+          timeout --kill-after=3s 75s godot --headless --editor --path . --import --quit 2>&1 | tee screenshots/limboai-import.log
+          TAMU_LIMBOAI=1 TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged TAMU_VISUAL_CI=1 TAMU_VISUAL_CASE=mobs \
+            timeout --kill-after=3s 90s xvfb-run -a -s '-screen 0 720x1100x24' \
+            godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 \
+            2>&1 | tee screenshots/limboai-mobs-live.log
+          grep -Eq 'TAMU_LIMBOAI_ACTIVE players=[1-9]' screenshots/limboai-mobs-live.log
+          grep -q TAMU_VISUAL_CAPTURE_OK screenshots/limboai-mobs-live.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_LIMBOAI_.*FAILED|TAMU_LIMBOAI_.*UNAVAILABLE|TAMU_MOB_.*FAILED' screenshots/limboai-mobs-live.log; then exit 1; fi
+          cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" screenshots/limboai-mobs-live.png
       - uses: actions/upload-artifact@v4
         if: always()
         with:
