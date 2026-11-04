@@ -865,7 +865,7 @@ jobs:
               names=[]
               for _ in range(count):
                   length=struct.unpack('<I',f.read(4))[0]
-                  name=f.read(length).rstrip(b'\\0').decode()
+                  name=f.read(length).split(bytes([0]),1)[0].decode()
                   f.seek(36,1)
                   names.append(name.lower())
           lowres=[
@@ -903,7 +903,6 @@ jobs:
           ) 2>&1 | tee screenshots/128-only-profile.log
           grep -q 'TAMU_OBJECT_HIRES_ACTIVE active=false atlas=1056' screenshots/128-only-profile.log
           grep -q TAMU_PROFILE_ONLY_VISIBLE_OK screenshots/128-only-profile.log
-          grep -q TAMU_128_SOURCE_PRESET_OK <(echo TAMU_128_SOURCE_PRESET_OK)
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_PROFILE_.*FAILED' screenshots/128-only-profile.log; then exit 1; fi
           sha256sum build/tamu-android-content-128.pck
       - uses: actions/upload-artifact@v4
