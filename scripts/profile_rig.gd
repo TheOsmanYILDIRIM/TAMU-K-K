@@ -312,7 +312,8 @@ func _correct_foot_grounding() -> void:
     # World-space stance target moves opposite to the player anchor, after
     # accounting for avatar mirroring. Screen movement is converted once
     # into the original editor's unscaled source coordinate system.
-    var facing: float = -1.0 if get_parent() != null and get_parent().scale.x < 0.0 else 1.0
+    var parent_2d := get_parent() as Node2D
+    var facing: float = -1.0 if parent_2d != null and parent_2d.scale.x < 0.0 else 1.0
     planted_at.x -= traveled_screen.x / maxf(SOURCE_SCALE, 0.001) * facing
     planted_at.y -= traveled_screen.y / maxf(SOURCE_SCALE, 0.001)
     traveled_screen = Vector2.ZERO
