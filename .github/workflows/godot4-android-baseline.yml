@@ -746,7 +746,10 @@ jobs:
           banned=('plasma','screenshots/','game/love/','art-source/','docs/','object-studio/','world-builder/')
           bad=[s for s in names if any(x in s for x in banned) or s.endswith(('.apk','.love','.mp3'))]
           assert not bad, f'PCK_FORBIDDEN_FILES {bad[:15]}'
-          required=('chunks/r2_objects.json','chunks/merged_layer_1.verts','data/catalog/compiled_catalog.res','assets/terrain25d/atlas_00.png','assets/terrain25d/atlas_objects_hires.png','assets/osman_rig/images/front_head.png')
+          # Legacy Rigby references must not be shipped after profile-only cutover.
+          legacy=[n for n in names if 'assets/osman_rig/' in n or 'scripts/rigby_fk.' in n or 'scripts/rigby_skinned.' in n]
+          assert not legacy, f'PCK_LEGACY_CHARACTER_LEAK {legacy[:12]}'
+          required=('chunks/r2_objects.json','chunks/merged_layer_1.verts','data/catalog/compiled_catalog.res','assets/terrain25d/atlas_00.png','assets/terrain25d/atlas_objects_hires.png','assets/profile_character/01_bas.png')
           assert all(any(key in s for s in names) for key in required), 'PCK_REQUIRED_ASSET_MISSING'
           runtime_scripts=('domain_catalog','domain_inventory','domain_harvesting',
               'domain_crafting','domain_building','gameplay_session','harvest_pathfinder',
@@ -785,7 +788,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           p=Path('build/tamu-android-content.pck').read_bytes()
-          for name in (b'chunks/index.json',b'chunks/r2_objects.json',b'chunks/source_integrity.json',b'chunks/merged_terrain.json',b'merged_layer_0.verts',b'merged_layer_1.verts',b'assets/osman_rig/rig.json',b'data/catalog/manifest.json',b'data/catalog/definitions/oak_tree.json',b'data/catalog/recipes/planks_from_log.json',b'data/catalog/compiled_catalog.res'):
+          for name in (b'chunks/index.json',b'chunks/r2_objects.json',b'chunks/source_integrity.json',b'chunks/merged_terrain.json',b'merged_layer_0.verts',b'merged_layer_1.verts',b'assets/profile_character/motion.json',b'data/catalog/manifest.json',b'data/catalog/definitions/oak_tree.json',b'data/catalog/recipes/planks_from_log.json',b'data/catalog/compiled_catalog.res'):
               assert name in p, f'ANDROID_ASSET_EXPORT_MISSING: {name!r}'
           print('TAMU_ANDROID_CONTENT_PACK_OK bytes=',len(p))
           PY
