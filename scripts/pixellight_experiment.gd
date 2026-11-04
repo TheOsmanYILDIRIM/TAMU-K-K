@@ -1,6 +1,7 @@
 extends Node2D
 # Genuine PixelLight 2D 1.0.2 isolated GL Compatibility experiment.
 # No player, world, saved-state or authored texture mutations.
+const PixelLightWorld = preload("res://scripts/pixellight_world.gd")
 var sprites: Array[Sprite2D] = []
 var test_frames := 0
 
@@ -71,5 +72,46 @@ func _process(_delta: float) -> void:
         push_error("TAMU_PIXELLIGHT_SCREENSHOT_FAILED")
         get_tree().quit(85)
         return
+    if not _verify_authored_atlas_bridge():
+        push_error("TAMU_PIXELLIGHT_ATLAS_BRIDGE_FAILED")
+        get_tree().quit(86)
+        return
     print("TAMU_PIXELLIGHT_VISUAL_OK normal_maps=2 occluders=", occluders, " source=original_addon_1.0.2")
     get_tree().quit()
+
+# A real AtlasTexture path (unlike the original synthetic Sprite2D-only demo).
+# This mirrors TAMU's atlas-based authored tree/rock setup and verifies that
+# source-alpha harvesting survives the normal-map CanvasTexture conversion.
+func _verify_authored_atlas_bridge() -> bool:
+    var atlas := AtlasTexture.new()
+    atlas.atlas = sprites[0].texture
+    atlas.region = Rect2(0.0, 0.0, 96.0, 112.0)
+    var sprite := Sprite2D.new()
+    sprite.name = "AuthoredAtlasTree"
+    sprite.texture = atlas
+    sprite.position = Vector2(-900, -900)
+    add_child(sprite)
+    var old_shadow := Sprite2D.new()
+    old_shadow.texture = atlas
+    old_shadow.position = sprite.position
+    add_child(old_shadow)
+    var item := {"kind": "tree", "position": Vector2.ZERO, "sprite": sprite, "silhouette": old_shadow}
+    var items: Array[Dictionary] = [item]
+    var result: Dictionary = PixelLightWorld.install(items, self, Vector2.ZERO)
+    if int(result.get("count", 0)) != 1 or int(result.get("occluders", 0)) < 1:
+        return false
+    if old_shadow.visible or not bool(old_shadow.get_meta("tamu_pixellight_replaced_shadow", false)):
+        return false
+    if not sprite.texture is CanvasTexture or (sprite.texture as CanvasTexture).normal_texture == null:
+        return false
+    var alpha: Image = item.get("pixel_alpha_image")
+    if alpha == null or alpha.get_size() != Vector2i(96, 112):
+        return false
+    var shadow_nodes := 0
+    for node in sprite.get_children():
+        if node is LightOccluder2D:
+            shadow_nodes += 1
+    if shadow_nodes < 1:
+        return false
+    print("TAMU_PIXELLIGHT_ATLAS_BRIDGE_OK objects=1 light=1 occluders=", shadow_nodes, " source_alpha=1")
+    return true
