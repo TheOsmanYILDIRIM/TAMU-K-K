@@ -55,6 +55,14 @@ func count_item(id: String) -> int:
 func item_definition(def_id: String) -> Dictionary:
     return catalog.item(def_id).duplicate(true)
 
+# Item texture is optional until the art-production pass. The metadata is
+# available to UI without changing inventory/save identity.
+func item_visual(def_id: String) -> Dictionary:
+    return catalog.item_visual(def_id)
+
+func item_texture(def_id: String) -> Texture2D:
+    return catalog.item_texture(def_id)
+
 # Player-driven slot rearrangement. Durable sessions require a journaled
 # Stage6 operation and are explicitly blocked until that adapter exists.
 func move_item_stack(from_slot: int, to_slot: int, quantity: int) -> Dictionary:
