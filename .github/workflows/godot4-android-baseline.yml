@@ -499,7 +499,8 @@ jobs:
           cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" screenshots/pixellight-combined.png
           # Emulate the low-end Android render path in GL Compatibility CI.
           # Do not equate Xvfb FPS to an actual physical Android device.
-          TAMU_MOBILE_PERF=1 TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged TAMU_VISUAL_CASE=combo timeout --kill-after=3s 90s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 2>&1 | tee screenshots/mobile-fast-combined.log
+          TAMU_AI_LITE=1 TAMU_MOBILE_PERF=1 TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged TAMU_VISUAL_CASE=combo timeout --kill-after=3s 90s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 2>&1 | tee screenshots/mobile-fast-combined.log
+          grep -q 'TAMU_MOB_LITE_ACTIVE native_bt=false nav=direct_budgeted decisions=central' screenshots/mobile-fast-combined.log
           grep -q 'TAMU_MOBILE_FAST_MODE renderer=viewport' screenshots/mobile-fast-combined.log
           grep -q 'TAMU_OBJECT_HIRES_ACTIVE active=false atlas=1056' screenshots/mobile-fast-combined.log
           grep -q TAMU_MOBILE_CULL_OK screenshots/mobile-fast-combined.log
