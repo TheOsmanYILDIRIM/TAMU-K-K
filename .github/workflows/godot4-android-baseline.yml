@@ -548,8 +548,9 @@ jobs:
           # Runtime A/B on SAME authentic 156-cell, 832-object scene.
           # Draw-call and FPS logs are desktop software GL, NOT Android claims.
           mkdir -p /tmp/tamu-perf-isolation-home
-          XDG_DATA_HOME=/tmp/tamu-perf-isolation-home TAMU_MOBILE_PERF=1 TAMU_PERF_ISOLATION_CI=1 TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged timeout --kill-after=3s 100s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 125 2>&1 | tee screenshots/perf-isolation.log
+          XDG_DATA_HOME=/tmp/tamu-perf-isolation-home TAMU_VISUAL_CI=0 TAMU_MOBILE_PERF=1 TAMU_PERF_ISOLATION_CI=1 TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged timeout --kill-after=3s 100s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 125 2>&1 | tee screenshots/perf-isolation.log
           grep -q 'TAMU_PERF_ISOLATION_GATE_OK profiles=8 objects=832 region=1' screenshots/perf-isolation.log
+          grep -Eq 'TAMU_MOB_READY species=core:yaprakkulak count=[1-9]' screenshots/perf-isolation.log
           grep -q 'TAMU_PERF_ISOLATION_APPLIED profile=mob_visual_off' screenshots/perf-isolation.log
           grep -q 'TAMU_PERF_ISOLATION_APPLIED profile=mob_ai_off' screenshots/perf-isolation.log
           grep -q 'TAMU_PERF_ISOLATION_APPLIED profile=solar_off' screenshots/perf-isolation.log
