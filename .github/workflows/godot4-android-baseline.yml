@@ -1,13 +1,7 @@
 name: Godot 4.6 PCK and native visual checks
+# Heavy Godot native/visual/PCK pipeline runs only on explicit request.
+# Commits, documentation updates and PRs must not spend Actions minutes.
 on:
-  push:
-    branches:
-      - experiment/godot4-android-apk-20261031
-      - feature/godot-items-20261104
-      - main
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 permissions:
   contents: read
