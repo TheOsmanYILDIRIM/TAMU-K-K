@@ -35,7 +35,15 @@ var max_frame_ai_usec := 0
 var player_last := Vector2.ZERO
 var player_velocity := Vector2.ZERO
 var rng := RandomNumberGenerator.new()
-var resource_scan_cursor := 0
+const RESOURCE_STEP := 64.0
+const RESOURCE_BUCKET := 256.0
+const RESOURCE_INDEX_BUDGET_US := 650
+var resource_chunks: Array = []
+var resource_cursor := 0
+var resource_index_ready := false
+var resource_food: Dictionary = {}
+var resource_water: Dictionary = {}
+var resource_sample_count := 0
 var think_cursor := 0
 var movement_cursor := 0
 var player_damage_receiver: Callable
@@ -102,6 +110,12 @@ func _bind_host() -> void:
         return
     rng.seed = 20261103
     player_last = host.get("actor_world")
+    resource_chunks = host.get("available_chunks").keys()
+    resource_chunks.sort()
+    resource_cursor = 0
+    resource_food.clear()
+    resource_water.clear()
+    resource_index_ready = resource_chunks.is_empty()
     # Preserve existing visual parity fixtures, but run mob-enabled case explicitly.
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and OS.get_environment("TAMU_VISUAL_CASE") not in ["mobs", "combo"]:
         set_process(false)
@@ -342,74 +356,73 @@ func _near_water(p: Vector2, reach: float) -> bool:
             return true
     return false
 
-func _scan_resources(a: Dictionary) -> void:
-    # Only one agent scanned per decision tick; candidates come from real R2 samples.
-    var p: Vector2 = a["position"]
-    var radius: float = float(a["definition"].radius)
-    a["food"] = {}
-    a["water"] = {}
-    a["wander"] = {}
-    var best_food := INF
-    var best_water := INF
-    for i in range(28):
-        var q := p if i == 0 else p + Vector2.from_angle(float(i) * 2.399963) * (24.0 + float(i % 7) * 36.0)
-        if not _stand(q, radius):
+# Shared, session-local authored ecology index. Baked cooperatively only
+# once, after R2 is ready, in small main-loop slices, without worker threads.
+func _build_resource_index_step(budget_us: int = RESOURCE_INDEX_BUDGET_US) -> void:
+    if resource_index_ready:
+        return
+    var started := Time.get_ticks_usec()
+    while resource_cursor < resource_chunks.size() * 16:
+        var cell: int = resource_cursor / 16
+        var sample: int = resource_cursor % 16
+        resource_cursor += 1
+        var parts: PackedStringArray = str(resource_chunks[cell]).split("_")
+        if parts.size() != 3:
             continue
-        var sample := _terrain(q.x, q.y)
-        var distance := p.distance_squared_to(q)
-        if sample.get("feature") == "grass" and _food_available(q) and distance < best_food:
-            best_food = distance
-            a["food"] = {"position": q}
-        if _near_water(q, float(a["definition"].interaction_reach)) and distance < best_water:
-            best_water = distance
-            a["water"] = {"position": q}
-        if i > 0 and q.distance_to(a["brain"].home) < float(a["definition"].home_radius) * 0.8:
-            a["wander"] = {"position": q}
+        var chunk_x := int(parts[1])
+        var chunk_y := int(parts[2])
+        var at := Vector2(float(chunk_x) * 256.0 + (float(sample % 4) + 0.5) * RESOURCE_STEP,
+            float(chunk_y) * 256.0 + (float(sample / 4) + 0.5) * RESOURCE_STEP)
+        if not host.get("world_bounds").has_point(at):
+            continue
+        var surface := _terrain(at.x, at.y)
+        if bool(surface.get("walkable", false)) and _stand(at, float(SPECIES.radius)):
+            var bucket := Vector2i(floori(at.x / RESOURCE_BUCKET), floori(at.y / RESOURCE_BUCKET))
+            if surface.get("feature") == "grass":
+                if not resource_food.has(bucket):
+                    resource_food[bucket] = []
+                resource_food[bucket].append(at)
+            # Eight shoreline samples are evaluated ONCE per static point.
+            if _near_water(at, float(SPECIES.interaction_reach)):
+                if not resource_water.has(bucket):
+                    resource_water[bucket] = []
+                resource_water[bucket].append(at)
+        resource_sample_count += 1
+        if Time.get_ticks_usec() - started >= budget_us:
+            break
+    if resource_cursor >= resource_chunks.size() * 16:
+        resource_index_ready = true
+        print("TAMU_MOB_SHARED_RESOURCE_INDEX_READY samples=", resource_sample_count,
+            " food_buckets=", resource_food.size(), " water_buckets=", resource_water.size())
+
+
+func _nearest_resource(index: Dictionary, at: Vector2, range_cells: int, require_food: bool) -> Dictionary:
+    if not resource_index_ready:
+        return {}
+    var center := Vector2i(floori(at.x / RESOURCE_BUCKET), floori(at.y / RESOURCE_BUCKET))
+    var best := INF
+    var target := Vector2.ZERO
+    for y in range(-range_cells, range_cells + 1):
+        for x in range(-range_cells, range_cells + 1):
+            for candidate_variant in index.get(center + Vector2i(x, y), []):
+                var candidate: Vector2 = candidate_variant
+                var distance := at.distance_squared_to(candidate)
+                if distance >= best or (require_food and not _food_available(candidate)):
+                    continue
+                best = distance
+                target = candidate
+    return {} if not is_finite(best) else {"position": target}
+
+
+func _refresh_resource_targets(a: Dictionary) -> void:
+    if not resource_index_ready or elapsed < float(a["scan_at"]):
+        return
+    var p: Vector2 = a["position"]
+    a["food"] = _nearest_resource(resource_food, p, 2, true)
+    a["water"] = _nearest_resource(resource_water, p, 4, false)
+    a["wander"] = _nearest_resource(resource_food, a["brain"].home, 2, false)
     a["scan_at"] = elapsed + 2.0
 
-# LimboAI's manual BT is called per creature. The 28-point forage survey is
-# a separate bounded sensor job: each real R2 sample is retained, but no
-# single frame performs the previous entire ~77ms burst on Android.
-func _scan_resources_budgeted(max_samples: int = 3) -> void:
-    if agents.is_empty():
-        return
-    var began := Time.get_ticks_usec()
-    for step in range(max_samples):
-        if step > 0 and Time.get_ticks_usec() - began >= 1600:
-            break
-        var a: Dictionary = agents[resource_scan_cursor % agents.size()]
-        resource_scan_cursor += 1
-        if a["brain"].health <= 0.0:
-            continue
-        var work: Dictionary = a.get("scan_work", {})
-        if work.is_empty():
-            if elapsed < float(a["scan_at"]):
-                continue
-            work = {"cursor": 0, "center": a["position"], "food": {},
-                "water": {}, "wander": {}, "best_food": INF, "best_water": INF}
-        var i: int = int(work["cursor"])
-        var p: Vector2 = work["center"]
-        var q := p if i == 0 else p + Vector2.from_angle(float(i) * 2.399963) * (24.0 + float(i % 7) * 36.0)
-        if _stand(q, float(a["definition"].radius)):
-            var sample := _terrain(q.x, q.y)
-            var distance := p.distance_squared_to(q)
-            if sample.get("feature") == "grass" and _food_available(q) and distance < float(work["best_food"]):
-                work["best_food"] = distance
-                work["food"] = {"position": q}
-            if _near_water(q, float(a["definition"].interaction_reach)) and distance < float(work["best_water"]):
-                work["best_water"] = distance
-                work["water"] = {"position": q}
-            if i > 0 and q.distance_to(a["brain"].home) < float(a["definition"].home_radius) * 0.8:
-                work["wander"] = {"position": q}
-        work["cursor"] = i + 1
-        if i + 1 >= 28:
-            a["food"] = work["food"]
-            a["water"] = work["water"]
-            a["wander"] = work["wander"]
-            a["scan_at"] = elapsed + 2.0
-            a["scan_work"] = {}
-        else:
-            a["scan_work"] = work
 
 func _escape(a: Dictionary, threat: Vector2) -> Dictionary:
     var p: Vector2 = a["position"]
@@ -507,13 +520,15 @@ func _senses(a: Dictionary) -> Dictionary:
     if not threat.is_empty() or a["brain"].threat_memory > 0.0:
         escape = _escape(a, danger_at)
     var target: String = str(a["brain"].threat_id) if threat.is_empty() else str(threat["id"])
-    var sample := _terrain(p.x, p.y)
+    _refresh_resource_targets(a)
+    var food_here: bool = not a["food"].is_empty() and p.distance_to(a["food"]["position"]) <= float(config.interaction_reach) and _food_available(p)
+    var water_here: bool = not a["water"].is_empty() and p.distance_to(a["water"]["position"]) <= float(config.interaction_reach)
     return {"position": p, "threat": threat, "escape": escape,
         "escape_blocked": bool(a["escape_blocked"]),
         "can_attack_threat": by_id.has(target) or (target == "player" and player_damage_receiver.is_valid()),
         "food": a["food"], "water": a["water"], "wander": a["wander"],
-        "food_here": sample.get("feature") == "grass" and _food_available(p),
-        "water_here": _near_water(p, float(config.interaction_reach)),
+        "food_here": food_here,
+        "water_here": water_here,
         "herd": {"position": center / float(count)} if count > 0 else {},
         "prey": prey, "carrion": carrion,
         "path_failed": a["navigator"].state == "failed",
@@ -839,11 +854,9 @@ func _process(delta: float) -> void:
     if accumulator >= decision_interval:
         accumulator = minf(accumulator - decision_interval, decision_interval)
         _think()
-    # Native and fallback AI share the same bounded R2 sensing workload.
-    # Each sample may query terrain, collision, and eight water directions;
-    # one sample per Android frame avoids stacking them on the GPU frame.
+    # Build static locations once for every creature; no per-mob water survey.
     var scan_started := Time.get_ticks_usec()
-    _scan_resources_budgeted(1 if mobile_fast else 3)
+    _build_resource_index_step()
     last_scan_usec = Time.get_ticks_usec() - scan_started
     var nav_started := Time.get_ticks_usec()
     _advance_navigation(350 if mobile_fast else NAV_BUDGET_US)
