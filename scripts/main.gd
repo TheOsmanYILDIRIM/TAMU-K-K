@@ -353,42 +353,36 @@ func _sync_ground_loot_visuals() -> void:
         ground_loot_sprites[loot_id] = node
 
 func _collect_ground_loot(loot_id: String) -> bool:
-    if not ground_loot_sprites.has(loot_id):
-        return false
     var result: Dictionary = gameplay.pickup_ground_loot(
         loot_id, actor_world, _next_gameplay_command("pickup"))
     if not bool(result.get("ok", false)):
         _harvest_feedback("YERDEN ALMA: " + str(result.get("status", "failed")))
         return false
-    var node: Node2D = ground_loot_sprites[loot_id]
+    var node: Node2D = ground_loot_sprites.get(loot_id)
     ground_loot_sprites.erase(loot_id)
     _sync_ground_loot_visuals()
     audio_cues.cue("harvest_complete")
     _harvest_feedback("ALINDI: " + str(result.get("item_id", "")) + " x" + str(result.get("amount", 0)))
-    # Animated on successful pickup only; never creates per-frame tweens.
-    node.z_index = 9
-    var tween := create_tween().set_parallel(true)
-    tween.tween_property(node, "position", avatar.position + Vector2(0, -36), 0.22)
-    tween.tween_property(node, "scale", Vector2.ONE * 0.45, 0.22)
-    tween.tween_property(node, "modulate:a", 0.0, 0.22)
-    tween.chain().tween_callback(node.queue_free)
+    # Successful pickup only. A missing optional texture must never trap loot.
+    if node != null:
+        node.z_index = 9
+        var tween := create_tween().set_parallel(true)
+        tween.tween_property(node, "position", avatar.position + Vector2(0, -36), 0.22)
+        tween.tween_property(node, "scale", Vector2.ONE * 0.45, 0.22)
+        tween.tween_property(node, "modulate:a", 0.0, 0.22)
+        tween.chain().tween_callback(node.queue_free)
     print("TAMU_GROUND_PICKUP_OK id=", loot_id, " item=", result.get("item_id", ""))
     return true
 
 func _try_nearby_loot() -> bool:
     var best_id := ""
     var best_distance := 52.0 * 52.0
-    for loot_id in ground_loot_sprites:
-        var drop_id := str(loot_id)
-        for record in gameplay.pending_ground_loot():
-            if str(record.get("id", "")) != drop_id:
-                continue
-            var p := Vector2(float(record["x"]), float(record["y"]))
-            var d := actor_world.distance_squared_to(p)
-            if d < best_distance:
-                best_distance = d
-                best_id = drop_id
-            break
+    for record in gameplay.pending_ground_loot():
+        var p := Vector2(float(record["x"]), float(record["y"]))
+        var d := actor_world.distance_squared_to(p)
+        if d < best_distance:
+            best_distance = d
+            best_id = str(record["id"])
     if best_id.is_empty():
         return false
     _collect_ground_loot(best_id)
