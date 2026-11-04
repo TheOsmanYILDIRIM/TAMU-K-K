@@ -129,7 +129,7 @@ func _item_contract() -> bool:
     print("TAMU_ITEM_INVENTORY_CRAFTING_OK")
     return true
 
-func _start_ground_harvest(run: RefCounted) -> bool:
+func _start_ground_harvest(run) -> bool:
     var source := {"id": "worldobj:v1:ground_fixture", "kind": "tree",
         "position": Vector2.ZERO, "radius": 12.0}
     if run.begin_harvest(source, Vector2.ZERO, "harvest:fixture").get("status") != "started":
