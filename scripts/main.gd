@@ -702,7 +702,7 @@ func _update_avatar() -> void:
         profile_contact_shadow.position = ground_anchor - Vector2(0.0, actor_ground_screen_offset)
     avatar.position = ground_anchor
     if profile_rig != null:
-        profile_rig.position.y = -689.0 * ProfileRig.SOURCE_SCALE - actor_ground_screen_offset
+        profile_rig.position.y = -ProfileRig.SOURCE_GROUND_Y * ProfileRig.SOURCE_SCALE - actor_ground_screen_offset
 
 # A drawable can straddle an authored source cell; cull by its actual
 # projected bounds and keep a conservative shadow-margin against popping.
@@ -1342,8 +1342,14 @@ func _process(delta: float) -> void:
             # 45-degree iso transform; diagonal and depth-only movement need
             # no new front/back art. A blocked player keeps their last side.
             profile_facing_sign = WorldProjection.profile_facing_sign(actor_world - position_before, profile_facing_sign)
-        _set_actor_clip(next_direction, "walk")
+        var moved_distance: float = (actor_world - position_before).length()
+        if profile_rig != null:
+            var screen_step: Vector2 = WorldProjection.to_screen(actor_world - position_before)
+            profile_rig.set_ground_speed(screen_step.length() / maxf(delta, 0.001))
+        _set_actor_clip(next_direction, "walk" if moved_distance > 0.01 else "idle")
     else:
+        if profile_rig != null:
+            profile_rig.set_ground_speed(0.0)
         _set_actor_clip(actor_direction, "idle")
     _update_avatar()
     if pixellight_world_light != null:
