@@ -778,7 +778,7 @@ func _update_mob_diagnostics(force: bool = false) -> void:
             " nearest=", nearest, " region_loaded=", host.get("region_chunks").has(region))
         diagnostic_elapsed = 0.0
     if not mobile_visibility_checked and OS.get_environment("TAMU_VISUAL_CI") == "1" \
-            and OS.get_environment("TAMU_VISUAL_CASE") == "mobs" \
+            and OS.get_environment("TAMU_VISUAL_CASE") in ["mobs", "combo"] \
             and VisualEnvironment.mobile_fast_mode() and Engine.get_process_frames() >= 30:
         mobile_visibility_checked = true
         if visible_count <= 0 or not limbo_enabled:
