@@ -1560,21 +1560,36 @@ func _process(delta: float) -> void:
                 var frame_ms: Array[float] = []
                 var draws: Array[float] = []
                 var mobs_ms: Array[float] = []
+                var mob_think_ms: Array[float] = []
+                var mob_nav_ms: Array[float] = []
+                var mob_move_ms: Array[float] = []
                 for entry in perf_hud.get("samples"):
                     if str(entry.get("isolation_profile", "")) != required or float(entry.get("isolation_elapsed_ms", 0)) < 200.0:
                         continue
                     frame_ms.append(float(entry.get("frame_ms", 0)))
                     draws.append(float(entry.get("draw_calls", 0)))
                     mobs_ms.append(float(entry.get("mob_cpu_ms_previous_frame", 0)))
+                    mob_think_ms.append(float(entry.get("mob_think_ms_previous_frame", 0)))
+                    mob_nav_ms.append(float(entry.get("mob_navigation_ms_previous_frame", 0)))
+                    mob_move_ms.append(float(entry.get("mob_movement_ms_previous_frame", 0)))
                 frame_ms.sort()
                 draws.sort()
                 mobs_ms.sort()
+                mob_think_ms.sort()
+                mob_nav_ms.sort()
+                mob_move_ms.sort()
                 if not frame_ms.is_empty():
                     var middle: int = frame_ms.size() / 2
                     print("TAMU_PERF_ISOLATION_METRIC profile=", required,
                         " frames=", frame_ms.size(), " frame_p50_ms=", frame_ms[middle],
                         " draw_p50=", draws[mini(middle, draws.size()-1)],
-                        " mob_cpu_p50_ms_prev=", mobs_ms[mini(middle, mobs_ms.size()-1)])
+                        " mob_cpu_p50_ms_prev=", mobs_ms[mini(middle, mobs_ms.size()-1)],
+                        " think_p50_ms_prev=", mob_think_ms[mini(middle, mob_think_ms.size()-1)],
+                        " nav_p50_ms_prev=", mob_nav_ms[mini(middle, mob_nav_ms.size()-1)],
+                        " movement_p50_ms_prev=", mob_move_ms[mini(middle, mob_move_ms.size()-1)],
+                        " think_p95_ms_prev=", mob_think_ms[clampi(ceili(0.95 * mob_think_ms.size())-1,0,mob_think_ms.size()-1)],
+                        " nav_p95_ms_prev=", mob_nav_ms[clampi(ceili(0.95 * mob_nav_ms.size())-1,0,mob_nav_ms.size()-1)],
+                        " movement_p95_ms_prev=", mob_move_ms[clampi(ceili(0.95 * mob_move_ms.size())-1,0,mob_move_ms.size()-1)])
             _set_perf_isolation("full")
             if shadow_layer == null or not shadow_layer.visible or profile_rig == null or not profile_rig.visible or object_count != 832 or region_chunks.size() != 1:
                 push_error("TAMU_PERF_ISOLATION_RESTORE_FAILED")
