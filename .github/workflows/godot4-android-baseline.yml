@@ -899,7 +899,8 @@ jobs:
           (
               cd /tmp/tamu-128-only
               TAMU_MOBILE_PERF=1 TAMU_VISUAL_CI=1 TAMU_VISUAL_CASE=profile XDG_DATA_HOME=/tmp/tamu-128-only \
-                timeout --kill-after=3s 65s godot --headless --main-pack "$absolute" --quit-after 100
+                timeout --kill-after=3s 75s xvfb-run -a -s '-screen 0 720x1100x24' \
+                godot --rendering-method gl_compatibility --resolution 720x1100 --main-pack "$absolute" --quit-after 115
           ) 2>&1 | tee screenshots/128-only-profile.log
           grep -q 'TAMU_OBJECT_HIRES_ACTIVE active=false atlas=1056' screenshots/128-only-profile.log
           grep -q TAMU_PROFILE_ONLY_VISIBLE_OK screenshots/128-only-profile.log
