@@ -1,3 +1,10 @@
+### 2026-11-04 — [GODOT-ITEMS] İlk dört eşyanın texture slotları
+- Mevcut `feature/godot-items-20261104` dalında kanonik item kimlikleri korunarak `core:wood_log`, `core:wood_plank`, `core:stone` ve `core:workbench` tanımlarına `visual.texture_key` ve planlanan `res://assets/items/core/<id>.png` yolları eklendi. PNG henüz üretilmedi; `visual.kind=primitive` bırakıldı.
+- `scripts/domain_catalog.gd`: sadece beklenen `res://assets/items/<namespace>/<id>.png` yolunu doğrulayan, dosya gerçekten mevcutsa Texture2D yükleyen opt-in `item_visual/item_texture` API'si. `gameplay_session.gd` API'yi oyun mantığına açar. Harici mod GDScript/resource çalıştırılmaz.
+- Mevcut `stage6_live_ci.gd` smoke'a dört item anahtar/yol/fallback ve bilinmeyen kimlik testleri eklendi. İçerik ID'leri, `catalog_version=1`, `manifest`, stacking, crafting, Stage6 ve mevcut kayıtlar değiştirilmedi.
+- **Kanıt:** GitHub commit/dosya geri okuması ve JSON biçim doğrulaması. **Açık:** Godot 4.6 native smoke + build-time binary catalog yeniden derlemesi + PCK/Android. PNG'ler üretilip import edilince export allowlist'e ayrıca eklenmelidir. Yeni item türleri/tarifler henüz eklenmedi; bu çalışma mevcut ilk dört item'in görsel hazırlanmasıdır.
+- Kanonik Beyin görev kaydı bu adımda oluşturulmadı/güncellenmedi; mevcut Godot kaydı için yeni task yolu onayı zorunluluğu korunur.
+
 ### 2026-11-04 — [GODOT-ITEMS] main kaynaklı izole item API bağlantısı
 - **Dal:** `feature/godot-items-20261104`; köken `main` SHA `eff29ae8ad0997dfc0982ca3ae20ddefc0f58ba0`. Main ve diğer deney dalları değiştirilmedi.
 - `scripts/domain_inventory.gd`: geçerli v1 `def_id/count` stack'lerinin slotlar arası atomik taşıma, bölme ve birleştirilmesi; geçersiz slot/miktar, uyumsuz tür ve dolu stack işlemleri veri değiştirmeden reddedilir. Instance metadata henüz desteklenmediği için varmış gibi kaydedilmez.
