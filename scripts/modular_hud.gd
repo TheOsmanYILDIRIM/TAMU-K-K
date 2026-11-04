@@ -14,6 +14,13 @@ var joystick_origin := Vector2.ZERO
 var joystick_span := 152.0
 var alert: Label
 var minimap: Control
+# Each occupied hotbar slot gets one randomly selected, persistent glow variant.
+# No per-frame texture allocations or save-format changes.
+var item_icon_nodes: Array[TextureRect] = []
+var item_glow_nodes: Array[TextureRect] = []
+var item_slot_ids: Array[String] = []
+var item_glow_variants: Array[int] = []
+var item_glow_textures: Array[Texture2D] = []
 func _tex(name: String) -> Texture2D:
     var path := ART + name + ".png"
     if ResourceLoader.exists(path):
@@ -127,6 +134,31 @@ func setup(game: Node) -> bool:
         hit.pressed.connect(Callable(self,"_slot").bind(index))
         root.add_child(hit)
         controls["hotbar%d" % index] = hit
+    # Item images and their soft gold backlights occupy the existing 8 hotbar
+    # slots. Empty slots remain visually unchanged. Inputs stay on top.
+    for variant in range(1, 5):
+        var path := "res://assets/items/glow/gold_%02d.png" % variant
+        var texture: Texture2D = load(path) if ResourceLoader.exists(path, "Texture2D") else null
+        item_glow_textures.append(texture)
+    for index in range(8):
+        var glow := TextureRect.new()
+        glow.name = "ItemGlow%d" % index
+        glow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+        glow.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+        glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+        glow.visible = false
+        root.add_child(glow)
+        item_glow_nodes.append(glow)
+        var icon := TextureRect.new()
+        icon.name = "ItemIcon%d" % index
+        icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+        icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+        icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+        icon.visible = false
+        root.add_child(icon)
+        item_icon_nodes.append(icon)
+        item_slot_ids.append("")
+        item_glow_variants.append(-1)
     # Selected frame must render ABOVE every empty slot.
     if sprites.has("selected_slot"):
         root.move_child(sprites["selected_slot"],root.get_child_count()-1)
@@ -184,6 +216,13 @@ func _layout() -> void:
         var x := first_x+slot_w*float(i)
         _put("empty_slot%d"%i,Vector2(x,bottom+bar_height*0.07),Vector2(slot_w,bar_height*0.86))
         _put("hotbar%d"%i,Vector2(x,bottom+bar_height*0.07),Vector2(slot_w,bar_height*0.86))
+        if i < item_icon_nodes.size():
+            var icon_origin := Vector2(x+slot_w*0.06,bottom+bar_height*0.13)
+            var icon_size := Vector2(slot_w*0.88,bar_height*0.72)
+            item_glow_nodes[i].position = icon_origin
+            item_glow_nodes[i].size = icon_size
+            item_icon_nodes[i].position = icon_origin
+            item_icon_nodes[i].size = icon_size
     _put("selected_slot",Vector2(first_x+slot_w*float(selected_index),bottom+bar_height*0.04),Vector2(slot_w,bar_height*0.93))
     var stick := clampf(v.x*0.30,134.0,190.0)
     joystick_origin = Vector2(margin,v.y-bar_height-stick-34.0)
@@ -202,6 +241,28 @@ func _layout() -> void:
     _put("sprint",Vector2(right-circle,v.y-bar_height-circle-22.0),Vector2(circle,circle))
     alert.position = Vector2(margin,bottom-25.0)
     alert.size = Vector2(v.x-margin*2.0,24.0)
+func _refresh_item_hotbar() -> void:
+    if host == null or item_icon_nodes.size() != 8:
+        return
+    var session: Variant = host.get("gameplay")
+    if session == null:
+        return
+    var current_slots: Array = session.slots
+    for i in range(8):
+        var entry: Variant = current_slots[i] if i < current_slots.size() else null
+        var id := str(entry.get("def_id", "")) if entry is Dictionary else ""
+        if item_slot_ids[i] != id:
+            item_slot_ids[i] = id
+            # Randomized once per occupied slot/identity, never every frame.
+            item_glow_variants[i] = randi_range(0, 3) if not id.is_empty() else -1
+            var icon: Texture2D = session.item_texture(id) if not id.is_empty() else null
+            item_icon_nodes[i].texture = icon
+            item_icon_nodes[i].visible = icon != null
+            var variant_index: int = item_glow_variants[i]
+            var glow: Texture2D = item_glow_textures[variant_index] if variant_index >= 0 else null
+            item_glow_nodes[i].texture = glow
+            item_glow_nodes[i].visible = icon != null and glow != null
+
 func _process(_dt: float) -> void:
     if host == null or not sprites.has("joystick_thumb"):
         return
@@ -216,6 +277,7 @@ func _process(_dt: float) -> void:
             (controls[key] as Control).visible = not panel_open
     minimap.visible = not panel_open
     minimap.call("set_world",host.get("actor_world"),host.get("available_chunks"))
+    _refresh_item_hotbar()
     var direction: Vector2 = host.get("joystick_vector")
     var thumb: TextureRect = sprites["joystick_thumb"]
     var dimension := joystick_span*0.34
