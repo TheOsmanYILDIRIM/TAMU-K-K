@@ -27,6 +27,9 @@ jobs:
           unzip -q /tmp/godot-fx.zip -d /tmp
           chmod +x /tmp/Godot_v4.6-stable_linux.x86_64
           sudo install /tmp/Godot_v4.6-stable_linux.x86_64 /usr/local/bin/godot
+          # Native MobNavigation must parse independently, not only as a dependency.
+          godot --headless --path . --check-only --script res://scripts/mob_navigation.gd 2>&1 | tee /tmp/tamu-mob-native-parse.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:' /tmp/tamu-mob-native-parse.log; then exit 1; fi
           timeout --kill-after=3s 45s godot --headless --path . --script res://scripts/fx_contract_ci.gd 2>&1 | tee fx-contract.log
           grep -q 'TAMU_FX_CONTRACT_OK voices=8' fx-contract.log
           grep -q TAMU_SHADOW_ALPHA_CONTOUR_OK fx-contract.log
