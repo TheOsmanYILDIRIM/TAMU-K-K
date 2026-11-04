@@ -648,8 +648,8 @@ func _input(event: InputEvent) -> void:
         get_viewport().set_input_as_handled()
 
 func _make_avatar() -> void:
-    # One production character: 23-bone weighted side-profile. No legacy Rigby
-    # nodes, hidden six-sprite renderer, duplicate animation loop or CI-only art.
+    # One source-faithful character: 23 authored FK bones, 6 weighted layers.
+    # No legacy sprites, Skeleton2D, extra IK or procedural body rotation.
     avatar = Node2D.new()
     avatar.name = "OsmanProfile"
     avatar.z_index = 0
@@ -667,7 +667,7 @@ func _make_avatar() -> void:
         get_tree().quit(75)
         return
     print("TAMU_PROFILE_VIEW_SCALE_OK world_height=72")
-    print("TAMU_PROFILE_GAMEPLAY_RIG_ACTIVE bones=23 parts=6")
+    print("TAMU_PROFILE_GAMEPLAY_RIG_ACTIVE bones=23 parts=6 source_fk=true no_ik=true")
     print("TAMU_PROFILE_ONLY_VISIBLE_OK legacy_sprites=0")
     profile_contact_shadow = Polygon2D.new()
     profile_contact_shadow.name = "ProfileGroundContact"
@@ -1343,14 +1343,8 @@ func _process(delta: float) -> void:
             # no new front/back art. A blocked player keeps their last side.
             profile_facing_sign = WorldProjection.profile_facing_sign(actor_world - position_before, profile_facing_sign)
         var moved_distance: float = (actor_world - position_before).length()
-        if profile_rig != null:
-            var screen_step: Vector2 = WorldProjection.to_screen(actor_world - position_before)
-            profile_rig.set_ground_speed(screen_step.length() / maxf(delta, 0.001))
-            profile_rig.apply_world_step(screen_step)
         _set_actor_clip(next_direction, "walk" if moved_distance > 0.01 else "idle")
     else:
-        if profile_rig != null:
-            profile_rig.set_ground_speed(0.0)
         _set_actor_clip(actor_direction, "idle")
     _update_avatar()
     if pixellight_world_light != null:
