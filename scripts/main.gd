@@ -362,12 +362,14 @@ func _collect_ground_loot(loot_id: String) -> bool:
         return false
     var node: Node2D = ground_loot_sprites[loot_id]
     ground_loot_sprites.erase(loot_id)
+    _sync_ground_loot_visuals()
     audio_cues.cue("harvest_complete")
     _harvest_feedback("ALINDI: " + str(result.get("item_id", "")) + " x" + str(result.get("amount", 0)))
     # Animated on successful pickup only; never creates per-frame tweens.
     node.z_index = 9
     var tween := create_tween().set_parallel(true)
-    tween.tween_property(node, "position", node.position + Vector2(0, -34), 0.22)
+    tween.tween_property(node, "position", avatar.position + Vector2(0, -36), 0.22)
+    tween.tween_property(node, "scale", Vector2.ONE * 0.45, 0.22)
     tween.tween_property(node, "modulate:a", 0.0, 0.22)
     tween.chain().tween_callback(node.queue_free)
     print("TAMU_GROUND_PICKUP_OK id=", loot_id, " item=", result.get("item_id", ""))
