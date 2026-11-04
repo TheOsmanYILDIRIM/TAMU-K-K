@@ -6,7 +6,9 @@ const ROOT := "res://assets/profile_character/"
 # Original source spans about 1,060 px from head to the lowest planted toe.
 # 0.067 produces ~71 px at game zoom, matching the authored 72 px player.
 const SOURCE_SCALE := 0.067
-const SOURCE_GROUND_Y := 665.0
+# Measured from actual Godot 4.6 Bone2D toe transforms at idle, not
+# the unconverted editor coordinates (665). Keep world foot pivot in sync.
+const SOURCE_GROUND_Y := 686.0
 const SKIN_HZ := 30.0
 const FOOT_GROUND_TOLERANCE := 12.0
 const MAX_GROUND_CORRECTION := 50.0
@@ -233,7 +235,7 @@ func set_clip(action: String) -> void:
         traveled_screen = Vector2.ZERO
         player.play(next, 0.0)
 
-# The animation source already has planted toes near y=665, but its
+# The converted Godot skeleton has planted toes near y=686, but its
 # 1.632-second walk loop was independent of actual on-screen movement (~70 px/s).
 # Drive stride rate from projected travel rather than letting boots skate.
 func set_ground_speed(screen_pixels_per_second: float) -> void:
@@ -294,7 +296,7 @@ func _correct_foot_grounding() -> void:
         grounding_error = absf(last_contact_y - SOURCE_GROUND_Y)
         foot_contact_count += 1
         return
-    # A walk source has an alternating planted toe near y=665.
+    # A converted walk skeleton has an alternating planted toe near y=686.
     # In a run both feet may be airborne: do not force a false foot plant.
     var next_foot := -1
     if absf(left.y - SOURCE_GROUND_Y) <= CONTACT_BAND:
