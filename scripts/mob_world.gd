@@ -98,14 +98,16 @@ func _bind_host() -> void:
         set_process(false)
         return
     limbo_requested = OS.get_environment("TAMU_LIMBOAI") == "1" or bool(ProjectSettings.get_setting("tamu/ai/use_limboai", false))
+    if limbo_requested or OS.has_feature("mobile"):
+        _install_mob_diagnostics()
     if limbo_requested and not LimboBridge.available():
+        if diagnostic_label != null:
+            diagnostic_label.text = "MOB 0/0 | LimboAI MISSING (Android native)"
         push_error("TAMU_LIMBOAI_NATIVE_UNAVAILABLE: required GDExtension is absent")
         set_process(false)
         return
     limbo_enabled = limbo_requested
     bound = true
-    if limbo_requested or OS.has_feature("mobile"):
-        _install_mob_diagnostics()
     var count := 0
     for i in range(int(SPECIES.spawn_count)):
         var at: Vector2 = _find_spawn(player_last, i)
@@ -768,7 +770,7 @@ func _update_mob_diagnostics(force: bool = false) -> void:
         diagnostic_elapsed = 0.0
     if not mobile_visibility_checked and OS.get_environment("TAMU_VISUAL_CI") == "1" \
             and OS.get_environment("TAMU_VISUAL_CASE") == "mobs" \
-            and VisualEnvironment.mobile_fast_mode() and Engine.get_process_frames() >= 90:
+            and VisualEnvironment.mobile_fast_mode() and Engine.get_process_frames() >= 30:
         mobile_visibility_checked = true
         if visible_count <= 0 or not limbo_enabled:
             push_error("TAMU_MOB_MOBILE_VISIBLE_FAILED total=%d visible=%d limbo=%s" %
