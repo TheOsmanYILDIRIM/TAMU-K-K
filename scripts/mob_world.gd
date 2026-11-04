@@ -527,13 +527,8 @@ func _think() -> void:
     if index == 0:
         _rebuild_spatial()
         noise = noise.filter(func(v: Dictionary) -> bool: return float(v["until"]) > elapsed)
-        if not limbo_enabled:
-            var scanned: Dictionary = agents[resource_scan_cursor % agents.size()]
-            resource_scan_cursor += 1
-            if scanned["brain"].health > 0.0 and elapsed >= float(scanned["scan_at"]):
-                var scan_started := Time.get_ticks_usec()
-                _scan_resources(scanned)
-                last_scan_usec = Time.get_ticks_usec() - scan_started
+        # Forage scans are always incremental. The previous MobBrain fallback
+        # performed 28 complete obstacle/water probes in one decision frame.
     var a: Dictionary = agents[index]
     think_cursor += 1
     limbo_current_agent = a
@@ -621,18 +616,18 @@ func _prepare_route(a: Dictionary) -> void:
     nav.begin(a["position"], target, float(a["definition"].interaction_reach),
         float(a["definition"].radius), Callable(self, "_obstacles"), Callable(self, "_terrain"), host.get("world_bounds"))
 
-func _advance_navigation() -> void:
+func _advance_navigation(budget_us: int = NAV_BUDGET_US) -> void:
     if agents.is_empty():
         return
     var started := Time.get_ticks_usec()
     var visited := 0
-    while visited < agents.size() and Time.get_ticks_usec() - started < NAV_BUDGET_US:
+    while visited < agents.size() and Time.get_ticks_usec() - started < budget_us:
         var a: Dictionary = agents[nav_cursor % agents.size()]
         nav_cursor += 1
         visited += 1
         var nav = a["navigator"]
         if nav.state == "searching":
-            nav.advance(4, maxi(50, NAV_BUDGET_US - (Time.get_ticks_usec() - started)))
+            nav.advance(4, maxi(50, budget_us - (Time.get_ticks_usec() - started)))
         if nav.state == "ready" and not a["route_ready"]:
             a["route"] = nav.path.duplicate()
             a["route_ready"] = true
@@ -844,12 +839,14 @@ func _process(delta: float) -> void:
     if accumulator >= decision_interval:
         accumulator = minf(accumulator - decision_interval, decision_interval)
         _think()
-    if limbo_enabled:
-        var scan_started := Time.get_ticks_usec()
-        _scan_resources_budgeted(3)
-        last_scan_usec = Time.get_ticks_usec() - scan_started
+    # Native and fallback AI share the same bounded R2 sensing workload.
+    # Each sample may query terrain, collision, and eight water directions;
+    # one sample per Android frame avoids stacking them on the GPU frame.
+    var scan_started := Time.get_ticks_usec()
+    _scan_resources_budgeted(1 if mobile_fast else 3)
+    last_scan_usec = Time.get_ticks_usec() - scan_started
     var nav_started := Time.get_ticks_usec()
-    _advance_navigation()
+    _advance_navigation(350 if mobile_fast else NAV_BUDGET_US)
     last_navigation_usec = Time.get_ticks_usec() - nav_started
     var movement_started := Time.get_ticks_usec()
     # Spread expensive swept collision and visual ticks across frames on mobile.
