@@ -3,7 +3,6 @@ const WorldProjection = preload("res://scripts/world_projection.gd")
 const WorldSource = preload("res://scripts/world_source.gd")
 const WorldStream = preload("res://scripts/world_stream.gd")
 const MergedTerrain = preload("res://scripts/merged_terrain.gd")
-const RigbySkinned = preload("res://scripts/rigby_skinned.gd")
 const ProfileRig = preload("res://scripts/profile_rig.gd")
 const GameplaySession = preload("res://scripts/gameplay_session.gd")
 const R2Authority = preload("res://scripts/r2_authority.gd")
@@ -19,7 +18,6 @@ const MODULAR_HUD = preload("res://scripts/modular_hud.gd")
 const ShadowVolume = preload("res://scripts/shadow_volume.gd")
 const PixelLightWorld = preload("res://scripts/pixellight_world.gd")
 const VisualEnvironment = preload("res://scripts/visual_environment.gd")
-var rigby_skin: Dictionary = {}
 var merged_mode: bool = OS.get_environment("TAMU_TERRAIN_MODE") != "legacy"
 # Each independently authored region is a separate logical chunk, not one global world.
 var region_chunks: Dictionary = {}
@@ -95,8 +93,6 @@ const ACTOR_COLLISION_RADIUS := 9.0
 const LOVE_CAMERA_ZOOM := 1.7
 const LOVE_PLAYER_HEIGHT := 72.0
 const LOVE_OBJECT_PIVOT := 124.0 / 128.0
-var avatar_visual_scale := 1.0
-var avatar_scale_initialized := false
 # Original R2 ecology was exported using Iso.project(x,y,height*0.35).
 const R2_HEIGHT_SCREEN_SCALE := 0.35
 var actor_ground_sample_at := Vector2(INF, INF)
@@ -104,18 +100,10 @@ var actor_ground_screen_offset := 0.0
 var avatar: Node2D
 var actor_world := Vector2(64.0, 128.0)
 var actor_speed := 96.0
-var avatar_parts: Dictionary = {}
-var avatar_motion := 0.0
-var actor_facing_back := false
-var rig_directions: Dictionary = {}
-var rig_animations: Dictionary = {}
 # Profile art has only left/right sides. Store that choice independently of
 # legacy Rigby's four authored clip directions.
 var profile_facing_sign := 1.0
 var actor_direction := "SE"
-var actor_action := "idle"
-var active_source_clip := ""
-var native_rig: Skeleton2D
 var profile_rig: Node2D
 var profile_contact_shadow: Polygon2D
 var pixellight_world_light: PointLight2D
@@ -660,187 +648,61 @@ func _input(event: InputEvent) -> void:
         get_viewport().set_input_as_handled()
 
 func _make_avatar() -> void:
-    var source = JSON.parse_string(FileAccess.get_file_as_string("res://assets/osman_rig/rig.json"))
-    var mapping = JSON.parse_string(FileAccess.get_file_as_string("res://assets/osman_rig/directions.json"))
-    if source is not Dictionary or mapping is not Dictionary or not mapping.has("directions"):
-        push_error("Original Rigby source or direction profile missing")
-        get_tree().quit(8)
-        return
-    for clip in source.get("animations", []):
-        rig_animations[str(clip["name"])] = clip
-    rig_directions = mapping["directions"]
-    if rig_animations.size() != 44 or rig_directions.size() != 4:
-        push_error("Original 44-clip / 4-direction Rigby contract mismatch")
-        get_tree().quit(9)
-        return
-    native_rig = load("res://scripts/rigby_fk.gd").new()
-    native_rig.configure(source)
+    # One production character: 23-bone weighted side-profile. No legacy Rigby
+    # nodes, hidden six-sprite renderer, duplicate animation loop or CI-only art.
     avatar = Node2D.new()
-    avatar.name = "OsmanNativeParts"
+    avatar.name = "OsmanProfile"
     avatar.z_index = 0
-    # Player and authored objects share one Godot native Y-sorted layer.
     object_layer.add_child(avatar)
-    avatar.add_child(native_rig)
-    for part in ["leg_L","leg_R","torso","arm_L","arm_R","head"]:
-        var sprite := Sprite2D.new()
-        sprite.name = part
-        sprite.centered = true
-        sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-        avatar.add_child(sprite)
-        avatar_parts[part] = sprite
-    _set_actor_clip("SE", "idle")
+    profile_rig = ProfileRig.new()
+    profile_rig.name = "TAMUProfileWeightedRig"
+    avatar.add_child(profile_rig)
+    if not profile_rig.setup() or not profile_rig.verify_contract():
+        push_error("TAMU_PROFILE_GAMEPLAY_SETUP_FAILED")
+        get_tree().quit(73)
+        return
+    avatar.scale = Vector2.ONE
+    if not profile_rig.visible or absf(profile_rig.scale.y / ProfileRig.SOURCE_SCALE - 1.0) > 0.025:
+        push_error("TAMU_PROFILE_GAMEPLAY_SCALE_FAILED")
+        get_tree().quit(75)
+        return
+    print("TAMU_PROFILE_VIEW_SCALE_OK world_height=72")
+    print("TAMU_PROFILE_GAMEPLAY_RIG_ACTIVE bones=23 parts=6")
+    print("TAMU_PROFILE_ONLY_VISIBLE_OK legacy_sprites=0")
+    profile_contact_shadow = Polygon2D.new()
+    profile_contact_shadow.name = "ProfileGroundContact"
+    var footprint := PackedVector2Array()
+    for i in range(20):
+        var angle := TAU * float(i) / 20.0
+        footprint.append(Vector2(cos(angle) * ACTOR_COLLISION_RADIUS * 1.3,
+            sin(angle) * ACTOR_COLLISION_RADIUS * 0.34))
+    profile_contact_shadow.polygon = footprint
+    profile_contact_shadow.color = Color(0.05, 0.07, 0.06, 0.27)
+    profile_contact_shadow.z_index = -1
+    object_layer.add_child(profile_contact_shadow)
     _update_avatar()
-    _calibrate_avatar_scale()
-    if OS.get_environment("TAMU_VISUAL_CI") == "1":
-        print("TAMU_LOVE_VISUAL_SCALE_OK camera=", $Camera2D.zoom.x,
-            " actor_height=", snappedf(_avatar_visual_height() * avatar_visual_scale, 0.001),
-            " object_foot=124/128")
-    # Keep the old six PNGs as visible renderer until complete Rigby pose parity.
-    if OS.get_environment("TAMU_VISUAL_CI") == "1" or OS.get_environment("TAMU_RIGBY_SKIN_PREVIEW") == "1":
-        rigby_skin = RigbySkinned.build(source, native_rig)
-        if rigby_skin.is_empty():
-            push_error("TAMU_RIGBY_SKIN_BUILD_FAILED")
-            get_tree().quit(21)
-    # Dedicated authored profile: six original PNGs, runtime weighted meshes.
-    # Keep the legacy Rigby source and its visual-parity fixture intact in CI.
-    if OS.get_environment("TAMU_VISUAL_CI") != "1" or OS.get_environment("TAMU_VISUAL_CASE") in ["profile", "combo"]:
-        profile_rig = ProfileRig.new()
-        profile_rig.name = "TAMUProfileWeightedRig"
-        avatar.add_child(profile_rig)
-        if not profile_rig.setup() or not profile_rig.verify_contract():
-            push_error("TAMU_PROFILE_GAMEPLAY_SETUP_FAILED")
-            get_tree().quit(73)
-            return
-        # The avatar parent retains the historical Rigby scale for CI and
-        # object-depth parity. Compensate it exactly once for the authored
-        # 1178px / 72-world-unit profile mesh; otherwise the profile is tiny.
-        if avatar_visual_scale <= 0.0:
-            push_error("TAMU_PROFILE_INVALID_PARENT_SCALE")
-            get_tree().quit(74)
-            return
-        profile_rig.scale /= avatar_visual_scale
-        profile_rig.position /= avatar_visual_scale
-        for legacy_part in avatar_parts.values():
-            legacy_part.visible = false
-        if not profile_rig.visible or absf(profile_rig.scale.y * avatar.scale.y / ProfileRig.SOURCE_SCALE - 1.0) > 0.025:
-            push_error("TAMU_PROFILE_GAMEPLAY_SCALE_FAILED")
-            get_tree().quit(75)
-            return
-        for legacy_part in avatar_parts.values():
-            if legacy_part.visible:
-                push_error("TAMU_PROFILE_LEGACY_SPRITE_STILL_VISIBLE")
-                get_tree().quit(76)
-                return
-        print("TAMU_PROFILE_VIEW_SCALE_OK world_height=72")
-        # Keep old pose source for historical visual tests only.
-        native_rig.visible = false
-        print("TAMU_PROFILE_GAMEPLAY_RIG_ACTIVE bones=23 parts=6")
-        print("TAMU_PROFILE_ONLY_VISIBLE_OK legacy_sprites=0")
-        # Independent world-space footprint: never mirror, rotate or skew with
-        # the side-view character. Keep one contact shadow, not one per PNG.
-        profile_contact_shadow = Polygon2D.new()
-        profile_contact_shadow.name = "ProfileGroundContact"
-        var footprint := PackedVector2Array()
-        for i in range(20):
-            var angle := TAU * float(i) / 20.0
-            footprint.append(Vector2(cos(angle) * ACTOR_COLLISION_RADIUS * 1.3,
-                sin(angle) * ACTOR_COLLISION_RADIUS * 0.34))
-        profile_contact_shadow.polygon = footprint
-        profile_contact_shadow.color = Color(0.05, 0.07, 0.06, 0.27)
-        # The negative local z puts the contact mark under Y-sorted scenery
-        # without pushing the original six sprites into another render layer.
-        profile_contact_shadow.z_index = -1
-        object_layer.add_child(profile_contact_shadow)
-        _update_avatar()
-        print("TAMU_PROFILE_FOOT_CONTACT_READY radius=", ACTOR_COLLISION_RADIUS)
+    print("TAMU_PROFILE_FOOT_CONTACT_READY radius=", ACTOR_COLLISION_RADIUS)
+
 
 func _set_actor_clip(direction: String, action: String) -> void:
-    if not rig_directions.has(direction):
-        return
-    var clips: Dictionary = rig_directions[direction]["animations"]
-    if not clips.has(action):
-        return
-    var source_name: String = clips[action]
-    if not rig_animations.has(source_name):
-        push_error("Missing authored Rigby clip: " + source_name)
-        return
     actor_direction = direction
-    actor_action = action
-    active_source_clip = source_name
-    if native_rig != null and profile_rig == null:
-        native_rig.play_clip(source_name)
     if profile_rig != null:
         profile_rig.set_clip(action)
-    _set_actor_facing(direction == "NW" or direction == "NE")
-    avatar.scale.x = (profile_facing_sign if profile_rig != null else (-1.0 if direction == "SW" or direction == "NE" else 1.0)) * avatar_visual_scale
+    avatar.scale.x = profile_facing_sign
 
-func _set_actor_facing(back: bool) -> void:
-    if actor_facing_back == back and avatar_parts["head"].texture != null:
-        return
-    actor_facing_back = back
-    if profile_rig != null:
-        return  # No legacy texture swaps for code-driven profile animation.
-    var prefix := "back" if back else "front"
-    for part in avatar_parts:
-        avatar_parts[part].texture = load("res://assets/osman_rig/images/%s_%s.png" % [prefix,part])
-    if avatar_scale_initialized:
-        _calibrate_avatar_scale()
-
-func _avatar_visual_height() -> float:
-    var top := INF
-    var bottom := -INF
-    for part in avatar_parts.values():
-        var visual: Sprite2D = part
-        if visual.texture == null:
-            return 0.0
-        var rect: Rect2 = visual.get_rect()
-        var a := visual.position.y + rect.position.y * visual.scale.y
-        var b := a + rect.size.y * visual.scale.y
-        top = minf(top, minf(a, b))
-        bottom = maxf(bottom, maxf(a, b))
-    return bottom - top if is_finite(top) and is_finite(bottom) else 0.0
-
-func _calibrate_avatar_scale() -> void:
-    # Only on asset/facing changes, never once per frame. The six-part demo
-    # remains separate from the deferred native Rigby migration.
-    var raw_height := _avatar_visual_height()
-    if raw_height < 1.0:
-        push_error("TAMU_AVATAR_VISUAL_HEIGHT_INVALID")
-        return
-    avatar_visual_scale = LOVE_PLAYER_HEIGHT / raw_height
-    avatar.scale = Vector2((-1.0 if actor_direction == "SW" or actor_direction == "NE" else 1.0) * avatar_visual_scale, avatar_visual_scale)
-    avatar_scale_initialized = true
 
 func _update_avatar() -> void:
-    # Match the authored object's terrain-height offset without re-sampling when idle.
     if authority != null and actor_world.distance_squared_to(actor_ground_sample_at) > 0.000001:
         var ground_height: float = float(authority.terrain.height_at(actor_world.x, actor_world.y))
         if is_finite(ground_height):
             actor_ground_screen_offset = ground_height * R2_HEIGHT_SCREEN_SCALE
             actor_ground_sample_at = actor_world
     var ground_anchor := WorldProjection.to_screen(actor_world)
+    if profile_contact_shadow != null:
+        profile_contact_shadow.position = ground_anchor - Vector2(0.0, actor_ground_screen_offset)
+    avatar.position = ground_anchor
     if profile_rig != null:
-        if profile_contact_shadow != null:
-            # Same terrain-corrected foot position as the painted profile;
-            # never offset the shadow using the sprite's head/center.
-            profile_contact_shadow.position = ground_anchor - Vector2(0.0, actor_ground_screen_offset)
-        # Y-sort the shared avatar/objects layer using the actor's physical
-        # ground foot anchor; only the art is lifted for terrain height.
-        # Never distort or rotate the side-view PNG to fake a rear view.
-        avatar.position = ground_anchor
-        profile_rig.position.y = (-689.0 * ProfileRig.SOURCE_SCALE - actor_ground_screen_offset) / avatar_visual_scale
-    else:
-        # Historical four-direction visual parity fixture remains unchanged.
-        avatar.position = ground_anchor - Vector2(0.0, actor_ground_screen_offset)
-    avatar_parts["leg_L"].position = Vector2(-7, -10)
-    avatar_parts["leg_R"].position = Vector2(7, -10)
-    avatar_parts["torso"].position = Vector2(0, -33)
-    avatar_parts["head"].position = Vector2(0, -66)
-    avatar_parts["arm_L"].position = Vector2(-16, -35)
-    avatar_parts["arm_R"].position = Vector2(16, -35)
-    for part in avatar_parts:
-        avatar_parts[part].scale = Vector2(0.28,0.28)
-
+        profile_rig.position.y = -689.0 * ProfileRig.SOURCE_SCALE - actor_ground_screen_offset
 
 # A drawable can straddle an authored source cell; cull by its actual
 # projected bounds and keep a conservative shadow-margin against popping.
@@ -1100,19 +962,6 @@ func _ready() -> void:
         _refresh_streaming_requests()
     _make_avatar()
     _sync_building_visuals()
-    if OS.get_environment("TAMU_VISUAL_CI") == "1":
-        if native_rig == null or not native_rig.verify_curve_reference("res://chunks/rigby_curve_reference.txt"):
-            push_error("TAMU_RIGBY_CURVE_GATE_FAILED")
-            get_tree().quit(20)
-            return
-        native_rig.advance(0.0)
-        if not RigbySkinned.update_pose(rigby_skin, native_rig, native_rig.bones) or not RigbySkinned.verify(rigby_skin):
-            push_error("TAMU_RIGBY_WEIGHTED_MESH_GATE_FAILED")
-            get_tree().quit(22)
-            return
-        print("TAMU_RIGBY_WEIGHTED_MESH_OK meshes=", rigby_skin["records"].size(),
-            " vertices=", rigby_skin["vertices"], " triangles=", rigby_skin["triangles"],
-            " influences=", rigby_skin["influences"])
     perf_hud = load("res://scripts/performance_hud.gd").new()
     add_child(perf_hud)
     perf_hud.layer = 118 # HUD _ready sets 100; override after attachment.
@@ -1277,9 +1126,9 @@ func _enforce_resident_budget() -> void:
 func _verify_visual_order() -> bool:
     if not object_layer.y_sort_enabled or object_layer.z_index <= 2:
         return false
-    if avatar.get_parent() != object_layer or not avatar_scale_initialized:
+    if avatar.get_parent() != object_layer or profile_rig == null:
         return false
-    if absf(_avatar_visual_height() * avatar_visual_scale - LOVE_PLAYER_HEIGHT) > 0.5:
+    if not profile_rig.visible and perf_isolation_mode != "player_rig_off":
         return false
     var expected_zoom := 0.82 if OS.get_environment("TAMU_VISUAL_CASE") == "zoom" else (2.0 if OS.get_environment("TAMU_VISUAL_CASE") == "grounding" else LOVE_CAMERA_ZOOM)
     if not is_equal_approx($Camera2D.zoom.x, expected_zoom):
@@ -1295,7 +1144,7 @@ func _verify_visual_order() -> bool:
                 return false
             if avatar.position.distance_to(projected_foot) > 0.01:
                 return false
-            if absf(profile_rig.position.y * avatar_visual_scale + 689.0 * ProfileRig.SOURCE_SCALE + actor_ground_screen_offset) > 0.01:
+            if absf(profile_rig.position.y + 689.0 * ProfileRig.SOURCE_SCALE + actor_ground_screen_offset) > 0.01:
                 return false
         elif absf(avatar.position.y - (projected_foot.y - actor_ground_screen_offset)) > 0.01:
             return false
@@ -1494,21 +1343,12 @@ func _process(delta: float) -> void:
             # no new front/back art. A blocked player keeps their last side.
             profile_facing_sign = WorldProjection.profile_facing_sign(actor_world - position_before, profile_facing_sign)
         _set_actor_clip(next_direction, "walk")
-        avatar_motion += delta * 10.0
-        avatar_parts["leg_L"].rotation = sin(avatar_motion)*0.16
-        avatar_parts["leg_R"].rotation = -sin(avatar_motion)*0.16
     else:
         _set_actor_clip(actor_direction, "idle")
-        avatar_parts["leg_L"].rotation = 0.0
-        avatar_parts["leg_R"].rotation = 0.0
     _update_avatar()
     if pixellight_world_light != null:
         pixellight_world_light.position = (profile_contact_shadow.position if profile_contact_shadow != null else avatar.position) + Vector2(0.0, -45.0)
     _tick_gameplay(delta)
-    # The legacy 40-bone reference must not update alongside the active
-    # 23-bone player in production; preserve it in dedicated CI fixtures.
-    if native_rig != null and (profile_rig == null or OS.get_environment("TAMU_VISUAL_CI") == "1"):
-        native_rig.advance(visual_delta)
     if profile_rig != null and perf_isolation_mode != "player_rig_off":
         profile_rig.advance(visual_delta)
     var rig_end := Time.get_ticks_usec()
@@ -1747,11 +1587,11 @@ func _process(delta: float) -> void:
             " source_vertices=",vertices)
         print("TAMU_VISUAL_VARIANT mode=", "merged" if merged_mode else "legacy",
             " case=", OS.get_environment("TAMU_VISUAL_CASE"))
-        if error != OK or loaded < 16 or total_cached < 100 or vertices < 1000 or object_count < 10 or avatar_parts.size() != 6 or rig_animations.size() != 44 or active_source_clip == "":
+        if error != OK or loaded < 16 or total_cached < 100 or vertices < 1000 or object_count < 10 or profile_rig == null or not profile_rig.configured:
             push_error("TAMU_VISUAL_GATE_FAILED " + str(error))
             get_tree().quit(3)
         else:
-            print("TAMU_VISUAL_CAPTURE_OK chunks=", loaded, " vertices=", vertices, " objects=", object_count, " avatar_parts=", avatar_parts.size())
+            print("TAMU_VISUAL_CAPTURE_OK chunks=", loaded, " vertices=", vertices, " objects=", object_count, " profile_parts=", profile_rig.source.get("order", []).size())
             if harvestables.is_empty():
                 push_error("TAMU_HARVEST_TEST_EMPTY")
                 get_tree().quit(12)
