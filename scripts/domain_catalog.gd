@@ -341,6 +341,36 @@ func item(id: String) -> Dictionary:
     var def: Variant = definitions.get(id, {})
     return def if def is Dictionary else {}
 
+# Texture lookup is opt-in. Missing PNGs preserve the authored primitive
+# preview until actual art is imported. Never load scripts from item metadata.
+func item_visual(id: String) -> Dictionary:
+    var def: Dictionary = item(id)
+    if def.is_empty():
+        return {}
+    var visual: Variant = def.get("visual", {})
+    if not visual is Dictionary:
+        return {}
+    var result: Dictionary = visual.duplicate(true)
+    var path := str(result.get("texture_path", ""))
+    var parts := id.split(":")
+    if parts.size() != 2 or path == "":
+        result["texture_ready"] = false
+        return result
+    # ResourceLoader only reads trusted, shipped art. User mods are data-only.
+    var expected := "res://assets/items/%s/%s.png" % [parts[0], parts[1]]
+    if path != expected:
+        result["texture_ready"] = false
+        return result
+    result["texture_ready"] = ResourceLoader.exists(path, "Texture2D")
+    return result
+
+func item_texture(id: String) -> Texture2D:
+    var visual := item_visual(id)
+    if not bool(visual.get("texture_ready", false)):
+        return null
+    var texture: Resource = ResourceLoader.load(str(visual["texture_path"]), "Texture2D")
+    return texture as Texture2D
+
 func recipe(id: String) -> Dictionary:
     var def: Variant = recipes.get(id, {})
     return def if def is Dictionary else {}
