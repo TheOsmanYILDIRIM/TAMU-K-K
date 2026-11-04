@@ -5,6 +5,7 @@ signal mob_died(instance_id: String, species_id: String)
 signal player_hit_requested(amount: float, from_world: Vector2, command_id: String)
 signal mob_event(instance_id: String, event: String)
 const Brain = preload("res://scripts/mob_brain.gd")
+const LimboBridge = preload("res://scripts/mob_limboai_bridge.gd")
 const Navigation = preload("res://scripts/mob_navigation.gd")
 const Visual = preload("res://scripts/mob_visual.gd")
 const WorldProjection = preload("res://scripts/world_projection.gd")
@@ -46,6 +47,10 @@ var last_think_usec := 0
 var last_scan_usec := 0
 var last_navigation_usec := 0
 var last_movement_usec := 0
+var limbo_requested := false
+var limbo_enabled := false
+var limbo_current_agent: Dictionary = {}
+var limbo_current_index := -1
 
 func set_isolation_mode(mode: String) -> void:
     isolation_mode = mode
@@ -88,6 +93,12 @@ func _bind_host() -> void:
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and OS.get_environment("TAMU_VISUAL_CASE") not in ["mobs", "combo"]:
         set_process(false)
         return
+    limbo_requested = OS.get_environment("TAMU_LIMBOAI") == "1" or bool(ProjectSettings.get_setting("tamu/ai/use_limboai", false))
+    if limbo_requested and not LimboBridge.available():
+        push_error("TAMU_LIMBOAI_NATIVE_UNAVAILABLE: required GDExtension is absent")
+        set_process(false)
+        return
+    limbo_enabled = limbo_requested
     bound = true
     var count := 0
     for i in range(int(SPECIES.spawn_count)):
@@ -96,6 +107,15 @@ func _bind_host() -> void:
             count += 1
     if count == 0:
         push_warning("TAMU_MOB_NO_VALID_SPAWN")
+    if limbo_enabled:
+        for agent in agents:
+            var player: Node = LimboBridge.install(self, str(agent["id"]))
+            if player == null:
+                push_error("TAMU_LIMBOAI_BT_SETUP_FAILED id=" + str(agent["id"]))
+                set_process(false)
+                return
+            agent["limbo_player"] = player
+        print("TAMU_LIMBOAI_ACTIVE players=", agents.size(), " mode=manual native=true")
     print("TAMU_MOB_READY species=core:yaprakkulak count=", count, " session_only=true")
     if not player_damage_receiver.is_valid():
         print("TAMU_MOB_PLAYER_DAMAGE_PORT_UNBOUND: no fabricated player health")
@@ -392,24 +412,52 @@ func _think() -> void:
         return
     var started := Time.get_ticks_usec()
     var index: int = think_cursor % agents.size()
-    # Godot-recommended agent update grouping: one 5 Hz decision per agent,
-    # spread across frames instead of all six senses/path requests in one spike.
     if index == 0:
         _rebuild_spatial()
         noise = noise.filter(func(v: Dictionary) -> bool: return float(v["until"]) > elapsed)
-        var scanned: Dictionary = agents[resource_scan_cursor % agents.size()]
-        resource_scan_cursor += 1
-        if scanned["brain"].health > 0.0 and elapsed >= float(scanned["scan_at"]):
-            var scan_started := Time.get_ticks_usec()
-            _scan_resources(scanned)
-            last_scan_usec = Time.get_ticks_usec() - scan_started
+        if not limbo_enabled:
+            var scanned: Dictionary = agents[resource_scan_cursor % agents.size()]
+            resource_scan_cursor += 1
+            if scanned["brain"].health > 0.0 and elapsed >= float(scanned["scan_at"]):
+                var scan_started := Time.get_ticks_usec()
+                _scan_resources(scanned)
+                last_scan_usec = Time.get_ticks_usec() - scan_started
     var a: Dictionary = agents[index]
     think_cursor += 1
-    var senses := _senses(a) if a["brain"].health > 0.0 else {"position": a["position"]}
-    # Original data-driven policies, combat and deterministic 0.2s state ticks
-    # remain authoritative; the per-frame scheduler is now native Godot-style.
-    var intent: Dictionary = a["brain"].tick(FIXED_STEP, senses)
-    a["intent"] = intent
+    limbo_current_agent = a
+    limbo_current_index = index
+    if limbo_enabled:
+        var player: Node = a.get("limbo_player", null)
+        if player == null:
+            push_error("TAMU_LIMBOAI_BT_RUNTIME_MISSING")
+            set_process(false)
+            return
+        player.call("update", FIXED_STEP)
+    else:
+        _limbo_sense_step(FIXED_STEP)
+        _limbo_decide_step(FIXED_STEP)
+        _limbo_apply_step(FIXED_STEP)
+    limbo_current_agent = {}
+    limbo_current_index = -1
+    last_think_usec = Time.get_ticks_usec() - started
+    max_frame_ai_usec = maxi(max_frame_ai_usec, last_think_usec)
+
+# Three real LimboAI BTCallMethod leaves in a C++ BTSequence.
+# Deterministic MobBrain policy, event IDs and animation are unchanged.
+func _limbo_sense_step(_delta: float) -> bool:
+    var a: Dictionary = limbo_current_agent
+    a["limbo_senses"] = _senses(a) if a["brain"].health > 0.0 else {"position": a["position"]}
+    return true
+
+func _limbo_decide_step(delta: float) -> bool:
+    var a: Dictionary = limbo_current_agent
+    a["intent"] = a["brain"].tick(delta, a["limbo_senses"])
+    return true
+
+func _limbo_apply_step(_delta: float) -> bool:
+    var a: Dictionary = limbo_current_agent
+    var index: int = limbo_current_index
+    var intent: Dictionary = a["intent"]
     if intent["state"] != a["last_state"]:
         mob_event.emit(a["id"], intent["state"])
         a["last_state"] = intent["state"]
@@ -439,8 +487,7 @@ func _think() -> void:
     var requested_clip := str(intent["clip"])
     var mapped_clip := str(a["definition"].animation_map.get(requested_clip, requested_clip))
     a["visual"].play(mapped_clip)
-    last_think_usec = Time.get_ticks_usec() - started
-    max_frame_ai_usec = maxi(max_frame_ai_usec, last_think_usec)
+    return true
 
 func _prepare_route(a: Dictionary) -> void:
     var intent: Dictionary = a["intent"]
