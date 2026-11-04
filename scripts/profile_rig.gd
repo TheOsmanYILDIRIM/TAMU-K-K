@@ -172,7 +172,10 @@ func setup() -> bool:
         for bone in bone_nodes:
             var track := animation.add_track(Animation.TYPE_VALUE)
             animation.track_set_path(track, NodePath(str(get_path_to(bone)) + ":rotation"))
-            animation.track_set_interpolation_type(track, Animation.INTERPOLATION_CUBIC if str(clip.get("interpolation", "")) == "smooth" else Animation.INTERPOLATION_LINEAR)
+            # The source already contains dense sampled motion (26-42 ms/pose).
+            # Cubic bone interpolation invents intermediate rotations and can
+            # overshoot at knee, hip and loop seams; honor the authored samples.
+            animation.track_set_interpolation_type(track, Animation.INTERPOLATION_LINEAR)
             rotation_tracks.append(track)
         var last_angles := PackedFloat32Array()
         last_angles.resize(bones.size())
