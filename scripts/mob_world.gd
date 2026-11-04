@@ -64,7 +64,11 @@ var last_movement_usec := 0
 var limbo_requested := false
 var limbo_enabled := false
 var lite_enabled := false
-var lite_due := 0.0
+# Cache static terrain and height by cell for the shared mobile scheduler.
+const LITE_TERRAIN_CELL := 16.0
+const LITE_HEIGHT_CELL := 32.0
+var lite_walkable_cells: Dictionary = {}
+var lite_height_cells: Dictionary = {}
 var limbo_current_agent: Dictionary = {}
 var limbo_current_index := -1
 var diagnostic_layer: CanvasLayer
@@ -124,6 +128,8 @@ func _bind_host() -> void:
     resource_food.clear()
     resource_water.clear()
     resource_index_ready = resource_chunks.is_empty()
+    lite_walkable_cells.clear()
+    lite_height_cells.clear()
     # Preserve existing visual parity fixtures, but run mob-enabled case explicitly.
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and OS.get_environment("TAMU_VISUAL_CASE") not in ["mobs", "combo"]:
         set_process(false)
@@ -621,10 +627,17 @@ func _lite_think() -> void:
 # Cheap direct steering on Android. No grid generation or A*.
 # Check only the next tiny step on the canonical R2; if blocked choose a
 # short left/right detour and try again later, never teleport through solids.
-func _lite_safe_step(at: Vector2, direction: Vector2, radius: float) -> bool:
+func _lite_safe_step(at: Vector2, _direction: Vector2, radius: float) -> bool:
     if not at.is_finite() or not host.get("world_bounds").has_point(at):
         return false
-    if not bool(_terrain(at.x, at.y).get("walkable", false)):
+    var cell := Vector2i(floori(at.x / LITE_TERRAIN_CELL), floori(at.y / LITE_TERRAIN_CELL))
+    if not lite_walkable_cells.has(cell):
+        # Source R2 is immutable. One conservative classification per cell
+        # is reused by all creatures instead of many procedural samples.
+        var center := Vector2(float(cell.x) * LITE_TERRAIN_CELL + LITE_TERRAIN_CELL * 0.5,
+            float(cell.y) * LITE_TERRAIN_CELL + LITE_TERRAIN_CELL * 0.5)
+        lite_walkable_cells[cell] = bool(_terrain(center.x, center.y).get("walkable", false))
+    if not bool(lite_walkable_cells[cell]):
         return false
     for obstacle in _obstacles(at.x-radius, at.y-radius, at.x+radius, at.y+radius):
         var box := Rect2(float(obstacle["x"]), float(obstacle["y"]),
@@ -673,7 +686,15 @@ func _lite_move_agent(a: Dictionary, dt: float) -> void:
     a["heading"] = (desired - from).normalized()
     a["velocity"] = (desired - from) / maxf(0.001, dt)
     a["visual"].face(WorldProjection.to_screen(desired - from))
-    _place_visual(a)
+    # Keep projection per step; authored height changes gradually and is cached
+    # in 32-unit cells instead of evaluating procedural elevation every tick.
+    var height_cell := Vector2i(floori(desired.x / LITE_HEIGHT_CELL), floori(desired.y / LITE_HEIGHT_CELL))
+    if not lite_height_cells.has(height_cell):
+        var midpoint := Vector2((float(height_cell.x) + 0.5) * LITE_HEIGHT_CELL,
+            (float(height_cell.y) + 0.5) * LITE_HEIGHT_CELL)
+        lite_height_cells[height_cell] = float(host.get("authority").terrain.height_at(midpoint.x, midpoint.y))
+    a["visual"].position = WorldProjection.to_screen(desired)
+    a["visual"].set_ground_height(float(lite_height_cells[height_cell]) * 0.35)
     if a["visual"].visible:
         a["visual"].advance(dt)
 
