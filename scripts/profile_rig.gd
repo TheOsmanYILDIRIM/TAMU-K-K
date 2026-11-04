@@ -10,6 +10,11 @@ const SOURCE_GROUND_Y := 665.0
 const SKIN_HZ := 30.0
 const FOOT_GROUND_TOLERANCE := 12.0
 const MAX_GROUND_CORRECTION := 50.0
+# One planted foot is constrained in world space by two-joint CCD while
+# its other leg swings. The torso/root never inherits a foot's lateral shift.
+const CONTACT_BAND := 12.0
+const IK_MAX_TURN := 0.42
+const IK_REACH_LIMIT := 78.0
 const MOBILE_SKIN_HZ := 30.0
 const CLIP_ALIAS := {
     "walk": "smooth_walk", "run": "smooth_run", "idle": "idle",
@@ -30,6 +35,10 @@ var ground_correction := 0.0
 var locomotion_rate := 1.0
 var last_contact_y := SOURCE_GROUND_Y
 var foot_contact_count := 0
+var planted_foot := -1
+var planted_at := Vector2.ZERO
+var traveled_screen := Vector2.ZERO
+var grounding_error := 0.0
 
 func setup() -> bool:
     if configured:
@@ -220,6 +229,8 @@ func set_clip(action: String) -> void:
         current_clip = next
         render_accumulator = 0.0
         ground_correction = 0.0
+        planted_foot = -1
+        traveled_screen = Vector2.ZERO
         player.play(next, 0.0)
 
 # The animation source already has planted toes near y=665, but its
@@ -239,23 +250,80 @@ func _toe_position(index: int) -> Vector2:
     return to_local(bone_nodes[index].to_global(local_tip))
 
 
+# The caller supplies *actual* projected travel, not joystick input. A
+# blocked player contributes zero, so the planted foot stays in world space.
+func apply_world_step(screen_motion: Vector2) -> void:
+    if not screen_motion.is_finite():
+        return
+    traveled_screen += screen_motion
+
+
+func _solve_planted_foot(index: int, target: Vector2) -> void:
+    # Indices are stable source identities: left hip/knee/toe = 7/8/10,
+    # right hip/knee/toe = 11/12/14. No new skeleton or mesh is allocated.
+    var thigh_index: int = 7 if index == 10 else 11
+    var shin_index: int = 8 if index == 10 else 12
+    for iteration in range(4):
+        for joint_index in [shin_index, thigh_index]:
+            var joint: Bone2D = bone_nodes[joint_index]
+            var pivot := to_local(joint.global_position)
+            var from := _toe_position(index) - pivot
+            var desired := target - pivot
+            if from.length_squared() < 0.0001 or desired.length_squared() < 0.0001:
+                continue
+            var angle := wrapf(desired.angle() - from.angle(), -PI, PI)
+            joint.rotation += clampf(angle, -IK_MAX_TURN, IK_MAX_TURN)
+
+
 func _correct_foot_grounding() -> void:
-    # Keep the artwork grounded at the authored, fixed avatar pivot.
-    # Only Y correction is allowed: never shove the whole torso sideways to
-    # fake IK or move the game-world actor. Sit/death deliberately ignore this.
+    # Keep Skeleton2D root exactly as authored, never shift the entire body
+    # sideways or make the neck swing to chase a foot. Only pose the leg
+    # attached to the planted toe; mobile uses the already-existing 23 bones.
     if current_clip not in ["idle", "smooth_walk", "smooth_run"]:
-        ground_correction = 0.0
+        planted_foot = -1
+        traveled_screen = Vector2.ZERO
         return
-    var left_foot := _toe_position(10)
-    var right_foot := _toe_position(14)
-    var contact_y := maxf(left_foot.y, right_foot.y)
-    if not is_finite(contact_y):
+    var left := _toe_position(10)
+    var right := _toe_position(14)
+    if not left.is_finite() or not right.is_finite():
         return
-    last_contact_y = contact_y
-    var adjustment := clampf(SOURCE_GROUND_Y - contact_y,
-        -MAX_GROUND_CORRECTION, MAX_GROUND_CORRECTION)
-    ground_correction = adjustment
-    skeleton.position.y += adjustment
+    last_contact_y = maxf(left.y, right.y)
+    if current_clip == "idle":
+        planted_foot = -1
+        traveled_screen = Vector2.ZERO
+        grounding_error = absf(last_contact_y - SOURCE_GROUND_Y)
+        foot_contact_count += 1
+        return
+    # A walk source has an alternating planted toe near y=665.
+    # In a run both feet may be airborne: do not force a false foot plant.
+    var next_foot := -1
+    if absf(left.y - SOURCE_GROUND_Y) <= CONTACT_BAND:
+        next_foot = 10
+    if absf(right.y - SOURCE_GROUND_Y) <= CONTACT_BAND and (next_foot < 0 or right.y > left.y):
+        next_foot = 14
+    if next_foot != planted_foot:
+        planted_foot = next_foot
+        if planted_foot >= 0:
+            planted_at = left if planted_foot == 10 else right
+        traveled_screen = Vector2.ZERO
+    if planted_foot < 0:
+        grounding_error = 0.0
+        return
+    # World-space stance target moves opposite to the player anchor, after
+    # accounting for avatar mirroring. Screen movement is converted once
+    # into the original editor's unscaled source coordinate system.
+    var facing: float = -1.0 if get_parent() != null and get_parent().scale.x < 0.0 else 1.0
+    planted_at.x -= traveled_screen.x / maxf(SOURCE_SCALE, 0.001) * facing
+    planted_at.y -= traveled_screen.y / maxf(SOURCE_SCALE, 0.001)
+    traveled_screen = Vector2.ZERO
+    var current: Vector2 = _toe_position(planted_foot)
+    if current.distance_to(planted_at) > IK_REACH_LIMIT:
+        # Stance ends before unnatural hyperextension / torso snap.
+        planted_foot = -1
+        grounding_error = 0.0
+        return
+    _solve_planted_foot(planted_foot, planted_at)
+    grounding_error = _toe_position(planted_foot).distance_to(planted_at)
     foot_contact_count += 1
 
 
