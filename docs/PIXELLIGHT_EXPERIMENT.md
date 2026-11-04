@@ -1,3 +1,14 @@
+## Real TAMU world opt-in integration — 2026-11-04
+
+This section supersedes the older **isolated-only** status below (which is preserved as historical test evidence).
+
+- Source: original PixelLight 2D v1.0.2 MIT unchanged under addons/pixel_light_2d; bridge scripts/pixellight_world.gd.
+- Runtime: opt-in TAMU_PIXELLIGHT_WORLD=1. Select at most four nearby actual R2 tree/rock AtlasTexture sprites, create cropped normal maps and base occluders, one PointLight2D. Preserve original alpha hit testing and suppress old solar silhouette for only replaced objects. Not enabled automatically for all 832 objects, and no second CanvasModulate.
+- Yaprakkulak in scripts/mob_visual.gd + scripts/mob_world.gd now uses the same 2.5D ground sort/terrain-height art+contact offset principle as the player in PR #17.
+- PR #18 combines both experiments at c7984a150a469971f4dcd4adfa9947d528547fd2. Godot Actions #41746774253 completed SUCCESS including a single composed scene with profile player, Yaprakkulak, PixelLight, Stage6/harvest regression and isolated selected-resource PCK boot. Screenshot screenshots/pixellight-combined.png inspected. Test-results artifact 13283059840; mobile PCK artifact 13283793741.
+- Isolated pack failure in early run #41744949405 was missing addon class PLFlicker in selected-resource export. Resolved by adding addons/pixel_light_2d/pl_flicker.gd; final combined export/boot passes.
+- Desktop Xvfb combo scene reported roughly 6 FPS / 117-118 draw calls; not indicative of actual Android. Mobile p50/p95/p99, GPU cost, lighting aesthetics and benchmark on physical device still required. Keep feature opt-in and PR draft.
+
 # TAMU — PixelLight 2D 1.0.2 (genuine addon, isolated)
 
 **Branch:** `experiment/pixellight2d-godot46-20261103` — independent of the native player rig work.
