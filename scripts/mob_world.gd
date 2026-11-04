@@ -100,13 +100,13 @@ func _bind_host() -> void:
     limbo_requested = OS.get_environment("TAMU_LIMBOAI") == "1" or bool(ProjectSettings.get_setting("tamu/ai/use_limboai", false))
     if limbo_requested or OS.has_feature("mobile"):
         _install_mob_diagnostics()
-    if limbo_requested and not LimboBridge.available():
-        if diagnostic_label != null:
-            diagnostic_label.text = "MOB 0/0 | LimboAI MISSING (Android native)"
-        push_error("TAMU_LIMBOAI_NATIVE_UNAVAILABLE: required GDExtension is absent")
-        set_process(false)
-        return
-    limbo_enabled = limbo_requested
+    # The authored Yaprakkulak population must not disappear when the
+    # optional native Android extension cannot be loaded. MobBrain already
+    # implements the same data-driven state/decision steps without LimboAI.
+    limbo_enabled = limbo_requested and LimboBridge.available()
+    if limbo_requested and not limbo_enabled:
+        push_warning("TAMU_LIMBOAI_NATIVE_UNAVAILABLE: MobBrain fallback active")
+        print("TAMU_MOB_NATIVE_FALLBACK reason=extension_unavailable")
     bound = true
     var count := 0
     for i in range(int(SPECIES.spawn_count)):
@@ -120,11 +120,13 @@ func _bind_host() -> void:
         for agent in agents:
             var player: Node = LimboBridge.install(self, str(agent["id"]))
             if player == null:
-                push_error("TAMU_LIMBOAI_BT_SETUP_FAILED id=" + str(agent["id"]))
-                set_process(false)
-                return
+                push_warning("TAMU_LIMBOAI_BT_SETUP_FAILED id=" + str(agent["id"]) + " MobBrain fallback active")
+                print("TAMU_MOB_NATIVE_FALLBACK reason=bt_setup id=", agent["id"])
+                limbo_enabled = false
+                break
             agent["limbo_player"] = player
-        print("TAMU_LIMBOAI_ACTIVE players=", agents.size(), " mode=manual native=true")
+        if limbo_enabled:
+            print("TAMU_LIMBOAI_ACTIVE players=", agents.size(), " mode=manual native=true")
     print("TAMU_MOB_READY species=core:yaprakkulak count=", count, " session_only=true")
     if not player_damage_receiver.is_valid():
         print("TAMU_MOB_PLAYER_DAMAGE_PORT_UNBOUND: no fabricated player health")
@@ -530,11 +532,12 @@ func _think() -> void:
     if limbo_enabled:
         var player: Node = a.get("limbo_player", null)
         if player == null:
-            push_error("TAMU_LIMBOAI_BT_RUNTIME_MISSING")
-            set_process(false)
-            return
-        player.call("update", FIXED_STEP)
-    else:
+            push_warning("TAMU_LIMBOAI_BT_RUNTIME_MISSING: MobBrain fallback active")
+            print("TAMU_MOB_NATIVE_FALLBACK reason=bt_runtime")
+            limbo_enabled = false
+        else:
+            player.call("update", FIXED_STEP)
+    if not limbo_enabled:
         _limbo_sense_step(FIXED_STEP)
         _limbo_decide_step(FIXED_STEP)
         _limbo_apply_step(FIXED_STEP)
@@ -768,7 +771,7 @@ func _update_mob_diagnostics(force: bool = false) -> void:
             visible_count += 1
         nearest_distance = minf(nearest_distance,
             (agent["position"] as Vector2).distance_to(player_world))
-    var status := "ON" if limbo_enabled else ("MISSING" if limbo_requested else "OFF")
+    var status := "ON" if limbo_enabled else ("FALLBACK" if limbo_requested else "OFF")
     var nearest := "%.0f" % nearest_distance if is_finite(nearest_distance) else "-"
     diagnostic_label.text = "MOB %d/%d | LimboAI %s | nearest %s" % [
         visible_count, agents.size(), status, nearest]
