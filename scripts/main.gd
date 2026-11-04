@@ -119,6 +119,8 @@ var native_rig: Skeleton2D
 var profile_rig: Node2D
 var profile_contact_shadow: Polygon2D
 var pixellight_world_light: PointLight2D
+var fast_cull_visible_nodes := 0
+var fast_cull_total_nodes := 0
 
 func _update_sun(delta: float) -> void:
     day_clock = fposmod(day_clock + delta * 24.0 / DAY_SECONDS, 24.0)
@@ -832,6 +834,26 @@ func _update_avatar() -> void:
         avatar_parts[part].scale = Vector2(0.28,0.28)
 
 
+# A drawable can straddle an authored source cell; cull by its actual
+# projected bounds and keep a conservative shadow-margin against popping.
+# Region geometry and IDs remain one logical authored region.
+func _fast_view_rect() -> Rect2:
+    var camera: Camera2D = $Camera2D
+    var half_size := get_viewport_rect().size * 0.5 / camera.zoom
+    return Rect2(camera.get_screen_center_position() - half_size, half_size * 2.0)
+
+func _fast_node_in_view(node: Node2D, view: Rect2) -> bool:
+    if not node is Sprite2D:
+        return true
+    var sprite := node as Sprite2D
+    if sprite.texture == null:
+        return false
+    var source := sprite.get_rect()
+    var render_bounds := Rect2(sprite.position + source.position * sprite.scale, source.size * sprite.scale)
+    # Solar silhouette vertex shader sweeps further than its source crop.
+    var margin := 180.0 if sprite.material == silhouette_material else 54.0
+    return render_bounds.grow(margin).intersects(view)
+
 func _chunk_distance(stem: String) -> float:
     var parts := stem.split("_")
     if parts.size() != 3:
@@ -848,6 +870,8 @@ func _refresh_streaming_requests() -> void:
     view_required = WorldStream.required_chunks(available_chunks, center, view_size, camera.zoom)
     if merged_mode:
         pending.clear()
+        var fast_mode := VisualEnvironment.mobile_fast_mode()
+        var fast_view := _fast_view_rect() if fast_mode else Rect2()
         # The terrain stays one authored region mesh, but its individual
         # foliage/rock sprites and alpha shadows are culled by visible source cell.
         for stem in object_visuals_by_chunk:
@@ -858,8 +882,10 @@ func _refresh_streaming_requests() -> void:
             # objects on every camera plan when they are already correct.
             var nodes: Array = object_visuals_by_chunk[stem]
             var stale: bool = not nodes.is_empty() and is_instance_valid(nodes[0]) and                 nodes[0].visible != (show and not bool(nodes[0].get_meta("tamu_collected", false)))
-            if stale or not object_chunk_visibility.has(stem) or bool(object_chunk_visibility[stem]) != show:
-                _set_chunk_visuals_visible(str(stem), show)
+            # Camera motion within a 256-unit authored cell also changes
+            # per-object visibility; don't rely on a single cell sentinel.
+            if fast_mode or stale or not object_chunk_visibility.has(stem) or bool(object_chunk_visibility[stem]) != show:
+                _set_chunk_visuals_visible(str(stem), show, fast_view)
                 object_chunk_visibility[stem] = show
         camera_missing = 0
         last_plan_camera = center
@@ -886,6 +912,13 @@ func _chunk_distance_to_actor(stem: String) -> float:
     return WorldProjection.chunk_center_from_key(stem).distance_squared_to(actor_world)
 
 func _ready() -> void:
+    if VisualEnvironment.mobile_fast_mode():
+        # canvas_items renders at the full Android display resolution.
+        # viewport renders into the 720x1280 base, then upscales once.
+        var root_window: Window = get_tree().root
+        root_window.content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
+        root_window.content_scale_size = Vector2i(720, 1280)
+        print("TAMU_MOBILE_FAST_MODE renderer=viewport base=720x1280 texture_tier=source")
     if OS.get_environment("TAMU_VISUAL_CI") == "1":
         if not WorldProjection.verify_contract():
             push_error("TAMU_WORLD_PROJECTION_GATE_FAILED")
@@ -906,7 +939,7 @@ func _ready() -> void:
     silhouette_material.shader = SHADOW_SHADER
     terrain_atlas = load("res://assets/terrain25d/atlas_00.png")
     env_visual_stage = VisualEnvironment.level()
-    var terrain_hires := OS.get_environment("TAMU_TERRAIN_HIRES") != "0" and ResourceLoader.exists("res://assets/terrain25d/atlas_00_hires.png")
+    var terrain_hires := not VisualEnvironment.mobile_fast_mode() and OS.get_environment("TAMU_TERRAIN_HIRES") != "0" and ResourceLoader.exists("res://assets/terrain25d/atlas_00_hires.png")
     if terrain_hires:
         var terrain_path := "res://assets/terrain25d/atlas_00_mix_hires.png" if env_visual_stage >= 1 else "res://assets/terrain25d/atlas_00_hires.png"
         if ResourceLoader.exists(terrain_path):
@@ -1016,7 +1049,7 @@ func _ready() -> void:
             set_process(false)
             get_tree().quit()
             return
-    if env_visual_stage >= 3 and not OS.has_feature("mobile"):
+    if env_visual_stage >= 3 and not VisualEnvironment.mobile_fast_mode():
         var decor_manifest: Variant = JSON.parse_string(
             FileAccess.get_file_as_string("res://assets/terrain25d/manifest.json"))
         var decor_hires_active: bool = VisualEnvironment.apply_highres_object_uvs(decor_manifest)
@@ -1107,10 +1140,18 @@ func _unload_region(region_id: String) -> bool:
     print("TAMU_REGION_UNLOAD_OK region=", region_id, " remaining=", region_chunks.size())
     return true
 
-func _set_chunk_visuals_visible(stem: String, show: bool) -> void:
+func _set_chunk_visuals_visible(stem: String, show: bool, viewport_bounds: Rect2 = Rect2()) -> void:
+    var fast_mode := VisualEnvironment.mobile_fast_mode()
+    var bounds := viewport_bounds if viewport_bounds.has_area() else (_fast_view_rect() if fast_mode else Rect2())
     for node in object_visuals_by_chunk.get(stem, []):
-        if is_instance_valid(node):
-            node.visible = show and not bool(node.get_meta("tamu_collected", false)) and not bool(node.get_meta("tamu_pixellight_replaced_shadow", false))
+        if not is_instance_valid(node):
+            continue
+        var visible_now := show and not bool(node.get_meta("tamu_collected", false)) \
+            and not bool(node.get_meta("tamu_pixellight_replaced_shadow", false))
+        if visible_now and fast_mode:
+            visible_now = _fast_node_in_view(node, bounds)
+        if node.visible != visible_now:
+            node.visible = visible_now
 
 func _load_chunk(stem: String) -> void:
     var payload: Dictionary = world_source.read_chunk(stem)
@@ -1261,8 +1302,8 @@ func _load_objects() -> void:
     object_layer.z_index = 2
     object_layer.y_sort_enabled = true
     add_child(object_layer)
-    var shadow_manifest = JSON.parse_string(FileAccess.get_file_as_string("res://assets/terrain25d/static_shadow/objects_shadow_manifest.json"))
-    var shadow_atlas: Texture2D = load("res://assets/terrain25d/static_shadow/shadows_12.png")
+    # Solar silhouettes use the actual authored AtlasTexture. The old
+    # separate baked shadow atlas/manifest were unused resident resources.
     var shadow_layer := Node2D.new()
     shadow_layer.name = "CanonicalR2Shadows"
     shadow_layer.z_index = 2
@@ -1439,7 +1480,10 @@ func _process(delta: float) -> void:
         var camera_target: Vector2 = profile_contact_shadow.position if profile_contact_shadow != null else avatar.position
         $Camera2D.position = $Camera2D.position.lerp(camera_target, minf(delta * 4.0, 1.0))
     var camera_center: Vector2 = $Camera2D.get_screen_center_position()
-    if frame_no % 10 == 0 or camera_center.distance_squared_to(last_plan_camera) > 96.0 * 96.0 or $Camera2D.zoom != last_plan_zoom:
+    var fast_mode := VisualEnvironment.mobile_fast_mode()
+    var plan_period := 3 if fast_mode else 10
+    var plan_threshold := 36.0 if fast_mode else 96.0
+    if frame_no % plan_period == 0 or camera_center.distance_squared_to(last_plan_camera) > plan_threshold * plan_threshold or $Camera2D.zoom != last_plan_zoom:
         _refresh_streaming_requests()
     if not merged_mode:
         if not pending.is_empty():
@@ -1455,6 +1499,17 @@ func _process(delta: float) -> void:
         marker.text = "TAMU Godot R2 / authored area\n%d resident / %d source | %d verts\nViewport missing %d | Mesh est %.1f MiB\nFPS %d | frame %.2f ms | Time %.1f | Harvest %d\nOdun %d | Tas %d | Tahta %d | Tezgah %d" % [loaded, total_cached, vertices, camera_missing, float(vertices * WorldStream.ESTIMATED_BYTES_PER_VERTEX)/1048576.0, Engine.get_frames_per_second(), delta * 1000.0,day_clock,harvested_count, gameplay.count_item("core:wood_log"),gameplay.count_item("core:stone"),gameplay.count_item("core:wood_plank"),gameplay.count_item("core:workbench")]
     if frame_no % 120 == 0:
         print("TAMU_GODOT_FRAME frame=", frame_no, " loaded=", loaded, " fps=", Engine.get_frames_per_second())
+    if fast_mode and frame_no == 90:
+        var visible_nodes := 0
+        var total_nodes := 0
+        for stem in object_visuals_by_chunk:
+            for node in object_visuals_by_chunk[stem]:
+                total_nodes += 1
+                if node.visible:
+                    visible_nodes += 1
+        fast_cull_visible_nodes = visible_nodes
+        fast_cull_total_nodes = total_nodes
+        print("TAMU_MOBILE_CULL_OK visible_nodes=", visible_nodes, " total_nodes=", total_nodes)
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and OS.get_environment("TAMU_VISUAL_CASE") == "gui" and frame_no == 54:
         for candidate in harvestables:
             if str(candidate["kind"]) == "tree" and str(candidate.get("family","")) in ["oak","broadleaf"] and candidate["sprite"].visible:
@@ -1533,10 +1588,13 @@ func _process(delta: float) -> void:
             _refresh_streaming_requests()
         var visible_faults := 0
         var visible_fail_examples: Array[String] = []
+        var fast_view := _fast_view_rect() if fast_mode else Rect2()
         for stem in object_visuals_by_chunk:
             for node in object_visuals_by_chunk[stem]:
                 var source_visible: bool = view_required.has(stem) if merged_mode else (chunk_nodes.has(stem) and chunk_nodes[stem].visible)
                 var expected: bool = source_visible and not bool(node.get_meta("tamu_collected", false)) and not bool(node.get_meta("tamu_pixellight_replaced_shadow", false))
+                if expected and fast_mode:
+                    expected = _fast_node_in_view(node, fast_view)
                 if node.visible != expected:
                     visible_faults += 1
                     if visible_fail_examples.size() < 3:

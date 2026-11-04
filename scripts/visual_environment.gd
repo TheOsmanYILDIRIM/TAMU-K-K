@@ -14,8 +14,15 @@ const WorldProjection = preload("res://scripts/world_projection.gd")
 # The 60 high-resolution object slots follow sorted original_filename order.
 # UVs are changed only in the transient parsed manifest, not the canonical source.
 # Width/height remain logical 128px so world detail quads retain their size.
+# Emergency mobile rendering tier: keep authored source/IDs untouched.
+# Force this path in desktop CI with TAMU_MOBILE_PERF=1; TAMU_MOBILE_HD=1
+# restores full quality for testing a known-fast phone.
+static func mobile_fast_mode() -> bool:
+    return (OS.has_feature("mobile") or OS.get_environment("TAMU_MOBILE_PERF") == "1") \
+        and OS.get_environment("TAMU_MOBILE_HD") != "1"
+
 static func apply_highres_object_uvs(manifest: Dictionary) -> bool:
-    if OS.get_environment("TAMU_HIRES_OBJECTS") == "0":
+    if mobile_fast_mode() or OS.get_environment("TAMU_HIRES_OBJECTS") == "0":
         return false
     if not ResourceLoader.exists(HIRES_OBJECT_ATLAS):
         return false

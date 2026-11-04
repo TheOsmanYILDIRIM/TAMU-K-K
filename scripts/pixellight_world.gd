@@ -3,6 +3,7 @@ extends RefCounted
 # Opt-in only until Android draw-call/FPS acceptance. Never mutate canonical atlases.
 const PixelLightCore = preload("res://addons/pixel_light_2d/pixel_light.gd")
 const WorldProjection = preload("res://scripts/world_projection.gd")
+const VisualEnvironment = preload("res://scripts/visual_environment.gd")
 const MAX_OBJECTS := 4
 const MAX_DISTANCE := 460.0
 
@@ -23,8 +24,9 @@ static func install(items: Array[Dictionary], layer: Node2D, actor_world: Vector
     var baked := {}
     var count := 0
     var occluders := 0
+    var sample_limit := 1 if VisualEnvironment.mobile_fast_mode() else MAX_OBJECTS
     for candidate in candidates:
-        if count >= MAX_OBJECTS:
+        if count >= sample_limit:
             break
         var item: Dictionary = candidate["item"]
         var sprite: Sprite2D = item["sprite"]

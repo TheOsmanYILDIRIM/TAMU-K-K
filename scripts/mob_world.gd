@@ -8,6 +8,7 @@ const Brain = preload("res://scripts/mob_brain.gd")
 const Navigation = preload("res://scripts/mob_navigation.gd")
 const Visual = preload("res://scripts/mob_visual.gd")
 const WorldProjection = preload("res://scripts/world_projection.gd")
+const VisualEnvironment = preload("res://scripts/visual_environment.gd")
 const Collision = preload("res://scripts/r2_collision.gd")
 const SPECIES = preload("res://data/catalog/mob_yaprakkulak.tres")
 const FIXED_STEP := 0.2
@@ -495,8 +496,9 @@ func _move_agent(a: Dictionary, dt: float) -> void:
     # Match walk/run cycle speed to projected travel instead of sliding on the spot.
     var screen_speed: float = WorldProjection.to_screen(a["velocity"]).length()
     var reference_speed := 9.0 if a["intent"]["clip"] in ["walk", "limp"] else (26.0 if a["intent"]["clip"] == "trot" else 57.4)
-    a["visual"].player.speed_scale = clampf(screen_speed / reference_speed, 0.25, 1.8)
-    a["visual"].advance(dt)
+    if a["visual"].visible:
+        a["visual"].player.speed_scale = clampf(screen_speed / reference_speed, 0.25, 1.8)
+        a["visual"].advance(dt)
 
 func _resolve_attack(a: Dictionary) -> void:
     var pending: Dictionary = a["pending_attack"]
@@ -554,8 +556,18 @@ func _process(delta: float) -> void:
     if not bound:
         return
     var resident: bool = host.get("region_chunks").has(region)
+    var mobile_fast := VisualEnvironment.mobile_fast_mode()
+    var camera: Camera2D = host.get_node_or_null("Camera2D") as Camera2D
+    var view := Rect2()
+    if mobile_fast and camera != null:
+        var half_size := camera.get_viewport_rect().size * 0.5 / camera.zoom
+        view = Rect2(camera.get_screen_center_position() - half_size, half_size * 2.0).grow(160.0)
     for a in agents:
-        a["visual"].visible = resident
+        var show: bool = resident
+        if mobile_fast and camera != null:
+            show = show and view.has_point(WorldProjection.to_screen(a["position"]))
+        if a["visual"].visible != show:
+            a["visual"].visible = show
     if not resident:
         return
     var dt := minf(delta, 0.05)
@@ -571,7 +583,9 @@ func _process(delta: float) -> void:
     _advance_navigation()
     for a in agents:
         var distance: float = (a["position"] as Vector2).distance_to(pos)
-        a["visual"].lod_seconds = 1.0 / (30.0 if distance < 650.0 else 10.0)
+        var near_hz := 12.0 if mobile_fast else 30.0
+        var far_hz := 4.0 if mobile_fast else 10.0
+        a["visual"].lod_seconds = 1.0 / (near_hz if distance < 650.0 else far_hz)
         _move_agent(a, dt)
         _resolve_attack(a)
 
