@@ -301,6 +301,12 @@ func _correct_foot_grounding() -> void:
         next_foot = 10
     if absf(right.y - SOURCE_GROUND_Y) <= CONTACT_BAND and (next_foot < 0 or right.y > left.y):
         next_foot = 14
+    # Hysteresis: keep the current planted leg through shared-contact
+    # frames instead of bouncing left/right on tiny float differences.
+    if planted_foot == 10 and absf(left.y - SOURCE_GROUND_Y) <= CONTACT_BAND + 3.0:
+        next_foot = 10
+    elif planted_foot == 14 and absf(right.y - SOURCE_GROUND_Y) <= CONTACT_BAND + 3.0:
+        next_foot = 14
     if next_foot != planted_foot:
         planted_foot = next_foot
         if planted_foot >= 0:
@@ -323,8 +329,20 @@ func _correct_foot_grounding() -> void:
         planted_foot = -1
         grounding_error = 0.0
         return
+    var upper_index: int = 7 if planted_foot == 10 else 11
+    var lower_index: int = 8 if planted_foot == 10 else 12
+    var saved_upper: float = bone_nodes[upper_index].rotation
+    var saved_lower: float = bone_nodes[lower_index].rotation
     _solve_planted_foot(planted_foot, planted_at)
     grounding_error = _toe_position(planted_foot).distance_to(planted_at)
+    if grounding_error > 14.0:
+        # Preserve an authored pose if the target cannot be reached; never
+        # drag the torso or hyperextend a leg to fake contact.
+        bone_nodes[upper_index].rotation = saved_upper
+        bone_nodes[lower_index].rotation = saved_lower
+        planted_foot = -1
+        grounding_error = 0.0
+        return
     foot_contact_count += 1
 
 
