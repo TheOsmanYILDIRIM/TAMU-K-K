@@ -979,6 +979,76 @@ jobs:
           grep -q TAMU_VISUAL_CAPTURE_OK screenshots/limboai-mobs-live.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_LIMBOAI_.*FAILED|TAMU_LIMBOAI_.*UNAVAILABLE|TAMU_MOB_.*FAILED' screenshots/limboai-mobs-live.log; then exit 1; fi
           cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" screenshots/limboai-mobs-live.png
+      - name: Build standalone LimboAI Android ARM64 debug APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Use the verified upstream v1.8.1 extension already unpacked by the native-scene step.
+          manifest=addons/limboai/bin/limboai.gdextension
+          test -s "$manifest"
+          grep -q 'android.debug.arm64' "$manifest"
+          test -s addons/limboai/bin/liblimboai.android.editor.arm64.so
+          test "$(file -b addons/limboai/bin/liblimboai.android.editor.arm64.so | grep -c 'aarch64')" -eq 1
+          # The standalone APK, unlike an external PCK, includes its own native extension.
+          # Enable LimboAI by project setting because Android does not inherit CI env vars.
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('project.godot')
+          s=p.read_text()
+          assert '[tamu]' not in s
+          p.write_text(s+'\n[tamu]\nai/use_limboai=true\n')
+          p=Path('export_presets.cfg')
+          s=p.read_text()
+          needle='include_filter="'
+          assert s.count(needle)==1
+          s=s.replace(needle,needle+'addons/limboai/bin/*.gdextension,addons/limboai/bin/*arm64*.so,',1)
+          p.write_text(s)
+          PY
+          mkdir -p build "$HOME/.android"
+          keytool -genkeypair -noprompt -keystore "$HOME/.android/tamu-ci-debug.keystore" \
+            -storepass android -keypass android -alias androiddebugkey -keyalg RSA \
+            -keysize 2048 -validity 3650 -dname "CN=TAMU CI,OU=Experimental,O=TAMU,C=TR"
+          export GODOT_ANDROID_KEYSTORE_DEBUG_PATH="$HOME/.android/tamu-ci-debug.keystore"
+          export GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey
+          export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android
+          export JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/temurin-17-jdk-amd64}"
+          export ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          test -x "$ANDROID_HOME/platform-tools/adb"
+          # Editor settings must be explicitly configured in headless CI.
+          cat > /tmp/tamu_android_settings.gd <<'GD'
+          extends SceneTree
+          func _initialize() -> void:
+              var settings = EditorInterface.get_editor_settings()
+              settings.set_setting("export/android/android_sdk_path", OS.get_environment("ANDROID_HOME"))
+              settings.set_setting("export/android/java_sdk_path", OS.get_environment("JAVA_HOME"))
+              settings.save()
+              quit()
+          GD
+          timeout 60s godot --headless --editor --path . --script /tmp/tamu_android_settings.gd 2>&1 | tee screenshots/limboai-android-settings.log
+          timeout 90s godot --headless --editor --path . --import --quit 2>&1 | tee screenshots/limboai-android-import.log
+          timeout --kill-after=5s 240s godot --headless --path . --export-debug Android \
+            build/TAMU_LimboAI_Android_arm64.apk 2>&1 | tee screenshots/limboai-android-export.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile, hashlib
+          p=Path("build/TAMU_LimboAI_Android_arm64.apk")
+          assert p.is_file() and p.stat().st_size>1000000, "APK missing"
+          with zipfile.ZipFile(p) as z:
+              assert z.testzip() is None
+              n=z.namelist()
+              libs=[x for x in n if 'limboai' in x.lower() and x.endswith('.so') and 'arm64' in x.lower()]
+              assert libs, "LimboAI ARM64 native library absent from APK"
+              assert any('limboai.gdextension' in x for x in n), "LimboAI manifest absent from APK"
+              assert any(x.startswith('lib/arm64-v8a/') and 'godot' in x.lower() for x in n), "Godot ARM64 engine absent"
+              print("TAMU_LIMBOAI_ANDROID_APK_OK bytes=",p.stat().st_size,"native=",libs)
+          print("SHA256",hashlib.sha256(p.read_bytes()).hexdigest())
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tamu-limboai-android-arm64-debug-apk
+          path: build/TAMU_LimboAI_Android_arm64.apk
+          if-no-files-found: warn
       - uses: actions/upload-artifact@v4
         if: always()
         with:
