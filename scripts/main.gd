@@ -17,6 +17,7 @@ const SELECTION_SHADER = preload("res://scripts/harvest_outline.gdshader")
 const FOREST_GUI = preload("res://scripts/forest_harvest_gui.gd")
 const MODULAR_HUD = preload("res://scripts/modular_hud.gd")
 const ShadowVolume = preload("res://scripts/shadow_volume.gd")
+const PixelLightWorld = preload("res://scripts/pixellight_world.gd")
 const VisualEnvironment = preload("res://scripts/visual_environment.gd")
 var rigby_skin: Dictionary = {}
 var merged_mode: bool = OS.get_environment("TAMU_TERRAIN_MODE") != "legacy"
@@ -113,6 +114,7 @@ var actor_action := "idle"
 var active_source_clip := ""
 var native_rig: Skeleton2D
 var profile_rig: Node2D
+var pixellight_world_light: PointLight2D
 
 func _update_sun(delta: float) -> void:
     day_clock = fposmod(day_clock + delta * 24.0 / DAY_SECONDS, 24.0)
@@ -1072,7 +1074,7 @@ func _unload_region(region_id: String) -> bool:
 func _set_chunk_visuals_visible(stem: String, show: bool) -> void:
     for node in object_visuals_by_chunk.get(stem, []):
         if is_instance_valid(node):
-            node.visible = show and not bool(node.get_meta("tamu_collected", false))
+            node.visible = show and not bool(node.get_meta("tamu_collected", false)) and not bool(node.get_meta("tamu_pixellight_replaced_shadow", false))
 
 func _load_chunk(stem: String) -> void:
     var payload: Dictionary = world_source.read_chunk(stem)
@@ -1306,6 +1308,13 @@ func _load_objects() -> void:
                 $Camera2D.zoom = Vector2(2.0, 2.0)
                 _refresh_streaming_requests()
                 break
+    # Explicit opt-in for a capped real-art sample. The user can compare
+    # original solar silhouettes against PixelLight without double shadows.
+    if OS.get_environment("TAMU_PIXELLIGHT_WORLD") == "1":
+        var pl_result: Dictionary = PixelLightWorld.install(harvestables, object_layer, actor_world)
+        pixellight_world_light = pl_result.get("light") as PointLight2D
+        if int(pl_result.get("count", 0)) == 0:
+            push_warning("TAMU_PIXELLIGHT_WORLD_NO_SAMPLES")
     print("TAMU_CANONICAL_OBJECTS_LOADED count=", object_count)
 
 var object_count: int = 0
@@ -1362,6 +1371,8 @@ func _process(delta: float) -> void:
         avatar_parts["leg_L"].rotation = 0.0
         avatar_parts["leg_R"].rotation = 0.0
     _update_avatar()
+    if pixellight_world_light != null:
+        pixellight_world_light.position = avatar.position + Vector2(0.0, -45.0)
     _tick_gameplay(delta)
     # The legacy 40-bone reference must not update alongside the active
     # 23-bone player in production; preserve it in dedicated CI fixtures.
@@ -1467,7 +1478,7 @@ func _process(delta: float) -> void:
         for stem in object_visuals_by_chunk:
             for node in object_visuals_by_chunk[stem]:
                 var source_visible: bool = view_required.has(stem) if merged_mode else (chunk_nodes.has(stem) and chunk_nodes[stem].visible)
-                var expected: bool = source_visible and not bool(node.get_meta("tamu_collected", false))
+                var expected: bool = source_visible and not bool(node.get_meta("tamu_collected", false)) and not bool(node.get_meta("tamu_pixellight_replaced_shadow", false))
                 if node.visible != expected:
                     visible_faults += 1
                     if visible_fail_examples.size() < 3:
