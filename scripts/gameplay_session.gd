@@ -416,6 +416,15 @@ func _durable_tick(dt: float, player_pos: Vector2) -> Array[Dictionary]:
     # domain on every render frame. Commands remain staged on active ticks.
     if harvesting.active.is_empty() and crafting.active.is_empty():
         return empty
+    # A timed harvest does not need a full domain clone/checkpoint seal on
+    # every render frame. Advance only its volatile timer until the exact
+    # completion tick; then perform the normal transactional stage+write.
+    if not harvesting.active.is_empty() and crafting.active.is_empty():
+        var source: Dictionary = catalog.harvest(str(harvesting.active["item"]["kind"]))
+        var until := float(harvesting.active.get("elapsed", 0.0)) + minf(dt, 0.1)
+        if dt >= 0.0 and is_finite(dt) and not source.is_empty() and until * 60.0 + 0.00000006 < float(source["duration_ticks"]):
+            harvesting.update(dt, player_pos)
+            return empty
     var stage = _stage_domain()
     if stage == null:
         durable_fault = true
