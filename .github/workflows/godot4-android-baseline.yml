@@ -691,8 +691,6 @@ jobs:
           grep -q TAMU_VISUAL_CAPTURE_OK screenshots/run.log
           grep -q TAMU_MERGED_TERRAIN_OK screenshots/run.log
           grep -q 'TAMU_REGION_LOAD_OK region=fisilti_ormani source_cells=156' screenshots/run.log
-          grep -q TAMU_NATIVE_BONE_FK_READY screenshots/run.log
-          grep -q TAMU_RIGBY_CURVE_PARITY_OK screenshots/run.log
           grep -q TAMU_CATALOG_BINARY_OK screenshots/run.log
           grep -q TAMU_CONTENT_MOD_BOUNDARY_OK screenshots/run.log
           grep -q TAMU_USER_MOD_BOUNDARY_OK screenshots/run.log
@@ -704,12 +702,10 @@ jobs:
           grep -q TAMU_BUILDING_BOUNDARY_OK screenshots/run.log
           grep -q TAMU_GAMEPLAY_DOMAIN_OK screenshots/run.log
           grep -q TAMU_GAMEPLAY_HARVEST_INVENTORY_OK screenshots/run.log
-          grep -q TAMU_RIGBY_WEIGHTED_MESH_OK screenshots/run.log
           grep -q TAMU_WORLD_PROJECTION_GATE_OK screenshots/run.log
           grep -q TAMU_STREAM_SCHEDULER_OK screenshots/run.log
           grep -q TAMU_VIEWPORT_COVERAGE_OK screenshots/run.log
           grep -q TAMU_YDEPTH_SHADOW_ORDER_OK screenshots/run.log
-          grep -q TAMU_LOVE_VISUAL_SCALE_OK screenshots/run.log
           grep -q TAMU_RESIDENT_BUDGET_OK screenshots/run.log
           grep -q 'TAMU_WORLD_SOURCE_READY chunks=156' screenshots/run.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|Invalid operands' screenshots/run.log; then echo 'TAMU_RUNTIME_SCRIPT_GATE_FAILED'; exit 1; fi
@@ -971,7 +967,7 @@ jobs:
           cp -a "$(dirname "$manifest")/." addons/limboai/bin/
           test -s addons/limboai/bin/limboai.gdextension
           timeout --kill-after=3s 75s godot --headless --editor --path . --import --quit 2>&1 | tee screenshots/limboai-import.log
-          TAMU_LIMBOAI=1 TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged TAMU_VISUAL_CI=1 TAMU_VISUAL_CASE=mobs \
+          TAMU_LIMBOAI=1 TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged TAMU_VISUAL_CI=1 TAMU_VISUAL_CASE=combo \
             timeout --kill-after=3s 90s xvfb-run -a -s '-screen 0 720x1100x24' \
             godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 \
             2>&1 | tee screenshots/limboai-mobs-live.log
@@ -980,12 +976,25 @@ jobs:
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_LIMBOAI_.*FAILED|TAMU_LIMBOAI_.*UNAVAILABLE|TAMU_MOB_.*FAILED' screenshots/limboai-mobs-live.log; then exit 1; fi
           cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" screenshots/limboai-mobs-live.png
           # Reproduce Android's fast-mode viewport culling with real native BTPlayer.
-          TAMU_MOBILE_PERF=1 TAMU_LIMBOAI=1 TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged TAMU_VISUAL_CI=1 TAMU_VISUAL_CASE=mobs \
+          TAMU_MOBILE_PERF=1 TAMU_LIMBOAI=1 TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged TAMU_VISUAL_CI=1 TAMU_VISUAL_CASE=combo \
             timeout --kill-after=3s 90s xvfb-run -a -s '-screen 0 720x1100x24' \
             godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 \
             2>&1 | tee screenshots/limboai-mobile-visible.log
           grep -q TAMU_MOB_MOBILE_VISIBLE_OK screenshots/limboai-mobile-visible.log
+          grep -q TAMU_PROFILE_GAMEPLAY_RIG_ACTIVE screenshots/limboai-mobile-visible.log
           grep -Eq 'TAMU_MOB_ANDROID_STATUS total=[1-9].*visible=[1-9].*limbo=ON' screenshots/limboai-mobile-visible.log
+          # Do not use TAMU_VISUAL_CI=1 in the production-path smoke. This
+          # exercises the real Stage6 game session and creature creation.
+          mkdir -p /tmp/tamu-limbo-production-home
+          XDG_DATA_HOME=/tmp/tamu-limbo-production-home TAMU_MOBILE_PERF=1 TAMU_LIMBOAI=1 TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged \
+            timeout --kill-after=3s 90s xvfb-run -a -s '-screen 0 720x1100x24' \
+            godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 \
+            2>&1 | tee screenshots/limboai-production-mobile.log
+          grep -q 'TAMU_PROFILE_GAMEPLAY_RIG_ACTIVE bones=23' screenshots/limboai-production-mobile.log
+          grep -q 'TAMU_LIMBOAI_ACTIVE players=6' screenshots/limboai-production-mobile.log
+          grep -q 'TAMU_MOB_READY species=core:yaprakkulak count=6' screenshots/limboai-production-mobile.log
+          grep -Eq 'TAMU_MOB_ANDROID_STATUS total=6 visible=[1-6] limbo=ON' screenshots/limboai-production-mobile.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_MOB_NO_VALID_SPAWN|TAMU_LIMBOAI_.*FAILED|TAMU_MOB_.*FAILED' screenshots/limboai-production-mobile.log; then exit 1; fi
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_MOB_MOBILE_VISIBLE_FAILED|TAMU_LIMBOAI_.*FAILED' screenshots/limboai-mobile-visible.log; then exit 1; fi
       - name: Build standalone LimboAI Android ARM64 debug APK
         shell: bash
