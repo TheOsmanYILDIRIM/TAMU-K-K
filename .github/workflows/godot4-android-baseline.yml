@@ -979,6 +979,14 @@ jobs:
           grep -q TAMU_VISUAL_CAPTURE_OK screenshots/limboai-mobs-live.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_LIMBOAI_.*FAILED|TAMU_LIMBOAI_.*UNAVAILABLE|TAMU_MOB_.*FAILED' screenshots/limboai-mobs-live.log; then exit 1; fi
           cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" screenshots/limboai-mobs-live.png
+          # Reproduce Android's fast-mode viewport culling with real native BTPlayer.
+          TAMU_MOBILE_PERF=1 TAMU_LIMBOAI=1 TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged TAMU_VISUAL_CI=1 TAMU_VISUAL_CASE=mobs \
+            timeout --kill-after=3s 90s xvfb-run -a -s '-screen 0 720x1100x24' \
+            godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 \
+            2>&1 | tee screenshots/limboai-mobile-visible.log
+          grep -q TAMU_MOB_MOBILE_VISIBLE_OK screenshots/limboai-mobile-visible.log
+          grep -Eq 'TAMU_MOB_ANDROID_STATUS total=[1-9].*visible=[1-9].*limbo=ON' screenshots/limboai-mobile-visible.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_MOB_MOBILE_VISIBLE_FAILED|TAMU_LIMBOAI_.*FAILED' screenshots/limboai-mobile-visible.log; then exit 1; fi
       - name: Build standalone LimboAI Android ARM64 debug APK
         shell: bash
         run: |
