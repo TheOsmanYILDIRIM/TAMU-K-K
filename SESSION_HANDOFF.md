@@ -1,3 +1,10 @@
+### 2026-11-04 — [GODOT-ITEMS] 512px sprite + dört rastgele yumuşak glow
+- Kullanıcının seçtiği **önceki sade sarı ışık** ve özgün dört item görseli temel alındı; aşırı parlak/ornamentli son efekt kullanılmadı.
+- Yerelde doğrulanan `tamu_item_assets_512.zip`: `assets/items/core/{wood_log,wood_plank,stone,workbench}.png` ve `assets/items/glow/gold_{01..04}.png`; 8 ayrı RGBA 512×512, ZIP CRC ve PNG decode kontrolü yapıldı.
+- GitHub dalında `scripts/modular_hud.gd` mevcut envanter slotlarını hotbar'da item PNG ile çizer; item arkasında 4 glow varyantından birini **ilk göründüğünde rastgele** seçer ve aynı slot/ID dururken sabit tutar. Her kare texture oluşturmaz. `export_presets.cfg` sekiz sprite yolunu açıkça içerir.
+- **Önemli eksik:** Bu yürütme ortamından yereldeki binary PNG'ler GitHub'a otomatik aktarılamadı. Asset ZIP ayrı teslimdir; dalda sadece kod ve export yolları bulunur. PNG'ler repo köküne ZIP'ten açılmadan oyunda görünmez ve PCK kabulü yapılamaz. Yeni asset'ler repo/Android'e entegre edildi denemez.
+- **Açık doğrulama:** Godot 4.6 native import, modüler HUD görüntüsü, Stage6 test, CI/PCK, Android cihaz. `main` ve kayıt şeması değiştirilmedi. Kanonik Avenox görev yazımı yapılmadı.
+
 ### 2026-11-04 — [GODOT-ITEMS] İlk dört eşyanın texture slotları
 - Mevcut `feature/godot-items-20261104` dalında kanonik item kimlikleri korunarak `core:wood_log`, `core:wood_plank`, `core:stone` ve `core:workbench` tanımlarına `visual.texture_key` ve planlanan `res://assets/items/core/<id>.png` yolları eklendi. PNG henüz üretilmedi; `visual.kind=primitive` bırakıldı.
 - `scripts/domain_catalog.gd`: sadece beklenen `res://assets/items/<namespace>/<id>.png` yolunu doğrulayan, dosya gerçekten mevcutsa Texture2D yükleyen opt-in `item_visual/item_texture` API'si. `gameplay_session.gd` API'yi oyun mantığına açar. Harici mod GDScript/resource çalıştırılmaz.
