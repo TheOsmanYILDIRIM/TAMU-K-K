@@ -89,6 +89,37 @@ static func prepare(catalog: RefCounted, state: Dictionary) -> Dictionary:
     for field in ["harvest_commands", "craft_commands", "building_commands"]:
         if not state.get(field, null) is Dictionary:
             return {"ok": false, "status": "invalid_commands"}
+    # Ground loot reuses the existing v1 harvest-command journal, so reject
+    # tampered/duplicate pending drops before publishing a restored inventory.
+    var seen_loot: Dictionary = {}
+    for command_id in state["harvest_commands"]:
+        var command: Variant = state["harvest_commands"][command_id]
+        if not command is Dictionary or not command.has("ground_drops"):
+            continue
+        if str(command.get("status", "")) != "complete":
+            return {"ok": false, "status": "invalid_ground_loot"}
+        var drops: Variant = command["ground_drops"]
+        if not drops is Array or drops.is_empty() or drops.size() > 16:
+            return {"ok": false, "status": "invalid_ground_loot"}
+        for row in drops:
+            if not row is Dictionary or row.get("picked", null) is not bool:
+                return {"ok": false, "status": "invalid_ground_loot"}
+            var loot_id := str(row.get("id", ""))
+            var def_id := str(row.get("def_id", ""))
+            if loot_id.is_empty() or not loot_id.begins_with(str(command_id) + ":") or seen_loot.has(loot_id):
+                return {"ok": false, "status": "invalid_ground_loot"}
+            if str(row.get("source_id", "")).is_empty() or not _whole(row.get("count", null)):
+                return {"ok": false, "status": "invalid_ground_loot"}
+            var quantity := int(row["count"])
+            if quantity < 1 or quantity > catalog.max_stack(def_id):
+                return {"ok": false, "status": "invalid_ground_loot"}
+            if not (row.get("x", null) is float or row.get("x", null) is int) or not (row.get("y", null) is float or row.get("y", null) is int):
+                return {"ok": false, "status": "invalid_ground_loot"}
+            var x := float(row["x"])
+            var y := float(row["y"])
+            if not is_finite(x) or not is_finite(y) or absf(x) > 1000000.0 or absf(y) > 1000000.0:
+                return {"ok": false, "status": "invalid_ground_loot"}
+            seen_loot[loot_id] = true
     return {"ok": true, "status": "prepared", "slots": slots, "placed": placed,
         "world_id": world_id, "building_revision": building_rev,
         "depleted": depleted.duplicate(true), "inventory_applied": inventory_applied.duplicate(true),
