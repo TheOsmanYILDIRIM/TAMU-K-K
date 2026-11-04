@@ -577,10 +577,10 @@ func _lite_senses(a: Dictionary, player_pos: Vector2) -> Dictionary:
     if resource_index_ready and elapsed >= float(a["scan_at"]):
         # A cheap shared-bucket lookup replaces all live habitat probes.
         _refresh_resource_targets(a)
-    var food_here := not a["food"].is_empty() and \
+    var food_here: bool = not a["food"].is_empty() and \
         at.distance_squared_to(a["food"]["position"]) <= pow(float(definition.interaction_reach), 2.0) \
         and _food_available(at)
-    var water_here := not a["water"].is_empty() and \
+    var water_here: bool = not a["water"].is_empty() and \
         at.distance_squared_to(a["water"]["position"]) <= pow(float(definition.interaction_reach), 2.0)
     var fallback: Dictionary = a["wander"]
     if fallback.is_empty():
