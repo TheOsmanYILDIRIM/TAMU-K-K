@@ -37,3 +37,53 @@ func burst(position_world: Vector2, kind: String, count: int = 10) -> void:
         particles.queue_free()
     )
     particles.emitting = true
+
+# Texture-derived chips: one tiny region from the actual authored tree/rock
+# atlas, no CPU pixels, texture baking or shader compilation during strikes.
+# Burst count and lifetime are fixed, and the material is shared.
+const MAX_TEXTURE_BURSTS := 6
+var chip_material: ParticleProcessMaterial
+var chip_active: Array[GPUParticles2D] = []
+var chip_sequence := 0
+
+func chip_burst(world_screen: Vector2, source: Sprite2D) -> void:
+    if source == null or source.texture == null or chip_active.size() >= MAX_TEXTURE_BURSTS:
+        return
+    if chip_material == null:
+        chip_material = ParticleProcessMaterial.new()
+        chip_material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_POINT
+        chip_material.direction = Vector3(0.0, -1.0, 0.0)
+        chip_material.spread = 65.0
+        chip_material.initial_velocity_min = 25.0
+        chip_material.initial_velocity_max = 62.0
+        chip_material.gravity = Vector3(0.0, 145.0, 0.0)
+        chip_material.scale_min = 0.28
+        chip_material.scale_max = 0.55
+    var dimensions: Vector2 = source.texture.get_size()
+    if dimensions.x < 12.0 or dimensions.y < 12.0:
+        return
+    # Shift the little crop each strike so fragments reflect different bark,
+    # stone and mineral patches from the authentic source sprite.
+    chip_sequence += 1
+    var side := mini(18, floori(minf(dimensions.x, dimensions.y) * 0.18))
+    var cx := clampi(floori(dimensions.x * (0.30 + float(chip_sequence % 4) * 0.13)), 0, floori(dimensions.x)-side)
+    var cy := clampi(floori(dimensions.y * (0.28 + float(chip_sequence % 3) * 0.17)), 0, floori(dimensions.y)-side)
+    var fragment := AtlasTexture.new()
+    fragment.atlas = source.texture
+    fragment.region = Rect2(cx, cy, side, side)
+    var particles := GPUParticles2D.new()
+    particles.texture = fragment
+    particles.process_material = chip_material
+    particles.one_shot = true
+    particles.explosiveness = 1.0
+    particles.amount = 6
+    particles.lifetime = 0.28
+    particles.position = world_screen
+    particles.z_index = 10
+    add_child(particles)
+    chip_active.append(particles)
+    particles.finished.connect(func():
+        chip_active.erase(particles)
+        particles.queue_free()
+    )
+    particles.emitting = true
