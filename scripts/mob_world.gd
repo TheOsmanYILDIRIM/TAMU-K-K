@@ -81,13 +81,22 @@ func _ready() -> void:
 
 func _bind_host() -> void:
     host = get_parent()
+    # Render diagnostics before dependency checks: a failed load on real Android
+    # must be visible to the player, not silently treated as an empty world.
+    if host != null and (OS.has_feature("mobile") or OS.get_environment("TAMU_LIMBOAI") == "1"):
+        _install_mob_diagnostics()
+        diagnostic_label.text = "MOB starting..."
     if host == null or host.get("authority") == null or host.get("gameplay") == null \
             or host.get("object_layer") == null or not SPECIES.validate():
+        if diagnostic_label != null:
+            diagnostic_label.text = "MOB ERROR: host/species unavailable"
         push_error("TAMU_MOB_HOST_UNAVAILABLE")
         set_process(false)
         return
     region = str(host.get("authority").region_id)
     if region.is_empty():
+        if diagnostic_label != null:
+            diagnostic_label.text = "MOB ERROR: invalid region"
         push_error("TAMU_MOB_REGION_INVALID")
         set_process(false)
         return
@@ -98,7 +107,7 @@ func _bind_host() -> void:
         set_process(false)
         return
     limbo_requested = OS.get_environment("TAMU_LIMBOAI") == "1" or bool(ProjectSettings.get_setting("tamu/ai/use_limboai", false))
-    if limbo_requested or OS.has_feature("mobile"):
+    if diagnostic_layer == null and (limbo_requested or OS.has_feature("mobile")):
         _install_mob_diagnostics()
     # The authored Yaprakkulak population must not disappear when the
     # optional native Android extension cannot be loaded. MobBrain already
