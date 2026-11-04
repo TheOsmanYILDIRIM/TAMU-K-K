@@ -23,6 +23,7 @@ var applied_commands: Dictionary = {}
 var durable_slot := ""
 var world_binding: Dictionary = {}
 var durable_fault := false
+var ground_loot_enabled := false
 # Compatibility with existing live TOPLA/TAHTA/TEZGAH UI and CI.
 var slots: Array:
     get: return inventory.slots
@@ -73,6 +74,84 @@ func move_item_stack(from_slot: int, to_slot: int, quantity: int) -> Dictionary:
     if not harvesting.active.is_empty() or not crafting.active.is_empty():
         return {"ok": false, "status": "busy"}
     return inventory.move_stack(from_slot, to_slot, quantity)
+
+# World pickup mode is opt-in so legacy Stage6 regression fixtures remain stable.
+# Pending drops are recorded inside the already-saved harvest_commands ledger.
+func enable_ground_loot() -> void:
+    ground_loot_enabled = true
+    harvesting.ground_mode = true
+
+func pending_ground_loot() -> Array[Dictionary]:
+    var found: Array[Dictionary] = []
+    for command_id in harvesting.commands:
+        var record: Variant = harvesting.commands[command_id]
+        if not record is Dictionary or str(record.get("status", "")) != "complete":
+            continue
+        for row in record.get("ground_drops", []):
+            if row is Dictionary and not bool(row.get("picked", true)):
+                found.append(row.duplicate(true))
+    return found
+
+func _stage_pickup(loot_id: String, player_pos: Vector2) -> Dictionary:
+    if not is_finite(player_pos.x) or not is_finite(player_pos.y):
+        return {"ok": false, "status": "invalid_position"}
+    for command_id in harvesting.commands:
+        var record: Variant = harvesting.commands[command_id]
+        if not record is Dictionary:
+            continue
+        var drops: Variant = record.get("ground_drops", null)
+        if not drops is Array:
+            continue
+        for i in range(drops.size()):
+            var drop: Variant = drops[i]
+            if not drop is Dictionary or str(drop.get("id", "")) != loot_id:
+                continue
+            if bool(drop.get("picked", false)):
+                return {"ok": false, "status": "already_picked"}
+            var location := Vector2(float(drop.get("x", NAN)), float(drop.get("y", NAN)))
+            if not is_finite(location.x) or not is_finite(location.y):
+                return {"ok": false, "status": "invalid_position"}
+            if player_pos.distance_squared_to(location) > 52.0 * 52.0:
+                return {"ok": false, "status": "out_of_range"}
+            var def_id := str(drop.get("def_id", ""))
+            var amount := int(drop.get("count", 0))
+            var staged: Array = inventory.preview()
+            if not inventory.preview_add(staged, def_id, amount):
+                return {"ok": false, "status": "inventory_full"}
+            if not inventory.commit_preview(staged):
+                return {"ok": false, "status": "invalid_inventory"}
+            drop["picked"] = true
+            return {"ok": true, "status": "picked", "item_id": def_id, "amount": amount}
+    return {"ok": false, "status": "missing_loot"}
+
+func pickup_ground_loot(loot_id: String, player_pos: Vector2, command_id: String) -> Dictionary:
+    if not ground_loot_enabled:
+        return {"ok": false, "status": "ground_loot_disabled"}
+    if loot_id.is_empty() or not DomainTransaction.valid_command(command_id):
+        return {"ok": false, "status": "invalid_command"}
+    if not harvesting.active.is_empty() or not crafting.active.is_empty():
+        return {"ok": false, "status": "busy"}
+    if durable_slot == "":
+        if applied_commands.has(command_id):
+            return {"ok": false, "status": "duplicate"}
+        var result := _stage_pickup(loot_id, player_pos)
+        if bool(result.get("ok", false)):
+            applied_commands[command_id] = true
+            journal_sequence += 1
+            world_revision += 1
+        return result
+    if durable_fault:
+        return {"ok": false, "status": "restore_required"}
+    if applied_commands.has(command_id):
+        return {"ok": false, "status": "duplicate"}
+    var stage: RefCounted = _stage_domain()
+    if stage == null:
+        return {"ok": false, "status": "stage_failed"}
+    var result: Dictionary = stage._stage_pickup(loot_id, player_pos)
+    if not bool(result.get("ok", false)):
+        return result
+    var committed := _commit_durable(stage, command_id)
+    return result if bool(committed.get("ok", false)) else committed
 
 func is_harvestable(kind: String) -> bool:
     return not catalog.harvest(kind).is_empty()
@@ -153,6 +232,7 @@ func _publish_checkpoint(state: Dictionary) -> Dictionary:
         return {"ok": false, "status": "invalid_inventory"}
     new_inventory.applied = staged["inventory_applied"]
     var new_harvesting = DomainHarvesting.new(catalog, new_inventory)
+    new_harvesting.ground_mode = ground_loot_enabled
     new_harvesting.depleted = staged["depleted"]
     new_harvesting.commands = staged["harvest_commands"]
     var new_crafting = DomainCrafting.new(catalog, new_inventory)
@@ -281,6 +361,8 @@ func _stage_domain() -> RefCounted:
         return null
     stage.world_binding = world_binding.duplicate(true)
     stage.harvesting.active = harvesting.active.duplicate(true)
+    stage.ground_loot_enabled = ground_loot_enabled
+    stage.harvesting.ground_mode = ground_loot_enabled
     stage.crafting.active = crafting.active.duplicate(true)
     stage.building.terrain_sample = building.terrain_sample
     stage.building.solid_query = building.solid_query
