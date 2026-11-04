@@ -55,6 +55,8 @@ static func install(items: Array[Dictionary], layer: Node2D, actor_world: Vector
             baked[key] = {"texture": canvas, "image": region_image}
         var baked_record: Dictionary = baked[key]
         var image: Image = baked_record["image"]
+        # Harvest alpha checks still use the exact original RGBA cutout.
+        item["pixel_alpha_image"] = image
         sprite.texture = baked_record["texture"]
         # Keep existing sprite offset, size and alpha selection. Occluder comes
         # from the lowest source pixels; only one sampled light may cast it.
