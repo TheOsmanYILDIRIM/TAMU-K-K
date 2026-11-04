@@ -50,6 +50,22 @@ func _init() -> void:
 func count_item(id: String) -> int:
     return inventory.count_item(id)
 
+# Data-only item definitions work for core and registered mod namespaces.
+# Never expose a mutable reference to the canonical catalog.
+func item_definition(def_id: String) -> Dictionary:
+    return catalog.item(def_id).duplicate(true)
+
+# Player-driven slot rearrangement. Durable sessions require a journaled
+# Stage6 operation and are explicitly blocked until that adapter exists.
+func move_item_stack(from_slot: int, to_slot: int, quantity: int) -> Dictionary:
+    if inventory == null:
+        return {"ok": false, "status": "catalog_unavailable"}
+    if durable_slot != "":
+        return {"ok": false, "status": "durable_operation_not_supported"}
+    if not harvesting.active.is_empty() or not crafting.active.is_empty():
+        return {"ok": false, "status": "busy"}
+    return inventory.move_stack(from_slot, to_slot, quantity)
+
 func is_harvestable(kind: String) -> bool:
     return not catalog.harvest(kind).is_empty()
 
