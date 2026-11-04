@@ -41,9 +41,19 @@ var isolation_mode := "full"
 
 func set_isolation_mode(mode: String) -> void:
     isolation_mode = mode
-    if mode in ["mob_visual_off", "mob_all_off"]:
-        for a in agents:
-            a["visual"].visible = false
+    # Restore authored creature visibility immediately on entering AI-off.
+    # Otherwise the preceding render-off experiment would contaminate it.
+    var resident: bool = host != null and host.get("region_chunks").has(region)
+    var camera: Camera2D = host.get_node_or_null("Camera2D") as Camera2D if host != null else null
+    var viewport_rect := Rect2()
+    if camera != null and VisualEnvironment.mobile_fast_mode():
+        var extent := camera.get_viewport_rect().size * 0.5 / camera.zoom
+        viewport_rect = Rect2(camera.get_screen_center_position() - extent, extent * 2.0).grow(160.0)
+    for a in agents:
+        var show: bool = resident and mode not in ["mob_visual_off", "mob_all_off"]
+        if show and viewport_rect.has_area():
+            show = viewport_rect.has_point(WorldProjection.to_screen(a["position"]))
+        a["visual"].visible = show
     print("TAMU_MOB_ISOLATION mode=", mode, " agents=", agents.size())
 
 func _ready() -> void:
