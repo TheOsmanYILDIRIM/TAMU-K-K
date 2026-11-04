@@ -3,8 +3,13 @@ extends Node2D
 # AnimationPlayer architecture used by Yaprakkulak. Six original PNGs.
 # Geometry and bone weights are allocated once; no per-frame ArrayMesh rebuild.
 const ROOT := "res://assets/profile_character/"
-const SOURCE_SCALE := 0.061
+# Original source spans about 1,060 px from head to the lowest planted toe.
+# 0.067 produces ~71 px at game zoom, matching the authored 72 px player.
+const SOURCE_SCALE := 0.067
+const SOURCE_GROUND_Y := 665.0
 const SKIN_HZ := 30.0
+const FOOT_GROUND_TOLERANCE := 12.0
+const MAX_GROUND_CORRECTION := 50.0
 const MOBILE_SKIN_HZ := 30.0
 const CLIP_ALIAS := {
     "walk": "smooth_walk", "run": "smooth_run", "idle": "idle",
@@ -21,6 +26,10 @@ var current_clip := "idle"
 var configured := false
 var render_accumulator := 0.0
 var draw_updates := 0
+var ground_correction := 0.0
+var locomotion_rate := 1.0
+var last_contact_y := SOURCE_GROUND_Y
+var foot_contact_count := 0
 
 func setup() -> bool:
     if configured:
@@ -193,10 +202,11 @@ func setup() -> bool:
     if player.add_animation_library("", library) != OK:
         return false
     scale = Vector2.ONE * SOURCE_SCALE
-    position = Vector2(0.0, -689.0 * SOURCE_SCALE)
+    position = Vector2(0.0, -SOURCE_GROUND_Y * SOURCE_SCALE)
     configured = true
     player.play("idle", 0.0)
     player.advance(0.0)
+    _correct_foot_grounding()
     draw_updates = 1
     print("TAMU_PROFILE_NATIVE_SKELETON_OK bones=23 parts=6 clips=7 frames=310 mesh_rebuilds=0")
     return true
@@ -206,7 +216,45 @@ func set_clip(action: String) -> void:
     if configured and next != current_clip and player.has_animation(next):
         current_clip = next
         render_accumulator = 0.0
+        ground_correction = 0.0
         player.play(next, 0.0)
+
+# The animation source already has planted toes near y=665, but its
+# 1.632-second walk loop was independent of actual on-screen movement (~70 px/s).
+# Drive stride rate from projected travel rather than letting boots skate.
+func set_ground_speed(screen_pixels_per_second: float) -> void:
+    if not is_finite(screen_pixels_per_second):
+        return
+    locomotion_rate = clampf(screen_pixels_per_second / 29.0, 0.65, 2.6)
+
+
+func _toe_position(index: int) -> Vector2:
+    var bone_data: Dictionary = bones[index]
+    var tip: Array = bone_data["bind_end"]
+    var start: Array = bone_data["bind_start"]
+    var local_tip := Vector2(float(tip[0]) - float(start[0]), float(tip[1]) - float(start[1]))
+    return to_local(bone_nodes[index].to_global(local_tip))
+
+
+func _correct_foot_grounding() -> void:
+    # Keep the artwork grounded at the authored, fixed avatar pivot.
+    # Only Y correction is allowed: never shove the whole torso sideways to
+    # fake IK or move the game-world actor. Sit/death deliberately ignore this.
+    if current_clip not in ["idle", "smooth_walk", "smooth_run"]:
+        ground_correction = 0.0
+        return
+    var left_foot := _toe_position(10)
+    var right_foot := _toe_position(14)
+    var contact_y := maxf(left_foot.y, right_foot.y)
+    if not is_finite(contact_y):
+        return
+    last_contact_y = contact_y
+    var adjustment := clampf(SOURCE_GROUND_Y - contact_y,
+        -MAX_GROUND_CORRECTION, MAX_GROUND_CORRECTION)
+    ground_correction = adjustment
+    skeleton.position.y += adjustment
+    foot_contact_count += 1
+
 
 func advance(delta: float) -> void:
     if not configured or not is_finite(delta) or delta < 0.0:
@@ -214,8 +262,10 @@ func advance(delta: float) -> void:
     render_accumulator += minf(delta, 0.1)
     var hz := MOBILE_SKIN_HZ if OS.has_feature("mobile") else SKIN_HZ
     if render_accumulator >= 1.0 / hz:
+        player.speed_scale = locomotion_rate if current_clip in ["smooth_walk", "smooth_run"] else 1.0
         player.advance(render_accumulator)
         render_accumulator = 0.0
+        _correct_foot_grounding()
         draw_updates += 1
 
 func verify_contract() -> bool:
