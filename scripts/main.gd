@@ -109,11 +109,15 @@ var avatar_motion := 0.0
 var actor_facing_back := false
 var rig_directions: Dictionary = {}
 var rig_animations: Dictionary = {}
+# Profile art has only left/right sides. Store that choice independently of
+# legacy Rigby's four authored clip directions.
+var profile_facing_sign := 1.0
 var actor_direction := "SE"
 var actor_action := "idle"
 var active_source_clip := ""
 var native_rig: Skeleton2D
 var profile_rig: Node2D
+var profile_contact_shadow: Polygon2D
 var pixellight_world_light: PointLight2D
 
 func _update_sun(delta: float) -> void:
@@ -722,6 +726,23 @@ func _make_avatar() -> void:
         native_rig.visible = false
         print("TAMU_PROFILE_GAMEPLAY_RIG_ACTIVE bones=23 parts=6")
         print("TAMU_PROFILE_ONLY_VISIBLE_OK legacy_sprites=0")
+        # Independent world-space footprint: never mirror, rotate or skew with
+        # the side-view character. Keep one contact shadow, not one per PNG.
+        profile_contact_shadow = Polygon2D.new()
+        profile_contact_shadow.name = "ProfileGroundContact"
+        var footprint := PackedVector2Array()
+        for i in range(20):
+            var angle := TAU * float(i) / 20.0
+            footprint.append(Vector2(cos(angle) * ACTOR_COLLISION_RADIUS * 1.3,
+                sin(angle) * ACTOR_COLLISION_RADIUS * 0.34))
+        profile_contact_shadow.polygon = footprint
+        profile_contact_shadow.color = Color(0.05, 0.07, 0.06, 0.27)
+        # The negative local z puts the contact mark under Y-sorted scenery
+        # without pushing the original six sprites into another render layer.
+        profile_contact_shadow.z_index = -1
+        object_layer.add_child(profile_contact_shadow)
+        _update_avatar()
+        print("TAMU_PROFILE_FOOT_CONTACT_READY radius=", ACTOR_COLLISION_RADIUS)
 
 func _set_actor_clip(direction: String, action: String) -> void:
     if not rig_directions.has(direction):
@@ -741,7 +762,7 @@ func _set_actor_clip(direction: String, action: String) -> void:
     if profile_rig != null:
         profile_rig.set_clip(action)
     _set_actor_facing(direction == "NW" or direction == "NE")
-    avatar.scale.x = (-1.0 if direction == "SW" or direction == "NE" else 1.0) * avatar_visual_scale
+    avatar.scale.x = (profile_facing_sign if profile_rig != null else (-1.0 if direction == "SW" or direction == "NE" else 1.0)) * avatar_visual_scale
 
 func _set_actor_facing(back: bool) -> void:
     if actor_facing_back == back and avatar_parts["head"].texture != null:
@@ -787,7 +808,20 @@ func _update_avatar() -> void:
         if is_finite(ground_height):
             actor_ground_screen_offset = ground_height * R2_HEIGHT_SCREEN_SCALE
             actor_ground_sample_at = actor_world
-    avatar.position = WorldProjection.to_screen(actor_world) - Vector2(0.0, actor_ground_screen_offset)
+    var ground_anchor := WorldProjection.to_screen(actor_world)
+    if profile_rig != null:
+        if profile_contact_shadow != null:
+            # Same terrain-corrected foot position as the painted profile;
+            # never offset the shadow using the sprite's head/center.
+            profile_contact_shadow.position = ground_anchor - Vector2(0.0, actor_ground_screen_offset)
+        # Y-sort the shared avatar/objects layer using the actor's physical
+        # ground foot anchor; only the art is lifted for terrain height.
+        # Never distort or rotate the side-view PNG to fake a rear view.
+        avatar.position = ground_anchor
+        profile_rig.position.y = (-689.0 * ProfileRig.SOURCE_SCALE - actor_ground_screen_offset) / avatar_visual_scale
+    else:
+        # Historical four-direction visual parity fixture remains unchanged.
+        avatar.position = ground_anchor - Vector2(0.0, actor_ground_screen_offset)
     avatar_parts["leg_L"].position = Vector2(-7, -10)
     avatar_parts["leg_R"].position = Vector2(7, -10)
     avatar_parts["torso"].position = Vector2(0, -33)
@@ -1171,8 +1205,21 @@ func _verify_visual_order() -> bool:
     var expected_zoom := 0.82 if OS.get_environment("TAMU_VISUAL_CASE") == "zoom" else (2.0 if OS.get_environment("TAMU_VISUAL_CASE") == "grounding" else LOVE_CAMERA_ZOOM)
     if not is_equal_approx($Camera2D.zoom.x, expected_zoom):
         return false
-    if authority != null and absf(avatar.position.y - (WorldProjection.to_screen(actor_world).y - actor_ground_screen_offset)) > 0.01:
-        return false
+    if authority != null:
+        var projected_foot := WorldProjection.to_screen(actor_world)
+        if profile_rig != null:
+            if profile_contact_shadow == null or profile_contact_shadow.get_parent() != object_layer:
+                return false
+            if profile_contact_shadow.z_index != -1 or profile_contact_shadow.polygon.size() != 20:
+                return false
+            if profile_contact_shadow.position.distance_to(projected_foot - Vector2(0.0, actor_ground_screen_offset)) > 0.01:
+                return false
+            if avatar.position.distance_to(projected_foot) > 0.01:
+                return false
+            if absf(profile_rig.position.y * avatar_visual_scale + 689.0 * ProfileRig.SOURCE_SCALE + actor_ground_screen_offset) > 0.01:
+                return false
+        elif absf(avatar.position.y - (projected_foot.y - actor_ground_screen_offset)) > 0.01:
+            return false
     for item in harvestables:
         var sprite: Sprite2D = item["sprite"]
         if sprite.get_parent() != object_layer or sprite.z_index != 0:
@@ -1310,8 +1357,6 @@ func _load_objects() -> void:
                 $Camera2D.zoom = Vector2(2.0, 2.0)
                 _refresh_streaming_requests()
                 break
-    # Explicit opt-in for a capped real-art sample. The user can compare
-    # original solar silhouettes against PixelLight without double shadows.
     if OS.get_environment("TAMU_PIXELLIGHT_WORLD") == "1":
         var pl_result: Dictionary = PixelLightWorld.install(harvestables, object_layer, actor_world)
         pixellight_world_light = pl_result.get("light") as PointLight2D
@@ -1364,6 +1409,11 @@ func _process(delta: float) -> void:
         var next_direction := "NW" if direction.y < 0.0 else "SE"
         if direction.x < -0.05:
             next_direction = "NE" if direction.y < 0.0 else "SW"
+        if profile_rig != null:
+            # The real Cartesian movement is projected through the existing
+            # 45-degree iso transform; diagonal and depth-only movement need
+            # no new front/back art. A blocked player keeps their last side.
+            profile_facing_sign = WorldProjection.profile_facing_sign(actor_world - position_before, profile_facing_sign)
         _set_actor_clip(next_direction, "walk")
         avatar_motion += delta * 10.0
         avatar_parts["leg_L"].rotation = sin(avatar_motion)*0.16
@@ -1374,7 +1424,7 @@ func _process(delta: float) -> void:
         avatar_parts["leg_R"].rotation = 0.0
     _update_avatar()
     if pixellight_world_light != null:
-        pixellight_world_light.position = avatar.position + Vector2(0.0, -45.0)
+        pixellight_world_light.position = (profile_contact_shadow.position if profile_contact_shadow != null else avatar.position) + Vector2(0.0, -45.0)
     _tick_gameplay(delta)
     # The legacy 40-bone reference must not update alongside the active
     # 23-bone player in production; preserve it in dedicated CI fixtures.
@@ -1384,7 +1434,10 @@ func _process(delta: float) -> void:
         profile_rig.advance(visual_delta)
     var rig_end := Time.get_ticks_usec()
     if direction.length_squared() > 0.01:
-        $Camera2D.position = $Camera2D.position.lerp(avatar.position, minf(delta * 4.0, 1.0))
+        # Follow the painted ground-contact point on elevated terrain, not the
+        # unprojected Y-sort anchor; this prevents apparent height drift.
+        var camera_target: Vector2 = profile_contact_shadow.position if profile_contact_shadow != null else avatar.position
+        $Camera2D.position = $Camera2D.position.lerp(camera_target, minf(delta * 4.0, 1.0))
     var camera_center: Vector2 = $Camera2D.get_screen_center_position()
     if frame_no % 10 == 0 or camera_center.distance_squared_to(last_plan_camera) > 96.0 * 96.0 or $Camera2D.zoom != last_plan_zoom:
         _refresh_streaming_requests()
@@ -1396,7 +1449,10 @@ func _process(delta: float) -> void:
     var stream_end := Time.get_ticks_usec()
     if perf_hud != null:
         perf_hud.record(delta,loaded,total_cached,object_count,vertices,actor_world,stream_end-rig_end,rig_end-frame_start,"walk" if direction.length_squared()>0.01 else "idle")
-    marker.text = "TAMU Godot R2 / authored area\n%d resident / %d source | %d verts\nViewport missing %d | Mesh est %.1f MiB\nFPS %d | frame %.2f ms | Time %.1f | Harvest %d\nOdun %d | Tas %d | Tahta %d | Tezgah %d" % [loaded, total_cached, vertices, camera_missing, float(vertices * WorldStream.ESTIMATED_BYTES_PER_VERTEX)/1048576.0, Engine.get_frames_per_second(), delta * 1000.0,day_clock,harvested_count, gameplay.count_item("core:wood_log"),gameplay.count_item("core:stone"),gameplay.count_item("core:wood_plank"),gameplay.count_item("core:workbench")]
+    # HUD string formatting and inventory queries are diagnostic only;
+    # avoid running them every frame on Android.
+    if frame_no % 15 == 0:
+        marker.text = "TAMU Godot R2 / authored area\n%d resident / %d source | %d verts\nViewport missing %d | Mesh est %.1f MiB\nFPS %d | frame %.2f ms | Time %.1f | Harvest %d\nOdun %d | Tas %d | Tahta %d | Tezgah %d" % [loaded, total_cached, vertices, camera_missing, float(vertices * WorldStream.ESTIMATED_BYTES_PER_VERTEX)/1048576.0, Engine.get_frames_per_second(), delta * 1000.0,day_clock,harvested_count, gameplay.count_item("core:wood_log"),gameplay.count_item("core:stone"),gameplay.count_item("core:wood_plank"),gameplay.count_item("core:workbench")]
     if frame_no % 120 == 0:
         print("TAMU_GODOT_FRAME frame=", frame_no, " loaded=", loaded, " fps=", Engine.get_frames_per_second())
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and OS.get_environment("TAMU_VISUAL_CASE") == "gui" and frame_no == 54:
