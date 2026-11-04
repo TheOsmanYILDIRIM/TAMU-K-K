@@ -76,7 +76,7 @@ func update(dt: float, player_position: Vector2) -> Array[Dictionary]:
                         response = {"ok": false, "status": "invalid_drop"}
                         break
                     pending.append({"id": "%s:%d" % [command, n + 1],
-                        "def_id": def_id, "count": quantity,
+                        "def_id": def_id, "count": quantity, "source_id": id,
                         "x": float(item["position"].x), "y": float(item["position"].y),
                         "picked": false})
                 if response.is_empty():
