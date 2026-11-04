@@ -44,7 +44,9 @@ func set_isolation_mode(mode: String) -> void:
     # Restore authored creature visibility immediately on entering AI-off.
     # Otherwise the preceding render-off experiment would contaminate it.
     var resident: bool = host != null and host.get("region_chunks").has(region)
-    var camera: Camera2D = host.get_node_or_null("Camera2D") as Camera2D if host != null else null
+    var camera: Camera2D = null
+    if host != null:
+        camera = host.get_node_or_null("Camera2D") as Camera2D
     var viewport_rect := Rect2()
     if camera != null and VisualEnvironment.mobile_fast_mode():
         var extent := camera.get_viewport_rect().size * 0.5 / camera.zoom
