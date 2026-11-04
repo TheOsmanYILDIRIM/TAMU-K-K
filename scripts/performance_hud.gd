@@ -103,7 +103,7 @@ func _percentile(data: Array[float], percentile: float) -> float:
     ordered.sort()
     return ordered[clampi(ceili(percentile * ordered.size())-1,0,ordered.size()-1)]
 
-func record(delta: float, terrain_chunks: int, available_chunks: int, objects: int, vertices: int, actor_position: Vector2, streaming_usec: int, rig_usec: int, mode: String) -> void:
+func record(delta: float, terrain_chunks: int, available_chunks: int, objects: int, vertices: int, actor_position: Vector2, streaming_usec: int, rig_usec: int, mode: String, mob_usec: int = 0) -> void:
     if not enabled:
         return
     count += 1
@@ -118,6 +118,8 @@ func record(delta: float, terrain_chunks: int, available_chunks: int, objects: i
         "fps_engine": Engine.get_frames_per_second(),
         "streaming_main_ms": snappedf(streaming_usec/1000.0,0.001),
         "rig_main_ms": snappedf(rig_usec/1000.0,0.001),
+        # MobWorld has process_priority=10; one-frame lag versus main._process.
+        "mob_cpu_ms_previous_frame": snappedf(float(mob_usec)/1000.0,0.001),
         "chunks_loaded": terrain_chunks,
         "chunks_available": available_chunks,
         "objects_total": objects,

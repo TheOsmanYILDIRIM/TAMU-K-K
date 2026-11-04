@@ -1530,7 +1530,9 @@ func _process(delta: float) -> void:
             _enforce_resident_budget()
     var stream_end := Time.get_ticks_usec()
     if perf_hud != null:
-        perf_hud.record(delta,loaded,total_cached,object_count,vertices,actor_world,stream_end-rig_end,rig_end-frame_start,"walk" if direction.length_squared()>0.01 else "idle")
+        var mob_node: Node = get_node_or_null("MobWorld")
+        var mob_usec: int = int(mob_node.get("last_process_usec")) if mob_node != null else 0
+        perf_hud.record(delta,loaded,total_cached,object_count,vertices,actor_world,stream_end-rig_end,rig_end-frame_start,"walk" if direction.length_squared()>0.01 else "idle",mob_usec)
     # HUD string formatting and inventory queries are diagnostic only;
     # avoid running them every frame on Android.
     if frame_no % 15 == 0:

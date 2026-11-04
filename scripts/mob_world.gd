@@ -38,6 +38,7 @@ var resource_scan_cursor := 0
 var player_damage_receiver: Callable
 # Reversible render/AI isolation, no gameplay IDs/save changes.
 var isolation_mode := "full"
+var last_process_usec := 0
 
 func set_isolation_mode(mode: String) -> void:
     isolation_mode = mode
@@ -579,7 +580,9 @@ func _process(delta: float) -> void:
         return
     # A frozen creature stays rendered in mob_ai_off: isolate CPU only.
     if isolation_mode in ["mob_ai_off", "mob_all_off"]:
+        last_process_usec = 0
         return
+    var start_usec: int = Time.get_ticks_usec()
     var resident: bool = host.get("region_chunks").has(region)
     var mobile_fast := VisualEnvironment.mobile_fast_mode()
     var camera: Camera2D = host.get_node_or_null("Camera2D") as Camera2D
@@ -594,6 +597,7 @@ func _process(delta: float) -> void:
         if a["visual"].visible != show:
             a["visual"].visible = show
     if not resident:
+        last_process_usec = Time.get_ticks_usec() - start_usec
         return
     var dt := minf(delta, 0.05)
     elapsed += dt
@@ -613,6 +617,7 @@ func _process(delta: float) -> void:
         a["visual"].lod_seconds = 1.0 / (near_hz if distance < 650.0 else far_hz)
         _move_agent(a, dt)
         _resolve_attack(a)
+    last_process_usec = Time.get_ticks_usec() - start_usec
 
 func _exit_tree() -> void:
     for a in agents:
