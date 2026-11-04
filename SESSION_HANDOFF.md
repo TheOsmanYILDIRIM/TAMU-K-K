@@ -1,3 +1,11 @@
+### 2026-11-04 — [GODOT-ITEMS] main kaynaklı izole item API bağlantısı
+- **Dal:** `feature/godot-items-20261104`; köken `main` SHA `eff29ae8ad0997dfc0982ca3ae20ddefc0f58ba0`. Main ve diğer deney dalları değiştirilmedi.
+- `scripts/domain_inventory.gd`: geçerli v1 `def_id/count` stack'lerinin slotlar arası atomik taşıma, bölme ve birleştirilmesi; geçersiz slot/miktar, uyumsuz tür ve dolu stack işlemleri veri değiştirmeden reddedilir. Instance metadata henüz desteklenmediği için varmış gibi kaydedilmez.
+- `scripts/gameplay_session.gd`: mod namespace'leri dahil katalog tanımının kopya olarak okunması ve oyun oturumu üzerinden slot taşıma API'si eklendi. Journal kapsamı dışı kalıcı oturumlarda slot işlemi açıkça reddedilir; Stage6 v1 save formatı değişmedi.
+- Mevcut `scripts/stage6_live_ci.gd` create smoke'unda item tanımı, referans kopyası, stack split/merge, başarısız işlemde değişmezlik ve tariften çıktı doğrulama kontrolü eklendi.
+- **Doğrulanan:** GitHub kaynak commit/dosya SHA geri okuması. **Açık:** Godot 4.6 sentaks/runtime smoke, Actions sonucu, PCK, gerçek Android testi. Bu ortamda Godot CLI kurulu değil. Ayrı kanonik Beyin görevi mevcut kaynak/izin doğrulanmadan üretilmedi.
+- **Sonraki:** Native test sonucu; sonra UI slot kontrolü ve metadata için ayrı sürümlü save/migration kararı. Mevcut HUD/karakter, LÖVE ve kullanıcı save verileri korunur.
+
 ### 2026-11-03 — Gölge sistemi araştırması / sohbet kapatma
 - Kullanıcının bildirdiği sorun: alfa-siluet gölgesi bazı açılarda iyi olsa da güneşe göre dönme ve kısalma/uzama izometrik 2D görsel tutarlılığını bozuyor.
 - Araştırma notu docs/GOLGE.md dosyasına kaydedildi. Gnomon, PixelLight 2D, 2D Projected Ground Shadow ve Lit seçenekleri; Godot yerleşik DirectionalLight2D/LightOccluder2D; Android renderer/4.6 uyumluluk belirsizlikleri ve test planı içeriyor.
