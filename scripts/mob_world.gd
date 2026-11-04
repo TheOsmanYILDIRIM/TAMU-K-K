@@ -206,7 +206,7 @@ func spawn(definition: Resource, at: Vector2, seed_offset: int = 0) -> bool:
         "intent": {"speed": 0.0, "clip": "idle", "goal": at}, "route": [], "route_ready": false,
         "nav_goal": Vector2(INF, INF), "repath_at": 0.0, "stuck": 0.0, "escape_blocked": false,
         "food": {}, "water": {}, "wander": {}, "scan_at": 0.0, "last_state": "idle", "corpse_food": 1.0,
-        "pending_attack": {}, "death_reported": false, "motion_accum": 0.0}
+        "pending_attack": {}, "death_reported": false, "motion_accum": 0.0, "scan_work": {}}
     agents.append(agent)
     by_id[instance_id] = agent
     _place_visual(agent)
@@ -311,8 +311,58 @@ func _scan_resources(a: Dictionary) -> void:
             a["wander"] = {"position": q}
     a["scan_at"] = elapsed + 2.0
 
+# LimboAI's manual BT is called per creature. The 28-point forage survey is
+# a separate bounded sensor job: each real R2 sample is retained, but no
+# single frame performs the previous entire ~77ms burst on Android.
+func _scan_resources_budgeted(max_samples: int = 3) -> void:
+    if agents.is_empty():
+        return
+    var began := Time.get_ticks_usec()
+    for step in range(max_samples):
+        if step > 0 and Time.get_ticks_usec() - began >= 1600:
+            break
+        var a: Dictionary = agents[resource_scan_cursor % agents.size()]
+        resource_scan_cursor += 1
+        if a["brain"].health <= 0.0:
+            continue
+        var work: Dictionary = a.get("scan_work", {})
+        if work.is_empty():
+            if elapsed < float(a["scan_at"]):
+                continue
+            work = {"cursor": 0, "center": a["position"], "food": {},
+                "water": {}, "wander": {}, "best_food": INF, "best_water": INF}
+        var i: int = int(work["cursor"])
+        var p: Vector2 = work["center"]
+        var q := p if i == 0 else p + Vector2.from_angle(float(i) * 2.399963) * (24.0 + float(i % 7) * 36.0)
+        if _stand(q, float(a["definition"].radius)):
+            var sample := _terrain(q.x, q.y)
+            var distance := p.distance_squared_to(q)
+            if sample.get("feature") == "grass" and _food_available(q) and distance < float(work["best_food"]):
+                work["best_food"] = distance
+                work["food"] = {"position": q}
+            if _near_water(q, float(a["definition"].interaction_reach)) and distance < float(work["best_water"]):
+                work["best_water"] = distance
+                work["water"] = {"position": q}
+            if i > 0 and q.distance_to(a["brain"].home) < float(a["definition"].home_radius) * 0.8:
+                work["wander"] = {"position": q}
+        work["cursor"] = i + 1
+        if i + 1 >= 28:
+            a["food"] = work["food"]
+            a["water"] = work["water"]
+            a["wander"] = work["wander"]
+            a["scan_at"] = elapsed + 2.0
+            a["scan_work"] = {}
+        else:
+            a["scan_work"] = work
+
 func _escape(a: Dictionary, threat: Vector2) -> Dictionary:
     var p: Vector2 = a["position"]
+    # Only recompute the 7x6 ray escape search if threat/actor moved or
+    # the 0.6s cache expired. Actual movement still uses live R2 sweeps.
+    if limbo_enabled and elapsed < float(a.get("escape_refresh_at", -1.0)) \
+            and p.distance_squared_to(a.get("escape_origin", Vector2(INF, INF))) < 18.0 * 18.0 \
+            and threat.distance_squared_to(a.get("escape_threat", Vector2(INF, INF))) < 28.0 * 28.0:
+        return a.get("escape_cache", {})
     var away := (p - threat).normalized()
     if away.length_squared() < 0.5:
         away = Vector2.RIGHT
@@ -332,7 +382,13 @@ func _escape(a: Dictionary, threat: Vector2) -> Dictionary:
             best = score
             target = q
     a["escape_blocked"] = not target.is_finite()
-    return {} if not target.is_finite() else {"position": target}
+    var result: Dictionary = {} if not target.is_finite() else {"position": target}
+    if limbo_enabled:
+        a["escape_cache"] = result
+        a["escape_origin"] = p
+        a["escape_threat"] = threat
+        a["escape_refresh_at"] = elapsed + 0.6
+    return result
 
 func _senses(a: Dictionary) -> Dictionary:
     var p: Vector2 = a["position"]
@@ -680,6 +736,10 @@ func _process(delta: float) -> void:
     if accumulator >= decision_interval:
         accumulator = minf(accumulator - decision_interval, decision_interval)
         _think()
+    if limbo_enabled:
+        var scan_started := Time.get_ticks_usec()
+        _scan_resources_budgeted(3)
+        last_scan_usec = Time.get_ticks_usec() - scan_started
     var nav_started := Time.get_ticks_usec()
     _advance_navigation()
     last_navigation_usec = Time.get_ticks_usec() - nav_started
