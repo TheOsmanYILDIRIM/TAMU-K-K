@@ -36,6 +36,15 @@ var player_velocity := Vector2.ZERO
 var rng := RandomNumberGenerator.new()
 var resource_scan_cursor := 0
 var player_damage_receiver: Callable
+# Reversible render/AI isolation, no gameplay IDs/save changes.
+var isolation_mode := "full"
+
+func set_isolation_mode(mode: String) -> void:
+    isolation_mode = mode
+    if mode in ["mob_visual_off", "mob_all_off"]:
+        for a in agents:
+            a["visual"].visible = false
+    print("TAMU_MOB_ISOLATION mode=", mode, " agents=", agents.size())
 
 func _ready() -> void:
     process_priority = 10
@@ -447,7 +456,8 @@ func _move_agent(a: Dictionary, dt: float) -> void:
         route.pop_front()
     a["velocity"] = Vector2.ZERO
     if speed <= 0.0 or route.is_empty() or a["brain"].health <= 0.0:
-        a["visual"].advance(dt)
+        if a["visual"].visible:
+            a["visual"].advance(dt)
         return
     var direction: Vector2 = (route[0] as Vector2) - from
     var delta := direction.limit_length(speed * dt)
@@ -555,6 +565,9 @@ func player_attack() -> void:
 func _process(delta: float) -> void:
     if not bound:
         return
+    # A frozen creature stays rendered in mob_ai_off: isolate CPU only.
+    if isolation_mode in ["mob_ai_off", "mob_all_off"]:
+        return
     var resident: bool = host.get("region_chunks").has(region)
     var mobile_fast := VisualEnvironment.mobile_fast_mode()
     var camera: Camera2D = host.get_node_or_null("Camera2D") as Camera2D
@@ -563,7 +576,7 @@ func _process(delta: float) -> void:
         var half_size := camera.get_viewport_rect().size * 0.5 / camera.zoom
         view = Rect2(camera.get_screen_center_position() - half_size, half_size * 2.0).grow(160.0)
     for a in agents:
-        var show: bool = resident
+        var show: bool = resident and isolation_mode != "mob_visual_off"
         if mobile_fast and camera != null:
             show = show and view.has_point(WorldProjection.to_screen(a["position"]))
         if a["visual"].visible != show:

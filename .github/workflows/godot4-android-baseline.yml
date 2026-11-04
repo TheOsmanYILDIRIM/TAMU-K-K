@@ -545,6 +545,17 @@ jobs:
           grep -q TAMU_VISUAL_CAPTURE_OK screenshots/mobile-fast-combined.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_MOB_.*FAILED|TAMU_MOBILE_.*FAILED|TAMU_OBJECT_TERRAIN_REVEAL_FAILED' screenshots/mobile-fast-combined.log; then exit 1; fi
           cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" screenshots/mobile-fast-combined.png
+          # Runtime A/B on SAME authentic 156-cell, 832-object scene.
+          # Draw-call and FPS logs are desktop software GL, NOT Android claims.
+          mkdir -p /tmp/tamu-perf-isolation-home
+          XDG_DATA_HOME=/tmp/tamu-perf-isolation-home TAMU_MOBILE_PERF=1 TAMU_PERF_ISOLATION_CI=1 TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged timeout --kill-after=3s 100s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 125 2>&1 | tee screenshots/perf-isolation.log
+          grep -q 'TAMU_PERF_ISOLATION_GATE_OK profiles=8 objects=832 region=1' screenshots/perf-isolation.log
+          grep -q 'TAMU_PERF_ISOLATION_APPLIED profile=mob_visual_off' screenshots/perf-isolation.log
+          grep -q 'TAMU_PERF_ISOLATION_APPLIED profile=mob_ai_off' screenshots/perf-isolation.log
+          grep -q 'TAMU_PERF_ISOLATION_APPLIED profile=solar_off' screenshots/perf-isolation.log
+          grep -q 'TAMU_PERF_ISOLATION_APPLIED profile=objects_off' screenshots/perf-isolation.log
+          grep -q 'TAMU_PERF_ISOLATION_APPLIED profile=terrain_off' screenshots/perf-isolation.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_PERF_ISOLATION_.*FAILED|TAMU_MOB_.*FAILED' screenshots/perf-isolation.log; then exit 1; fi
           # Each cumulative visual stage gets a real Godot GL screenshot and
           # runtime drawcall/FPS telemetry on the same CI runner and camera.
           # This is a desktop Xvfb comparison, not an Android FPS claim.

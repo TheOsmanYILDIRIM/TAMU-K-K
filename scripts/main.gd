@@ -121,6 +121,10 @@ var profile_contact_shadow: Polygon2D
 var pixellight_world_light: PointLight2D
 var fast_cull_visible_nodes := 0
 var fast_cull_total_nodes := 0
+const ISOLATION_MODES = ["full", "mob_visual_off", "mob_ai_off",
+    "mob_all_off", "solar_off", "objects_off", "terrain_off", "player_rig_off"]
+var perf_isolation_mode := "full"
+var shadow_layer: Node2D
 
 func _update_sun(delta: float) -> void:
     day_clock = fposmod(day_clock + delta * 24.0 / DAY_SECONDS, 24.0)
@@ -623,6 +627,10 @@ func _world_ui_hit(point: Vector2) -> bool:
         for child in legacy.get_children():
             if child is Control and child.is_visible_in_tree() and child.get_global_rect().has_point(point):
                 return true
+    if perf_hud != null:
+        var perf_panel: Control = perf_hud.get("panel") as Control
+        if perf_panel != null and perf_panel.is_visible_in_tree() and perf_panel.get_global_rect().has_point(point):
+            return true
     if joystick_base != null and point.distance_to(_joystick_center()) <= 105.0:
         return true
     return false
@@ -841,6 +849,31 @@ func _fast_view_rect() -> Rect2:
     var camera: Camera2D = $Camera2D
     var half_size := get_viewport_rect().size * 0.5 / camera.zoom
     return Rect2(camera.get_screen_center_position() - half_size, half_size * 2.0)
+
+func _set_perf_isolation(mode: String) -> void:
+    if not ISOLATION_MODES.has(mode):
+        push_error("TAMU_PERF_ISOLATION_INVALID " + mode)
+        return
+    perf_isolation_mode = mode
+    var mobs: Node = get_node_or_null("MobWorld")
+    if mobs != null:
+        mobs.call("set_isolation_mode", mode)
+    if shadow_layer != null:
+        shadow_layer.visible = mode != "solar_off"
+    if profile_rig != null:
+        profile_rig.visible = mode != "player_rig_off"
+    if detail_environment != null:
+        detail_environment.visible = mode != "terrain_off"
+    for region_id in region_chunks:
+        var terrain_node: Node2D = region_chunks[region_id]
+        if is_instance_valid(terrain_node):
+            terrain_node.visible = mode != "terrain_off"
+    if object_layer != null and not object_visuals_by_chunk.is_empty():
+        _refresh_streaming_requests()
+    if perf_hud != null:
+        perf_hud.call("set_isolation_mode", mode)
+    print("TAMU_PERF_ISOLATION_APPLIED profile=", mode,
+        " regions=", region_chunks.size(), " authored_objects=", object_count)
 
 func _fast_node_in_view(node: Node2D, view: Rect2) -> bool:
     if not node is Sprite2D:
@@ -1083,6 +1116,8 @@ func _ready() -> void:
     perf_hud = load("res://scripts/performance_hud.gd").new()
     add_child(perf_hud)
     perf_hud.layer = 118 # HUD _ready sets 100; override after attachment.
+    perf_hud.connect("isolation_requested", Callable(self, "_set_perf_isolation"))
+    _set_perf_isolation("full")
     _init_mobile_joystick()
     _init_harvest_button()
     forest_gui=FOREST_GUI.new()
@@ -1111,6 +1146,7 @@ func _load_region(manifest_path: String) -> bool:
     var node: Node2D = unified["root"]
     add_child(node)
     region_chunks[region_id] = node
+    node.visible = perf_isolation_mode != "terrain_off"
     loaded = int(unified["source_cells"])
     vertices = int(unified["vertices"])
     for stem in object_visuals_by_chunk:
@@ -1148,6 +1184,8 @@ func _set_chunk_visuals_visible(stem: String, show: bool, viewport_bounds: Rect2
             continue
         var visible_now := show and not bool(node.get_meta("tamu_collected", false)) \
             and not bool(node.get_meta("tamu_pixellight_replaced_shadow", false))
+        if visible_now and perf_isolation_mode == "objects_off":
+            visible_now = false
         if visible_now and fast_mode:
             visible_now = _fast_node_in_view(node, bounds)
         if node.visible != visible_now:
@@ -1304,7 +1342,7 @@ func _load_objects() -> void:
     add_child(object_layer)
     # Solar silhouettes use the actual authored AtlasTexture. The old
     # separate baked shadow atlas/manifest were unused resident resources.
-    var shadow_layer := Node2D.new()
+    shadow_layer = Node2D.new()
     shadow_layer.name = "CanonicalR2Shadows"
     shadow_layer.z_index = 2
     add_child(shadow_layer)
@@ -1471,7 +1509,7 @@ func _process(delta: float) -> void:
     # 23-bone player in production; preserve it in dedicated CI fixtures.
     if native_rig != null and (profile_rig == null or OS.get_environment("TAMU_VISUAL_CI") == "1"):
         native_rig.advance(visual_delta)
-    if profile_rig != null:
+    if profile_rig != null and perf_isolation_mode != "player_rig_off":
         profile_rig.advance(visual_delta)
     var rig_end := Time.get_ticks_usec()
     if direction.length_squared() > 0.01:
@@ -1499,6 +1537,28 @@ func _process(delta: float) -> void:
         marker.text = "TAMU Godot R2 / authored area\n%d resident / %d source | %d verts\nViewport missing %d | Mesh est %.1f MiB\nFPS %d | frame %.2f ms | Time %.1f | Harvest %d\nOdun %d | Tas %d | Tahta %d | Tezgah %d" % [loaded, total_cached, vertices, camera_missing, float(vertices * WorldStream.ESTIMATED_BYTES_PER_VERTEX)/1048576.0, Engine.get_frames_per_second(), delta * 1000.0,day_clock,harvested_count, gameplay.count_item("core:wood_log"),gameplay.count_item("core:stone"),gameplay.count_item("core:wood_plank"),gameplay.count_item("core:workbench")]
     if frame_no % 120 == 0:
         print("TAMU_GODOT_FRAME frame=", frame_no, " loaded=", loaded, " fps=", Engine.get_frames_per_second())
+    if OS.get_environment("TAMU_PERF_ISOLATION_CI") == "1":
+        if frame_no % 12 == 0 and frame_no >= 12 and frame_no <= 96:
+            var next_index := mini(floori(float(frame_no) / 12.0), ISOLATION_MODES.size() - 1)
+            _set_perf_isolation(ISOLATION_MODES[next_index])
+        if frame_no == 108:
+            var tagged := {}
+            for entry in perf_hud.get("samples"):
+                tagged[str(entry.get("isolation_profile", ""))] = true
+            for required in ISOLATION_MODES:
+                if not tagged.has(required):
+                    push_error("TAMU_PERF_ISOLATION_CI_MISSING " + required)
+                    get_tree().quit(84)
+                    return
+            _set_perf_isolation("full")
+            if shadow_layer == null or not shadow_layer.visible or profile_rig == null or not profile_rig.visible or object_count != 832 or region_chunks.size() != 1:
+                push_error("TAMU_PERF_ISOLATION_RESTORE_FAILED")
+                get_tree().quit(85)
+                return
+            print("TAMU_PERF_ISOLATION_GATE_OK profiles=", ISOLATION_MODES.size(),
+                " objects=", object_count, " region=", region_chunks.size())
+            get_tree().quit()
+            return
     if fast_mode and frame_no == 90:
         var visible_nodes := 0
         var total_nodes := 0
