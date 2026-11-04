@@ -212,7 +212,7 @@ func _selection_art(item: Dictionary) -> Dictionary:
     if harvest_alpha_cache.has(key):
         return harvest_alpha_cache[key]
     var sprite: Sprite2D = item["sprite"]
-    var original: Image = sprite.texture.get_image()
+    var original: Image = item.get("pixel_alpha_image") as Image if item.has("pixel_alpha_image") else sprite.texture.get_image()
     if original == null or original.is_empty():
         return {}
     var padding := 5
