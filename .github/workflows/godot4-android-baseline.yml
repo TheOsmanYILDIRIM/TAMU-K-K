@@ -1002,6 +1002,7 @@ jobs:
           needle='include_filter="'
           assert s.count(needle)==1
           s=s.replace(needle,needle+'addons/limboai/bin/*.gdextension,addons/limboai/bin/*arm64*.so,',1)
+          s=s.replace('org.osman.tamu.godotbenchmark', 'org.osman.tamu.limboexperiment', 1)
           p.write_text(s)
           PY
           mkdir -p build "$HOME/.android"
@@ -1021,7 +1022,7 @@ jobs:
               var settings = EditorInterface.get_editor_settings()
               settings.set_setting("export/android/android_sdk_path", OS.get_environment("ANDROID_HOME"))
               settings.set_setting("export/android/java_sdk_path", OS.get_environment("JAVA_HOME"))
-              settings.save()
+              # Godot editor persists EditorSettings during orderly shutdown.
               quit()
           GD
           timeout 60s godot --headless --editor --path . --script /tmp/tamu_android_settings.gd 2>&1 | tee screenshots/limboai-android-settings.log
