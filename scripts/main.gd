@@ -1144,7 +1144,7 @@ func _verify_visual_order() -> bool:
                 return false
             if avatar.position.distance_to(projected_foot) > 0.01:
                 return false
-            if absf(profile_rig.position.y + 689.0 * ProfileRig.SOURCE_SCALE + actor_ground_screen_offset) > 0.01:
+            if absf(profile_rig.position.y + ProfileRig.SOURCE_GROUND_Y * ProfileRig.SOURCE_SCALE + actor_ground_screen_offset) > 0.01:
                 return false
         elif absf(avatar.position.y - (projected_foot.y - actor_ground_screen_offset)) > 0.01:
             return false
