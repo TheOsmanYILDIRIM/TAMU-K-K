@@ -55,7 +55,7 @@ func _bind_host() -> void:
     rng.seed = 20261103
     player_last = host.get("actor_world")
     # Preserve existing visual parity fixtures, but run mob-enabled case explicitly.
-    if OS.get_environment("TAMU_VISUAL_CI") == "1" and OS.get_environment("TAMU_VISUAL_CASE") != "mobs":
+    if OS.get_environment("TAMU_VISUAL_CI") == "1" and OS.get_environment("TAMU_VISUAL_CASE") not in ["mobs", "combo"]:
         set_process(false)
         return
     bound = true

@@ -693,7 +693,7 @@ func _make_avatar() -> void:
             get_tree().quit(21)
     # Dedicated authored profile: six original PNGs, runtime weighted meshes.
     # Keep the legacy Rigby source and its visual-parity fixture intact in CI.
-    if OS.get_environment("TAMU_VISUAL_CI") != "1" or OS.get_environment("TAMU_VISUAL_CASE") == "profile":
+    if OS.get_environment("TAMU_VISUAL_CI") != "1" or OS.get_environment("TAMU_VISUAL_CASE") in ["profile", "combo"]:
         profile_rig = ProfileRig.new()
         profile_rig.name = "TAMUProfileWeightedRig"
         avatar.add_child(profile_rig)

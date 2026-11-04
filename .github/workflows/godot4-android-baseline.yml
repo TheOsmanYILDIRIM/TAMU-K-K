@@ -523,6 +523,16 @@ jobs:
           grep -q TAMU_HARVEST_SELECTION_OK screenshots/pixellight-world.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_PROFILE_.*FAILED|TAMU_PIXELLIGHT_WORLD_NO_SAMPLES' screenshots/pixellight-world.log; then exit 1; fi
           cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" screenshots/pixellight-world.png
+          # Combined fixture: original 6-PNG weighted profile + Yaprakkulak +
+          # opt-in PixelLight base occluders in the SAME authored R2 viewport.
+          TAMU_PIXELLIGHT_WORLD=1 TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged TAMU_VISUAL_CASE=combo timeout --kill-after=3s 90s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 2>&1 | tee screenshots/pixellight-combined.log
+          grep -q TAMU_PROFILE_ONLY_VISIBLE_OK screenshots/pixellight-combined.log
+          grep -Eq 'TAMU_MOB_READY species=core:yaprakkulak count=[1-9]' screenshots/pixellight-combined.log
+          grep -q 'TAMU_PIXELLIGHT_WORLD_ACTIVE objects=' screenshots/pixellight-combined.log
+          grep -q TAMU_YDEPTH_SHADOW_ORDER_OK screenshots/pixellight-combined.log
+          grep -q TAMU_VISUAL_CAPTURE_OK screenshots/pixellight-combined.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_PROFILE_.*FAILED|TAMU_MOB_.*FAILED|TAMU_PIXELLIGHT_WORLD_NO_SAMPLES' screenshots/pixellight-combined.log; then exit 1; fi
+          cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" screenshots/pixellight-combined.png
           # Each cumulative visual stage gets a real Godot GL screenshot and
           # runtime drawcall/FPS telemetry on the same CI runner and camera.
           # This is a desktop Xvfb comparison, not an Android FPS claim.
