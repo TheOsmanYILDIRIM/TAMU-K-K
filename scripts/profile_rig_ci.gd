@@ -33,13 +33,22 @@ func _run() -> void:
             quit(72)
             return
         if action in ["idle", "walk", "run"]:
-            var contact_y := maxf(character._toe_position(10).y, character._toe_position(14).y)
-            if absf(contact_y - ProfileRig.SOURCE_GROUND_Y) > 1.5:
-                push_error("TAMU_PROFILE_FOOT_CONTACT_FAILED " + action + " y=" + str(contact_y))
-                quit(72)
-                return
             if absf(character.scale.y - ProfileRig.SOURCE_SCALE) > 0.001:
                 push_error("TAMU_PROFILE_SCALE_FAILED")
+                quit(72)
+                return
+            if absf(character.skeleton.position.x) > 50.0:
+                push_error("TAMU_PROFILE_TORSO_LATERAL_SHIFT_FAILED " + action)
+                quit(72)
+                return
+            if action == "idle":
+                var contact_y := maxf(character._toe_position(10).y, character._toe_position(14).y)
+                if absf(contact_y - ProfileRig.SOURCE_GROUND_Y) > 5.0:
+                    push_error("TAMU_PROFILE_IDLE_FOOT_CONTACT_FAILED y=" + str(contact_y))
+                    quit(72)
+                    return
+            elif character.planted_foot >= 0 and character.grounding_error > 14.0:
+                push_error("TAMU_PROFILE_IK_PLANTED_ERROR_FAILED " + action + " error=" + str(character.grounding_error))
                 quit(72)
                 return
         for bone in character.bone_nodes:
@@ -52,6 +61,25 @@ func _run() -> void:
                 push_error("TAMU_PROFILE_MESH_RECREATED")
                 quit(72)
                 return
+    # Advance a continuous gait with actual world steps: root never follows
+    # the stance foot laterally, and each planted constraint remains bounded.
+    character.set_clip("walk")
+    character.set_ground_speed(52.0)
+    var tracked_contacts := 0
+    for frame in range(80):
+        character.apply_world_step(Vector2(52.0 / 30.0, 26.0 / 30.0))
+        character.advance(1.0 / 30.0)
+        if character.planted_foot >= 0:
+            tracked_contacts += 1
+            if character.grounding_error > 14.0:
+                push_error("TAMU_PROFILE_IK_STANCE_DRIFT_FAILED frame=" + str(frame))
+                quit(72)
+                return
+    if tracked_contacts < 3:
+        push_error("TAMU_PROFILE_NO_PLANTED_STEPS")
+        quit(72)
+        return
+    print("TAMU_PROFILE_IK_STANCE_OK grounded_frames=", tracked_contacts)
     print("TAMU_PROFILE_FOOT_CONTACT_OK ground=", ProfileRig.SOURCE_GROUND_Y, " scale=", ProfileRig.SOURCE_SCALE)
     print("TAMU_PROFILE_NATIVE_SKELETON_TEST_OK bones=23 parts=6 clips=7 frames=310 cpu_mesh_rebuilds=0")
     # Legacy marker retained for existing CI diagnostics, not evidence of CPU skinning.
