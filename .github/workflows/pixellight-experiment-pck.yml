@@ -7,6 +7,8 @@ on:
       - 'addons/pixel_light_2d/**'
       - 'scenes/pixellight_experiment.tscn'
       - 'scripts/pixellight_experiment.gd'
+      - 'scripts/pixellight_world.gd'
+      - 'scripts/world_projection.gd'
       - '.github/workflows/pixellight-experiment-pck.yml'
   workflow_dispatch:
 permissions:
@@ -39,6 +41,7 @@ jobs:
           cp -a addons/pixel_light_2d /tmp/tamu-pixellight/src/addons/
           cp scenes/pixellight_experiment.tscn /tmp/tamu-pixellight/src/scenes/
           cp scripts/pixellight_experiment.gd /tmp/tamu-pixellight/src/scripts/
+          cp scripts/pixellight_world.gd scripts/world_projection.gd /tmp/tamu-pixellight/src/scripts/
           cat > /tmp/tamu-pixellight/src/project.godot <<'EOF'
           config_version=5
           [application]
@@ -73,6 +76,7 @@ jobs:
             --rendering-method gl_compatibility --resolution 720x540 --quit-after 90 \
             2>&1 | tee /tmp/pixellight-visual.log
           grep -q 'TAMU_PIXELLIGHT_VISUAL_OK' /tmp/pixellight-visual.log
+          grep -q 'TAMU_PIXELLIGHT_ATLAS_BRIDGE_OK' /tmp/pixellight-visual.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:' /tmp/pixellight-visual.log; then exit 1; fi
           test -s /tmp/tamu-pixellight-preview.png
           mkdir -p "$GITHUB_WORKSPACE/build"
@@ -86,6 +90,7 @@ jobs:
           assert b[:4]==b'GDPC'
           assert b'pixellight_experiment' in b
           assert b'pixel_light.gd' in b or b'pixel_light.gdc' in b
+          assert b'pixellight_world.gd' in b or b'pixellight_world.gdc' in b
           print('PIXELLIGHT_PCK_CONTENT_OK',len(b))
           PY
           mkdir -p /tmp/pixellight-isolated-boot
