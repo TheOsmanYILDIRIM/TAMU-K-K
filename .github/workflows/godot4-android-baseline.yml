@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - experiment/godot4-android-apk-20261031
+      - experiment/limboai-godot46-20261104
       - main
   pull_request:
     branches:
@@ -12,6 +13,39 @@ permissions:
   contents: read
   actions: read
 jobs:
+  limbo_contract:
+    name: Pinned native LimboAI GDExtension 4.6 BT contract (Linux)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify and load genuine LimboAI v1.8.1 native GDExtension
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=https://github.com/godotengine/godot-builds/releases/download/4.6-stable
+          curl -fL --retry 3 "$BASE/Godot_v4.6-stable_linux.x86_64.zip" -o /tmp/tamu-limbo-godot.zip
+          unzip -q /tmp/tamu-limbo-godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.6-stable_linux.x86_64
+          sudo install /tmp/Godot_v4.6-stable_linux.x86_64 /usr/local/bin/godot
+          curl -fL --retry 3 'https://github.com/limbonaut/limboai/releases/download/v1.8.1/limboai%2Bv1.8.1.gdextension-4.6.zip' -o /tmp/tamu-limbo-v1.8.1.zip
+          echo '0910411f8dbc0da8920f6c8bbbb6397c347cd9f2f193942468a702dfb11d5f0e  /tmp/tamu-limbo-v1.8.1.zip' | sha256sum -c -
+          mkdir -p /tmp/tamu-limbo-upstream addons/limboai
+          unzip -q /tmp/tamu-limbo-v1.8.1.zip -d /tmp/tamu-limbo-upstream
+          manifest="$(find /tmp/tamu-limbo-upstream -type f -name '*.gdextension' -print -quit)"
+          test -n "$manifest"
+          cp -a "$(dirname "$manifest")/." addons/limboai/
+          test -s addons/limboai/limboai.gdextension
+          find addons/limboai -type f | head -20
+          timeout --kill-after=3s 40s godot --headless --path . --script res://scripts/mob_limboai_probe_ci.gd 2>&1 | tee limbo-native.log
+          grep -q 'TAMU_LIMBOAI_BT_CONTRACT_OK tasks=3 manual=true class=BTPlayer' limbo-native.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_LIMBOAI_.*FAILED|TAMU_LIMBOAI_EXTENSION_MISSING' limbo-native.log; then exit 1; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tamu-limboai-native-contract
+          path: limbo-native.log
+          if-no-files-found: warn
   fx_contract:
     name: Independent Godot FX and audio contract
     runs-on: ubuntu-24.04
