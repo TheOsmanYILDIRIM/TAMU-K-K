@@ -111,3 +111,43 @@ func credit_harvest(event: Dictionary) -> Dictionary:
         return {"ok": false, "status": "invalid_preview"}
     applied[transaction_id] = true
     return {"ok": true, "status": "credited"}
+
+# Item slot operations stay in the existing inventory transaction boundary.
+# Indices are zero-based at runtime; the v1 snapshot remains one-based.
+# Future instance metadata must match exactly before two stacks may merge.
+func move_stack(from_slot: int, to_slot: int, quantity: int) -> Dictionary:
+    if from_slot < 0 or from_slot >= capacity or to_slot < 0 or to_slot >= capacity or from_slot == to_slot:
+        return {"ok": false, "status": "invalid_slot"}
+    if quantity <= 0:
+        return {"ok": false, "status": "invalid_quantity"}
+    var staged: Array = preview()
+    var source: Variant = staged[from_slot]
+    if not source is Dictionary or not validate_preview(staged):
+        return {"ok": false, "status": "invalid_source"}
+    var available: int = int(source["count"])
+    if quantity > available:
+        return {"ok": false, "status": "insufficient_items"}
+    var target: Variant = staged[to_slot]
+    if target == null:
+        var moved: Dictionary = source.duplicate(true)
+        moved["count"] = quantity
+        staged[to_slot] = moved
+    elif target is Dictionary:
+        var source_identity: Dictionary = source.duplicate(true)
+        var target_identity: Dictionary = target.duplicate(true)
+        source_identity.erase("count")
+        target_identity.erase("count")
+        if source_identity != target_identity:
+            return {"ok": false, "status": "incompatible_stack"}
+        var max_count: int = catalog.max_stack(str(source["def_id"]))
+        if quantity > max_count - int(target["count"]):
+            return {"ok": false, "status": "stack_full"}
+        target["count"] = int(target["count"]) + quantity
+    else:
+        return {"ok": false, "status": "invalid_target"}
+    source["count"] = available - quantity
+    if int(source["count"]) == 0:
+        staged[from_slot] = null
+    if not commit_preview(staged):
+        return {"ok": false, "status": "invalid_preview"}
+    return {"ok": true, "status": "moved", "quantity": quantity}
