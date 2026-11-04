@@ -1346,6 +1346,7 @@ func _process(delta: float) -> void:
         if profile_rig != null:
             var screen_step: Vector2 = WorldProjection.to_screen(actor_world - position_before)
             profile_rig.set_ground_speed(screen_step.length() / maxf(delta, 0.001))
+            profile_rig.apply_world_step(screen_step)
         _set_actor_clip(next_direction, "walk" if moved_distance > 0.01 else "idle")
     else:
         if profile_rig != null:
