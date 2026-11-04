@@ -12,6 +12,11 @@ on:
 permissions:
   contents: read
   actions: read
+# On the same source branch, newer push/PR/dispatch supersedes older
+# runs of this workflow. Other branches and other workflows stay independent.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 jobs:
   limbo_contract:
     name: Pinned native LimboAI GDExtension 4.6 BT contract (Linux)
