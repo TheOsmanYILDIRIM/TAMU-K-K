@@ -35,6 +35,8 @@ var player_last := Vector2.ZERO
 var player_velocity := Vector2.ZERO
 var rng := RandomNumberGenerator.new()
 var resource_scan_cursor := 0
+var think_cursor := 0
+var movement_cursor := 0
 var player_damage_receiver: Callable
 # Reversible render/AI isolation, no gameplay IDs/save changes.
 var isolation_mode := "full"
@@ -184,7 +186,7 @@ func spawn(definition: Resource, at: Vector2, seed_offset: int = 0) -> bool:
         "intent": {"speed": 0.0, "clip": "idle", "goal": at}, "route": [], "route_ready": false,
         "nav_goal": Vector2(INF, INF), "repath_at": 0.0, "stuck": 0.0, "escape_blocked": false,
         "food": {}, "water": {}, "wander": {}, "scan_at": 0.0, "last_state": "idle", "corpse_food": 1.0,
-        "pending_attack": {}, "death_reported": false}
+        "pending_attack": {}, "death_reported": false, "motion_accum": 0.0}
     agents.append(agent)
     by_id[instance_id] = agent
     _place_visual(agent)
@@ -386,51 +388,57 @@ func _senses(a: Dictionary) -> Dictionary:
         "night": float(host.get("day_clock")) < 6.0 or float(host.get("day_clock")) > 20.0}
 
 func _think() -> void:
+    if agents.is_empty():
+        return
     var started := Time.get_ticks_usec()
-    _rebuild_spatial()
-    noise = noise.filter(func(v: Dictionary) -> bool: return float(v["until"]) > elapsed)
-    if not agents.is_empty():
+    var index: int = think_cursor % agents.size()
+    # Godot-recommended agent update grouping: one 5 Hz decision per agent,
+    # spread across frames instead of all six senses/path requests in one spike.
+    if index == 0:
+        _rebuild_spatial()
+        noise = noise.filter(func(v: Dictionary) -> bool: return float(v["until"]) > elapsed)
         var scanned: Dictionary = agents[resource_scan_cursor % agents.size()]
         resource_scan_cursor += 1
         if scanned["brain"].health > 0.0 and elapsed >= float(scanned["scan_at"]):
             var scan_started := Time.get_ticks_usec()
             _scan_resources(scanned)
             last_scan_usec = Time.get_ticks_usec() - scan_started
-    for a in agents:
-        var senses := _senses(a) if a["brain"].health > 0.0 else {"position": a["position"]}
-        var intent: Dictionary = a["brain"].tick(FIXED_STEP, senses)
-        a["intent"] = intent
-        if intent["state"] != a["last_state"]:
-            mob_event.emit(a["id"], intent["state"])
-            a["last_state"] = intent["state"]
-        if intent["state"] == "graze":
-            _consume_grass(a["position"], FIXED_STEP)
-        if intent["state"] in ["death", "dead"] and not a["death_reported"]:
-            a["death_reported"] = true
-            mob_died.emit(a["id"], a["definition"].id)
-        var action := str(intent.get("action", ""))
-        if action in ["attack", "defend"]:
-            # Wind-up/contact are simulation-time events, not animation callbacks.
-            a["pending_attack"] = {"at": elapsed + 0.30, "target": str(intent["target_id"]),
-                "command": "%s:%d" % [a["id"], int(intent["event_id"])]}
-        elif action == "scavenge":
-            var target: Dictionary = by_id.get(str(intent["target_id"]), {})
-            if not target.is_empty() and target["brain"].health <= 0.0 \
-                    and (a["position"] as Vector2).distance_to(target["position"]) <= float(a["definition"].interaction_reach):
-                target["corpse_food"] = maxf(0.0, float(target["corpse_food"]) - FIXED_STEP * 0.1)
-        if intent["state"] == "chase" and a["definition"].policy.social:
-            var prey_agent: Dictionary = by_id.get(str(intent["target_id"]), {})
-            if not prey_agent.is_empty():
-                var prey_pos: Vector2 = prey_agent["position"]
-                if (a["position"] as Vector2).distance_to(prey_pos) > 65.0:
-                    var pack_index: int = agents.find(a)
-                    var flank := prey_pos + Vector2.from_angle(float(pack_index % 6) * TAU / 6.0) * 36.0
-                    if _stand(flank, float(a["definition"].radius)):
-                        intent["goal"] = flank
-        _prepare_route(a)
-        var requested_clip := str(intent["clip"])
-        var mapped_clip := str(a["definition"].animation_map.get(requested_clip, requested_clip))
-        a["visual"].play(mapped_clip)
+    var a: Dictionary = agents[index]
+    think_cursor += 1
+    var senses := _senses(a) if a["brain"].health > 0.0 else {"position": a["position"]}
+    # Original data-driven policies, combat and deterministic 0.2s state ticks
+    # remain authoritative; the per-frame scheduler is now native Godot-style.
+    var intent: Dictionary = a["brain"].tick(FIXED_STEP, senses)
+    a["intent"] = intent
+    if intent["state"] != a["last_state"]:
+        mob_event.emit(a["id"], intent["state"])
+        a["last_state"] = intent["state"]
+    if intent["state"] == "graze":
+        _consume_grass(a["position"], FIXED_STEP)
+    if intent["state"] in ["death", "dead"] and not a["death_reported"]:
+        a["death_reported"] = true
+        mob_died.emit(a["id"], a["definition"].id)
+    var action := str(intent.get("action", ""))
+    if action in ["attack", "defend"]:
+        a["pending_attack"] = {"at": elapsed + 0.30, "target": str(intent["target_id"]),
+            "command": "%s:%d" % [a["id"], int(intent["event_id"])]}
+    elif action == "scavenge":
+        var target_agent: Dictionary = by_id.get(str(intent["target_id"]), {})
+        if not target_agent.is_empty() and target_agent["brain"].health <= 0.0 \
+                and (a["position"] as Vector2).distance_to(target_agent["position"]) <= float(a["definition"].interaction_reach):
+            target_agent["corpse_food"] = maxf(0.0, float(target_agent["corpse_food"]) - FIXED_STEP * 0.1)
+    if intent["state"] == "chase" and a["definition"].policy.social:
+        var prey_agent: Dictionary = by_id.get(str(intent["target_id"]), {})
+        if not prey_agent.is_empty():
+            var prey_pos: Vector2 = prey_agent["position"]
+            if (a["position"] as Vector2).distance_to(prey_pos) > 65.0:
+                var flank := prey_pos + Vector2.from_angle(float(index % 6) * TAU / 6.0) * 36.0
+                if _stand(flank, float(a["definition"].radius)):
+                    intent["goal"] = flank
+    _prepare_route(a)
+    var requested_clip := str(intent["clip"])
+    var mapped_clip := str(a["definition"].animation_map.get(requested_clip, requested_clip))
+    a["visual"].play(mapped_clip)
     last_think_usec = Time.get_ticks_usec() - started
     max_frame_ai_usec = maxi(max_frame_ai_usec, last_think_usec)
 
@@ -621,20 +629,31 @@ func _process(delta: float) -> void:
     player_velocity = (pos - player_last) / maxf(dt, 0.001)
     player_last = pos
     accumulator += dt
-    if accumulator >= FIXED_STEP:
-        accumulator -= FIXED_STEP
+    var decision_interval := FIXED_STEP / maxf(1.0, float(agents.size()))
+    if accumulator >= decision_interval:
+        accumulator = minf(accumulator - decision_interval, decision_interval)
         _think()
     var nav_started := Time.get_ticks_usec()
     _advance_navigation()
     last_navigation_usec = Time.get_ticks_usec() - nav_started
     var movement_started := Time.get_ticks_usec()
+    # Spread expensive swept collision and visual ticks across frames on mobile.
+    # All agents accrue time; only two of six perform full collision per frame.
     for a in agents:
+        a["motion_accum"] = minf(0.2, float(a["motion_accum"]) + dt)
+    var move_count := agents.size() if not mobile_fast else mini(agents.size(), maxi(2, ceili(float(agents.size()) / 3.0)))
+    for i in range(move_count):
+        var a: Dictionary = agents[movement_cursor % agents.size()]
+        movement_cursor += 1
         var distance: float = (a["position"] as Vector2).distance_to(pos)
         var near_hz := 12.0 if mobile_fast else 30.0
         var far_hz := 4.0 if mobile_fast else 10.0
         a["visual"].lod_seconds = 1.0 / (near_hz if distance < 650.0 else far_hz)
-        _move_agent(a, dt)
-        _resolve_attack(a)
+        var step := minf(0.1, float(a["motion_accum"]))
+        a["motion_accum"] = maxf(0.0, float(a["motion_accum"]) - step)
+        if step > 0.0:
+            _move_agent(a, step)
+            _resolve_attack(a)
     last_movement_usec = Time.get_ticks_usec() - movement_started
     last_process_usec = Time.get_ticks_usec() - start_usec
 
