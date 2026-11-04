@@ -147,7 +147,7 @@ func pickup_ground_loot(loot_id: String, player_pos: Vector2, command_id: String
     var stage: RefCounted = _stage_domain()
     if stage == null:
         return {"ok": false, "status": "stage_failed"}
-    var result: Dictionary = stage._stage_pickup(loot_id, player_pos)
+    var result: Dictionary = stage.call("_stage_pickup", loot_id, player_pos)
     if not bool(result.get("ok", false)):
         return result
     var committed := _commit_durable(stage, command_id)
