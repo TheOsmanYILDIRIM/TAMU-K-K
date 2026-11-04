@@ -51,6 +51,10 @@ var limbo_requested := false
 var limbo_enabled := false
 var limbo_current_agent: Dictionary = {}
 var limbo_current_index := -1
+var diagnostic_layer: CanvasLayer
+var diagnostic_label: Label
+var diagnostic_elapsed := 0.0
+var mobile_visibility_checked := false
 
 func set_isolation_mode(mode: String) -> void:
     isolation_mode = mode
@@ -100,13 +104,16 @@ func _bind_host() -> void:
         return
     limbo_enabled = limbo_requested
     bound = true
+    if limbo_requested or OS.has_feature("mobile"):
+        _install_mob_diagnostics()
     var count := 0
     for i in range(int(SPECIES.spawn_count)):
         var at: Vector2 = _find_spawn(player_last, i)
         if at.is_finite() and spawn(SPECIES, at, i):
             count += 1
     if count == 0:
-        push_warning("TAMU_MOB_NO_VALID_SPAWN")
+        push_error("TAMU_MOB_NO_VALID_SPAWN: no valid authored terrain around player")
+    _update_mob_diagnostics(true)
     if limbo_enabled:
         for agent in agents:
             var player: Node = LimboBridge.install(self, str(agent["id"]))
@@ -149,6 +156,33 @@ func _stand(at: Vector2, radius: float) -> bool:
     return true
 
 func _find_spawn(origin: Vector2, index: int) -> Vector2:
+    # Prefer safe authored ground inside the actual camera viewport.
+    # Previously the 150+ unit search and distant chunk fallback could hide
+    # all six creatures on a narrow portrait Android viewport.
+    var camera: Camera2D = host.get_node_or_null("Camera2D") as Camera2D
+    var screen_rect := Rect2()
+    if camera != null:
+        var half_size := camera.get_viewport_rect().size * 0.5 / camera.zoom
+        screen_rect = Rect2(camera.get_screen_center_position() - half_size,
+            half_size * 2.0).grow(-28.0)
+    for ring in range(3):
+        for attempt in range(24):
+            var angle := float(index) * TAU / 6.0 + float(attempt) * TAU / 24.0
+            var radius := 64.0 + float(index % 3) * 12.0 + float(ring) * 32.0
+            var candidate := origin + Vector2.from_angle(angle) * radius
+            if screen_rect.has_area() and not screen_rect.has_point(WorldProjection.to_screen(candidate)):
+                continue
+            if not _stand(candidate, float(SPECIES.radius)):
+                continue
+            var separate := true
+            for other in agents:
+                if candidate.distance_to(other["position"]) < float(SPECIES.radius) * 3.5:
+                    separate = false
+                    break
+            if separate:
+                print("TAMU_MOB_VISIBLE_SPAWN index=", index,
+                    " world=", candidate, " player_distance=", snappedf(candidate.distance_to(origin), 0.1))
+                return candidate
     for attempt in range(32):
         var angle := float(index) * 1.0472 + float(attempt) * 0.47
         var p := origin + Vector2.from_angle(angle) * (150.0 + 16.0 * attempt)
@@ -697,15 +731,64 @@ func player_attack() -> void:
         add_noise(p, 1.0)
         _feedback("YAPRAKKULAK  %d / %d" % [ceili(float(result["health"])), ceili(float(target["definition"].max_health))])
 
+func _install_mob_diagnostics() -> void:
+    diagnostic_layer = CanvasLayer.new()
+    diagnostic_layer.name = "MobAndroidDiagnostics"
+    diagnostic_layer.layer = 126
+    host.add_child(diagnostic_layer)
+    diagnostic_label = Label.new()
+    diagnostic_label.name = "MobStatus"
+    diagnostic_label.position = Vector2(12.0, 54.0)
+    diagnostic_label.add_theme_color_override("font_color", Color(1.0, 0.92, 0.35))
+    diagnostic_label.add_theme_color_override("font_shadow_color", Color.BLACK)
+    diagnostic_label.add_theme_constant_override("shadow_offset_x", 1)
+    diagnostic_label.add_theme_constant_override("shadow_offset_y", 1)
+    diagnostic_layer.add_child(diagnostic_label)
+
+
+func _update_mob_diagnostics(force: bool = false) -> void:
+    if diagnostic_label == null:
+        return
+    var visible_count := 0
+    var nearest_distance := INF
+    var player_world: Vector2 = host.get("actor_world")
+    for agent in agents:
+        if agent["visual"].visible:
+            visible_count += 1
+        nearest_distance = minf(nearest_distance,
+            (agent["position"] as Vector2).distance_to(player_world))
+    var status := "ON" if limbo_enabled else ("MISSING" if limbo_requested else "OFF")
+    var nearest := "%.0f" % nearest_distance if is_finite(nearest_distance) else "-"
+    diagnostic_label.text = "MOB %d/%d | LimboAI %s | nearest %s" % [
+        visible_count, agents.size(), status, nearest]
+    if force or diagnostic_elapsed >= 1.0:
+        print("TAMU_MOB_ANDROID_STATUS total=", agents.size(),
+            " visible=", visible_count, " limbo=", status,
+            " nearest=", nearest, " region_loaded=", host.get("region_chunks").has(region))
+        diagnostic_elapsed = 0.0
+    if not mobile_visibility_checked and OS.get_environment("TAMU_VISUAL_CI") == "1" \
+            and OS.get_environment("TAMU_VISUAL_CASE") == "mobs" \
+            and VisualEnvironment.mobile_fast_mode() and Engine.get_process_frames() >= 90:
+        mobile_visibility_checked = true
+        if visible_count <= 0 or not limbo_enabled:
+            push_error("TAMU_MOB_MOBILE_VISIBLE_FAILED total=%d visible=%d limbo=%s" %
+                [agents.size(), visible_count, status])
+        else:
+            print("TAMU_MOB_MOBILE_VISIBLE_OK total=", agents.size(),
+                " visible=", visible_count, " limbo=", status)
+
+
 func _process(delta: float) -> void:
     if not bound:
         return
+    diagnostic_elapsed += delta
     last_think_usec = 0
     last_scan_usec = 0
     last_navigation_usec = 0
     last_movement_usec = 0
     # A frozen creature stays rendered in mob_ai_off: isolate CPU only.
     if isolation_mode in ["mob_ai_off", "mob_all_off"]:
+        _update_mob_diagnostics()
         last_process_usec = 0
         return
     var start_usec: int = Time.get_ticks_usec()
@@ -723,8 +806,10 @@ func _process(delta: float) -> void:
         if a["visual"].visible != show:
             a["visual"].visible = show
     if not resident:
+        _update_mob_diagnostics()
         last_process_usec = Time.get_ticks_usec() - start_usec
         return
+    _update_mob_diagnostics()
     var dt := minf(delta, 0.05)
     elapsed += dt
     attack_cooldown = maxf(0.0, attack_cooldown - dt)
