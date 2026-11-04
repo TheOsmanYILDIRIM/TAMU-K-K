@@ -43,11 +43,12 @@ func burst(position_world: Vector2, kind: String, count: int = 10) -> void:
 # Burst count and lifetime are fixed, and the material is shared.
 const MAX_TEXTURE_BURSTS := 6
 var chip_material: ParticleProcessMaterial
-var chip_active: Array[GPUParticles2D] = []
+var chip_pool: Array[GPUParticles2D] = []
+var chip_busy: Dictionary = {}
 var chip_sequence := 0
 
 func chip_burst(world_screen: Vector2, source: Sprite2D) -> void:
-    if source == null or source.texture == null or chip_active.size() >= MAX_TEXTURE_BURSTS:
+    if source == null or source.texture == null:
         return
     if chip_material == null:
         chip_material = ParticleProcessMaterial.new()
@@ -71,19 +72,30 @@ func chip_burst(world_screen: Vector2, source: Sprite2D) -> void:
     var fragment := AtlasTexture.new()
     fragment.atlas = source.texture
     fragment.region = Rect2(cx, cy, side, side)
-    var particles := GPUParticles2D.new()
-    particles.texture = fragment
-    particles.process_material = chip_material
-    particles.one_shot = true
-    particles.explosiveness = 1.0
-    particles.amount = 6
-    particles.lifetime = 0.28
+    var particles: GPUParticles2D
+    for candidate in chip_pool:
+        if not bool(chip_busy.get(candidate.get_instance_id(), false)):
+            particles = candidate
+            break
+    if particles == null:
+        if chip_pool.size() >= MAX_TEXTURE_BURSTS:
+            return
+        particles = GPUParticles2D.new()
+        particles.process_material = chip_material
+        particles.one_shot = true
+        particles.explosiveness = 1.0
+        particles.amount = 6
+        particles.lifetime = 0.28
+        particles.z_index = 10
+        add_child(particles)
+        chip_pool.append(particles)
+        var emitter: GPUParticles2D = particles
+        emitter.finished.connect(func():
+            chip_busy[emitter.get_instance_id()] = false
+        )
+    particles.emitting = false
     particles.position = world_screen
-    particles.z_index = 10
-    add_child(particles)
-    chip_active.append(particles)
-    particles.finished.connect(func():
-        chip_active.erase(particles)
-        particles.queue_free()
-    )
+    particles.texture = fragment
+    chip_busy[particles.get_instance_id()] = true
+    particles.restart()
     particles.emitting = true
