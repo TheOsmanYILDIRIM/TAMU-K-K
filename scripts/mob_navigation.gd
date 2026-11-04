@@ -8,6 +8,11 @@ var walkable_samples: Dictionary = {}
 func cancel() -> void:
     walkable_samples.clear()
     super.cancel()
+    native_grid = null
+    raster_cursor = 0
+    validation_cursor = 0
+    staged_path.clear()
+    phase = "idle"
 
 func _walkable(at: Vector2) -> bool:
     if not limits.has_point(at):
@@ -100,14 +105,6 @@ var raster_cursor := 0
 var validation_cursor := 0
 var staged_path: Array[Vector2] = []
 var phase := "idle"
-
-func cancel() -> void:
-    super.cancel()
-    native_grid = null
-    raster_cursor = 0
-    validation_cursor = 0
-    staged_path.clear()
-    phase = "idle"
 
 func begin(from_world: Vector2, target_world: Vector2, harvest_reach: float,
         radius: float, obstacles: Callable, terrain: Callable, bounds: Rect2) -> bool:
