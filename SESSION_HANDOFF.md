@@ -1,3 +1,9 @@
+### 2026-11-04 — LimboAI profile-only Android APK / native smoke CI acceptance
+- GitHub Actions [#41855902612](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/41855902612) completed/success for Linux LimboAI, FX, `visual_pck` (Xvfb screenshot, isolated PCK boot, 128px/mobile/balanced/full exports, Android ARM64 APK). Tested source is `b9b4c4bc5b66252d94d8bed18d122e488aa882e5`; only later branch change before this record is prior handoff text.
+- Native simulated-mobile logs: `TAMU_PROFILE_ONLY_VISIBLE_OK legacy_sprites=0`, `TAMU_MOB_VISIBLE_SPAWN` indices 0-5, `TAMU_MOB_ANDROID_STATUS total=6 visible=6 limbo=ON`, `TAMU_LIMBOAI_ACTIVE players=6`. These are Godot CI/desktop checks, NOT real handset evidence.
+- Separate artifact ZIPs: Android ARM64 debug APK ID `13336629606` (ZIP 66,219,980 bytes); 128px source PCK `13337218439` (ZIP 18,759,644); mobile PCK `13336849350` (ZIP 33,078,391); balanced PCK `13337298709`; full PCK `13337343593`; test results `13336614723`. Artifact list confirms not expired. APK is standalone with native LimboAI; external PCK quality tiers are different delivery products, not substitutes for the LimboAI APK.
+- **Still open:** on-phone new-profile and Yaprakkulak visibility, motion, FPS/p95/p99, touch, engine exit RID leak diagnostics, and Android performance regression. Do not merge to `main` or state the user-visible bug fixed until physical Android acceptance.
+
 ### 2026-11-04 — TAMU active profile-only cleanup and MobWorld collision unification (experiment)
 - Experimental branch: `experiment/limboai-godot46-20261104`; source changes through `b9b4c4bc5b66252d94d8bed18d122e488aa882e5`. Main untouched.
 - `scripts/main.gd` no longer constructs the retired Rigby FK skeleton, hidden six-sprite renderer, duplicate movement animation or legacy-only runtime visual tests. Active gameplay and screenshot fixtures now use only the 23-bone `ProfileRig` with original authored assets preserved in git.
