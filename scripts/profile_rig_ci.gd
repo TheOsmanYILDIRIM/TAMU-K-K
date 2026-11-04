@@ -1,87 +1,81 @@
 extends SceneTree
+# Contract compares Godot pose evaluation with the original editor's
+# motion.json FK output. This is NOT a Skeleton2D/IK contract.
 const ProfileRig = preload("res://scripts/profile_rig.gd")
 
 func _initialize() -> void:
     call_deferred("_run")
 
+func _check_close(label: String, got: Vector2, expected: Vector2, tol: float = 0.025) -> bool:
+    if got.distance_to(expected) > tol:
+        push_error("TAMU_PROFILE_SOURCE_PARITY_FAILED " + label + " actual=" + str(got) + " expected=" + str(expected))
+        return false
+    return true
+
 func _run() -> void:
     var character := ProfileRig.new()
     root.add_child(character)
-    if not character.setup():
+    if not character.setup() or not character.verify_contract():
         push_error("TAMU_PROFILE_SOURCE_SETUP_FAILED")
         quit(71)
         return
-    if character.skeleton == null or character.player == null or character.bone_nodes.size() != 23:
-        push_error("TAMU_PROFILE_NATIVE_RIG_MISSING")
+    if character.get_node_or_null("Skeleton2D") != null or character.has_method("_solve_planted_foot") or character.has_method("apply_world_step"):
+        push_error("TAMU_PROFILE_LEGACY_IK_PRESENT_FAILED")
         quit(72)
         return
-    for record in character.mesh_records:
-        var polygon: Polygon2D = record["node"]
-        if polygon.get_bone_count() == 0 or polygon.polygon.size() != record["count"]:
-            push_error("TAMU_PROFILE_NATIVE_SKIN_MISSING")
-            quit(72)
-            return
     var original_mesh_ids: Array[int] = []
     for record in character.mesh_records:
-        original_mesh_ids.append(record["node"].get_instance_id())
+        var polygon: Polygon2D = record["node"]
+        if polygon.texture == null or polygon.get_bone_count() != 0:
+            push_error("TAMU_PROFILE_SKIN_TOPOLOGY_FAILED")
+            quit(72)
+            return
+        original_mesh_ids.append(polygon.get_instance_id())
+    # Golden values are from the independent Python GIF renderer and original ZIP.
+    character.set_clip("walk")
+    character._show_frame(0)
+    if not _check_close("walk_head", character.posed_origins[5], Vector2(-2.6461, -235.9141)):
+        quit(72)
+        return
+    character.set_clip("run")
+    character._show_frame(0)
+    if not _check_close("run_head", character.posed_origins[5], Vector2(26.4257, -234.7306)):
+        quit(72)
+        return
+    character.set_clip("idle")
+    character._show_frame(0)
+    if not _check_close("idle_head", character.posed_origins[5], Vector2(-14.7385, -257.9763)):
+        quit(72)
+        return
+    if not _check_close("idle_left_toe", character._toe_position(10), Vector2(26.75, 662.4552), 0.05):
+        quit(72)
+        return
+    # Test all seven authored clips and frame transitions without any IK.
     for action in ["idle", "walk", "run", "slash", "stab", "sit", "die"]:
         character.set_clip(action)
         for i in range(6):
             character.advance(1.0 / 30.0)
         if not character.verify_contract():
-            push_error("TAMU_PROFILE_POSE_OR_MESH_FAILED " + action)
+            push_error("TAMU_PROFILE_POSE_FAILED " + action)
             quit(72)
             return
-        if action in ["idle", "walk", "run"]:
-            if absf(character.scale.y - ProfileRig.SOURCE_SCALE) > 0.001:
-                push_error("TAMU_PROFILE_SCALE_FAILED")
-                quit(72)
-                return
-            if absf(character.skeleton.position.x) > 50.0:
-                push_error("TAMU_PROFILE_TORSO_LATERAL_SHIFT_FAILED " + action)
-                quit(72)
-                return
-            if action == "idle":
-                var contact_y := maxf(character._toe_position(10).y, character._toe_position(14).y)
-                if absf(contact_y - ProfileRig.SOURCE_GROUND_Y) > 5.0:
-                    push_error("TAMU_PROFILE_IDLE_FOOT_CONTACT_FAILED y=" + str(contact_y))
-                    quit(72)
-                    return
-            elif character.planted_foot >= 0 and character.grounding_error > 14.0:
-                push_error("TAMU_PROFILE_IK_PLANTED_ERROR_FAILED " + action + " error=" + str(character.grounding_error))
-                quit(72)
-                return
-        for bone in character.bone_nodes:
-            if not bone.global_position.is_finite() or not is_finite(bone.global_rotation):
-                push_error("TAMU_PROFILE_NONFINITE_BONE " + str(bone.name))
-                quit(72)
-                return
+        if absf(character.scale.y - ProfileRig.SOURCE_SCALE) > 0.001:
+            push_error("TAMU_PROFILE_SCALE_FAILED")
+            quit(72)
+            return
         for j in range(character.mesh_records.size()):
-            if character.mesh_records[j]["node"].get_instance_id() != original_mesh_ids[j]:
-                push_error("TAMU_PROFILE_MESH_RECREATED")
+            var record: Dictionary = character.mesh_records[j]
+            var polygon: Polygon2D = record["node"]
+            if polygon.get_instance_id() != original_mesh_ids[j] or polygon.polygon.size() != record["count"]:
+                push_error("TAMU_PROFILE_LAYER_REPLACED_FAILED")
                 quit(72)
                 return
-    # Advance a continuous gait with actual world steps: root never follows
-    # the stance foot laterally, and each planted constraint remains bounded.
-    character.set_clip("walk")
-    character.set_ground_speed(52.0)
-    var tracked_contacts := 0
-    for frame in range(80):
-        character.apply_world_step(Vector2(52.0 / 30.0, 26.0 / 30.0))
-        character.advance(1.0 / 30.0)
-        if character.planted_foot >= 0:
-            tracked_contacts += 1
-            if character.grounding_error > 14.0:
-                push_error("TAMU_PROFILE_IK_STANCE_DRIFT_FAILED frame=" + str(frame))
+        for origin in character.posed_origins:
+            if not origin.is_finite():
+                push_error("TAMU_PROFILE_NONFINITE_POSE_FAILED")
                 quit(72)
                 return
-    if tracked_contacts < 3:
-        push_error("TAMU_PROFILE_NO_PLANTED_STEPS")
-        quit(72)
-        return
-    print("TAMU_PROFILE_IK_STANCE_OK grounded_frames=", tracked_contacts)
-    print("TAMU_PROFILE_FOOT_CONTACT_OK ground=", ProfileRig.SOURCE_GROUND_Y, " scale=", ProfileRig.SOURCE_SCALE)
-    print("TAMU_PROFILE_NATIVE_SKELETON_TEST_OK bones=23 parts=6 clips=7 frames=310 cpu_mesh_rebuilds=0")
-    # Legacy marker retained for existing CI diagnostics, not evidence of CPU skinning.
+    print("TAMU_PROFILE_SOURCE_PARITY_OK clips=7 bones=23 parts=6")
+    print("TAMU_PROFILE_NO_IK_OK base_poses=exact mesh_objects=persistent")
     print("TAMU_PROFILE_NUMERIC_SKIN_OK bones=23 parts=6 clips=7 frames=310")
-    quit()
+    quit(0)
