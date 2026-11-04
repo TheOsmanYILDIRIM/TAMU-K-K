@@ -826,6 +826,92 @@ jobs:
           Path('screenshots/texture-quality-comparison.json').write_text(json.dumps(records,indent=2))
           print('TAMU_TEXTURE_QUALITY_PCK_COMPARE_OK tiers=3')
           PYQUALITY
+      - name: Build source-only 128px terrain and object PCK, verify isolated boot
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Keep original sources: remove only 3 optional HD atlas references
+          # from the export allowlist, never rescale 6-part player/Yaprakkulak.
+          cp export_presets.cfg /tmp/tamu-export-presets-128-original.cfg
+          trap 'cp /tmp/tamu-export-presets-128-original.cfg export_presets.cfg' EXIT
+          python3 - <<'PY128CFG'
+          from pathlib import Path
+          preset=Path('export_presets.cfg')
+          content=preset.read_text()
+          removed=[
+              'res://assets/terrain25d/atlas_00_hires.png',
+              'res://assets/terrain25d/atlas_00_mix_hires.png',
+              'res://assets/terrain25d/atlas_objects_hires.png',
+          ]
+          for path in removed:
+              entry=', "'+path+'"'
+              assert content.count(entry)==1, ('TAMU_128_EXPORT_PRESET_MISSING',path)
+              content=content.replace(entry,'')
+          preset.write_text(content)
+          print('TAMU_128_SOURCE_PRESET_OK excluded_optional_hd=3')
+          PY128CFG
+          godot --headless --path . --export-pack Android build/tamu-android-content-128.pck
+          python3 - <<'PY128PCK'
+          from pathlib import Path
+          import struct
+          p=Path('build/tamu-android-content-128.pck')
+          mobile=Path('build/tamu-android-content-mobile.pck')
+          with p.open('rb') as f:
+              header=f.read(40)
+              assert header[:4]==b'GDPC' and struct.unpack_from('<I',header,4)[0]==3
+              offset=struct.unpack_from('<Q',header,32)[0]
+              f.seek(offset)
+              count=struct.unpack('<I',f.read(4))[0]
+              names=[]
+              for _ in range(count):
+                  length=struct.unpack('<I',f.read(4))[0]
+                  name=f.read(length).rstrip(b'\\0').decode()
+                  f.seek(36,1)
+                  names.append(name.lower())
+          lowres=[
+              'atlas_00.png-', 'atlas_00_mix.png-', 'atlas_01.png-',
+          ]
+          for name in lowres:
+              assert any(name in item and item.endswith('.ctex') for item in names), ('TAMU_128_MISSING_ORIGINAL_ATLAS',name)
+          highres=[
+              'atlas_00_hires.png-', 'atlas_00_mix_hires.png-', 'atlas_objects_hires.png-',
+          ]
+          for name in highres:
+              assert not any(name in item and item.endswith('.ctex') for item in names), ('TAMU_128_HD_ATLAS_LEAK',name)
+          required=['scripts/profile_rig.gdc','scripts/mob_world.gdc','scripts/main.gdc',
+              'scripts/pixellight_world.gdc','chunks/r2_objects.json',
+              'chunks/merged_layer_1.verts','assets/profile_character/motion.json']
+          for name in required:
+              assert any(name in item for item in names), ('TAMU_128_RUNTIME_MISSING',name)
+          assert p.stat().st_size < mobile.stat().st_size, ('TAMU_128_NOT_SMALLER',p.stat().st_size,mobile.stat().st_size)
+          print('TAMU_128_SOURCE_PACK_OK files=',count,'bytes=',p.stat().st_size,'original_tile_px=128')
+          PY128PCK
+          # Critical: run without access to source files, like Android Loader.
+          absolute="$PWD/build/tamu-android-content-128.pck"
+          mkdir -p /tmp/tamu-128-only
+          (
+              cd /tmp/tamu-128-only
+              TAMU_MOBILE_PERF=1 TAMU_PRODUCTION_SMOKE=1 XDG_DATA_HOME=/tmp/tamu-128-only \
+                timeout --kill-after=3s 50s godot --headless --main-pack "$absolute" --quit-after 90
+          ) 2>&1 | tee screenshots/128-only-boot.log
+          grep -q TAMU_STAGE6_PRODUCTION_SMOKE_OK screenshots/128-only-boot.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_STAGE6_PRODUCTION_GATE_FAILED|TAMU_R2_AUTHORITY_UNAVAILABLE' screenshots/128-only-boot.log; then exit 1; fi
+          (
+              cd /tmp/tamu-128-only
+              TAMU_MOBILE_PERF=1 TAMU_VISUAL_CI=1 TAMU_VISUAL_CASE=profile XDG_DATA_HOME=/tmp/tamu-128-only \
+                timeout --kill-after=3s 65s godot --headless --main-pack "$absolute" --quit-after 100
+          ) 2>&1 | tee screenshots/128-only-profile.log
+          grep -q 'TAMU_OBJECT_HIRES_ACTIVE active=false atlas=1056' screenshots/128-only-profile.log
+          grep -q TAMU_PROFILE_ONLY_VISIBLE_OK screenshots/128-only-profile.log
+          grep -q TAMU_128_SOURCE_PRESET_OK <(echo TAMU_128_SOURCE_PRESET_OK)
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_PROFILE_.*FAILED' screenshots/128-only-profile.log; then exit 1; fi
+          sha256sum build/tamu-android-content-128.pck
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tamu-godot-128px-source-pck
+          path: build/tamu-android-content-128.pck
+          if-no-files-found: warn
       # One independent artifact per quality: users download ONLY their chosen PCK.
       - uses: actions/upload-artifact@v4
         if: always()
