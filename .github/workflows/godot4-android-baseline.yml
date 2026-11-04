@@ -30,13 +30,15 @@ jobs:
           sudo install /tmp/Godot_v4.6-stable_linux.x86_64 /usr/local/bin/godot
           curl -fL --retry 3 'https://github.com/limbonaut/limboai/releases/download/v1.8.1/limboai%2Bv1.8.1.gdextension-4.6.zip' -o /tmp/tamu-limbo-v1.8.1.zip
           echo '0910411f8dbc0da8920f6c8bbbb6397c347cd9f2f193942468a702dfb11d5f0e  /tmp/tamu-limbo-v1.8.1.zip' | sha256sum -c -
-          mkdir -p /tmp/tamu-limbo-upstream addons/limboai
+          mkdir -p /tmp/tamu-limbo-upstream addons/limboai/bin
           unzip -q /tmp/tamu-limbo-v1.8.1.zip -d /tmp/tamu-limbo-upstream
           manifest="$(find /tmp/tamu-limbo-upstream -type f -name '*.gdextension' -print -quit)"
           test -n "$manifest"
-          cp -a "$(dirname "$manifest")/." addons/limboai/
-          test -s addons/limboai/limboai.gdextension
-          find addons/limboai -type f | head -20
+          cp -a "$(dirname "$manifest")/." addons/limboai/bin/
+          test -s addons/limboai/bin/limboai.gdextension
+          echo "TAMU_LIMBOAI_MANIFEST_PATH=$manifest"
+          head -50 addons/limboai/bin/limboai.gdextension
+          find addons/limboai/bin -type f | head -20
           timeout --kill-after=3s 75s godot --headless --editor --path . --import --quit 2>&1 | tee limbo-import.log
           timeout --kill-after=3s 40s godot --headless --path . --script res://scripts/mob_limboai_probe_ci.gd 2>&1 | tee limbo-native.log
           grep -q 'TAMU_LIMBOAI_BT_CONTRACT_OK tasks=3 manual=true class=BTPlayer' limbo-native.log
