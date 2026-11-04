@@ -13,6 +13,12 @@ const VisualEnvironment = preload("res://scripts/visual_environment.gd")
 const Collision = preload("res://scripts/r2_collision.gd")
 const SPECIES = preload("res://data/catalog/mob_yaprakkulak.tres")
 const FIXED_STEP := 0.2
+# One shared mobile controller: max one creature decision per 100 ms.
+# Animated sprites still update independently of AI; no BTPlayers/AStar on Android.
+const LITE_DECISION_INTERVAL := 0.10
+const LITE_ACTIVE_RADIUS := 440.0
+const LITE_IDLE_INTERVAL := 2.0
+const LITE_STEP_CAP := 9.0
 const NAV_BUDGET_US := 1200
 const MAX_AGENTS := 32
 const SENSE_CELL := 128.0
@@ -57,6 +63,8 @@ var last_navigation_usec := 0
 var last_movement_usec := 0
 var limbo_requested := false
 var limbo_enabled := false
+var lite_enabled := false
+var lite_due := 0.0
 var limbo_current_agent: Dictionary = {}
 var limbo_current_index := -1
 var diagnostic_layer: CanvasLayer
@@ -121,13 +129,18 @@ func _bind_host() -> void:
         set_process(false)
         return
     limbo_requested = OS.get_environment("TAMU_LIMBOAI") == "1" or bool(ProjectSettings.get_setting("tamu/ai/use_limboai", false))
+    # Native Android uses a fixed-cost state machine by default; explicit
+    # developer override keeps full LimboAI available for A/B profiling.
+    lite_enabled = OS.has_feature("mobile") and OS.get_environment("TAMU_AI_CLASSIC") != "1"
+    if lite_enabled:
+        print("TAMU_MOB_LITE_ACTIVE native_bt=false nav=direct_budgeted decisions=central")
     if diagnostic_layer == null and (limbo_requested or OS.has_feature("mobile")):
         _install_mob_diagnostics()
     # The authored Yaprakkulak population must not disappear when the
     # optional native Android extension cannot be loaded. MobBrain already
     # implements the same data-driven state/decision steps without LimboAI.
-    limbo_enabled = limbo_requested and LimboBridge.available()
-    if limbo_requested and not limbo_enabled:
+    limbo_enabled = limbo_requested and not lite_enabled and LimboBridge.available()
+    if limbo_requested and not limbo_enabled and not lite_enabled:
         push_warning("TAMU_LIMBOAI_NATIVE_UNAVAILABLE: MobBrain fallback active")
         print("TAMU_MOB_NATIVE_FALLBACK reason=extension_unavailable")
     bound = true
@@ -276,7 +289,8 @@ func spawn(definition: Resource, at: Vector2, seed_offset: int = 0) -> bool:
         "intent": {"speed": 0.0, "clip": "idle", "goal": at}, "route": [], "route_ready": false,
         "nav_goal": Vector2(INF, INF), "repath_at": 0.0, "stuck": 0.0, "escape_blocked": false,
         "food": {}, "water": {}, "wander": {}, "scan_at": 0.0, "last_state": "idle", "corpse_food": 1.0,
-        "pending_attack": {}, "death_reported": false, "motion_accum": 0.0, "scan_work": {}}
+        "pending_attack": {}, "death_reported": false, "motion_accum": 0.0,
+        "lite_next": 0.0, "lite_last": 0.0, "lite_turn": 0, "lite_blocked_until": 0.0}
     agents.append(agent)
     by_id[instance_id] = agent
     _place_visual(agent)
@@ -534,6 +548,136 @@ func _senses(a: Dictionary) -> Dictionary:
         "path_failed": a["navigator"].state == "failed",
         "night": float(host.get("day_clock")) < 6.0 or float(host.get("day_clock")) > 20.0}
 
+# Mobile: constant-time sensing; the player's position is already owned by
+# WorldScaffold, and resources are shared. Never raycast 7x6 escape rays,
+# walk all creatures, or call native BTPlayer for a routine decision.
+func _lite_senses(a: Dictionary, player_pos: Vector2) -> Dictionary:
+    var at: Vector2 = a["position"]
+    var definition: Resource = a["definition"]
+    var brain = a["brain"]
+    var player_distance2 := at.distance_squared_to(player_pos)
+    var threat: Dictionary = {}
+    var flee_point: Dictionary = {}
+    var temperament: String = str(definition.policy.temperament)
+    if temperament in ["timid", "defensive", "territorial"] \
+            and player_distance2 <= float(definition.vision_range) * float(definition.vision_range):
+        threat = {"id": "player", "position": player_pos}
+    if not threat.is_empty() or brain.threat_memory > 0.0:
+        var danger: Vector2 = threat.get("position", brain.threat_at)
+        var away := (at - danger).normalized()
+        if away.length_squared() < 0.1:
+            away = Vector2.RIGHT
+        flee_point = {"position": at + away * 110.0}
+    if resource_index_ready and elapsed >= float(a["scan_at"]):
+        # A cheap shared-bucket lookup replaces all live habitat probes.
+        _refresh_resource_targets(a)
+    var food_here := not a["food"].is_empty() and \
+        at.distance_squared_to(a["food"]["position"]) <= pow(float(definition.interaction_reach), 2.0) \
+        and _food_available(at)
+    var water_here := not a["water"].is_empty() and \
+        at.distance_squared_to(a["water"]["position"]) <= pow(float(definition.interaction_reach), 2.0)
+    var fallback: Dictionary = a["wander"]
+    if fallback.is_empty():
+        var turn: int = int(a["lite_turn"])
+        fallback = {"position": brain.home + Vector2.from_angle(float(turn % 8) * TAU / 8.0) * 70.0}
+    return {"position": at, "threat": threat, "escape": flee_point,
+        "escape_blocked": bool(a["escape_blocked"]),
+        "can_attack_threat": player_damage_receiver.is_valid(),
+        "food": a["food"], "water": a["water"], "wander": fallback,
+        "food_here": food_here, "water_here": water_here,
+        "herd": {}, "prey": {}, "carrion": {}, "path_failed": false,
+        "night": float(host.get("day_clock")) < 6.0 or float(host.get("day_clock")) > 20.0}
+
+
+func _lite_think() -> void:
+    if agents.is_empty():
+        return
+    var started := Time.get_ticks_usec()
+    var index: int = think_cursor % agents.size()
+    think_cursor += 1
+    var a: Dictionary = agents[index]
+    var at: Vector2 = a["position"]
+    var player_pos: Vector2 = host.get("actor_world")
+    var active: bool = at.distance_squared_to(player_pos) <= LITE_ACTIVE_RADIUS * LITE_ACTIVE_RADIUS
+    if elapsed < float(a["lite_next"]):
+        last_think_usec = Time.get_ticks_usec() - started
+        return
+    # Every awake creature has at most a ~0.6s decision cadence with six
+    # creatures; far creatures are kept asleep unless damaged or approached.
+    a["lite_next"] = elapsed + (LITE_DECISION_INTERVAL if active else LITE_IDLE_INTERVAL)
+    var since: float = minf(0.5, maxf(0.01, elapsed - float(a["lite_last"])))
+    a["lite_last"] = elapsed
+    var senses := _lite_senses(a, player_pos)
+    a["intent"] = a["brain"].tick(since, senses)
+    limbo_current_agent = a
+    limbo_current_index = index
+    _limbo_apply_step(since)
+    limbo_current_agent = {}
+    limbo_current_index = -1
+    last_think_usec = Time.get_ticks_usec() - started
+    max_frame_ai_usec = maxi(max_frame_ai_usec, last_think_usec)
+
+
+# Cheap direct steering on Android. No grid generation or A*.
+# Check only the next tiny step on the canonical R2; if blocked choose a
+# short left/right detour and try again later, never teleport through solids.
+func _lite_safe_step(at: Vector2, direction: Vector2, radius: float) -> bool:
+    if not at.is_finite() or not host.get("world_bounds").has_point(at):
+        return false
+    if not bool(_terrain(at.x, at.y).get("walkable", false)):
+        return false
+    for obstacle in _obstacles(at.x-radius, at.y-radius, at.x+radius, at.y+radius):
+        var box := Rect2(float(obstacle["x"]), float(obstacle["y"]),
+            float(obstacle["w"]), float(obstacle["h"])).grow(radius)
+        if box.has_point(at):
+            return false
+    return true
+
+
+func _lite_move_agent(a: Dictionary, dt: float) -> void:
+    var from: Vector2 = a["position"]
+    var speed := float(a["intent"].get("speed", 0.0))
+    var goal: Vector2 = a["intent"].get("goal", from)
+    if a["brain"].health <= 0.0 or speed <= 0.0 or not goal.is_finite():
+        if a["visual"].visible:
+            a["visual"].advance(dt)
+        return
+    var towards := goal - from
+    var reach := float(a["definition"].interaction_reach)
+    if towards.length_squared() <= reach * reach:
+        if a["visual"].visible:
+            a["visual"].advance(dt)
+        return
+    var direction := towards.normalized()
+    var distance := minf(LITE_STEP_CAP, minf(speed * dt, towards.length() - reach))
+    var desired := from + direction * distance
+    var moved := false
+    if _lite_safe_step(desired, direction, float(a["definition"].radius)):
+        moved = true
+    elif elapsed >= float(a["lite_blocked_until"]):
+        # One alternate check per movement tick. Turning direction alternates
+        # to avoid full ray fans and expensive global replanning.
+        var turn: float = 0.85 if int(a["lite_turn"]) % 2 == 0 else -0.85
+        a["lite_turn"] = int(a["lite_turn"]) + 1
+        var detour := from + direction.rotated(turn) * distance
+        if _lite_safe_step(detour, direction, float(a["definition"].radius)):
+            desired = detour
+            moved = true
+        else:
+            a["lite_blocked_until"] = elapsed + 0.35
+    if not moved:
+        if a["visual"].visible:
+            a["visual"].advance(dt)
+        return
+    a["position"] = desired
+    a["heading"] = (desired - from).normalized()
+    a["velocity"] = (desired - from) / maxf(0.001, dt)
+    a["visual"].face(WorldProjection.to_screen(desired - from))
+    _place_visual(a)
+    if a["visual"].visible:
+        a["visual"].advance(dt)
+
+
 func _think() -> void:
     if agents.is_empty():
         return
@@ -606,7 +750,8 @@ func _limbo_apply_step(_delta: float) -> bool:
                 var flank := prey_pos + Vector2.from_angle(float(index % 6) * TAU / 6.0) * 36.0
                 if _stand(flank, float(a["definition"].radius)):
                     intent["goal"] = flank
-    _prepare_route(a)
+    if not lite_enabled:
+        _prepare_route(a)
     var requested_clip := str(intent["clip"])
     var mapped_clip := str(a["definition"].animation_map.get(requested_clip, requested_clip))
     a["visual"].play(mapped_clip)
@@ -790,7 +935,7 @@ func _update_mob_diagnostics(force: bool = false) -> void:
             visible_count += 1
         nearest_distance = minf(nearest_distance,
             (agent["position"] as Vector2).distance_to(player_world))
-    var status := "ON" if limbo_enabled else ("FALLBACK" if limbo_requested else "OFF")
+    var status := "LITE" if lite_enabled else ("ON" if limbo_enabled else ("FALLBACK" if limbo_requested else "OFF"))
     var nearest := "%.0f" % nearest_distance if is_finite(nearest_distance) else "-"
     diagnostic_label.text = "MOB %d/%d | LimboAI %s | nearest %s" % [
         visible_count, agents.size(), status, nearest]
@@ -850,16 +995,20 @@ func _process(delta: float) -> void:
     player_velocity = (pos - player_last) / maxf(dt, 0.001)
     player_last = pos
     accumulator += dt
-    var decision_interval := FIXED_STEP / maxf(1.0, float(agents.size()))
+    var decision_interval := LITE_DECISION_INTERVAL if lite_enabled else FIXED_STEP / maxf(1.0, float(agents.size()))
     if accumulator >= decision_interval:
         accumulator = minf(accumulator - decision_interval, decision_interval)
-        _think()
+        if lite_enabled:
+            _lite_think()
+        else:
+            _think()
     # Build static locations once for every creature; no per-mob water survey.
     var scan_started := Time.get_ticks_usec()
     _build_resource_index_step()
     last_scan_usec = Time.get_ticks_usec() - scan_started
     var nav_started := Time.get_ticks_usec()
-    _advance_navigation(350 if mobile_fast else NAV_BUDGET_US)
+    if not lite_enabled:
+        _advance_navigation(350 if mobile_fast else NAV_BUDGET_US)
     last_navigation_usec = Time.get_ticks_usec() - nav_started
     var movement_started := Time.get_ticks_usec()
     # Spread expensive swept collision and visual ticks across frames on mobile.
@@ -877,7 +1026,10 @@ func _process(delta: float) -> void:
         var step := minf(0.1, float(a["motion_accum"]))
         a["motion_accum"] = maxf(0.0, float(a["motion_accum"]) - step)
         if step > 0.0:
-            _move_agent(a, step)
+            if lite_enabled:
+                _lite_move_agent(a, step)
+            else:
+                _move_agent(a, step)
             _resolve_attack(a)
     last_movement_usec = Time.get_ticks_usec() - movement_started
     last_process_usec = Time.get_ticks_usec() - start_usec
