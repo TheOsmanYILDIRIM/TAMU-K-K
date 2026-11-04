@@ -19,7 +19,10 @@ static func to_world(screen: Vector2) -> Vector2:
 # depth-only movement preserves the last profile side instead of flickering.
 static func profile_facing_sign(world_motion: Vector2, previous_sign: float = 1.0) -> float:
     var projected_x := (world_motion.x - world_motion.y) * ISO_X
-    if absf(projected_x) < 0.025:
+    # Hysteresis near diagonal movement: do not flip a single profile
+    # drawing because of subpixel joystick jitter. Keep the last side until
+    # lateral travel is at least 25% of total ground motion.
+    if absf(projected_x) < maxf(0.025, world_motion.length() * 0.25):
         return -1.0 if previous_sign < 0.0 else 1.0
     return -1.0 if projected_x < 0.0 else 1.0
 
@@ -43,5 +46,9 @@ static func verify_contract() -> bool:
     if profile_facing_sign(Vector2(1, 0)) != 1.0 or profile_facing_sign(Vector2(0, 1)) != -1.0:
         return false
     if profile_facing_sign(Vector2(1, 1), -1.0) != -1.0 or profile_facing_sign(Vector2(1, 1), 1.0) != 1.0:
+        return false
+    if profile_facing_sign(Vector2(1.0, 0.97), -1.0) != -1.0:
+        return false
+    if profile_facing_sign(Vector2(0.97, 1.0), 1.0) != 1.0:
         return false
     return true
