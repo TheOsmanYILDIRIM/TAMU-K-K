@@ -87,6 +87,20 @@ func _item_contract() -> bool:
         return false
     if not run.item_definition("unknown:item").is_empty():
         return false
+    # Starter resources keep stable save IDs, with texture slots reserved for art.
+    for id in ["core:wood_log", "core:wood_plank", "core:stone", "core:workbench"]:
+        var visual: Dictionary = run.item_visual(id)
+        if str(visual.get("texture_key", "")) != id:
+            return false
+        var parts := id.split(":")
+        if str(visual.get("texture_path", "")) != "res://assets/items/%s/%s.png" % [parts[0], parts[1]]:
+            return false
+        if str(visual.get("kind", "")) != "primitive":
+            return false
+        if bool(visual.get("texture_ready", false)) and run.item_texture(id) == null:
+            return false
+    if not run.item_visual("unknown:item").is_empty() or run.item_texture("unknown:item") != null:
+        return false
     var staged: Array = run.inventory.preview()
     if not run.inventory.preview_add(staged, "core:wood_log", 3) or not run.inventory.commit_preview(staged):
         return false
