@@ -424,7 +424,11 @@ func _show_modular_building_demo() -> void:
     # A uniformly scaled preview is important: reducing only the sprite size
     # would create gaps at the 32-unit module joints. Do not change gameplay
     # anchors, build costs, collisions or Stage6 save coordinates.
-    const PREVIEW_FACTOR := 0.80
+    # Character height is roughly 72 game pixels; a 24-unit wall at 0.8x
+    # was only 19px tall and made the whole cabin toy-sized. Use a 1.75x
+    # structural/world preview scale (~42px wall, ~73px ridge height).
+    # Scale the module spacing and vertical offsets together to keep seams.
+    const PREVIEW_FACTOR := 1.75
     const PREVIEW_CELL := 32.0 * PREVIEW_FACTOR
     var base := actor_world + Vector2(124.0,-64.0)
     var pieces: Array[Dictionary] = []
@@ -516,7 +520,7 @@ func _show_modular_building_demo() -> void:
         push_error("TAMU_BUILDING_128_REVIEW_INCOMPLETE views=%d expected=%d" % [count, pieces.size()])
     else:
         print("TAMU_BUILDING_128_REVIEW_READY views=",count,
-            " house=32 fence=20 effective_scale=0.4 ysort=world terrain=authored")
+            " house=32 fence=20 effective_scale=0.875 ysort=world terrain=authored")
 
 func _place_workbench() -> void:
     _cancel_auto_harvest()
