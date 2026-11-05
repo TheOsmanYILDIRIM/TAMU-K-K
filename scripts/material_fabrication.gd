@@ -242,3 +242,116 @@ static func knowledge_view(material: Dictionary, observation: Dictionary) -> Dic
     var recognized := bool(observation.get("recognized", false))
     return {"ok": true, "label": material["id"] if recognized else "unknown_material",
         "recognized": recognized, "known_traits": visible}
+
+## Schema-local fixed geometry. The PLAYER may bind materials to named roles,
+## but cannot edit edge profile, handle length, mass distribution, silhouette
+## or sprite/mask assignments. Every archetype is a distinct trusted blueprint.
+## All physical values are normalized gameplay indices (NOT SI units).
+## Region -> role connections also tell a future mask-aware GUI what to click.
+## No crafting, inventory debit, item ID minting, save writes, or UI edits.
+static func evaluate_fixed_tool(blueprint: Dictionary, bindings: Dictionary, process: Dictionary = {}) -> Dictionary:
+    # The UI may only request a process quality preview. It cannot override
+    # blueprint geometry, including by passing geometry through process.
+    for key in process:
+        if key != "quality":
+            return reject("fixed_geometry_override_denied")
+    var basic: Dictionary = evaluate_tool(blueprint, bindings, process)
+    if not bool(basic.get("ok", false)):
+        return basic
+    var shape: Variant = blueprint.get("geometry", null)
+    if not shape is Dictionary or not shape.get("schema_version", null) is int or int(shape["schema_version"]) != 1:
+        return reject("invalid_fixed_geometry")
+    var sprite := str(shape.get("sprite_id", ""))
+    var mask := str(shape.get("mask_id", ""))
+    if not valid_id(sprite) or not valid_id(mask):
+        return reject("invalid_geometry_visual_ids")
+    var regions: Variant = shape.get("regions", null)
+    var dynamics: Variant = shape.get("dynamics", null)
+    if not regions is Array or regions.is_empty() or regions.size() > 16 or not dynamics is Dictionary:
+        return reject("invalid_geometry_parts")
+    # Constants of the SCHEMA, not per-player parameters.
+    var constants: Array = ["free_swing_rate", "inertia_penalty", "edge_factor", "impact_factor", "stress_factor"]
+    for field in constants:
+        if not number(dynamics.get(field, null)):
+            return reject("invalid_geometry_dynamics")
+    var rate := float(dynamics["free_swing_rate"])
+    var penalty := float(dynamics["inertia_penalty"])
+    var edge_factor := float(dynamics["edge_factor"])
+    var impact_factor := float(dynamics["impact_factor"])
+    var stress_factor := float(dynamics["stress_factor"])
+    if rate <= 0.0 or rate > 20.0 or penalty < 0.0 or penalty > 50.0 \
+            or edge_factor <= 0.0 or edge_factor > 5.0 \
+            or impact_factor <= 0.0 or impact_factor > 5.0 \
+            or stress_factor < 0.0 or stress_factor > 5.0:
+        return reject("geometry_dynamics_out_of_range")
+    var edge_role := str(dynamics.get("edge_role", ""))
+    if not bindings.has(edge_role) or not bindings[edge_role] is Dictionary:
+        return reject("missing_working_edge")
+    var edge_material: Dictionary = bindings[edge_role]
+    if not edge_material["traits"].has("hardness") or not edge_material["traits"].has("toughness"):
+        return reject("missing_edge_traits")
+    var critical: Variant = dynamics.get("critical_roles", null)
+    if not critical is Array or critical.is_empty():
+        return reject("missing_critical_roles")
+    var seen_regions: Dictionary = {}
+    var seen_roles: Dictionary = {}
+    var total_mass := 0.0
+    var weighted_radius := 0.0
+    var inertia := 0.0
+    var visual_regions: Array = []
+    for part in regions:
+        if not part is Dictionary:
+            return reject("invalid_geometry_region")
+        var region_id := str(part.get("id", ""))
+        var role_id := str(part.get("role", ""))
+        if not valid_trait(region_id) or seen_regions.has(region_id) or not bindings.has(role_id):
+            return reject("invalid_geometry_region_mapping")
+        var volume: Variant = part.get("volume", null)
+        var radius: Variant = part.get("radius", null)
+        var spread: Variant = part.get("spread", null)
+        if not number(volume) or not number(radius) or not number(spread):
+            return reject("invalid_geometry_dimensions")
+        if float(volume) <= 0.0 or float(volume) > 10.0 or float(radius) < 0.0 \
+                or float(radius) > 3.0 or float(spread) < 0.0 or float(spread) > 3.0:
+            return reject("geometry_dimensions_out_of_range")
+        var selected: Dictionary = bindings[role_id]
+        if not selected["traits"].has("density") or not unit(selected["traits"]["density"]):
+            return reject("missing_density_trait")
+        # Normalize density to a nonzero relative mass factor (not kilograms).
+        var part_mass := float(volume) * (0.25 + 0.75 * float(selected["traits"]["density"]))
+        var distance := float(radius)
+        total_mass += part_mass
+        weighted_radius += part_mass * distance
+        inertia += part_mass * (distance * distance + float(spread) * float(spread) / 12.0)
+        seen_regions[region_id] = true
+        seen_roles[role_id] = true
+        visual_regions.append({"region_id": region_id, "role": role_id})
+    if seen_roles.size() != bindings.size() or total_mass <= 0.0 or inertia <= 0.0:
+        return reject("geometry_role_coverage_invalid")
+    var weakest := 1.0
+    for role_id in critical:
+        if not role_id is String or not basic["roles"].has(role_id):
+            return reject("invalid_critical_role")
+        weakest = minf(weakest, float(basic["roles"][role_id]["score"]))
+    var center := weighted_radius / total_mass
+    var swing_rate := rate / sqrt(1.0 + penalty * inertia)
+    var impact_energy := 0.5 * inertia * swing_rate * swing_rate * impact_factor
+    var edge_hardness := float(edge_material["traits"]["hardness"])
+    var edge_toughness := float(edge_material["traits"]["toughness"])
+    var cutting_effect := impact_energy * edge_factor * (0.2 + 0.8 * edge_hardness) \
+        * (0.7 + 0.3 * edge_toughness)
+    var quality := float(process.get("quality", 0.5))
+    var structural_reliability := clampf(weakest * (0.7 + 0.3 * quality) \
+        / (1.0 + impact_energy * stress_factor), 0.0, 1.0)
+    var response: Dictionary = basic.duplicate(true)
+    response["fixed_visual"] = {"sprite_id": sprite, "mask_id": mask, "regions": visual_regions}
+    response["physical_stats"] = {
+        "mass_index": snappedf(total_mass, 0.0001),
+        "center_of_mass": snappedf(center, 0.0001),
+        "rotational_inertia": snappedf(inertia, 0.0001),
+        "swing_rate": snappedf(swing_rate, 0.0001),
+        "impact_energy": snappedf(impact_energy, 0.0001),
+        "cutting_effect": snappedf(cutting_effect, 0.0001),
+        "structural_reliability": snappedf(structural_reliability, 0.0001)
+    }
+    return response

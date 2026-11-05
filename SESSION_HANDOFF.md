@@ -1,3 +1,10 @@
+### 2026-11-05 — [GODOT-MATERIAL-FABRICATION] Blueprint-fixed geometry (no player shape editing)
+- Experimental branch experiment/material-fabrication-core-20261105 extended scripts/material_fabrication.gd with evaluate_fixed_tool. Fixed data-defined blueprint contains named material regions, sprite/mask IDs, region volume/radius/spread, dynamics constants and critical roles. Players bind materials only; process geometry/length overrides are rejected.
+- Derives relative mass, center of mass, moment of inertia, swing rate, impact energy, cut effect and weakest-link reliability. These are normalized GAMEPLAY INDICES, not real-world SI predictions. Constants remain example fixtures, not accepted balancing values.
+- Original material role evaluation and furnace-only alloy methods remain unchanged. Test-only hatchet and felling axe definitions illustrate separate blueprint silhouettes with material-driven results; no new canonical inventory items, crafting recipes, GUI or save schema.
+- Expanded existing scripts/material_fabrication_ci.gd coverage for fixed geometry shape differences, mass/speed/energy, quality-independent geometry, brittle tradeoff, invalid region/volume, replay determinism, and alloy-to-axe binding.
+- Existing workflow includes material_fabrication_ci.gd on Godot baseline; a push to this separate experimental branch may not trigger it. Native Godot execution/Android device remain unverified until logs are reviewed.
+
 ### 2026-11-05 — [GODOT-MATERIAL-FABRICATION] Isolated functional material calculation core
 - Branch: experiment/material-fabrication-core-20261105 (from Godot gameplay HEAD 71941d9e865faee7e711ff2c9132aa90d5902cdd).
 - Added scripts/material_fabrication.gd: immutable source materials with normalized named properties, 2–12 component furnace-only alloy preview with heat/quality and optional data-defined pair interactions, order/ratio-stable composition fingerprint and material visual descriptor; role-preference scoring and formula-driven tool stats that are not material-name locked; knowledge-only disclosure.
