@@ -1,3 +1,9 @@
+### 2026-11-05 — [CRAFT-UI-CURRENT-MAIN] Correct main lineage and accessible native book
+- Correct baseline: main eff29ae8ad0997dfc0982ca3ae20ddefc0f58ba0, NOT obsolete experiment/godot4-android-apk-20261031. Safe experiment/crafting-book-current-main-20261105 branch preserves main's modular HUD, profile avatar, forest collection, mobs, terrain, Stage6 and save data. Explicitly no main merge.
+- HUD existing codex opens categorized/searchable book; existing bag opens 12-slot live inventory. No additional HUD button. Forge message confirms alloys are furnace-only.
+- Native overlay has a fixed top-level close target (76x76, above scroll and material drawer), separate fixed back button, Escape/Android back, no focus-losing re-render on search, and movement/camera shielding. Real current planks/workbench are the only enabled recipes. User axe source/mask touch preview is marked draft and never fabricates an item or leaks fictional stat values.
+- Includes Godot headless CI test for close size/placement, catalog, search focus, six region masks, live inventory, real material debit and plank credit, plus portrait Xvfb UI screenshots and PCK export allowlist. CI and Android device verdict are separate until verified.
+
 ### 2026-11-03 — Gölge sistemi araştırması / sohbet kapatma
 - Kullanıcının bildirdiği sorun: alfa-siluet gölgesi bazı açılarda iyi olsa da güneşe göre dönme ve kısalma/uzama izometrik 2D görsel tutarlılığını bozuyor.
 - Araştırma notu docs/GOLGE.md dosyasına kaydedildi. Gnomon, PixelLight 2D, 2D Projected Ground Shadow ve Lit seçenekleri; Godot yerleşik DirectionalLight2D/LightOccluder2D; Android renderer/4.6 uyumluluk belirsizlikleri ve test planı içeriyor.
