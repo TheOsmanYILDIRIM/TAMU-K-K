@@ -1,0 +1,151 @@
+name: "TAMU 128px one-shot layered map PNG bake"
+on:
+  push:
+    branches:
+      - experiment/tamu-128-layered-bake-20261105
+    paths:
+      - ".github/workflows/tamu-128-layered-bake-once.yml"
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: tamu-128-layered-map-once
+  cancel-in-progress: false
+jobs:
+  bake:
+    name: Bake 128px terrain + transparent objects (no PCK or APK)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Godot 4.6, Pillow, Lua and Xvfb
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lua5.4 xvfb python3-pil >/dev/null
+          BASE=https://github.com/godotengine/godot-builds/releases/download/4.6-stable
+          curl -fL --retry 3 "$BASE/Godot_v4.6-stable_linux.x86_64.zip" -o /tmp/tamu-godot-46.zip
+          unzip -q /tmp/tamu-godot-46.zip -d /tmp
+          chmod +x /tmp/Godot_v4.6-stable_linux.x86_64
+          sudo install /tmp/Godot_v4.6-stable_linux.x86_64 /usr/local/bin/godot
+          godot --headless --version
+      - name: Recover exact authored 128px atlas, 156 cells and 832 objects
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/tamu-canonical /tmp/tamu-love chunks assets/terrain25d
+          gh run download 41234831527 --repo "${{ github.repository }}" --name tamu-authored-r2-binary-cache --dir /tmp/tamu-canonical
+          python3 - <<'PY'
+          import hashlib,json,pathlib,zipfile,zlib
+          root=pathlib.Path('/tmp/tamu-canonical')
+          archive=next(root.rglob('tamu-authored-compiled.love'))
+          z=zipfile.ZipFile(archive)
+          out=pathlib.Path('assets/terrain25d')
+          for name in ('atlas_00.png','atlas_01.png','manifest.json'):
+              blob=z.read('assets/terrain25d/'+name)
+              (out/name).write_bytes(blob)
+              assert blob and (name.endswith('.json') or blob[:8]==b'\x89PNG\r\n\x1a\n')
+          cache=next(root.rglob('c_0_0.meta.json')).parent
+          chunks=pathlib.Path('chunks')
+          layers={0:bytearray(),1:bytearray()}
+          stems=[];total=0
+          for meta_file in sorted(cache.glob('c_*.meta.json')):
+              stem=meta_file.name[:-10]
+              meta=json.loads(meta_file.read_text())
+              raw=zlib.decompress((cache/(stem+'.verts.z')).read_bytes())
+              (chunks/(stem+'.json')).write_text(json.dumps(meta,separators=(',',':')))
+              (chunks/(stem+'.verts')).write_bytes(raw)
+              offset=0
+              for surf in meta['meshes']:
+                  count=int(surf['count']);length=count*20
+                  assert count>0 and count%3==0
+                  section=raw[offset:offset+length]
+                  assert len(section)==length
+                  level=0 if str(surf['key']).startswith('!') else 1
+                  layers[level].extend(section);offset+=length;total+=count
+              assert offset==len(raw)
+              stems.append(stem)
+          assert len(stems)==156 and len(set(stems))==156
+          manifest={'schema':'tamu.region.terrain.v1','region_id':'fisilti_ormani',
+                    'source_run_id':41234831527,'source_chunks':156,
+                    'vertices':total,'layers':[]}
+          for level,raw in layers.items():
+              filename='merged_layer_%d.verts'%level
+              (chunks/filename).write_bytes(raw)
+              manifest['layers'].append({'z':level,'file':filename,
+                'count':len(raw)//20,'sha256':hashlib.sha256(raw).hexdigest()})
+          (chunks/'merged_terrain.json').write_text(json.dumps(manifest,separators=(',',':')))
+          print('TAMU_LAYERED_SOURCE_OK cells=156 vertices=',total)
+          PY
+          unzip -q "$(find /tmp/tamu-canonical -name tamu-authored-compiled.love -print -quit)" -d /tmp/tamu-love
+          mkdir -p /tmp/tamu-love/chunks
+          cp game/love/tests/export_godot_population.lua /tmp/tamu-love/tests/export_godot_population.lua
+          (cd /tmp/tamu-love && lua5.4 tests/export_godot_population.lua)
+          cp /tmp/tamu-love/chunks/r2_objects.json chunks/r2_objects.json
+          python3 - <<'PY'
+          import json
+          rows=json.load(open('chunks/r2_objects.json'))['objects']
+          assert len(rows)==832 and len({o['id'] for o in rows})==832
+          print('TAMU_LAYERED_OBJECTS_OK count=',len(rows))
+          PY
+      - name: Use original 128px terrain material mix
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/bake_terrain_mix.py
+          test -s assets/terrain25d/atlas_00_mix.png
+          godot --headless --editor --path . --import --quit > /tmp/tamu-layer-import.log 2>&1
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:' /tmp/tamu-layer-import.log; then
+            cat /tmp/tamu-layer-import.log
+            exit 1
+          fi
+      - name: Render aligned full-size terrain and transparent object PNGs
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --kill-after=5s 360s xvfb-run -a -s '-screen 0 1024x768x24' \
+            godot --path . --rendering-method gl_compatibility \
+            --script res://scripts/bake_layered_map_ci.gd > /tmp/tamu-layer-bake.log 2>&1 || {
+              cat /tmp/tamu-layer-bake.log
+              exit 1
+            }
+          cat /tmp/tamu-layer-bake.log
+          grep -q 'TAMU_128_LAYERED_BAKE_OK' /tmp/tamu-layer-bake.log
+          test -s baked/terrain.png && test -s baked/objects.png
+          test -s baked/alignment.json
+      - name: Verify two RGBA PNGs have identical dimensions and object transparency
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,hashlib
+          from PIL import Image
+          root=pathlib.Path('baked')
+          t=Image.open(root/'terrain.png').convert('RGBA')
+          o=Image.open(root/'objects.png').convert('RGBA')
+          m=json.loads((root/'alignment.json').read_text())
+          assert t.size==o.size==(m['width'],m['height'])
+          assert len(m['objects'])==832 and m['world_unit']==32
+          assert o.getchannel('A').getbbox() is not None, 'NO_OBJECT_PIXELS'
+          assert t.getchannel('A').getbbox() is not None, 'NO_TERRAIN_PIXELS'
+          assert o.getpixel((0,0))[3]==0, 'OBJECTS_NOT_TRANSPARENT'
+          assert 512<=t.width<=8192 and 512<=t.height<=8192
+          for filename in ('terrain.png','objects.png','alignment.json'):
+              p=root/filename
+              print('TAMU_LAYERED_FILE',filename,'bytes=',p.stat().st_size,
+                    'sha256=',hashlib.sha256(p.read_bytes()).hexdigest())
+          print('TAMU_LAYERED_PAIR_VERIFIED',t.size,'objects=',len(m['objects']))
+          PY
+      - name: Upload only the two aligned maps and placement metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: tamu-128-terrain-objects-layered-png
+          path: |
+            baked/terrain.png
+            baked/objects.png
+            baked/alignment.json
+          if-no-files-found: error
+          retention-days: 30
