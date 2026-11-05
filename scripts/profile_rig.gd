@@ -8,9 +8,9 @@ const SOURCE_SCALE := 0.067
 const SOURCE_GROUND_Y := 665.0
 const SKIN_HZ := 30.0
 # Source walk is 48 frames x 34ms. Its full left/right step cycle covers
-# ~32 projected pixels at the authored 0.067 game scale. Advance from actual
+# ~96 projected pixels after authored leg poses were widened about 3x. Advance from actual
 # movement distance instead of wall-clock to remove apparent foot skating.
-const WALK_CYCLE_SCREEN_PIXELS := 32.0
+const WALK_CYCLE_SCREEN_PIXELS := 96.0
 const CLIP_ALIAS := {
     "walk": "smooth_walk", "run": "smooth_run", "idle": "idle",
     "slash": "slash", "stab": "stab", "die": "die", "sit": "sit"
