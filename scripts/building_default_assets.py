@@ -204,7 +204,7 @@ def render(definition,rotation):
 
 
 def rgba_colors(image):
-    return len({pixel[:3] for pixel in image.get_flattened_data() if pixel[3]>0})
+    return len({pixel[:3] for pixel in image.getdata() if pixel[3]>0})
 
 
 def compose(elements, name, output, zoom=3):
@@ -269,7 +269,7 @@ def build(catalog,outdir):
             colors=rgba_colors(im)
             if im.mode!='RGBA' or im.size!=(128,128) or colors>64:
                 raise AssertionError(f'sprite contract failed: {filename} {colors}')
-            if not any(p[3]==0 for p in im.get_flattened_data()) or not any(p[3]>0 for p in im.get_flattened_data()):
+            if not any(p[3]==0 for p in im.getdata()) or not any(p[3]>0 for p in im.getdata()):
                 raise AssertionError(f'alpha missing: {filename}')
             dest=sprites_path/filename
             im.save(dest,optimize=True)
