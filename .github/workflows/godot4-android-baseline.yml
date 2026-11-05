@@ -48,6 +48,9 @@ jobs:
           PY
           timeout --kill-after=3s 35s godot --headless --path . --script res://scripts/gameplay_contract_ci.gd 2>&1 | tee gameplay-native.log
           grep -q TAMU_NATIVE_GAMEPLAY_CONTRACT_OK gameplay-native.log
+          timeout --kill-after=3s 35s godot --headless --path . --script res://scripts/crafting_book_ci.gd 2>&1 | tee crafting-book.log
+          grep -q TAMU_CRAFT_BOOK_OK crafting-book.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_CRAFT_BOOK_FAILED' crafting-book.log; then exit 1; fi
           mkdir -p /tmp/tamu-fast-save /tmp/tamu-fast-live /tmp/tamu-fast-mods
           for phase in write reopen recovery mod_reject; do
             XDG_DATA_HOME=/tmp/tamu-fast-save TAMU_SAVE_PHASE="$phase" timeout --kill-after=3s 20s godot --headless --path . --script res://scripts/stage6_contract_ci.gd 2>&1 | tee "save-$phase.log"
@@ -68,6 +71,7 @@ jobs:
             fx-contract.log
             fx-visual.log
             gameplay-native.log
+            crafting-book.log
             save-*.log
             live-*.log
             mod-fast.log
@@ -490,6 +494,7 @@ jobs:
           assert all(any(key in s for s in names) for key in required), 'PCK_REQUIRED_ASSET_MISSING'
           runtime_scripts=('domain_catalog','domain_inventory','domain_harvesting',
               'domain_crafting','domain_building','gameplay_session',
+              'crafting_book_ui','crafting_axe_preview',
               'stage6_checkpoint','stage6_domain_restore','r2_authority',
               'r2_surface','world_source','world_stream','merged_terrain',
               'world_identity','impact_effects','audio_cues','performance_hud','shadow_volume')

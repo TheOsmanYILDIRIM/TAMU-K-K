@@ -5,6 +5,7 @@ const WorldStream = preload("res://scripts/world_stream.gd")
 const MergedTerrain = preload("res://scripts/merged_terrain.gd")
 const RigbySkinned = preload("res://scripts/rigby_skinned.gd")
 const GameplaySession = preload("res://scripts/gameplay_session.gd")
+const CraftingBookUI = preload("res://scripts/crafting_book_ui.gd")
 const R2Authority = preload("res://scripts/r2_authority.gd")
 const R2Collision = preload("res://scripts/r2_collision.gd")
 const WorldIdentity = preload("res://scripts/world_identity.gd")
@@ -59,6 +60,7 @@ var sun_direction := Vector2.ZERO
 var sun_level := 1.0
 var daylight_layer: CanvasModulate
 var harvest_button: Button
+var crafting_book: CanvasLayer
 const DAY_SECONDS := 30.0
 var world_bounds := Rect2(-4096.0, -4096.0, 32768.0, 32768.0)
 const MAX_LOADED_PER_FRAME := 1
@@ -141,9 +143,10 @@ func _try_harvest() -> void:
         impact_effects.burst(WorldProjection.to_screen(nearest["position"]), str(nearest["kind"]), 6)
     print("TAMU_HARVEST_COMMAND id=", nearest["id"], " status=", result["status"])
 
-func _begin_craft(recipe_id: String) -> void:
+func _begin_craft(recipe_id: String) -> Dictionary:
     var result: Dictionary = gameplay.begin_craft(_next_gameplay_command("craft"), recipe_id)
     print("TAMU_CRAFT_COMMAND recipe=", recipe_id, " status=", result["status"])
+    return result
 
 func _tick_gameplay(dt: float) -> void:
     var changes: Array[Dictionary] = gameplay.tick(dt, actor_world)
@@ -281,6 +284,9 @@ func _release_joystick() -> void:
         joystick_knob.position = Vector2(47,47)
 
 func _input(event: InputEvent) -> void:
+    if crafting_book != null and crafting_book.is_open():
+        _release_joystick()
+        return
     if joystick_base == null:
         return
     if event is InputEventScreenTouch:
@@ -578,6 +584,9 @@ func _ready() -> void:
     add_child(perf_hud)
     _init_mobile_joystick()
     _init_harvest_button()
+    crafting_book = CraftingBookUI.new()
+    crafting_book.setup(gameplay,Callable(self,"_begin_craft"))
+    add_child(crafting_book)
     print("TAMU_GODOT_TERRAIN_START chunks=", pending.size())
 
 func _load_region(manifest_path: String) -> bool:
@@ -872,6 +881,8 @@ func _process(delta: float) -> void:
     _update_sun(visual_delta)
     elapsed += visual_delta
     var direction := joystick_vector if joystick_vector.length_squared() > 0.01 else Input.get_vector("ui_left","ui_right","ui_up","ui_down")
+    if crafting_book != null and crafting_book.is_open():
+        direction = Vector2.ZERO
     if direction.length_squared() > 0.01:
         var intended := direction * actor_speed * delta
         if authority != null and OS.get_environment("TAMU_VISUAL_CI") != "1":
@@ -1036,6 +1047,9 @@ func _process(delta: float) -> void:
             get_tree().quit()
 
 func _unhandled_input(event: InputEvent) -> void:
+    if crafting_book != null and crafting_book.is_open():
+        drag = false
+        return
     if event is InputEventScreenTouch:
         if event.index == joystick_pointer or event.position.distance_to(_joystick_center()) < 110.0:
             return
