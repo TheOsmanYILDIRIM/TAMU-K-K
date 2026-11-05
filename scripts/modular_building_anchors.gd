@@ -80,3 +80,37 @@ static func snap_piece(parent_id: String, parent_origin: Vector3, parent_rotatio
     var parent_edge := transform(piece_line(parent_id, parent_slot), parent_origin, parent_rotation)
     var child_edge := piece_line(child_id, child_slot)
     return snap_line(parent_edge, child_edge, child_rotation)
+
+## Single source of truth for old 128px building sprites in Godot's native
+## Cartesian/world projection. Old standalone art uses PPU=2, pivot=(64,92).
+## Native WorldProjection uses PPU=1, with terrain elevation displayed at 0.35.
+## Do NOT add raw terrain height to the construction's structural z coordinate.
+const SPRITE_PIVOT := Vector2(64.0, 92.0)
+const SPRITE_SCALE := 0.5
+const ISO_X := 0.70710678118
+const ISO_Y := 0.35355339059
+const TERRAIN_HEIGHT_SCREEN_SCALE := 0.35
+
+static func projected_foot(world_xy: Vector2, base_terrain_height: float, structural_z: float = 0.0) -> Vector2:
+    if not is_finite(world_xy.x) or not is_finite(world_xy.y) or not is_finite(base_terrain_height) or not is_finite(structural_z):
+        return Vector2(INF, INF)
+    return Vector2((world_xy.x-world_xy.y)*ISO_X,
+        (world_xy.x+world_xy.y)*ISO_Y - base_terrain_height*TERRAIN_HEIGHT_SCREEN_SCALE - structural_z)
+
+static func sprite_draw_top_left(world_xy: Vector2, base_terrain_height: float,
+        structural_z: float = 0.0) -> Vector2:
+    ## Sprite2D must be non-centered, scale=(0.5,0.5). Position this top-left.
+    ## For an AtlasTexture, the region itself is 128x128 and pivot is unchanged.
+    return projected_foot(world_xy, base_terrain_height, structural_z) - SPRITE_PIVOT*SPRITE_SCALE
+
+static func verify_projection_contract() -> bool:
+    var foot := projected_foot(Vector2(32.0, 0.0), 12.0, 4.0)
+    if foot.distance_to(Vector2(32.0*ISO_X, 32.0*ISO_Y-12.0*0.35-4.0)) > 0.00001:
+        return false
+    var top_left := sprite_draw_top_left(Vector2(32.0, 0.0), 12.0, 4.0)
+    if (top_left+SPRITE_PIVOT*SPRITE_SCALE).distance_to(foot) > 0.00001:
+        return false
+    if projected_foot(Vector2(32.0, 0.0), 0.0, 0.0).distance_to(
+            Vector2(32.0*ISO_X, 32.0*ISO_Y)) > 0.00001:
+        return false
+    return true
