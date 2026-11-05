@@ -450,6 +450,9 @@ func _tick_gameplay(dt: float) -> void:
             audio_cues.cue("craft_complete")
             impact_effects.burst(WorldProjection.to_screen(actor_world), "craft", 12)
             print("TAMU_CRAFT_OK recipe=", change["recipe_id"])
+    # Reuse the authored chop until the actual harvest transaction completes.
+    if not gameplay.active_harvest.is_empty() and Time.get_ticks_msec() / 1000.0 >= action_clip_until:
+        _play_action_clip("slash")
 
 func _init_harvest_button() -> void:
     var ui := CanvasLayer.new()
@@ -694,8 +697,11 @@ func _make_avatar() -> void:
 func _play_action_clip(clip: String, seconds: float = 0.65) -> void:
     if profile_rig == null or clip not in ["slash", "stab"]:
         return
+    # Preserve the full authored non-looping clip instead of cutting it short.
+    var definition: Dictionary = profile_rig.clips.get(clip, {})
+    var duration := float(definition.get("ms", 0)) * float(definition.get("frames", []).size()) / 1000.0
     action_clip = clip
-    action_clip_until = Time.get_ticks_msec() / 1000.0 + seconds
+    action_clip_until = Time.get_ticks_msec() / 1000.0 + maxf(seconds, duration)
     profile_rig.set_clip(clip)
 
 func _set_actor_clip(direction: String, action: String) -> void:
