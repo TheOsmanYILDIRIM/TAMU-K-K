@@ -3,8 +3,7 @@ on:
   push:
     branches:
       - experiment/godot4-android-apk-20261031
-      # experiment/limboai-godot46-20261104: auto PCK/APK disabled during fast visual construction iteration.
-      # Manual workflow_dispatch remains available when build acceptance is requested.
+      - experiment/limboai-godot46-20261104
       - main
   pull_request:
     branches:
@@ -419,6 +418,27 @@ jobs:
           test -s assets/gui/joystick_knob.png
           grep -q TAMU_TERRAIN_MIX_BAKED_OK screenshots-mix-bake.log
           test -s assets/terrain25d/atlas_00_mix.png
+          # Reuse the exact 19-piece/76-view old construction generator, at
+          # native 128x128 per source view. The generator is deterministic.
+          # Godot displays these at 0.5 scale against its original R2 terrain.
+          mkdir -p assets/building
+          lua5.4 scripts/export_building_parts.lua > /tmp/tamu-building-parts.json
+          python3 scripts/building_default_assets.py \
+            --catalog /tmp/tamu-building-parts.json --output assets/building
+          python3 - <<'PYBUILD'
+          import json
+          from pathlib import Path
+          from PIL import Image
+          root=Path('assets/building')
+          manifest=json.loads((root/'building_default_manifest.json').read_text())
+          entries=manifest['entries']
+          assert len(entries)==76 and len({(e['def_id'],e['rotation']) for e in entries})==76
+          assert all(e['anchor']==[64,92] and e['colors']<=64 for e in entries)
+          with Image.open(root/'building_default_atlas.png') as atlas:
+              assert atlas.size==(1024,1280), atlas.size
+          print('TAMU_BUILDING_128_ATLAS_READY views=76 source_px=128 pivot=64,92 native_scale=0.5')
+          PYBUILD
+          godot --headless --path . --check-only --script res://scripts/modular_building_anchors.gd
           godot --headless --editor --path . --import --quit
           mkdir -p screenshots
           godot --headless --path . --script res://scripts/compile_content.gd | tee screenshots/content-compile.log
@@ -931,6 +951,7 @@ jobs:
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_MOB_NO_VALID_SPAWN|TAMU_LIMBOAI_.*FAILED|TAMU_MOB_.*FAILED' screenshots/limboai-production-mobile.log; then exit 1; fi
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_MOB_MOBILE_VISIBLE_FAILED|TAMU_LIMBOAI_.*FAILED' screenshots/limboai-mobile-visible.log; then exit 1; fi
       - name: Build standalone LimboAI Android ARM64 debug APK
+        if: github.ref_name != 'experiment/limboai-godot46-20261104'
         shell: bash
         run: |
           set -euo pipefail
