@@ -3,7 +3,8 @@ on:
   push:
     branches:
       - experiment/godot4-android-apk-20261031
-      - experiment/limboai-godot46-20261104
+      # experiment/limboai-godot46-20261104: auto PCK/APK disabled during fast visual construction iteration.
+      # Manual workflow_dispatch remains available when build acceptance is requested.
       - main
   pull_request:
     branches:
