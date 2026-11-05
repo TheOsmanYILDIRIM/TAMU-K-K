@@ -419,7 +419,7 @@ func _show_modular_building_demo() -> void:
     var entry_index := {}
     for entry in parsed.get("entries", []):
         if entry is Dictionary:
-            entry_index[str(entry.get("def_id",""))+":"+str(entry.get("rotation",-1))] = entry
+            entry_index[str(entry.get("def_id",""))+":"+str(int(entry.get("rotation",-1)))] = entry
     var base := actor_world + Vector2(96.0,-48.0)
     # Review kit is deliberately small, using the same 32-unit world grid.
     var pieces: Array[Dictionary] = []
@@ -477,7 +477,10 @@ func _show_modular_building_demo() -> void:
         sprite.z_index=clampi(roundi(WorldProjection.to_screen(world_pos).y/16.0) + roundi(float(part["z"])/2.0),-400,400)
         review.add_child(sprite)
         count+=1
-    print("TAMU_BUILDING_128_REVIEW_READY views=",count," terrain=authored pivot=64,92 scale=0.5")
+    if count != pieces.size():
+        push_error("TAMU_BUILDING_128_REVIEW_INCOMPLETE views=%d expected=%d" % [count, pieces.size()])
+    else:
+        print("TAMU_BUILDING_128_REVIEW_READY views=",count," terrain=authored pivot=64,92 scale=0.5")
     
 func _place_workbench() -> void:
     _cancel_auto_harvest()
