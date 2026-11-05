@@ -82,7 +82,7 @@ func apply_materials(items: Dictionary, source_catalog: RefCounted) -> void:
             if not Color.html_is_valid(hex):
                 continue
             var pigment := Color.html(hex)
-            var p := colored.get_pixel(x,y)
+            var p: Color = colored.get_pixel(x,y)
             # Preserve the authored alpha and its light/shadow; tint a selected material.
             var luminosity := clampf(p.get_luminance() * 1.6 + 0.15, 0.18, 1.0)
             colored.set_pixel(x,y, Color(lerpf(p.r,pigment.r*luminosity,0.52),

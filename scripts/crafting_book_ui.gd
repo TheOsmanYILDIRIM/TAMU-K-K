@@ -273,7 +273,7 @@ func _render_recipe(id: String) -> void:
     for input in recipe.get("inputs",[]):
         var item := str(input.get("def_id",""))
         var need := int(input.get("count",0))
-        var owned := gameplay.count_item(item)
+        var owned: int = gameplay.count_item(item)
         var label := "%s   %d / %d" % [_friendly(item), owned, need]
         var row := _text(label,23, Color("#a2dfb7") if owned >= need else Color("#f2ac8c"))
         inner.add_child(row)
@@ -341,7 +341,7 @@ func _render_axe() -> void:
         if str(item["role"]) == selected_role:
             b.add_theme_stylebox_override("normal",_style(Color("#426b63"),GOLD,12))
         area.add_child(b)
-    var label := REGIONS.get(selected_role,"Bölüm")
+    var label: String = str(REGIONS.get(selected_role,"Bölüm"))
     inner.add_child(_text("SEÇİLİ BÖLGE · "+str(label).to_upper(),23,GOLD))
     inner.add_child(_text(REGION_HINTS.get(selected_role,""),18,Color("#a8bdb4")))
     var available := _inventory_materials()
