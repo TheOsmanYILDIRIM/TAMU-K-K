@@ -126,7 +126,7 @@ func _bake() -> void:
         sprite.scale = Vector2.ONE * scale_value
         # Preserve the exact production foot pivot. These sprites remain
         # 128px assets; high-resolution atlas variants are never fetched.
-        sprite.offset = Vector2(0.0,rectangle.size.y*(0.5-0.82))
+        sprite.offset = Vector2(0.0,rectangle.size.y*(0.5-(124.0/128.0)))
         object_layer.add_child(sprite)
         var pt := sprite.position
         var top_left: Vector2 = pt + (-rectangle.size/2.0 + sprite.offset)*scale_value
