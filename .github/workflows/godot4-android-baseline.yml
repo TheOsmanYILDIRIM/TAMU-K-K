@@ -451,6 +451,13 @@ jobs:
             echo TAMU_ONLY_128_PREPARED
             exit 0
           fi
+      - name: Full native acceptance checks (other branches only)
+        if: github.ref_name != 'experiment/limboai-godot46-20261104'
+        shell: bash
+        env:
+          TAMU_VISUAL_CI: '1'
+        run: |
+          set -euo pipefail
           timeout --kill-after=3s 60s godot --headless --path . --script res://scripts/mob_contract_ci.gd 2>&1 | tee screenshots/mob-contract.log
           grep -q TAMU_MOB_CONTRACT_OK screenshots/mob-contract.log
           timeout --kill-after=3s 60s godot --headless --path . --script res://scripts/profile_rig_ci.gd 2>&1 | tee screenshots/profile-rig-contract.log
