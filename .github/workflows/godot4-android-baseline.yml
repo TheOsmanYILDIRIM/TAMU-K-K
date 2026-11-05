@@ -48,6 +48,9 @@ jobs:
           PY
           timeout --kill-after=3s 35s godot --headless --path . --script res://scripts/gameplay_contract_ci.gd 2>&1 | tee gameplay-native.log
           grep -q TAMU_NATIVE_GAMEPLAY_CONTRACT_OK gameplay-native.log
+          timeout --kill-after=3s 25s godot --headless --path . --script res://scripts/material_fabrication_ci.gd 2>&1 | tee material-fabrication.log
+          grep -q TAMU_MATERIAL_FABRICATION_OK material-fabrication.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_MATERIAL_FABRICATION_FAILED' material-fabrication.log; then exit 1; fi
           mkdir -p /tmp/tamu-fast-save /tmp/tamu-fast-live /tmp/tamu-fast-mods
           for phase in write reopen recovery mod_reject; do
             XDG_DATA_HOME=/tmp/tamu-fast-save TAMU_SAVE_PHASE="$phase" timeout --kill-after=3s 20s godot --headless --path . --script res://scripts/stage6_contract_ci.gd 2>&1 | tee "save-$phase.log"
