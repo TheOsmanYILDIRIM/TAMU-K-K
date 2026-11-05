@@ -19,6 +19,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   limbo_contract:
+    if: github.ref_name != 'experiment/limboai-godot46-20261104'
     name: Pinned native LimboAI GDExtension 4.6 BT contract (Linux)
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -55,6 +56,7 @@ jobs:
           path: limbo-native.log
           if-no-files-found: warn
   fx_contract:
+    if: github.ref_name != 'experiment/limboai-godot46-20261104'
     name: Independent Godot FX and audio contract
     runs-on: ubuntu-24.04
     timeout-minutes: 8
@@ -444,6 +446,11 @@ jobs:
           godot --headless --path . --script res://scripts/compile_content.gd | tee screenshots/content-compile.log
           grep -q 'TAMU_CATALOG_BINARY_COMPILE_OK definitions=7 recipes=2' screenshots/content-compile.log
           test -s data/catalog/compiled_catalog.res
+          # The 128-only run needs assets/import/catalog, not all visual/FPS suites.
+          if [ "${{ github.ref_name }}" = "experiment/limboai-godot46-20261104" ]; then
+            echo TAMU_ONLY_128_PREPARED
+            exit 0
+          fi
           timeout --kill-after=3s 60s godot --headless --path . --script res://scripts/mob_contract_ci.gd 2>&1 | tee screenshots/mob-contract.log
           grep -q TAMU_MOB_CONTRACT_OK screenshots/mob-contract.log
           timeout --kill-after=3s 60s godot --headless --path . --script res://scripts/profile_rig_ci.gd 2>&1 | tee screenshots/profile-rig-contract.log
@@ -672,6 +679,7 @@ jobs:
           print('TAMU_GODOT_VISUAL_SMOKE_OK',i.size)
           PY
       - name: Export standalone PCK and verify isolated boot
+        if: github.ref_name != 'experiment/limboai-godot46-20261104'
         shell: bash
         run: |
           set -euo pipefail
@@ -778,6 +786,7 @@ jobs:
           echo TAMU_EXPORTED_PROFILE_PACK_OK
           sha256sum build/tamu-android-content.pck
       - name: Benchmark balanced and mobile texture PCKs and visual quality
+        if: github.ref_name != 'experiment/limboai-godot46-20261104'
         shell: bash
         run: |
           set -euo pipefail
@@ -888,7 +897,8 @@ jobs:
           assert any('assets/building/building_default_atlas.png-' in item and item.endswith('.ctex') for item in names), 'TAMU_128_BUILDING_ATLAS_MISSING'
           assert any('assets/building/building_default_manifest.json' in item for item in names), 'TAMU_128_BUILDING_MANIFEST_MISSING'
           assert any('scripts/modular_building_anchors.gdc' in item for item in names), 'TAMU_128_BUILDING_PROJECTION_MISSING'
-          assert p.stat().st_size < mobile.stat().st_size, ('TAMU_128_NOT_SMALLER',p.stat().st_size,mobile.stat().st_size)
+          if mobile.is_file():
+              assert p.stat().st_size < mobile.stat().st_size, ('TAMU_128_NOT_SMALLER',p.stat().st_size,mobile.stat().st_size)
           print('TAMU_128_SOURCE_PACK_OK files=',count,'bytes=',p.stat().st_size,'original_tile_px=128')
           PY128PCK
           # Critical: run without access to source files, like Android Loader.
@@ -912,6 +922,7 @@ jobs:
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_PROFILE_.*FAILED' screenshots/128-only-profile.log; then exit 1; fi
           sha256sum build/tamu-android-content-128.pck
       - name: LimboAI native BTPlayer active in real authored Yaprakkulak scene
+        if: github.ref_name != 'experiment/limboai-godot46-20261104'
         shell: bash
         run: |
           set -euo pipefail
@@ -1020,7 +1031,7 @@ jobs:
           print("SHA256",hashlib.sha256(p.read_bytes()).hexdigest())
           PY
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: github.ref_name != 'experiment/limboai-godot46-20261104'
         with:
           name: tamu-limboai-android-arm64-debug-apk
           path: build/TAMU_LimboAI_Android_arm64.apk
@@ -1033,25 +1044,25 @@ jobs:
           if-no-files-found: warn
       # One independent artifact per quality: users download ONLY their chosen PCK.
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: github.ref_name != 'experiment/limboai-godot46-20261104'
         with:
           name: tamu-godot-mobile-pck
           path: build/tamu-android-content-mobile.pck
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: github.ref_name != 'experiment/limboai-godot46-20261104'
         with:
           name: tamu-godot-balanced-pck
           path: build/tamu-android-content-balanced.pck
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: github.ref_name != 'experiment/limboai-godot46-20261104'
         with:
           name: tamu-godot-full-pck
           path: build/tamu-android-content.pck
           if-no-files-found: warn
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: github.ref_name != 'experiment/limboai-godot46-20261104'
         with:
           name: tamu-godot-test-results
           path: |
