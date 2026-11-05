@@ -406,7 +406,7 @@ func _show_modular_building_demo() -> void:
     var manifest_path := "res://assets/building/building_default_manifest.json"
     var atlas_path := "res://assets/building/building_default_atlas.png"
     if not FileAccess.file_exists(manifest_path) or not ResourceLoader.exists(atlas_path):
-        push_warning("TAMU_BUILDING_ATLAS_MISSING")
+        push_error("TAMU_BUILDING_ATLAS_MISSING")
         return
     var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(manifest_path))
     if not parsed is Dictionary:
@@ -420,34 +420,63 @@ func _show_modular_building_demo() -> void:
     for entry in parsed.get("entries", []):
         if entry is Dictionary:
             entry_index[str(entry.get("def_id",""))+":"+str(int(entry.get("rotation",-1)))] = entry
-    var base := actor_world + Vector2(96.0,-48.0)
-    # Review kit is deliberately small, using the same 32-unit world grid.
+
+    # A uniformly scaled preview is important: reducing only the sprite size
+    # would create gaps at the 32-unit module joints. Do not change gameplay
+    # anchors, build costs, collisions or Stage6 save coordinates.
+    const PREVIEW_FACTOR := 0.80
+    const PREVIEW_CELL := 32.0 * PREVIEW_FACTOR
+    var base := actor_world + Vector2(124.0,-64.0)
     var pieces: Array[Dictionary] = []
     for ix in range(2):
         for iy in range(2):
-            var local := Vector2(float(ix*32),float(iy*32))
-            pieces.append({"id":"tamu:foundation_wood","offset":local,"z":0.0,"rotation":0})
-            pieces.append({"id":"tamu:floor_wood","offset":local,"z":4.0,"rotation":0})
-    for ix in range(2):
-        for iy in range(2):
-            var local := Vector2(float(ix*32),float(iy*32))
+            var local := Vector2(float(ix),float(iy)) * PREVIEW_CELL
+            pieces.append({"id":"tamu:foundation_wood","offset":local,"z":0.0,"rotation":0,"house":true})
+            pieces.append({"id":"tamu:floor_wood","offset":local,"z":4.0*PREVIEW_FACTOR,"rotation":0,"house":true})
             if iy == 0:
-                pieces.append({"id":"tamu:wall_wood","offset":local+Vector2(0,-16),"z":6.0,"rotation":0})
+                pieces.append({"id":"tamu:wall_wood","offset":local+Vector2(0,-PREVIEW_CELL*0.5),
+                    "z":6.0*PREVIEW_FACTOR,"rotation":0,"house":true})
             if iy == 1:
                 pieces.append({"id":"tamu:doorway_wood" if ix==1 else "tamu:wall_wood",
-                    "offset":local+Vector2(0,16),"z":6.0,"rotation":0})
+                    "offset":local+Vector2(0,PREVIEW_CELL*0.5),
+                    "z":6.0*PREVIEW_FACTOR,"rotation":0,"house":true})
             if ix == 0:
-                pieces.append({"id":"tamu:window_wood","offset":local+Vector2(-16,0),"z":6.0,"rotation":1})
+                pieces.append({"id":"tamu:window_wood","offset":local+Vector2(-PREVIEW_CELL*0.5,0),
+                    "z":6.0*PREVIEW_FACTOR,"rotation":1,"house":true})
             if ix == 1:
-                pieces.append({"id":"tamu:wall_wood","offset":local+Vector2(16,0),"z":6.0,"rotation":1})
-            # Sloping roof sections rest on wall eaves at z=30.
-            pieces.append({"id":"tamu:roof_slope_wood","offset":local+Vector2(0,-16),
-                "z":30.0,"rotation":2})
-            pieces.append({"id":"tamu:roof_slope_wood","offset":local+Vector2(0,16),
-                "z":30.0,"rotation":0})
-    var review := Node2D.new()
-    review.name="Construction128Review"
-    object_layer.add_child(review)
+                pieces.append({"id":"tamu:wall_wood","offset":local+Vector2(PREVIEW_CELL*0.5,0),
+                    "z":6.0*PREVIEW_FACTOR,"rotation":1,"house":true})
+            pieces.append({"id":"tamu:roof_slope_wood","offset":local+Vector2(0,-PREVIEW_CELL*0.5),
+                "z":30.0*PREVIEW_FACTOR,"rotation":2,"house":true})
+            pieces.append({"id":"tamu:roof_slope_wood","offset":local+Vector2(0,PREVIEW_CELL*0.5),
+                "z":30.0*PREVIEW_FACTOR,"rotation":0,"house":true})
+
+    # Six modules per side: fence, corner continuity, a front gate. The fence
+    # terrain foot is sampled independently from each local ground location.
+    for i in range(6):
+        var x := float(i-2) * PREVIEW_CELL
+        pieces.append({"id":"tamu:fence_wood","offset":Vector2(x,-2.0*PREVIEW_CELL),
+            "z":0.0,"rotation":0,"house":false})
+        pieces.append({"id":"tamu:fence_gate_wood" if i==2 else "tamu:fence_wood",
+            "offset":Vector2(x,3.0*PREVIEW_CELL),"z":0.0,"rotation":0,"house":false})
+    for i in range(1,5):
+        var y := float(i-2) * PREVIEW_CELL
+        pieces.append({"id":"tamu:fence_wood","offset":Vector2(-2.0*PREVIEW_CELL,y),
+            "z":0.0,"rotation":1,"house":false})
+        pieces.append({"id":"tamu:fence_wood","offset":Vector2(3.0*PREVIEW_CELL,y),
+            "z":0.0,"rotation":1,"house":false})
+
+    # Keep the 2x2 house structurally coplanar. Select the lowest terrain
+    # sample so its base cannot float above higher spots on uneven terrain.
+    var house_ground := INF
+    for ix in range(2):
+        for iy in range(2):
+            var corner := base + Vector2(float(ix),float(iy)) * PREVIEW_CELL
+            house_ground = minf(house_ground, authority.terrain.height_at(corner.x,corner.y))
+    if not is_finite(house_ground):
+        push_error("TAMU_BUILDING_TERRAIN_UNAVAILABLE")
+        return
+
     var count := 0
     for part in pieces:
         var key := str(part["id"])+":"+str(part["rotation"])
@@ -456,32 +485,39 @@ func _show_modular_building_demo() -> void:
             continue
         var entry: Dictionary = entry_index[key]
         var rect_data: Array = entry["atlas_rect"]
-        if rect_data.size()!=4:
+        if rect_data.size() != 4:
+            push_error("TAMU_BUILDING_INVALID_ATLAS_RECT "+key)
             continue
         var world_pos: Vector2 = base + part["offset"]
-        var terrain_height: float = authority.terrain.height_at(world_pos.x,world_pos.y)
+        var terrain_height: float = house_ground if bool(part["house"]) else authority.terrain.height_at(world_pos.x,world_pos.y)
         if not is_finite(terrain_height):
+            push_error("TAMU_BUILDING_TERRAIN_INVALID "+key)
             continue
         var sprite := Sprite2D.new()
-        sprite.texture=atlas
-        sprite.region_enabled=true
-        sprite.region_rect=Rect2(float(rect_data[0]),float(rect_data[1]),
+        sprite.name = "ConstructionReview_" + str(count)
+        sprite.texture = atlas
+        sprite.region_enabled = true
+        sprite.region_rect = Rect2(float(rect_data[0]),float(rect_data[1]),
             float(rect_data[2]),float(rect_data[3]))
-        sprite.centered=false
-        sprite.offset=-BuildingAnchors.SPRITE_PIVOT
-        sprite.scale=Vector2.ONE*BuildingAnchors.SPRITE_SCALE
-        sprite.texture_filter=CanvasItem.TEXTURE_FILTER_NEAREST
-        sprite.position=BuildingAnchors.projected_foot(world_pos,terrain_height,float(part["z"]))
-        # Draw order follows world footprint, not the sprite top: elevated roof
-        # panels must render over walls instead of disappearing behind them.
-        sprite.z_index=clampi(roundi(WorldProjection.to_screen(world_pos).y/16.0) + roundi(float(part["z"])/2.0),-400,400)
-        review.add_child(sprite)
-        count+=1
+        sprite.centered = false
+        var scale_value: float = BuildingAnchors.SPRITE_SCALE * PREVIEW_FACTOR
+        # Only raise the ART, not the Y-sort origin: roofs/walls must stay
+        # interleaved with authored rocks, trees, and the player.
+        sprite.offset = -BuildingAnchors.SPRITE_PIVOT - Vector2(0.0,float(part["z"])/scale_value)
+        sprite.scale = Vector2.ONE * scale_value
+        sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+        sprite.position = BuildingAnchors.projected_foot(world_pos,terrain_height)
+        sprite.z_index = 0
+        # IMPORTANT: object_layer has y_sort_enabled=true. A nested Node2D
+        # would sort the entire house as ONE object at (0,0), over the world.
+        object_layer.add_child(sprite)
+        count += 1
     if count != pieces.size():
         push_error("TAMU_BUILDING_128_REVIEW_INCOMPLETE views=%d expected=%d" % [count, pieces.size()])
     else:
-        print("TAMU_BUILDING_128_REVIEW_READY views=",count," terrain=authored pivot=64,92 scale=0.5")
-    
+        print("TAMU_BUILDING_128_REVIEW_READY views=",count,
+            " house=32 fence=20 effective_scale=0.4 ysort=world terrain=authored")
+
 func _place_workbench() -> void:
     _cancel_auto_harvest()
     if gameplay == null or authority == null:
