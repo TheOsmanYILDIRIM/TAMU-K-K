@@ -14,6 +14,13 @@ static func to_world(screen: Vector2) -> Vector2:
     var total := screen.y / ISO_Y
     return Vector2((difference + total) * 0.5, (total - difference) * 0.5)
 
+# Manual joystick arrows are in screen coordinates. Convert them back to
+# Cartesian world motion; a screen-up input must move visually straight up.
+# Use ISO_X as the calibrated nominal screen-speed factor: equal joystick
+# magnitude means equal projected speed, regardless of direction.
+static func joystick_to_world(screen_input: Vector2) -> Vector2:
+    return to_world(screen_input) * ISO_X
+
 # A side-view paper avatar remains upright in this 2D isometric projection.
 # Only mirror when actual ground movement has a horizontal screen component;
 # depth-only movement preserves the last profile side instead of flickering.
@@ -51,4 +58,9 @@ static func verify_contract() -> bool:
         return false
     if profile_facing_sign(Vector2(0.97, 1.0), 1.0) != 1.0:
         return false
+    for input in [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT,
+            Vector2(0.70710678, -0.70710678), Vector2(-0.70710678, 0.70710678)]:
+        var projected := to_screen(joystick_to_world(input))
+        if projected.distance_to(input * ISO_X) > 0.0001:
+            return false
     return true
