@@ -35,6 +35,9 @@ var attack_cooldown := 0.0
 var command_sequence := 0
 var nav_cursor := 0
 var selected_id := ""
+var info_layer: CanvasLayer
+var info_panel: PanelContainer
+var info_label: Label
 var bound := false
 var region := ""
 var max_frame_ai_usec := 0
@@ -904,9 +907,112 @@ func _feedback(text: String) -> void:
     if hud != null:
         hud.call("_message", text)
 
-func player_attack() -> void:
-    if not bound or attack_cooldown > 0.0:
+# Session-only creature inspection. The existing mob ID/Brain remains authoritative.
+func _ensure_info_panel() -> void:
+    if info_panel != null or host == null:
         return
+    info_layer = CanvasLayer.new()
+    info_layer.name = "MobInspection"
+    info_layer.layer = 121
+    host.add_child(info_layer)
+    var root := Control.new()
+    root.name = "MobInspectionCanvas"
+    root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    info_layer.add_child(root)
+    info_panel = PanelContainer.new()
+    info_panel.name = "MobInformationPanel"
+    info_panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+    info_panel.offset_left = -330.0
+    info_panel.offset_right = -14.0
+    info_panel.offset_top = 130.0
+    info_panel.offset_bottom = 336.0
+    info_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+    var style := StyleBoxFlat.new()
+    style.bg_color = Color(0.09, 0.13, 0.13, 0.95)
+    style.border_color = Color(0.85, 0.72, 0.35)
+    style.set_border_width_all(2)
+    style.set_corner_radius_all(12)
+    info_panel.add_theme_stylebox_override("panel", style)
+    root.add_child(info_panel)
+    var column := VBoxContainer.new()
+    column.add_theme_constant_override("separation", 12)
+    info_panel.add_child(column)
+    var header := HBoxContainer.new()
+    column.add_child(header)
+    var title := Label.new()
+    title.text = "CANLI BİLGİSİ"
+    title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    title.add_theme_color_override("font_color", Color(1.0, 0.86, 0.48))
+    header.add_child(title)
+    var close_button := Button.new()
+    close_button.text = "X"
+    close_button.custom_minimum_size = Vector2(50, 40)
+    close_button.pressed.connect(hide_info)
+    header.add_child(close_button)
+    info_label = Label.new()
+    info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    info_label.add_theme_font_size_override("font_size", 19)
+    column.add_child(info_label)
+    info_panel.visible = false
+
+func hide_info() -> void:
+    if info_panel != null:
+        info_panel.visible = false
+    selected_id = ""
+
+func info_blocks_input(point: Vector2) -> bool:
+    return info_panel != null and info_panel.is_visible_in_tree() and info_panel.get_global_rect().has_point(point)
+
+func _refresh_info() -> void:
+    if info_panel == null or not info_panel.visible:
+        return
+    var selected: Dictionary = by_id.get(selected_id, {})
+    if selected.is_empty():
+        hide_info()
+        return
+    var species: Resource = selected["definition"]
+    var hp: float = maxf(0.0, float(selected["brain"].health))
+    var tags: PackedStringArray = species.tags
+    info_label.text = "%s\nCan: %d / %d\nDurum: %s\nTür: %s\nKimlik: %s" % [
+        str(species.label), ceili(hp), ceili(float(species.max_health)),
+        "Ölü" if hp <= 0.0 else str(selected.get("last_state", "idle")),
+        ", ".join(tags), str(selected["id"])
+    ]
+
+func select_at_screen(screen_point: Vector2) -> bool:
+    if not bound:
+        return false
+    var best: Dictionary = {}
+    var closest := INF
+    for a in agents:
+        var visual: Node2D = a["visual"]
+        if not visual.is_visible_in_tree() or float(a["brain"].health) <= 0.0:
+            continue
+        var ground: Vector2 = visual.get_global_transform_with_canvas() * Vector2.ZERO
+        var difference := screen_point - ground
+        # Artwork sits above the Y-sorted ground anchor; tap the visible body
+        # with a forgiving mobile hit region, never select invisible entities.
+        if absf(difference.x) > 48.0 or difference.y < -130.0 or difference.y > 26.0:
+            continue
+        var metric := difference.x * difference.x + (difference.y + 45.0) * (difference.y + 45.0)
+        if metric < closest:
+            closest = metric
+            best = a
+    if best.is_empty():
+        return false
+    selected_id = str(best["id"])
+    _ensure_info_panel()
+    if host.get("forest_gui") != null:
+        host.get("forest_gui").call("close")
+    info_panel.visible = true
+    _refresh_info()
+    print("TAMU_MOB_SELECTED id=", selected_id, " panel=true")
+    return true
+
+func player_attack() -> bool:
+    if not bound or attack_cooldown > 0.0:
+        return false
     var p: Vector2 = host.get("actor_world")
     var target: Dictionary = by_id.get(selected_id, {})
     var best := 48.0
@@ -918,10 +1024,10 @@ func player_attack() -> void:
                 best = d
     if target.is_empty() or p.distance_to(target["position"]) > 48.0:
         _feedback("HEDEF YOK / YAPRAKKULAK UZAKTA")
-        return
+        return false
     if not _line_of_sight(p, target["position"]):
         _feedback("HEDEFİN ÖNÜ KAPALI")
-        return
+        return false
     attack_cooldown = 0.7
     command_sequence += 1
     selected_id = target["id"]
@@ -929,6 +1035,8 @@ func player_attack() -> void:
     if result.get("ok", false):
         add_noise(p, 1.0)
         _feedback("YAPRAKKULAK  %d / %d" % [ceili(float(result["health"])), ceili(float(target["definition"].max_health))])
+        _refresh_info()
+    return bool(result.get("ok", false))
 
 func _install_mob_diagnostics() -> void:
     diagnostic_layer = CanvasLayer.new()
@@ -981,6 +1089,8 @@ func _process(delta: float) -> void:
     if not bound:
         return
     diagnostic_elapsed += delta
+    if info_panel != null and info_panel.visible and diagnostic_elapsed >= 0.3:
+        _refresh_info()
     last_think_usec = 0
     last_scan_usec = 0
     last_navigation_usec = 0
