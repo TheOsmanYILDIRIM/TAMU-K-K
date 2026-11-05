@@ -250,7 +250,7 @@ func schema_ids() -> Array:
     ids.push_front("_axe_prototype")
     var matches: Array = []
     for id in ids:
-        var draft := id == "_axe_prototype"
+        var draft: bool = id == "_axe_prototype"
         var name := "Balta" if draft else _named(str(id))
         var category := "Araçlar" if draft else _recipe_category(gameplay.catalog.recipe(str(id)))
         if selected_category != "Tümü" and category != selected_category:
@@ -309,7 +309,7 @@ func _fill_schema_grid() -> void:
     if ids.is_empty():
         grid.add_child(_label("Bu kategoride açılmış şema bulunmuyor.",20,MIST))
     for id in ids:
-        var draft := id == "_axe_prototype"
+        var draft: bool = id == "_axe_prototype"
         var r: Dictionary = {} if draft else gameplay.catalog.recipe(str(id))
         var panel := PanelContainer.new()
         panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
