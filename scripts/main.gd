@@ -1311,9 +1311,14 @@ func _process(delta: float) -> void:
         _cancel_auto_harvest()
         _harvest_feedback("OTOMATİK YÜRÜYÜŞ DURDURULDU")
     var automatic_direction: Vector2 = _auto_harvest_direction(delta) if manual_direction.length_squared() <= 0.01 else Vector2.ZERO
-    var direction: Vector2 = manual_direction if manual_direction.length_squared() > 0.01 else automatic_direction
+    var manual_active: bool = manual_direction.length_squared() > 0.01
+    var direction: Vector2 = manual_direction if manual_active else automatic_direction
+    var projected_travel_pixels := 0.0
     if direction.length_squared() > 0.01:
-        var intended := direction * actor_speed * delta
+        # Joystick and keyboard are screen-space; route-following is already
+        # world-space. Convert only manual input via inverse isometric mapping.
+        var world_direction: Vector2 = WorldProjection.joystick_to_world(direction) if manual_active else direction
+        var intended := world_direction * actor_speed * delta
         if not auto_harvest_id.is_empty() and not auto_route.is_empty():
             intended = intended.limit_length(actor_world.distance_to(auto_route[0]))
         var position_before: Vector2 = actor_world
@@ -1342,7 +1347,9 @@ func _process(delta: float) -> void:
             # 45-degree iso transform; diagonal and depth-only movement need
             # no new front/back art. A blocked player keeps their last side.
             profile_facing_sign = WorldProjection.profile_facing_sign(actor_world - position_before, profile_facing_sign)
-        var moved_distance: float = (actor_world - position_before).length()
+        var world_step: Vector2 = actor_world - position_before
+        var moved_distance: float = world_step.length()
+        projected_travel_pixels = WorldProjection.to_screen(world_step).length()
         _set_actor_clip(next_direction, "walk" if moved_distance > 0.01 else "idle")
     else:
         _set_actor_clip(actor_direction, "idle")
@@ -1351,7 +1358,7 @@ func _process(delta: float) -> void:
         pixellight_world_light.position = (profile_contact_shadow.position if profile_contact_shadow != null else avatar.position) + Vector2(0.0, -45.0)
     _tick_gameplay(delta)
     if profile_rig != null and perf_isolation_mode != "player_rig_off":
-        profile_rig.advance(visual_delta)
+        profile_rig.advance(visual_delta, projected_travel_pixels)
     var rig_end := Time.get_ticks_usec()
     if direction.length_squared() > 0.01:
         # Follow the painted ground-contact point on elevated terrain, not the
