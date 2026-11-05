@@ -50,6 +50,22 @@ func _run() -> void:
     if not _check_close("idle_left_toe", character._toe_position(10), Vector2(26.75, 662.4552), 0.05):
         quit(72)
         return
+    # Locomotion phase comes from *actual projected distance*, not time.
+    character.set_clip("walk")
+    var walk: Dictionary = character.clips["smooth_walk"]
+    var cycle_duration: float = float(walk["ms"]) * float(walk["frames"].size()) / 1000.0
+    character.advance(1.0 / 30.0, ProfileRig.WALK_CYCLE_SCREEN_PIXELS * 0.25)
+    if absf(character.elapsed - cycle_duration * 0.25) > 0.0001:
+        push_error("TAMU_PROFILE_STRIDE_DISTANCE_FAILED elapsed=" + str(character.elapsed))
+        quit(72)
+        return
+    var held_elapsed: float = character.elapsed
+    character.advance(1.0 / 30.0, 0.0)
+    if absf(character.elapsed - held_elapsed) > 0.0001:
+        push_error("TAMU_PROFILE_BLOCKED_STRIDE_FAILED")
+        quit(72)
+        return
+    print("TAMU_PROFILE_DISTANCE_STRIDE_OK cycle_px=", ProfileRig.WALK_CYCLE_SCREEN_PIXELS)
     # Test all seven authored clips and frame transitions without any IK.
     for action in ["idle", "walk", "run", "slash", "stab", "sit", "die"]:
         character.set_clip(action)
