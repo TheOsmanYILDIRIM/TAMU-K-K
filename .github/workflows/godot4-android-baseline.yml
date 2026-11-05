@@ -901,7 +901,7 @@ jobs:
               'chunks/merged_layer_1.verts','assets/profile_character/motion.json']
           for name in required:
               assert any(name in item for item in names), ('TAMU_128_RUNTIME_MISSING',name)
-          assert any('assets/building/building_default_atlas.png-' in item and item.endswith('.ctex') for item in names), 'TAMU_128_BUILDING_ATLAS_MISSING'
+          assert any('.godot/imported/building_default_atlas.png-' in item and item.endswith('.ctex') for item in names), 'TAMU_128_BUILDING_ATLAS_MISSING'
           assert any('assets/building/building_default_manifest.json' in item for item in names), 'TAMU_128_BUILDING_MANIFEST_MISSING'
           assert any('scripts/modular_building_anchors.gdc' in item for item in names), 'TAMU_128_BUILDING_PROJECTION_MISSING'
           if mobile.is_file():
