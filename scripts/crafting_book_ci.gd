@@ -32,7 +32,7 @@ func _test() -> void:
     await process_frame
     assert_ui(view.is_open(),"open_via_codex")
     assert_ui(view.close_button.visible,"close_visible")
-    var close_rect := view.close_button.get_global_rect()
+    var close_rect: Rect2 = view.close_button.get_global_rect()
     assert_ui(close_rect.size.x >= 72.0 and close_rect.size.y >= 72.0,"touch_target_72px")
     var window_rect := Rect2(Vector2.ZERO,root.size)
     assert_ui(window_rect.encloses(close_rect),"close_inside_viewport")
