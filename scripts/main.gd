@@ -100,6 +100,9 @@ var actor_ground_screen_offset := 0.0
 var avatar: Node2D
 var actor_world := Vector2(64.0, 128.0)
 var actor_speed := 96.0
+var sprint_held := false
+var action_clip_until := 0.0
+var action_clip := ""
 # Profile art has only left/right sides. Store that choice independently of
 # legacy Rigby's four authored clip directions.
 var profile_facing_sign := 1.0
@@ -340,6 +343,7 @@ func _try_harvest() -> void:
         _next_gameplay_command("harvest"))
     var status := str(result.get("status","unknown"))
     if status=="started":
+        _play_action_clip("slash")
         audio_cues.cue("harvest_start")
         impact_effects.burst(item["sprite"].position,str(item["kind"]),6)
         _harvest_feedback("TOPLANIYOR…")
@@ -621,6 +625,9 @@ func _world_ui_hit(point: Vector2) -> bool:
             return true
     if joystick_base != null and point.distance_to(_joystick_center()) <= 105.0:
         return true
+    var mobs := get_node_or_null("MobWorld")
+    if mobs != null and mobs.has_method("info_blocks_input") and mobs.call("info_blocks_input", point):
+        return true
     return false
 
 func _input(event: InputEvent) -> void:
@@ -684,9 +691,17 @@ func _make_avatar() -> void:
     print("TAMU_PROFILE_FOOT_CONTACT_READY radius=", ACTOR_COLLISION_RADIUS)
 
 
+func _play_action_clip(clip: String, seconds: float = 0.65) -> void:
+    if profile_rig == null or clip not in ["slash", "stab"]:
+        return
+    action_clip = clip
+    action_clip_until = Time.get_ticks_msec() / 1000.0 + seconds
+    profile_rig.set_clip(clip)
+
 func _set_actor_clip(direction: String, action: String) -> void:
     actor_direction = direction
-    if profile_rig != null:
+    if profile_rig != null and Time.get_ticks_msec() / 1000.0 >= action_clip_until:
+        action_clip = ""
         profile_rig.set_clip(action)
     avatar.scale.x = profile_facing_sign
 
@@ -1318,7 +1333,7 @@ func _process(delta: float) -> void:
         # Joystick and keyboard are screen-space; route-following is already
         # world-space. Convert only manual input via inverse isometric mapping.
         var world_direction: Vector2 = WorldProjection.joystick_to_world(direction) if manual_active else direction
-        var intended := world_direction * actor_speed * delta
+        var intended := world_direction * actor_speed * (1.65 if sprint_held and manual_active else 1.0) * delta
         if not auto_harvest_id.is_empty() and not auto_route.is_empty():
             intended = intended.limit_length(actor_world.distance_to(auto_route[0]))
         var position_before: Vector2 = actor_world
@@ -1350,7 +1365,7 @@ func _process(delta: float) -> void:
         var world_step: Vector2 = actor_world - position_before
         var moved_distance: float = world_step.length()
         projected_travel_pixels = WorldProjection.to_screen(world_step).length()
-        _set_actor_clip(next_direction, "walk" if moved_distance > 0.01 else "idle")
+        _set_actor_clip(next_direction, ("run" if sprint_held and manual_active else "walk") if moved_distance > 0.01 else "idle")
     else:
         _set_actor_clip(actor_direction, "idle")
     _update_avatar()
@@ -1690,7 +1705,15 @@ func _unhandled_input(event: InputEvent) -> void:
             if ui_touch_ids.has(event.index) or _world_ui_hit(event.position)                     or world_touch_pointer >= 0:
                 return
             world_touch_pointer = event.index
+            var mobs := get_node_or_null("MobWorld")
+            if mobs != null and mobs.has_method("select_at_screen") and mobs.call("select_at_screen", event.position):
+                _clear_harvest_selection()
+                drag = false
+                get_viewport().set_input_as_handled()
+                return
             if _harvest_at_screen(event.position):
+                if mobs != null and mobs.has_method("hide_info"):
+                    mobs.call("hide_info")
                 drag = false
                 get_viewport().set_input_as_handled()
                 return
@@ -1712,7 +1735,15 @@ func _unhandled_input(event: InputEvent) -> void:
             if _world_ui_hit(event.position):
                 drag = false
                 return
+            var mobs := get_node_or_null("MobWorld")
+            if mobs != null and mobs.has_method("select_at_screen") and mobs.call("select_at_screen", event.position):
+                _clear_harvest_selection()
+                drag = false
+                get_viewport().set_input_as_handled()
+                return
             if _harvest_at_screen(event.position):
+                if mobs != null and mobs.has_method("hide_info"):
+                    mobs.call("hide_info")
                 drag = false
                 get_viewport().set_input_as_handled()
                 return
