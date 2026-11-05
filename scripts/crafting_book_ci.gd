@@ -34,8 +34,9 @@ func _test() -> void:
     assert_ui(view.close_button.visible,"close_visible")
     var close_rect: Rect2 = view.close_button.get_global_rect()
     assert_ui(close_rect.size.x >= 72.0 and close_rect.size.y >= 72.0,"touch_target_72px")
-    var window_rect := Rect2(Vector2.ZERO,root.size)
-    assert_ui(window_rect.encloses(close_rect),"close_inside_viewport")
+    var canvas_rect := Rect2(Vector2.ZERO,view.get_viewport().get_visible_rect().size)
+    print("TAMU_CRAFT_CLOSE_METRICS canvas=",canvas_rect," window=",root.size," close=",close_rect)
+    assert_ui(canvas_rect.encloses(close_rect),"close_inside_viewport")
     assert_ui(view.close_button.get_parent() == view.root_panel,"close_not_inside_scroll")
     assert_ui(view.close_button.z_index > view.material_drawer.z_index,"close_always_on_top")
     view.selected_category = "Araçlar"
