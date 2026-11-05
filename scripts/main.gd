@@ -15,6 +15,7 @@ const SHADOW_SHADER = preload("res://scripts/object_shadow.gdshader")
 const SELECTION_SHADER = preload("res://scripts/harvest_outline.gdshader")
 const FOREST_GUI = preload("res://scripts/forest_harvest_gui.gd")
 const MODULAR_HUD = preload("res://scripts/modular_hud.gd")
+const CRAFTING_BOOK = preload("res://scripts/crafting_book_ui.gd")
 const ShadowVolume = preload("res://scripts/shadow_volume.gd")
 const PixelLightWorld = preload("res://scripts/pixellight_world.gd")
 const VisualEnvironment = preload("res://scripts/visual_environment.gd")
@@ -74,6 +75,7 @@ var forest_gui: CanvasLayer
 var selected_harvest: Dictionary = {}
 var selected_harvest_outline: Sprite2D
 var modular_hud: CanvasLayer
+var crafting_book: CanvasLayer
 var ui_touch_ids: Dictionary = {}
 var world_touch_pointer := -1
 var harvest_navigation = HarvestNavigation.new()
@@ -404,10 +406,23 @@ func _place_workbench() -> void:
         audio_cues.cue("craft_complete")
     print("TAMU_BUILD_COMMAND status=",result.get("status","unknown"))
 
-func _begin_craft(recipe_id: String) -> void:
+func _begin_craft(recipe_id: String) -> Dictionary:
     _cancel_auto_harvest()
     var result: Dictionary = gameplay.begin_craft(_next_gameplay_command("craft"), recipe_id)
     print("TAMU_CRAFT_COMMAND recipe=", recipe_id, " status=", result["status"])
+    return result
+
+func open_crafting_book() -> void:
+    if crafting_book != null:
+        _cancel_auto_harvest()
+        _release_joystick()
+        crafting_book.open_library()
+
+func open_inventory() -> void:
+    if crafting_book != null:
+        _cancel_auto_harvest()
+        _release_joystick()
+        crafting_book.open_inventory()
 
 func _tick_gameplay(dt: float) -> void:
     var changes: Array[Dictionary] = gameplay.tick(dt, actor_world)
@@ -624,6 +639,10 @@ func _world_ui_hit(point: Vector2) -> bool:
     return false
 
 func _input(event: InputEvent) -> void:
+    if crafting_book != null and crafting_book.is_open():
+        _release_joystick()
+        drag = false
+        return
     if event is InputEventScreenTouch:
         if event.pressed:
             if _world_ui_hit(event.position):
@@ -979,6 +998,10 @@ func _ready() -> void:
     add_child(modular_hud)
     if modular_hud.setup(self):
         print("TAMU_MODULAR_HUD_READY")
+    crafting_book = CRAFTING_BOOK.new()
+    crafting_book.name = "TamuCraftingBook"
+    crafting_book.setup(gameplay,Callable(self,"_begin_craft"))
+    add_child(crafting_book)
     print("TAMU_GODOT_TERRAIN_START chunks=", pending.size())
 
 func _load_region(manifest_path: String) -> bool:
@@ -1307,10 +1330,14 @@ func _process(delta: float) -> void:
     _update_sun(visual_delta)
     elapsed += visual_delta
     var manual_direction: Vector2 = joystick_vector if joystick_vector.length_squared() > 0.01 else Input.get_vector("ui_left","ui_right","ui_up","ui_down")
+    if crafting_book != null and crafting_book.is_open():
+        manual_direction = Vector2.ZERO
     if manual_direction.length_squared() > 0.01 and not auto_harvest_id.is_empty():
         _cancel_auto_harvest()
         _harvest_feedback("OTOMATİK YÜRÜYÜŞ DURDURULDU")
     var automatic_direction: Vector2 = _auto_harvest_direction(delta) if manual_direction.length_squared() <= 0.01 else Vector2.ZERO
+    if crafting_book != null and crafting_book.is_open():
+        automatic_direction = Vector2.ZERO
     var manual_active: bool = manual_direction.length_squared() > 0.01
     var direction: Vector2 = manual_direction if manual_active else automatic_direction
     var projected_travel_pixels := 0.0
@@ -1682,6 +1709,9 @@ func _process(delta: float) -> void:
             get_tree().quit()
 
 func _unhandled_input(event: InputEvent) -> void:
+    if crafting_book != null and crafting_book.is_open():
+        drag = false
+        return
     # Only a pointer started on the authored world may select or pan it.
     # Controls and art may belong to separate CanvasLayers; dispatch alone
     # cannot prevent all ScreenTouch/mouse-emulation leaks on Android.

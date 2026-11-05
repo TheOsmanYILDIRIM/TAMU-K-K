@@ -70,7 +70,13 @@ func _action(key: String) -> void:
             _message("EĞİLME — henüz oynanışa bağlı değil")
         "sprint":
             _message("KOŞMA — henüz oynanışa bağlı değil")
-        "bag","codex","forge","journal","growth","menu":
+        "codex":
+            host.call("open_crafting_book")
+        "bag":
+            host.call("open_inventory")
+        "forge":
+            _message("ALAŞIM YALNIZCA FIRINDA AÇILIR")
+        "journal","growth","menu":
             _message(key.to_upper() + " — ekran henüz uygulanmadı")
         _:
             _message(key)

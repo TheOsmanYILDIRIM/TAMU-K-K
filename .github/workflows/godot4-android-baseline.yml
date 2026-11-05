@@ -4,6 +4,7 @@ on:
     branches:
       - experiment/godot4-android-apk-20261031
       - experiment/limboai-godot46-20261104
+      - experiment/crafting-on-limbo-perf-20261105
       - main
   pull_request:
     branches:
@@ -101,6 +102,9 @@ jobs:
           PY
           timeout --kill-after=3s 35s godot --headless --path . --script res://scripts/gameplay_contract_ci.gd 2>&1 | tee gameplay-native.log
           grep -q TAMU_NATIVE_GAMEPLAY_CONTRACT_OK gameplay-native.log
+          timeout --kill-after=3s 35s godot --headless --path . --script res://scripts/crafting_book_ci.gd 2>&1 | tee crafting-ui.log
+          grep -q TAMU_CRAFT_MAIN_UI_OK crafting-ui.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_CRAFT_MAIN_UI_FAILED' crafting-ui.log; then exit 1; fi
           timeout --kill-after=3s 25s godot --headless --path . --script res://scripts/harvest_navigation_ci.gd 2>&1 | tee harvest-navigation.log
           grep -q TAMU_NAV_INCREMENTAL_ASTAR_OK harvest-navigation.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_NAV_.*FAILED' harvest-navigation.log; then exit 1; fi
@@ -124,6 +128,7 @@ jobs:
             fx-contract.log
             fx-visual.log
             gameplay-native.log
+            crafting-ui.log
             save-*.log
             live-*.log
             mod-fast.log
@@ -527,6 +532,11 @@ jobs:
           grep -q 'TAMU_PERF_ISOLATION_APPLIED profile=objects_off' screenshots/perf-isolation.log
           grep -q 'TAMU_PERF_ISOLATION_APPLIED profile=terrain_off' screenshots/perf-isolation.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_PERF_ISOLATION_.*FAILED|TAMU_MOB_.*FAILED' screenshots/perf-isolation.log; then exit 1; fi
+          TAMU_UI_CAPTURE=1 timeout --kill-after=3s 65s xvfb-run -a -s '-screen 0 720x1280x24' godot --path . --rendering-method gl_compatibility --resolution 720x1280 --script res://scripts/crafting_book_ci.gd 2>&1 | tee screenshots/crafting-book-visual.log
+          grep -q TAMU_CRAFT_MAIN_UI_OK screenshots/crafting-book-visual.log
+          test -s screenshots/book-library.png
+          test -s screenshots/book-axe.png
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_CRAFT_MAIN_UI_FAILED' screenshots/crafting-book-visual.log; then exit 1; fi
           # Each cumulative visual stage gets a real Godot GL screenshot and
           # runtime drawcall/FPS telemetry on the same CI runner and camera.
           # This is a desktop Xvfb comparison, not an Android FPS claim.
