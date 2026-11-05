@@ -66,6 +66,30 @@ func _run() -> void:
         quit(72)
         return
     print("TAMU_PROFILE_DISTANCE_STRIDE_OK cycle_px=", ProfileRig.WALK_CYCLE_SCREEN_PIXELS)
+    # Source-wide gait regression: edited motion frames, not merely speed.
+    for profile in [
+        {"clip": "walk", "base_left": 241.98977178, "base_right": 243.76446198, "minimum": 2.8},
+        {"clip": "run", "base_left": 370.2277222, "base_right": 361.34842996, "minimum": 2.6}
+    ]:
+        character.set_clip(str(profile["clip"]))
+        var min_x := Vector2(INF, INF)
+        var max_x := Vector2(-INF, -INF)
+        var sample_count: int = character.clips[character.current_clip]["frames"].size()
+        for sample in range(sample_count):
+            character._show_frame(sample)
+            var pelvis_x: float = character.posed_origins[0].x
+            var left_x: float = character._toe_position(10).x - pelvis_x
+            var right_x: float = character._toe_position(14).x - pelvis_x
+            min_x.x = minf(min_x.x, left_x)
+            min_x.y = minf(min_x.y, right_x)
+            max_x.x = maxf(max_x.x, left_x)
+            max_x.y = maxf(max_x.y, right_x)
+        var swing: Vector2 = max_x - min_x
+        if swing.x / float(profile["base_left"]) < float(profile["minimum"]) or swing.y / float(profile["base_right"]) < float(profile["minimum"]):
+            push_error("TAMU_PROFILE_STRIDE_WIDTH_FAILED " + str(profile["clip"]) + " swing=" + str(swing))
+            quit(72)
+            return
+    print("TAMU_PROFILE_STRIDE_WIDTH_OK walk_3x_target=true run_3x_target=true")
     # Test all seven authored clips and frame transitions without any IK.
     for action in ["idle", "walk", "run", "slash", "stab", "sit", "die"]:
         character.set_clip(action)
