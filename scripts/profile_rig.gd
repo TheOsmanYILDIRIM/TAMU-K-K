@@ -7,6 +7,10 @@ const ROOT := "res://assets/profile_character/"
 const SOURCE_SCALE := 0.067
 const SOURCE_GROUND_Y := 665.0
 const SKIN_HZ := 30.0
+# Source walk is 48 frames x 34ms. Its full left/right step cycle covers
+# ~32 projected pixels at the authored 0.067 game scale. Advance from actual
+# movement distance instead of wall-clock to remove apparent foot skating.
+const WALK_CYCLE_SCREEN_PIXELS := 32.0
 const CLIP_ALIAS := {
     "walk": "smooth_walk", "run": "smooth_run", "idle": "idle",
     "slash": "slash", "stab": "stab", "die": "die", "sit": "sit"
@@ -186,14 +190,19 @@ func _show_frame(index: int) -> void:
     last_frame = index
     draw_updates += 1
 
-func advance(delta: float) -> void:
+func advance(delta: float, projected_travel_pixels: float = 0.0) -> void:
     if not configured or not is_finite(delta) or delta <= 0.0:
         return
-    elapsed += minf(delta, 0.1)
-    accumulator += minf(delta, 0.1)
     var clip: Dictionary = clips[current_clip]
     var frames: Array = clip["frames"]
     var duration: float = float(clip["ms"]) / 1000.0
+    if current_clip == "smooth_walk" or current_clip == "smooth_run":
+        # Travel is measured after collision/clamping; blocked steps add zero.
+        var travel: float = maxf(0.0, projected_travel_pixels) if is_finite(projected_travel_pixels) else 0.0
+        elapsed += (travel / WALK_CYCLE_SCREEN_PIXELS) * duration * float(frames.size())
+    else:
+        elapsed += minf(delta, 0.1)
+    accumulator += minf(delta, 0.1)
     var index: int = floori(elapsed / duration)
     if bool(clip["loop"]):
         index = posmod(index, frames.size())
