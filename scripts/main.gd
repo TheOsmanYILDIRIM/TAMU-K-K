@@ -472,7 +472,9 @@ func _show_modular_building_demo() -> void:
         sprite.scale=Vector2.ONE*BuildingAnchors.SPRITE_SCALE
         sprite.texture_filter=CanvasItem.TEXTURE_FILTER_NEAREST
         sprite.position=BuildingAnchors.projected_foot(world_pos,terrain_height,float(part["z"]))
-        sprite.z_index=clampi(roundi(sprite.position.y/16.0),-400,400)
+        # Draw order follows world footprint, not the sprite top: elevated roof
+        # panels must render over walls instead of disappearing behind them.
+        sprite.z_index=clampi(roundi(WorldProjection.to_screen(world_pos).y/16.0) + roundi(float(part["z"])/2.0),-400,400)
         review.add_child(sprite)
         count+=1
     print("TAMU_BUILDING_128_REVIEW_READY views=",count," terrain=authored pivot=64,92 scale=0.5")
