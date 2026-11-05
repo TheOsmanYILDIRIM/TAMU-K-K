@@ -1,5 +1,6 @@
 extends Node2D
 const WorldProjection = preload("res://scripts/world_projection.gd")
+const BuildingAnchors = preload("res://scripts/modular_building_anchors.gd")
 const WorldSource = preload("res://scripts/world_source.gd")
 const WorldStream = preload("res://scripts/world_stream.gd")
 const MergedTerrain = preload("res://scripts/merged_terrain.gd")
@@ -391,6 +392,91 @@ func _sync_building_visuals() -> void:
             placed_visuals[instance_id].queue_free()
             placed_visuals.erase(instance_id)
 
+# Isolated 128px world-alignment review: no inventory debit, save, or collision.
+# The authored LÖVE 19-piece atlas uses 128x128 sprites with pivot (64,92) at
+# 2 pixels/world unit. Native TAMU terrain uses half that scale. No fake build
+# transactions are written; this experiment can be disabled with
+# TAMU_BUILDING_DEMO=0 without touching the canonical building session.
+func _show_modular_building_demo() -> void:
+    if OS.get_environment("TAMU_BUILDING_DEMO") == "0" or object_layer == null or authority == null:
+        return
+    if not BuildingAnchors.verify_projection_contract():
+        push_error("TAMU_BUILDING_PROJECTION_CONTRACT_FAILED")
+        return
+    var manifest_path := "res://assets/building/building_default_manifest.json"
+    var atlas_path := "res://assets/building/building_default_atlas.png"
+    if not FileAccess.file_exists(manifest_path) or not ResourceLoader.exists(atlas_path):
+        push_warning("TAMU_BUILDING_ATLAS_MISSING")
+        return
+    var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(manifest_path))
+    if not parsed is Dictionary:
+        push_error("TAMU_BUILDING_MANIFEST_INVALID")
+        return
+    var atlas: Texture2D = load(atlas_path)
+    if atlas == null:
+        push_error("TAMU_BUILDING_TEXTURE_UNAVAILABLE")
+        return
+    var entry_index := {}
+    for entry in parsed.get("entries", []):
+        if entry is Dictionary:
+            entry_index[str(entry.get("def_id",""))+":"+str(entry.get("rotation",-1))] = entry
+    var base := actor_world + Vector2(96.0,-48.0)
+    # Review kit is deliberately small, using the same 32-unit world grid.
+    var pieces: Array[Dictionary] = []
+    for ix in range(2):
+        for iy in range(2):
+            var local := Vector2(float(ix*32),float(iy*32))
+            pieces.append({"id":"tamu:foundation_wood","offset":local,"z":0.0,"rotation":0})
+            pieces.append({"id":"tamu:floor_wood","offset":local,"z":4.0,"rotation":0})
+    for ix in range(2):
+        for iy in range(2):
+            var local := Vector2(float(ix*32),float(iy*32))
+            if iy == 0:
+                pieces.append({"id":"tamu:wall_wood","offset":local+Vector2(0,-16),"z":6.0,"rotation":0})
+            if iy == 1:
+                pieces.append({"id":"tamu:doorway_wood" if ix==1 else "tamu:wall_wood",
+                    "offset":local+Vector2(0,16),"z":6.0,"rotation":0})
+            if ix == 0:
+                pieces.append({"id":"tamu:window_wood","offset":local+Vector2(-16,0),"z":6.0,"rotation":1})
+            if ix == 1:
+                pieces.append({"id":"tamu:wall_wood","offset":local+Vector2(16,0),"z":6.0,"rotation":1})
+            # Sloping roof sections rest on wall eaves at z=30.
+            pieces.append({"id":"tamu:roof_slope_wood","offset":local+Vector2(0,-16),
+                "z":30.0,"rotation":2})
+            pieces.append({"id":"tamu:roof_slope_wood","offset":local+Vector2(0,16),
+                "z":30.0,"rotation":0})
+    var review := Node2D.new()
+    review.name="Construction128Review"
+    object_layer.add_child(review)
+    var count := 0
+    for part in pieces:
+        var key := str(part["id"])+":"+str(part["rotation"])
+        if not entry_index.has(key):
+            push_error("TAMU_BUILDING_MISSING_VIEW "+key)
+            continue
+        var entry: Dictionary = entry_index[key]
+        var rect_data: Array = entry["atlas_rect"]
+        if rect_data.size()!=4:
+            continue
+        var world_pos: Vector2 = base + part["offset"]
+        var terrain_height: float = authority.terrain.height_at(world_pos.x,world_pos.y)
+        if not is_finite(terrain_height):
+            continue
+        var sprite := Sprite2D.new()
+        sprite.texture=atlas
+        sprite.region_enabled=true
+        sprite.region_rect=Rect2(float(rect_data[0]),float(rect_data[1]),
+            float(rect_data[2]),float(rect_data[3]))
+        sprite.centered=false
+        sprite.offset=-BuildingAnchors.SPRITE_PIVOT
+        sprite.scale=Vector2.ONE*BuildingAnchors.SPRITE_SCALE
+        sprite.texture_filter=CanvasItem.TEXTURE_FILTER_NEAREST
+        sprite.position=BuildingAnchors.projected_foot(world_pos,terrain_height,float(part["z"]))
+        sprite.z_index=clampi(roundi(sprite.position.y/16.0),-400,400)
+        review.add_child(sprite)
+        count+=1
+    print("TAMU_BUILDING_128_REVIEW_READY views=",count," terrain=authored pivot=64,92 scale=0.5")
+    
 func _place_workbench() -> void:
     _cancel_auto_harvest()
     if gameplay == null or authority == null:
@@ -983,6 +1069,7 @@ func _ready() -> void:
         _refresh_streaming_requests()
     _make_avatar()
     _sync_building_visuals()
+    _show_modular_building_demo()
     perf_hud = load("res://scripts/performance_hud.gd").new()
     add_child(perf_hud)
     perf_hud.layer = 118 # HUD _ready sets 100; override after attachment.
