@@ -10,6 +10,7 @@ var controls: Dictionary = {}
 var zip: ZIPReader
 var initialized := false
 var selected_index := 0
+var attack_alternate := false
 var joystick_origin := Vector2.ZERO
 var joystick_span := 152.0
 var alert: Label
@@ -63,13 +64,16 @@ func _action(key: String) -> void:
         "attack":
             var mobs := host.get_node_or_null("MobWorld")
             if mobs != null and mobs.has_method("player_attack"):
-                mobs.call("player_attack")
+                if bool(mobs.call("player_attack")):
+                    host.call("_play_action_clip", "stab" if attack_alternate else "slash")
+                    attack_alternate = not attack_alternate
             else:
                 _message("MOB SİSTEMİ HAZIR DEĞİL")
         "crouch":
             _message("EĞİLME — henüz oynanışa bağlı değil")
         "sprint":
-            _message("KOŞMA — henüz oynanışa bağlı değil")
+            # Touch hold is handled by button_down/button_up, not a toggle.
+            pass
         "bag","codex","forge","journal","growth","menu":
             _message(key.to_upper() + " — ekran henüz uygulanmadı")
         _:
@@ -101,6 +105,10 @@ func setup(game: Node) -> bool:
     for n in ["codex","forge","bag","menu","journal","growth","interact","crouch","sprint"]:
         _button(n,n,Callable(self,"_action").bind(n))
     _button("attack","blank_attack",Callable(self,"_action").bind("attack"))
+    if controls.has("sprint"):
+        var sprint_button: TextureButton = controls["sprint"]
+        sprint_button.button_down.connect(func(): host.set("sprint_held", true))
+        sprint_button.button_up.connect(func(): host.set("sprint_held", false))
     # Plus/minus artwork is already baked into the compass; hitboxes only.
     for key in ["zoom_plus","zoom_minus"]:
         var hit := Button.new()
