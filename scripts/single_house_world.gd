@@ -120,17 +120,28 @@ func _site_acceptable(at: Vector2) -> bool:
     return true
 
 func _find_site(player: Vector2) -> bool:
-    # Deterministic local search. Never teleport a house into a known obstacle.
-    for distance in [180.0, 240.0, 312.0, 408.0]:
-        for direction in [Vector2(1, 0), Vector2(1, -1), Vector2(0, -1),
-                Vector2(1, 1), Vector2(0, 1), Vector2(-1, -1),
-                Vector2(-1, 1), Vector2(-1, 0)]:
-            var at: Vector2 = player + Vector2(direction).normalized() * float(distance)
-            if _site_acceptable(at):
-                center_world = at
-                var half := Vector2(FOOTPRINT_CELLS) * CELL_WORLD * 0.5
-                footprint_box = Rect2(at - half, half * 2.0)
-                return true
+    # Actual authored R2 terrain varies by several height units even over 96u.
+    # Check small deterministic candidates first; never bypass the 0.8 grade
+    # tolerance, authored obstacle test or player footprint clearance.
+    var candidates: Array[Vector2] = [
+        Vector2(-72.0, -168.0), Vector2(-96.0, -192.0),
+        Vector2(-120.0, -168.0), Vector2(120.0, -144.0),
+        Vector2(-72.0, 180.0), Vector2(180.0, 0.0)
+    ]
+    for radius in [144.0, 192.0, 264.0, 336.0, 480.0]:
+        for i in range(24):
+            var angle := float(i) * TAU / 24.0
+            candidates.append(Vector2(cos(angle), sin(angle)) * radius)
+    for offset in candidates:
+        var at: Vector2 = player + offset
+        var half := Vector2(FOOTPRINT_CELLS) * CELL_WORLD * 0.5
+        var footprint := Rect2(at - half, half * 2.0)
+        if footprint.grow(12.0).has_point(player):
+            continue
+        if _site_acceptable(at):
+            center_world = at
+            footprint_box = footprint
+            return true
     push_warning("TAMU_HOUSE_NO_VERIFIED_SITE")
     return false
 
