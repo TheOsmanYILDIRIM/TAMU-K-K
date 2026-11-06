@@ -19,7 +19,7 @@ func _initialize() -> void:
         return
     var cabin = Cabin.new()
     cabin.footprint_box = Rect2(-48.0, -48.0, 96.0, 96.0)
-    var near: Array = cabin.collision_shapes(48.0, -12.0, 70.0, 12.0)
+    var near: Array = cabin.collision_shapes(40.0, -12.0, 70.0, 12.0)
     var far: Array = cabin.collision_shapes(120.0, 120.0, 140.0, 140.0)
     if near.size() != 1 or far.size() != 0:
         push_error("TAMU_HOUSE_COLLISION_FAILED")
