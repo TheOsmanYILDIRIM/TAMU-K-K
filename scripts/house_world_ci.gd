@@ -1,7 +1,7 @@
 extends SceneTree
 ## Fast source-only contract; device visuals and physical navigation are separate.
 const Cabin = preload("res://scripts/single_house_world.gd")
-const Projection = preload("res://scripts/world_projection.gd")
+const WorldProjection = preload("res://scripts/world_projection.gd")
 
 func _initialize() -> void:
     if not Cabin.verify_geometry():
@@ -36,7 +36,7 @@ func _initialize() -> void:
         push_error("TAMU_HOUSE_ENTRY_CLEARANCE_FAILED")
         quit(95)
         return
-    if Projection.to_world(Projection.to_screen(door_world)).distance_to(door_world) > 0.0001:
+    if WorldProjection.to_world(WorldProjection.to_screen(door_world)).distance_to(door_world) > 0.0001:
         push_error("TAMU_HOUSE_DOOR_PROJECTION_FAILED")
         quit(96)
         return

@@ -125,7 +125,7 @@ func _find_site(player: Vector2) -> bool:
         for direction in [Vector2(1, 0), Vector2(1, -1), Vector2(0, -1),
                 Vector2(1, 1), Vector2(0, 1), Vector2(-1, -1),
                 Vector2(-1, 1), Vector2(-1, 0)]:
-            var at := player + direction.normalized() * distance
+            var at: Vector2 = player + Vector2(direction).normalized() * float(distance)
             if _site_acceptable(at):
                 center_world = at
                 var half := Vector2(FOOTPRINT_CELLS) * CELL_WORLD * 0.5
