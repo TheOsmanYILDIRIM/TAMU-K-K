@@ -1,11 +1,12 @@
 extends SceneTree
 const Fabrication = preload("res://scripts/material_fabrication.gd")
 var checks := 0
+var failed := false
 func require(condition: bool, label: String) -> void:
     checks += 1
     if not condition:
+        failed = true
         push_error("TAMU_MATERIAL_FABRICATION_FAILED " + label)
-        quit(1)
 
 func mat(id: String, hardness: float, toughness: float, density: float, workability: float) -> Dictionary:
     return {"schema_version": 1, "id": id, "visual": {"family": "forged"},
@@ -119,5 +120,8 @@ func _initialize() -> void:
     require(glass.physical_stats.structural_reliability < hatchet_result.physical_stats.structural_reliability, "brittle_is_weakest_link")
     var alloy_head := Fabrication.evaluate_fixed_tool(hatchet, {"edge": a.material, "handle": copper})
     require(alloy_head.ok and alloy_head.visual_bindings.edge.material_id == a.material.id, "alloy_material_binding")
-    print("TAMU_MATERIAL_FABRICATION_OK checks=", checks)
-    quit(0)
+    if failed:
+        quit(1)
+    else:
+        print("TAMU_MATERIAL_FABRICATION_OK checks=", checks)
+        quit(0)

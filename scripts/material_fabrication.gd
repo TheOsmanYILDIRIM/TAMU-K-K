@@ -338,9 +338,10 @@ static func evaluate_fixed_tool(blueprint: Dictionary, bindings: Dictionary, pro
     var impact_energy := 0.5 * inertia * swing_rate * swing_rate * impact_factor
     var edge_hardness := float(edge_material["traits"]["hardness"])
     var edge_toughness := float(edge_material["traits"]["toughness"])
-    var cutting_effect := impact_energy * edge_factor * (0.2 + 0.8 * edge_hardness) \
-        * (0.7 + 0.3 * edge_toughness)
+    var cutting_effect := impact_energy * edge_factor * (0.1 + 1.8 * edge_hardness) \
+        * (0.9 + 0.1 * edge_toughness)
     var quality := float(process.get("quality", 0.5))
+    weakest = minf(weakest, edge_toughness)
     var structural_reliability := clampf(weakest * (0.7 + 0.3 * quality) \
         / (1.0 + impact_energy * stress_factor), 0.0, 1.0)
     var response: Dictionary = basic.duplicate(true)
