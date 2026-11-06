@@ -1,3 +1,11 @@
+## 2026-11-06 — Tek PNG kulübe, kapı etkileşimi ve orantılı iç mekân (ilk runtime dilimi)
+
+README'deki iki-referans/3×3 bina standardının ilk oyun kodu: `scripts/single_house_world.gd`. Tek dış cephe PNG'si `tamu:house_wood_lv1` (3×3 hücre = 96×96 dünya birimi), resim-alfa ile dokunmatik seçme, görsel kapı işareti, var olan HUD ETKİLEŞİM düğmesiyle mevcut A* + R2 çarpışması üzerinden kapıya yürüyüş ve ayrı 3×3 top-down iç oda uygulandı. Oda zemin/duvar/mobilyası şimdilik Godot UI ile çizilir (RPG Maker benzeri basit karolu prototip); aynı profil karakteri odaya yeniden ebeveynlenir, çıkışta dünya kapısına döner. Mevcut gameplay, item, mob ve Stage6 kayıt şeması değişmez; yeni ev şimdilik doğrulanmış boş bir konuma yerleştirilen **oturumluk örnektir**, envanterle craft edilen kalıcı bina değildir.
+
+**Varlık kuralı:** Kullanıcının ilk PNG'si `124550.png` (1254×1254 RGBA) henüz GitHub kaynak ağacında bulunmaz. Kaynakta `res://assets/buildings/house_wood_lv1.png` veya kullanıcı dosyası `user://tamu_buildings/house_wood_lv1.png` gerekir; yoksa uyarıyla bina yüklenmez, eski modüler atlas veya sentetik görsel geri getirilmez. Kullanıcı görselinin telifi ve gerçek pivot/kapı hizalaması ile Android hitbox/çarpışma kalibrasyonu ayrıca cihazda onaylanmalıdır. İç dekorasyon/oda içerik paketi ayrı görsel üretim işidir; diğer beş evin PNG'si henüz yoktur.
+
+CI: `scripts/house_world_ci.gd` ile projeksiyon, 3×3 metadata, ön cephe kapısı, fiziksel yaklaşım ve sabit bina sınırı sınanır; PCK içine yeni GDScript alınır. Bu kaynak testi **oyunda gerçek kapı yürüyüşü/Android ekran testi değildir**.
+
 ## 2026-11-02 — Android gri ekran: eksik GDScript export ve izole PCK açılış kapısı
 Gerçek Android kullanıcı geri bildirimi: önceki harici PCK **ve** bağımsız Android APK yaklaşık 10 saniye boyunca gri ekranda kaldı. Önceki temiz PCK (16.603.328 bayt, 414 dosya) açılarak incelendi: yalnızca `scripts/main.gdc`, `scripts/content_entry.gdc`, `scripts/content_pack.gdc` derlenmiş script dosyaları bulunuyordu; `main.gd` içindeki R2/Stage6/FX/Save preloads ve `object_shadow.gdshader` seçili-kaynak export filtresinde eksikti. Bu, Android'deki sorunun **güçlü kaynaklı açıklamasıdır**, cihaz üzerinde kesin kök neden ölçümü değildir.
 

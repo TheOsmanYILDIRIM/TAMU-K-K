@@ -1,5 +1,6 @@
 extends Node2D
 const WorldProjection = preload("res://scripts/world_projection.gd")
+const HouseWorld = preload("res://scripts/single_house_world.gd")
 const WorldSource = preload("res://scripts/world_source.gd")
 const WorldStream = preload("res://scripts/world_stream.gd")
 const MergedTerrain = preload("res://scripts/merged_terrain.gd")
@@ -78,6 +79,7 @@ var forest_gui: CanvasLayer
 var selected_harvest: Dictionary = {}
 var selected_harvest_outline: Sprite2D
 var modular_hud: CanvasLayer
+var house_world
 var crafting_book: CanvasLayer
 var ui_touch_ids: Dictionary = {}
 var world_touch_pointer := -1
@@ -140,6 +142,19 @@ func _update_sun(delta: float) -> void:
             silhouette_material.set_shader_parameter("solar_length", clampf(0.28 + 1.05 * (1.0-light)/(light+0.31), 0.28, 2.65))
             silhouette_material.set_shader_parameter("opacity", 0.36 * light)
         # One authored alpha silhouette shadow per solid. No second polygon cast.
+
+# Existing interaction button: building entry takes priority over harvesting.
+func interact_world() -> void:
+    if house_world != null and house_world.interact():
+        return
+    _try_harvest()
+
+# Session-only demo house collides with movement, not Stage6/save records.
+func _house_movement_obstacles(x1: float, y1: float, x2: float, y2: float) -> Array:
+    var found: Array = gameplay.movement_obstacles(x1, y1, x2, y2)
+    if house_world != null:
+        found.append_array(house_world.collision_shapes(x1, y1, x2, y2))
+    return found
 
 func _next_gameplay_command(prefix: String) -> String:
     gameplay_sequence += 1
@@ -657,6 +672,8 @@ func _release_joystick() -> void:
 func _world_ui_hit(point: Vector2) -> bool:
     if crafting_book != null and crafting_book.is_open():
         return true
+    if house_world != null and house_world.info_blocks_input(point):
+        return true
     # Decorative HUD textures are IGNORE for Godot GUI dispatch, but they
     # must still shield the authored world from pointer selection/drag.
     if modular_hud != null and bool(modular_hud.call("blocks_world_input", point)):
@@ -1038,6 +1055,14 @@ func _ready() -> void:
     if merged_mode:
         _refresh_streaming_requests()
     _make_avatar()
+    # Preserve old golden screenshots; normal play loads the actual user PNG.
+    if OS.get_environment("TAMU_VISUAL_CI") != "1" or OS.get_environment("TAMU_VISUAL_CASE") == "house":
+        house_world = HouseWorld.new()
+        house_world.name = "SingleSpriteCabin"
+        object_layer.add_child(house_world)
+        if not house_world.setup(self, object_layer, authority, gameplay):
+            house_world.queue_free()
+            house_world = null
     perf_hud = load("res://scripts/performance_hud.gd").new()
     add_child(perf_hud)
     perf_hud.layer = 118 # HUD _ready sets 100; override after attachment.
@@ -1380,17 +1405,29 @@ func _process(delta: float) -> void:
     # Godot may dispatch one more frame before the queued quit completes.
     if avatar == null or not is_instance_valid(avatar):
         return
+    if house_world != null and house_world.is_inside():
+        return
     var frame_start := Time.get_ticks_usec()
     frame_no += 1
     var visual_delta: float = 1.0 / 60.0 if OS.get_environment("TAMU_VISUAL_CI") == "1" else delta
     _update_sun(visual_delta)
     elapsed += visual_delta
     var manual_direction: Vector2 = joystick_vector if joystick_vector.length_squared() > 0.01 else Input.get_vector("ui_left","ui_right","ui_up","ui_down")
-    if manual_direction.length_squared() > 0.01 and not auto_harvest_id.is_empty():
-        _cancel_auto_harvest()
-        _harvest_feedback("OTOMATİK YÜRÜYÜŞ DURDURULDU")
-    var automatic_direction: Vector2 = _auto_harvest_direction(delta) if manual_direction.length_squared() <= 0.01 else Vector2.ZERO
     var manual_active: bool = manual_direction.length_squared() > 0.01
+    if manual_active:
+        if house_world != null and house_world.is_approaching():
+            house_world.cancel_approach()
+        if not auto_harvest_id.is_empty():
+            _cancel_auto_harvest()
+            _harvest_feedback("OTOMATİK YÜRÜYÜŞ DURDURULDU")
+    var automatic_direction := Vector2.ZERO
+    if not manual_active:
+        if house_world != null and house_world.is_approaching():
+            automatic_direction = house_world.auto_direction(delta)
+        else:
+            automatic_direction = _auto_harvest_direction(delta)
+    if house_world != null and house_world.is_inside():
+        return
     var direction: Vector2 = manual_direction if manual_active else automatic_direction
     var projected_travel_pixels := 0.0
     if direction.length_squared() > 0.01:
@@ -1398,12 +1435,14 @@ func _process(delta: float) -> void:
         # world-space. Convert only manual input via inverse isometric mapping.
         var world_direction: Vector2 = WorldProjection.joystick_to_world(direction) if manual_active else direction
         var intended := world_direction * actor_speed * (1.65 if sprint_held and manual_active else 1.0) * delta
-        if not auto_harvest_id.is_empty() and not auto_route.is_empty():
+        if house_world != null and house_world.is_approaching():
+            intended = intended.limit_length(house_world.waypoint_distance(actor_world))
+        elif not auto_harvest_id.is_empty() and not auto_route.is_empty():
             intended = intended.limit_length(actor_world.distance_to(auto_route[0]))
         var position_before: Vector2 = actor_world
         if authority != null and OS.get_environment("TAMU_VISUAL_CI") != "1":
             var moved: Dictionary = R2Collision.move(actor_world,intended,ACTOR_COLLISION_RADIUS,
-                Callable(gameplay,"movement_obstacles"))
+                Callable(self,"_house_movement_obstacles"))
             if bool(moved.get("ok", false)):
                 actor_world = moved["position"]
         else:
@@ -1418,6 +1457,11 @@ func _process(delta: float) -> void:
                     _harvest_feedback("YOL ENGELLENDİ")
             else:
                 auto_stuck_time = 0.0
+        if house_world != null and house_world.is_approaching():
+            if actor_world.distance_squared_to(position_before) < 0.01:
+                house_world.on_actor_blocked(delta)
+            else:
+                house_world.on_actor_moved()
         var next_direction := "NW" if direction.y < 0.0 else "SE"
         if direction.x < -0.05:
             next_direction = "NE" if direction.y < 0.0 else "SW"
@@ -1772,13 +1816,25 @@ func _unhandled_input(event: InputEvent) -> void:
             if ui_touch_ids.has(event.index) or _world_ui_hit(event.position)                     or world_touch_pointer >= 0:
                 return
             world_touch_pointer = event.index
+            if house_world != null and house_world.select_at_screen(event.position):
+                _clear_harvest_selection()
+                var last_mob := get_node_or_null("MobWorld")
+                if last_mob != null and last_mob.has_method("hide_info"):
+                    last_mob.call("hide_info")
+                drag = false
+                get_viewport().set_input_as_handled()
+                return
             var mobs := get_node_or_null("MobWorld")
             if mobs != null and mobs.has_method("select_at_screen") and mobs.call("select_at_screen", event.position):
                 _clear_harvest_selection()
+                if house_world != null:
+                    house_world.deselect()
                 drag = false
                 get_viewport().set_input_as_handled()
                 return
             if _ground_loot_at_screen(event.position) or _harvest_at_screen(event.position):
+                if house_world != null:
+                    house_world.deselect()
                 if mobs != null and mobs.has_method("hide_info"):
                     mobs.call("hide_info")
                 drag = false
@@ -1787,6 +1843,8 @@ func _unhandled_input(event: InputEvent) -> void:
             if not selected_harvest.is_empty():
                 _clear_harvest_selection()
                 print("TAMU_HARVEST_DISMISSED_ON_EMPTY")
+            if house_world != null:
+                house_world.deselect()
             drag = true
         return
     if event is InputEventScreenDrag:
@@ -1802,13 +1860,25 @@ func _unhandled_input(event: InputEvent) -> void:
             if _world_ui_hit(event.position):
                 drag = false
                 return
+            if house_world != null and house_world.select_at_screen(event.position):
+                _clear_harvest_selection()
+                var last_mob := get_node_or_null("MobWorld")
+                if last_mob != null and last_mob.has_method("hide_info"):
+                    last_mob.call("hide_info")
+                drag = false
+                get_viewport().set_input_as_handled()
+                return
             var mobs := get_node_or_null("MobWorld")
             if mobs != null and mobs.has_method("select_at_screen") and mobs.call("select_at_screen", event.position):
                 _clear_harvest_selection()
+                if house_world != null:
+                    house_world.deselect()
                 drag = false
                 get_viewport().set_input_as_handled()
                 return
             if _ground_loot_at_screen(event.position) or _harvest_at_screen(event.position):
+                if house_world != null:
+                    house_world.deselect()
                 if mobs != null and mobs.has_method("hide_info"):
                     mobs.call("hide_info")
                 drag = false
@@ -1817,6 +1887,8 @@ func _unhandled_input(event: InputEvent) -> void:
             if not selected_harvest.is_empty():
                 _clear_harvest_selection()
                 print("TAMU_HARVEST_DISMISSED_ON_EMPTY")
+            if house_world != null:
+                house_world.deselect()
             drag = true
         else:
             drag = false

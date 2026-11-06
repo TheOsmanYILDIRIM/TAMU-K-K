@@ -68,7 +68,7 @@ func _zoom(amount: float) -> void:
 func _action(key: String) -> void:
     match key:
         "interact":
-            host.call("_try_harvest")
+            host.call("interact_world")
         "attack":
             var mobs := host.get_node_or_null("MobWorld")
             if mobs != null and mobs.has_method("player_attack"):

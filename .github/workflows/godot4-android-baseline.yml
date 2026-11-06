@@ -435,6 +435,9 @@ jobs:
           godot --headless --path . --script res://scripts/compile_content.gd | tee screenshots/content-compile.log
           grep -q 'TAMU_CATALOG_BINARY_COMPILE_OK definitions=7 recipes=2' screenshots/content-compile.log
           test -s data/catalog/compiled_catalog.res
+          timeout --kill-after=3s 30s godot --headless --path . --script res://scripts/house_world_ci.gd 2>&1 | tee screenshots/house-contract.log
+          grep -q TAMU_HOUSE_CONTRACT_OK screenshots/house-contract.log
+          if grep -Eq "SCRIPT ERROR:|Parse Error:|TAMU_HOUSE_.*FAILED" screenshots/house-contract.log; then exit 1; fi
           # The 128-only run needs assets/import/catalog, not all visual/FPS suites.
           if [ "${{ github.ref_name }}" = "experiment/limboai-godot46-20261104" ]; then
             echo TAMU_ONLY_128_PREPARED
@@ -891,7 +894,7 @@ jobs:
           for name in highres:
               assert not any(name in item and item.endswith('.ctex') for item in names), ('TAMU_128_HD_ATLAS_LEAK',name)
           required=['scripts/profile_rig.gdc','scripts/mob_world.gdc','scripts/main.gdc',
-              'scripts/pixellight_world.gdc','chunks/r2_objects.json',
+              'scripts/pixellight_world.gdc','scripts/single_house_world.gdc','chunks/r2_objects.json',
               'chunks/merged_layer_1.verts','assets/profile_character/motion.json']
           for name in required:
               assert any(name in item for item in names), ('TAMU_128_RUNTIME_MISSING',name)
