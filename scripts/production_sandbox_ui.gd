@@ -1,7 +1,7 @@
 extends Control
 ## Touch-based, code-drawn workshop sandbox; no external image assets.
 signal closed
-const Engine = preload("res://scripts/production_engine.gd")
+const WorkshopEngine = preload("res://scripts/production_engine.gd")
 var model
 var place_choice: OptionButton
 var module_choice: OptionButton
@@ -13,7 +13,7 @@ var elapsed := 0.0
 
 func _ready() -> void:
     mouse_filter = Control.MOUSE_FILTER_STOP
-    model = Engine.new()
+    model = WorkshopEngine.new()
     if not model.initialize():
         push_error("TAMU_PRODUCTION_UI_CATALOG_INVALID")
         return
