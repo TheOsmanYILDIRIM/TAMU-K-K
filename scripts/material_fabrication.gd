@@ -25,8 +25,8 @@ static func material_valid(m: Dictionary) -> bool:
         return false
     if not m.get("traits", null) is Dictionary or m["traits"].is_empty() or not m.get("visual", {}) is Dictionary:
         return false
-    for trait in m["traits"]:
-        if not trait is String or not valid_trait(trait) or not unit(m["traits"][trait]):
+    for trait_key in m["traits"]:
+        if not trait_key is String or not valid_trait(trait_key) or not unit(m["traits"][trait_key]):
             return false
     return true
 
@@ -87,13 +87,13 @@ static func calculate_alloy(inputs: Array, materials: Dictionary, furnace: Dicti
             return reject("incompatible_trait_schema")
     var composition: Array = []
     var traits: Dictionary = {}
-    for trait in names:
-        traits[trait] = 0.0
+    for trait_key in names:
+        traits[trait_key] = 0.0
     for id in ids:
         var ratio := float(amounts[id]) / float(total)
         composition.append({"material_id": id, "parts": int(amounts[id] / divisor), "fraction": ratio})
-        for trait in names:
-            traits[trait] += ratio * float(materials[id]["traits"][trait])
+        for trait_key in names:
+            traits[trait_key] += ratio * float(materials[id]["traits"][trait_key])
     var interactions: Variant = specification.get("interactions", [])
     if not interactions is Array:
         return reject("invalid_interactions")
@@ -102,26 +102,26 @@ static func calculate_alloy(inputs: Array, materials: Dictionary, furnace: Dicti
             return reject("invalid_interaction")
         var a := str(interaction.get("a", ""))
         var b := str(interaction.get("b", ""))
-        var trait := str(interaction.get("trait", ""))
+        var trait_key := str(interaction.get("trait", ""))
         var delta: Variant = interaction.get("delta", null)
-        if a == b or not amounts.has(a) or not amounts.has(b) or not traits.has(trait) or not number(delta) or absf(float(delta)) > 1.0:
+        if a == b or not amounts.has(a) or not amounts.has(b) or not traits.has(trait_key) or not number(delta) or absf(float(delta)) > 1.0:
             return reject("invalid_interaction")
         var factor := 4.0 * float(amounts[a]) * float(amounts[b]) / float(total * total)
-        traits[trait] = clampf(traits[trait] + factor * float(delta), 0.0, 1.0)
+        traits[trait_key] = clampf(traits[trait_key] + factor * float(delta), 0.0, 1.0)
     var modifiers: Variant = specification.get("quality_modifiers", {})
     if not modifiers is Dictionary:
         return reject("invalid_quality_modifiers")
-    for trait in modifiers:
-        if not traits.has(trait) or not number(modifiers[trait]) or absf(float(modifiers[trait])) > 1.0:
+    for trait_key in modifiers:
+        if not traits.has(trait_key) or not number(modifiers[trait_key]) or absf(float(modifiers[trait_key])) > 1.0:
             return reject("invalid_quality_modifier")
-        traits[trait] = clampf(traits[trait] + (float(quality) - 0.5) * float(modifiers[trait]), 0.0, 1.0)
+        traits[trait_key] = clampf(traits[trait_key] + (float(quality) - 0.5) * float(modifiers[trait_key]), 0.0, 1.0)
     var signature := "tamu-material-v1|" + station + "|" + str(snappedf(float(heat), 0.0001)) + "|" + str(snappedf(float(quality), 0.0001))
     var layers: Array = []
     for row in composition:
         signature += "|" + str(row["material_id"]) + ":" + str(row["parts"])
         layers.append({"source": row["material_id"], "fraction": row["fraction"], "visual": materials[row["material_id"]].get("visual", {}).duplicate(true)})
-    for trait in names:
-        signature += "|" + str(trait) + "=" + str(snappedf(float(traits[trait]), 0.000001))
+    for trait_key in names:
+        signature += "|" + str(trait_key) + "=" + str(snappedf(float(traits[trait_key]), 0.000001))
     var fingerprint := signature.sha256_text()
     return {"ok": true, "status": "preview_only", "ruleset_version": RULESET_VERSION,
         "fingerprint": fingerprint, "material": {"schema_version": 1,
@@ -159,22 +159,22 @@ static func evaluate_tool(blueprint: Dictionary, bindings: Dictionary, process: 
         var score := 0.0
         var weights := 0.0
         var notes: Array[String] = []
-        for trait in preferences:
-            var req: Variant = preferences[trait]
-            if not req is Dictionary or not m["traits"].has(trait) or not unit(req.get("ideal", null)) or not number(req.get("weight", null)) or float(req["weight"]) <= 0.0:
+        for trait_key in preferences:
+            var req: Variant = preferences[trait_key]
+            if not req is Dictionary or not m["traits"].has(trait_key) or not unit(req.get("ideal", null)) or not number(req.get("weight", null)) or float(req["weight"]) <= 0.0:
                 return reject("invalid_role_preference")
-            var distance := absf(float(m["traits"][trait]) - float(req["ideal"]))
+            var distance := absf(float(m["traits"][trait_key]) - float(req["ideal"]))
             score += (1.0 - distance) * float(req["weight"])
             weights += float(req["weight"])
             if distance >= 0.35:
-                notes.append("tradeoff:" + str(trait))
+                notes.append("tradeoff:" + str(trait_key))
         var possible := true
-        for trait in hard_limits:
-            if not m["traits"].has(trait) or not unit(hard_limits[trait]):
+        for trait_key in hard_limits:
+            if not m["traits"].has(trait_key) or not unit(hard_limits[trait_key]):
                 return reject("invalid_hard_limit")
-            if float(m["traits"][trait]) < float(hard_limits[trait]):
+            if float(m["traits"][trait_key]) < float(hard_limits[trait_key]):
                 possible = false
-                notes.append("structural_limit:" + str(trait))
+                notes.append("structural_limit:" + str(trait_key))
         var normalized := score / weights if weights > 0.0 else 0.5
         resolved[role_id] = m
         suitability[role_id] = {"material_id": m["id"], "score": normalized, "possible": possible, "notes": notes}
@@ -205,11 +205,11 @@ static func evaluate_tool(blueprint: Dictionary, bindings: Dictionary, process: 
             if not term is Dictionary:
                 return reject("invalid_stat_term")
             var role_id := str(term.get("role", ""))
-            var trait := str(term.get("trait", ""))
+            var trait_key := str(term.get("trait", ""))
             var weight: Variant = term.get("weight", null)
-            if not resolved.has(role_id) or not resolved[role_id]["traits"].has(trait) or not number(weight) or float(weight) <= 0.0:
+            if not resolved.has(role_id) or not resolved[role_id]["traits"].has(trait_key) or not number(weight) or float(weight) <= 0.0:
                 return reject("invalid_stat_term")
-            var value := float(resolved[role_id]["traits"][trait])
+            var value := float(resolved[role_id]["traits"][trait_key])
             if bool(term.get("inverse", false)):
                 value = 1.0 - value
             sum_value += value * float(weight)
@@ -232,13 +232,13 @@ static func knowledge_view(material: Dictionary, observation: Dictionary) -> Dic
     if not readings is Dictionary:
         return reject("invalid_knowledge")
     var visible: Dictionary = {}
-    for trait in readings:
-        if not material["traits"].has(trait) or not readings[trait] is Dictionary:
+    for trait_key in readings:
+        if not material["traits"].has(trait_key) or not readings[trait_key] is Dictionary:
             return reject("invalid_knowledge_trait")
-        var interval: Dictionary = readings[trait]
+        var interval: Dictionary = readings[trait_key]
         if not unit(interval.get("low", null)) or not unit(interval.get("high", null)) or float(interval["low"]) > float(interval["high"]):
             return reject("invalid_knowledge_interval")
-        visible[trait] = interval.duplicate(true)
+        visible[trait_key] = interval.duplicate(true)
     var recognized := bool(observation.get("recognized", false))
     return {"ok": true, "label": material["id"] if recognized else "unknown_material",
         "recognized": recognized, "known_traits": visible}
