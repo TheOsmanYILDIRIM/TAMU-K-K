@@ -94,7 +94,7 @@ func _item_contract() -> bool:
         var visual: Dictionary = run.item_visual(id)
         if str(visual.get("texture_key", "")) != id:
             return false
-        var parts := id.split(":")
+        var parts: PackedStringArray = str(id).split(":")
         if str(visual.get("texture_path", "")) != "res://assets/items/%s/%s.png" % [parts[0], parts[1]]:
             return false
         if str(visual.get("kind", "")) != "primitive":
