@@ -180,7 +180,7 @@ func step() -> void:
             if connects(p,"crucible","heat") and stock["ore"]>0:
                 stock["ore"]-=1
                 for d in DIRECTIONS:
-                    var pot := p+d
+                    var pot: Vector2i = p+d
                     if at(pot).get("kind","")=="crucible" and joined(p,pot,"heat"):
                         if connects(pot,"mold","molten"):
                             stock["ingot"]+=1
