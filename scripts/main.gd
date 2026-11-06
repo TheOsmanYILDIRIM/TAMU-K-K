@@ -16,6 +16,7 @@ const SHADOW_SHADER = preload("res://scripts/object_shadow.gdshader")
 const SELECTION_SHADER = preload("res://scripts/harvest_outline.gdshader")
 const FOREST_GUI = preload("res://scripts/forest_harvest_gui.gd")
 const MODULAR_HUD = preload("res://scripts/modular_hud.gd")
+const CRAFTING_BOOK = preload("res://scripts/crafting_book_ui.gd")
 const ShadowVolume = preload("res://scripts/shadow_volume.gd")
 const PixelLightWorld = preload("res://scripts/pixellight_world.gd")
 const VisualEnvironment = preload("res://scripts/visual_environment.gd")
@@ -65,6 +66,9 @@ var silhouette_shadows: Array[Sprite2D] = []
 var silhouette_material: ShaderMaterial
 var audio_cues: Node
 var impact_effects: Node2D
+const MAX_VISIBLE_GROUND_LOOT := 48
+var ground_loot_sprites: Dictionary = {}
+var ground_glow_cache: Array[Texture2D] = []
 var day_clock := 10.5
 var sun_direction := Vector2.ZERO
 var sun_level := 1.0
@@ -75,6 +79,7 @@ var forest_gui: CanvasLayer
 var selected_harvest: Dictionary = {}
 var selected_harvest_outline: Sprite2D
 var modular_hud: CanvasLayer
+var crafting_book: CanvasLayer
 var ui_touch_ids: Dictionary = {}
 var world_touch_pointer := -1
 var harvest_navigation = HarvestNavigation.new()
@@ -309,8 +314,103 @@ func _harvest_at_screen(screen_point: Vector2) -> bool:
         return false
     return _select_harvest(chosen)
 
+func _sync_ground_loot_visuals() -> void:
+    if gameplay == null or object_layer == null:
+        return
+    if ground_glow_cache.is_empty():
+        for i in range(1, 5):
+            var path := "res://assets/items/glow/gold_%02d.png" % i
+            ground_glow_cache.append(load(path) if ResourceLoader.exists(path, "Texture2D") else null)
+    var pending: Array[Dictionary] = gameplay.pending_ground_loot()
+    for drop in pending:
+        if ground_loot_sprites.size() >= MAX_VISIBLE_GROUND_LOOT:
+            break
+        var loot_id := str(drop.get("id", ""))
+        if loot_id.is_empty() or ground_loot_sprites.has(loot_id):
+            continue
+        var texture: Texture2D = gameplay.item_texture(str(drop.get("def_id", "")))
+        if texture == null:
+            continue
+        var source_id := str(drop.get("source_id", ""))
+        var source: Dictionary = harvested_by_id.get(source_id, {})
+        var p := Vector2(float(drop.get("x", 0.0)), float(drop.get("y", 0.0)))
+        var screen_pos := WorldProjection.to_screen(p)
+        if source.has("sprite"):
+            screen_pos = (source["sprite"] as Sprite2D).position
+        var node := Node2D.new()
+        node.name = "GroundItem"
+        node.position = screen_pos + Vector2(float(posmod(hash(loot_id), 17) - 8), -9.0)
+        object_layer.add_child(node)
+        var variation := posmod(hash(loot_id), 4)
+        var back: Texture2D = ground_glow_cache[variation]
+        if back != null:
+            var glow := Sprite2D.new()
+            glow.texture = back
+            glow.scale = Vector2.ONE * 0.125
+            glow.modulate.a = 0.76
+            node.add_child(glow)
+        var icon := Sprite2D.new()
+        icon.name = "PickupItemIcon"
+        icon.texture = texture
+        icon.scale = Vector2.ONE * 0.125
+        node.add_child(icon)
+        ground_loot_sprites[loot_id] = node
+
+func _collect_ground_loot(loot_id: String) -> bool:
+    var result: Dictionary = gameplay.pickup_ground_loot(
+        loot_id, actor_world, _next_gameplay_command("pickup"))
+    if not bool(result.get("ok", false)):
+        _harvest_feedback("YERDEN ALMA: " + str(result.get("status", "failed")))
+        return false
+    var node: Node2D = ground_loot_sprites.get(loot_id)
+    ground_loot_sprites.erase(loot_id)
+    _sync_ground_loot_visuals()
+    audio_cues.cue("harvest_complete")
+    _harvest_feedback("ALINDI: " + str(result.get("item_id", "")) + " x" + str(result.get("amount", 0)))
+    # Successful pickup only. A missing optional texture must never trap loot.
+    if node != null:
+        node.z_index = 9
+        var tween := create_tween().set_parallel(true)
+        tween.tween_property(node, "position", avatar.position + Vector2(0, -36), 0.22)
+        tween.tween_property(node, "scale", Vector2.ONE * 0.45, 0.22)
+        tween.tween_property(node, "modulate:a", 0.0, 0.22)
+        tween.chain().tween_callback(node.queue_free)
+    print("TAMU_GROUND_PICKUP_OK id=", loot_id, " item=", result.get("item_id", ""))
+    return true
+
+func _try_nearby_loot() -> bool:
+    var best_id := ""
+    var best_distance := 52.0 * 52.0
+    for record in gameplay.pending_ground_loot():
+        var p := Vector2(float(record["x"]), float(record["y"]))
+        var d := actor_world.distance_squared_to(p)
+        if d < best_distance:
+            best_distance = d
+            best_id = str(record["id"])
+    if best_id.is_empty():
+        return false
+    _collect_ground_loot(best_id)
+    return true
+
+func _ground_loot_at_screen(screen_point: Vector2) -> bool:
+    var closest := ""
+    var best := 29.0 * 29.0
+    for loot_id in ground_loot_sprites:
+        var node: Node2D = ground_loot_sprites[loot_id]
+        var screen := node.get_global_transform_with_canvas() * Vector2.ZERO
+        var dist := screen.distance_squared_to(screen_point)
+        if dist < best:
+            best = dist
+            closest = str(loot_id)
+    if closest.is_empty():
+        return false
+    _collect_ground_loot(closest)
+    return true
+
 func _try_harvest() -> void:
     if selected_harvest.is_empty():
+        if _try_nearby_loot():
+            return
         _harvest_feedback("ÖNCE BİR AĞACA VEYA KAYAYA DOKUN")
         print("TAMU_HARVEST_NO_SELECTION")
         return
@@ -539,10 +639,23 @@ func _place_workbench() -> void:
         audio_cues.cue("craft_complete")
     print("TAMU_BUILD_COMMAND status=",result.get("status","unknown"))
 
-func _begin_craft(recipe_id: String) -> void:
+func _begin_craft(recipe_id: String) -> Dictionary:
     _cancel_auto_harvest()
     var result: Dictionary = gameplay.begin_craft(_next_gameplay_command("craft"), recipe_id)
     print("TAMU_CRAFT_COMMAND recipe=", recipe_id, " status=", result["status"])
+    return result
+
+func open_crafting_book() -> void:
+    if crafting_book != null:
+        _cancel_auto_harvest()
+        _release_joystick()
+        crafting_book.open_library()
+
+func open_inventory() -> void:
+    if crafting_book != null:
+        _cancel_auto_harvest()
+        _release_joystick()
+        crafting_book.open_inventory()
 
 func _tick_gameplay(dt: float) -> void:
     var changes: Array[Dictionary] = gameplay.tick(dt, actor_world)
@@ -560,7 +673,7 @@ func _tick_gameplay(dt: float) -> void:
             item["collected"] = true
             if not selected_harvest.is_empty() and str(selected_harvest["id"])==id:
                 _clear_harvest_selection()
-                _harvest_feedback("KAYNAK TOPLANDI")
+                _harvest_feedback("KAYNAK KIRILDI — YERDEN AL" if bool(change.get("ground_drop", false)) else "KAYNAK TOPLANDI")
             var sprite: Sprite2D = item["sprite"]
             sprite.set_meta("tamu_collected", true)
             sprite.visible = false
@@ -575,6 +688,8 @@ func _tick_gameplay(dt: float) -> void:
             authority.depleted_ids[id] = true
             audio_cues.cue("harvest_complete")
             impact_effects.burst(sprite.position, str(item["kind"]), 14)
+            if bool(change.get("ground_drop", false)):
+                _sync_ground_loot_visuals()
             print("TAMU_HARVEST_OK id=", id, " count=", harvested_count,
                 " item=", change["item_id"], " amount=", change["amount"])
         elif change["type"] == "CraftCompleted":
@@ -740,6 +855,8 @@ func _release_joystick() -> void:
         joystick_knob.position = Vector2(47,47)
 
 func _world_ui_hit(point: Vector2) -> bool:
+    if crafting_book != null and crafting_book.is_open():
+        return true
     # Decorative HUD textures are IGNORE for Godot GUI dispatch, but they
     # must still shield the authored world from pointer selection/drag.
     if modular_hud != null and bool(modular_hud.call("blocks_world_input", point)):
@@ -765,6 +882,10 @@ func _world_ui_hit(point: Vector2) -> bool:
     return false
 
 func _input(event: InputEvent) -> void:
+    if crafting_book != null and crafting_book.is_open():
+        _release_joystick()
+        drag = false
+        return
     if event is InputEventScreenTouch:
         if event.pressed:
             if _world_ui_hit(event.position):
@@ -1047,6 +1168,9 @@ func _ready() -> void:
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and OS.get_environment("TAMU_VISUAL_CASE") == "dawn":
         day_clock = 6.0
     gameplay = GameplaySession.new()
+    # Keep historical visual regression instant-credit; production enables durable ground items.
+    if OS.get_environment("TAMU_VISUAL_CI") != "1":
+        gameplay.enable_ground_loot()
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and not gameplay.verify_contract():
         push_error("TAMU_GAMEPLAY_DOMAIN_GATE_FAILED")
         get_tree().quit(23)
@@ -1089,6 +1213,7 @@ func _ready() -> void:
                     item["silhouette"].set_meta("tamu_collected", true)
                     item["silhouette"].visible = false
         authority.depleted_ids = gameplay.depleted.duplicate(true)
+        _sync_ground_loot_visuals()
         print("TAMU_STAGE6_PRODUCTION_ACTIVE world=",world["id"]," region=",authority.region_id)
         if OS.get_environment("TAMU_PRODUCTION_SMOKE") == "1":
             print("TAMU_STAGE6_PRODUCTION_SMOKE_OK status=",enabled["status"]," identity=",world["status"],
@@ -1132,6 +1257,10 @@ func _ready() -> void:
     add_child(modular_hud)
     if modular_hud.setup(self):
         print("TAMU_MODULAR_HUD_READY")
+    crafting_book = CRAFTING_BOOK.new()
+    crafting_book.name = "TamuCraftingBook"
+    crafting_book.setup(gameplay, Callable(self, "_begin_craft"))
+    add_child(crafting_book)
     print("TAMU_GODOT_TERRAIN_START chunks=", pending.size())
 
 func _load_region(manifest_path: String) -> bool:
@@ -1835,6 +1964,9 @@ func _process(delta: float) -> void:
             get_tree().quit()
 
 func _unhandled_input(event: InputEvent) -> void:
+    if crafting_book != null and crafting_book.is_open():
+        drag = false
+        return
     # Only a pointer started on the authored world may select or pan it.
     # Controls and art may belong to separate CanvasLayers; dispatch alone
     # cannot prevent all ScreenTouch/mouse-emulation leaks on Android.
@@ -1849,7 +1981,7 @@ func _unhandled_input(event: InputEvent) -> void:
                 drag = false
                 get_viewport().set_input_as_handled()
                 return
-            if _harvest_at_screen(event.position):
+            if _ground_loot_at_screen(event.position) or _harvest_at_screen(event.position):
                 if mobs != null and mobs.has_method("hide_info"):
                     mobs.call("hide_info")
                 drag = false
@@ -1879,7 +2011,7 @@ func _unhandled_input(event: InputEvent) -> void:
                 drag = false
                 get_viewport().set_input_as_handled()
                 return
-            if _harvest_at_screen(event.position):
+            if _ground_loot_at_screen(event.position) or _harvest_at_screen(event.position):
                 if mobs != null and mobs.has_method("hide_info"):
                     mobs.call("hide_info")
                 drag = false
