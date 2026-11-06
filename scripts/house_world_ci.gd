@@ -1,6 +1,7 @@
 extends SceneTree
 ## Fast source-only contract; device visuals and physical navigation are separate.
 const Cabin = preload("res://scripts/single_house_world.gd")
+const Production = preload("res://scripts/production_engine.gd")
 const WorldProjection = preload("res://scripts/world_projection.gd")
 
 func _initialize() -> void:
@@ -41,5 +42,40 @@ func _initialize() -> void:
         quit(96)
         return
     cabin.free()
+    var p = Production.new()
+    if not p.initialize() or p.definitions["modules"].size() < 30 or p.definitions["sites"].size() < 12:
+        push_error("TAMU_PRODUCTION_CATALOG_FAILED")
+        quit(97)
+        return
+    if not p.place("furnace",Vector2i(0,0)) or not p.place("crucible",Vector2i(1,0)) or not p.place("mold",Vector2i(2,0)):
+        push_error("TAMU_PRODUCTION_PLACEMENT_FAILED")
+        quit(98)
+        return
+    if not p.joined(Vector2i(0,0),Vector2i(1,0),"heat") or not p.joined(Vector2i(1,0),Vector2i(2,0),"molten"):
+        push_error("TAMU_PRODUCTION_SOCKETS_FAILED")
+        quit(99)
+        return
+    p.activate(true)
+    for i in range(20):
+        p.step()
+    if p.stock["ingot"] <= 0 or p.heat <= 0:
+        push_error("TAMU_PRODUCTION_SMELTING_FAILED")
+        quit(100)
+        return
+    p.use_site("field")
+    if not p.plant(Vector2i(0,0)):
+        push_error("TAMU_PRODUCTION_FARM_FAILED")
+        quit(101)
+        return
+    p.activate(true)
+    for i in range(38):
+        p.step()
+        if i % 8 == 0:
+            p.water(Vector2i(0,0))
+    if not p.harvest(Vector2i(0,0)) or p.stock["food"] != 3:
+        push_error("TAMU_PRODUCTION_HARVEST_FAILED")
+        quit(102)
+        return
+    print("TAMU_PRODUCTION_CONTRACT_OK modules=30 sites=12")
     print("TAMU_HOUSE_CONTRACT_OK exterior=single_png door=marked route=astar room=3x3 save=untouched")
     quit()
