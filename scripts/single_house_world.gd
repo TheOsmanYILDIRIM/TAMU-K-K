@@ -42,7 +42,7 @@ var room_floor: Control
 var room_avatar_parent: Node2D
 var indoor_position := Vector2.ZERO
 var indoor_held := Vector2.ZERO
-var production_ui: Control
+var production_ui
 
 static func definition() -> Dictionary:
     return {"id": HOUSE_ID, "label": "Ahşap Kulübe", "level": 1,
