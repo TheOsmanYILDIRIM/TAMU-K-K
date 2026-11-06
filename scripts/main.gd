@@ -1,6 +1,5 @@
 extends Node2D
 const WorldProjection = preload("res://scripts/world_projection.gd")
-const BuildingAnchors = preload("res://scripts/modular_building_anchors.gd")
 const WorldSource = preload("res://scripts/world_source.gd")
 const WorldStream = preload("res://scripts/world_stream.gd")
 const MergedTerrain = preload("res://scripts/merged_terrain.gd")
@@ -456,189 +455,6 @@ func _try_harvest() -> void:
         _harvest_feedback("TOPLAMA: "+status)
     print("TAMU_HARVEST_COMMAND id=",item["id"]," status=",status)
 
-# Minimal gameplay adapter: the canonical DomainBuilding remains authoritative.
-# Structures are drawn at world foot positions and restored from Stage6 saves.
-func _sync_building_visuals() -> void:
-    if gameplay == null or object_layer == null:
-        return
-    for instance_id in gameplay.building.placed:
-        if placed_visuals.has(instance_id):
-            continue
-        var placed: Dictionary = gameplay.building.placed[instance_id]
-        var node := Node2D.new()
-        node.name = "Structure_" + str(instance_id)
-        node.position = WorldProjection.to_screen(Vector2(float(placed["x"]), float(placed["y"])))
-        if authority != null:
-            node.position.y -= authority.terrain.height_at(float(placed["x"]), float(placed["y"])) * R2_HEIGHT_SCREEN_SCALE
-        var top := Polygon2D.new()
-        top.polygon = PackedVector2Array([Vector2(-23,-20),Vector2(0,-32),
-            Vector2(23,-20),Vector2(0,-8)])
-        top.color = Color(0.69,0.50,0.34)
-        node.add_child(top)
-        var front := Polygon2D.new()
-        front.polygon = PackedVector2Array([Vector2(-23,-20),Vector2(0,-8),
-            Vector2(0,0),Vector2(-23,-12)])
-        front.color = Color(0.40,0.28,0.21)
-        node.add_child(front)
-        var side := Polygon2D.new()
-        side.polygon = PackedVector2Array([Vector2(0,-8),Vector2(23,-20),
-            Vector2(23,-12),Vector2(0,0)])
-        side.color = Color(0.52,0.36,0.25)
-        node.add_child(side)
-        object_layer.add_child(node)
-        placed_visuals[instance_id] = node
-    for instance_id in placed_visuals.keys():
-        if not gameplay.building.placed.has(instance_id):
-            placed_visuals[instance_id].queue_free()
-            placed_visuals.erase(instance_id)
-
-# Isolated 128px world-alignment review: no inventory debit, save, or collision.
-# The authored LÖVE 19-piece atlas uses 128x128 sprites with pivot (64,92) at
-# 2 pixels/world unit. Native TAMU terrain uses half that scale. No fake build
-# transactions are written; this experiment can be disabled with
-# TAMU_BUILDING_DEMO=0 without touching the canonical building session.
-func _show_modular_building_demo() -> void:
-    if OS.get_environment("TAMU_BUILDING_DEMO") == "0" or object_layer == null or authority == null:
-        return
-    if not BuildingAnchors.verify_projection_contract():
-        push_error("TAMU_BUILDING_PROJECTION_CONTRACT_FAILED")
-        return
-    var manifest_path := "res://assets/building/building_default_manifest.json"
-    var atlas_path := "res://assets/building/building_default_atlas.png"
-    if not FileAccess.file_exists(manifest_path) or not ResourceLoader.exists(atlas_path):
-        push_error("TAMU_BUILDING_ATLAS_MISSING")
-        return
-    var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(manifest_path))
-    if not parsed is Dictionary:
-        push_error("TAMU_BUILDING_MANIFEST_INVALID")
-        return
-    var atlas: Texture2D = load(atlas_path)
-    if atlas == null:
-        push_error("TAMU_BUILDING_TEXTURE_UNAVAILABLE")
-        return
-    var entry_index := {}
-    for entry in parsed.get("entries", []):
-        if entry is Dictionary:
-            entry_index[str(entry.get("def_id",""))+":"+str(int(entry.get("rotation",-1)))] = entry
-
-    # A uniformly scaled preview is important: reducing only the sprite size
-    # would create gaps at the 32-unit module joints. Do not change gameplay
-    # anchors, build costs, collisions or Stage6 save coordinates.
-    # Character height is roughly 72 game pixels; a 24-unit wall at 0.8x
-    # was only 19px tall and made the whole cabin toy-sized. Use a 1.75x
-    # structural/world preview scale (~42px wall, ~73px ridge height).
-    # Scale the module spacing and vertical offsets together to keep seams.
-    const PREVIEW_FACTOR := 1.75
-    const PREVIEW_CELL := 32.0 * PREVIEW_FACTOR
-    var base := actor_world + Vector2(124.0,-64.0)
-    var pieces: Array[Dictionary] = []
-    for ix in range(2):
-        for iy in range(2):
-            var local := Vector2(float(ix),float(iy)) * PREVIEW_CELL
-            pieces.append({"id":"tamu:foundation_wood","offset":local,"z":0.0,"rotation":0,"house":true})
-            pieces.append({"id":"tamu:floor_wood","offset":local,"z":4.0*PREVIEW_FACTOR,"rotation":0,"house":true})
-            if iy == 0:
-                pieces.append({"id":"tamu:wall_wood","offset":local+Vector2(0,-PREVIEW_CELL*0.5),
-                    "z":6.0*PREVIEW_FACTOR,"rotation":0,"house":true})
-            if iy == 1:
-                pieces.append({"id":"tamu:doorway_wood" if ix==1 else "tamu:wall_wood",
-                    "offset":local+Vector2(0,PREVIEW_CELL*0.5),
-                    "z":6.0*PREVIEW_FACTOR,"rotation":0,"house":true})
-            if ix == 0:
-                pieces.append({"id":"tamu:window_wood","offset":local+Vector2(-PREVIEW_CELL*0.5,0),
-                    "z":6.0*PREVIEW_FACTOR,"rotation":1,"house":true})
-            if ix == 1:
-                pieces.append({"id":"tamu:wall_wood","offset":local+Vector2(PREVIEW_CELL*0.5,0),
-                    "z":6.0*PREVIEW_FACTOR,"rotation":1,"house":true})
-            pieces.append({"id":"tamu:roof_slope_wood","offset":local+Vector2(0,-PREVIEW_CELL*0.5),
-                "z":30.0*PREVIEW_FACTOR,"rotation":2,"house":true})
-            pieces.append({"id":"tamu:roof_slope_wood","offset":local+Vector2(0,PREVIEW_CELL*0.5),
-                "z":30.0*PREVIEW_FACTOR,"rotation":0,"house":true})
-
-    # Six modules per side: fence, corner continuity, a front gate. The fence
-    # terrain foot is sampled independently from each local ground location.
-    for i in range(6):
-        var x := float(i-2) * PREVIEW_CELL
-        pieces.append({"id":"tamu:fence_wood","offset":Vector2(x,-2.0*PREVIEW_CELL),
-            "z":0.0,"rotation":0,"house":false})
-        pieces.append({"id":"tamu:fence_gate_wood" if i==2 else "tamu:fence_wood",
-            "offset":Vector2(x,3.0*PREVIEW_CELL),"z":0.0,"rotation":0,"house":false})
-    for i in range(1,5):
-        var y := float(i-2) * PREVIEW_CELL
-        pieces.append({"id":"tamu:fence_wood","offset":Vector2(-2.0*PREVIEW_CELL,y),
-            "z":0.0,"rotation":1,"house":false})
-        pieces.append({"id":"tamu:fence_wood","offset":Vector2(3.0*PREVIEW_CELL,y),
-            "z":0.0,"rotation":1,"house":false})
-
-    # Keep the 2x2 house structurally coplanar. Select the lowest terrain
-    # sample so its base cannot float above higher spots on uneven terrain.
-    var house_ground := INF
-    for ix in range(2):
-        for iy in range(2):
-            var corner := base + Vector2(float(ix),float(iy)) * PREVIEW_CELL
-            house_ground = minf(house_ground, authority.terrain.height_at(corner.x,corner.y))
-    if not is_finite(house_ground):
-        push_error("TAMU_BUILDING_TERRAIN_UNAVAILABLE")
-        return
-
-    var count := 0
-    for part in pieces:
-        var key := str(part["id"])+":"+str(part["rotation"])
-        if not entry_index.has(key):
-            push_error("TAMU_BUILDING_MISSING_VIEW "+key)
-            continue
-        var entry: Dictionary = entry_index[key]
-        var rect_data: Array = entry["atlas_rect"]
-        if rect_data.size() != 4:
-            push_error("TAMU_BUILDING_INVALID_ATLAS_RECT "+key)
-            continue
-        var world_pos: Vector2 = base + part["offset"]
-        var terrain_height: float = house_ground if bool(part["house"]) else authority.terrain.height_at(world_pos.x,world_pos.y)
-        if not is_finite(terrain_height):
-            push_error("TAMU_BUILDING_TERRAIN_INVALID "+key)
-            continue
-        var sprite := Sprite2D.new()
-        sprite.name = "ConstructionReview_" + str(count)
-        sprite.texture = atlas
-        sprite.region_enabled = true
-        sprite.region_rect = Rect2(float(rect_data[0]),float(rect_data[1]),
-            float(rect_data[2]),float(rect_data[3]))
-        sprite.centered = false
-        var scale_value: float = BuildingAnchors.SPRITE_SCALE * PREVIEW_FACTOR
-        # Only raise the ART, not the Y-sort origin: roofs/walls must stay
-        # interleaved with authored rocks, trees, and the player.
-        sprite.offset = -BuildingAnchors.SPRITE_PIVOT - Vector2(0.0,float(part["z"])/scale_value)
-        sprite.scale = Vector2.ONE * scale_value
-        sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-        sprite.position = BuildingAnchors.projected_foot(world_pos,terrain_height)
-        sprite.z_index = 0
-        # IMPORTANT: object_layer has y_sort_enabled=true. A nested Node2D
-        # would sort the entire house as ONE object at (0,0), over the world.
-        object_layer.add_child(sprite)
-        count += 1
-    if count != pieces.size():
-        push_error("TAMU_BUILDING_128_REVIEW_INCOMPLETE views=%d expected=%d" % [count, pieces.size()])
-    else:
-        print("TAMU_BUILDING_128_REVIEW_READY views=",count,
-            " house=32 fence=20 effective_scale=0.875 ysort=world terrain=authored")
-
-func _place_workbench() -> void:
-    _cancel_auto_harvest()
-    if gameplay == null or authority == null:
-        return
-    # Use real domain validation: distance, terrain, collision, inventory and
-    # durable journal all decide success; no debug resource injection.
-    var target := actor_world + Vector2(48.0,0.0)
-    var uid := "%08x-%04x-4%03x-a%03x-%012x" % [
-        randi(), randi() & 0xffff, randi() & 0xfff,
-        randi() & 0xfff, (int(randi()) << 16) | (randi() & 0xffff)]
-    var result: Dictionary = gameplay.place_building(_next_gameplay_command("build"),
-        uid, "core:workbench", target, 0, actor_world, "player")
-    if str(result.get("status","")) == "placed":
-        _sync_building_visuals()
-        audio_cues.cue("craft_complete")
-    print("TAMU_BUILD_COMMAND status=",result.get("status","unknown"))
-
 func _begin_craft(recipe_id: String) -> Dictionary:
     _cancel_auto_harvest()
     var result: Dictionary = gameplay.begin_craft(_next_gameplay_command("craft"), recipe_id)
@@ -769,22 +585,6 @@ func _init_harvest_button() -> void:
         crafting_button.add_theme_stylebox_override("normal", style)
         crafting_button.pressed.connect(_begin_craft.bind(str(option["recipe"])))
         root.add_child(crafting_button)
-    var place_button := Button.new()
-    place_button.name = "PlaceWorkbench"
-    place_button.text = "KUR"
-    place_button.anchor_left = 1.0
-    place_button.anchor_right = 1.0
-    place_button.anchor_top = 1.0
-    place_button.anchor_bottom = 1.0
-    place_button.offset_left = -190.0
-    place_button.offset_right = -24.0
-    place_button.offset_top = -532.0
-    place_button.offset_bottom = -434.0
-    place_button.mouse_filter = Control.MOUSE_FILTER_STOP
-    place_button.add_theme_font_size_override("font_size", 22)
-    place_button.add_theme_stylebox_override("normal",style)
-    place_button.pressed.connect(_place_workbench)
-    root.add_child(place_button)
     print("TAMU_HARVEST_UI_READY")
 
 func _init_mobile_joystick() -> void:
@@ -1238,8 +1038,6 @@ func _ready() -> void:
     if merged_mode:
         _refresh_streaming_requests()
     _make_avatar()
-    _sync_building_visuals()
-    _show_modular_building_demo()
     perf_hud = load("res://scripts/performance_hud.gd").new()
     add_child(perf_hud)
     perf_hud.layer = 118 # HUD _ready sets 100; override after attachment.
@@ -1576,7 +1374,6 @@ func _load_objects() -> void:
 
 var object_count: int = 0
 var object_layer: Node2D
-var placed_visuals: Dictionary = {}
 
 func _process(delta: float) -> void:
     # A Stage6 startup smoke can request quit before _make_avatar().

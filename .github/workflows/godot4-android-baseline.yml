@@ -430,27 +430,6 @@ jobs:
           test -s assets/gui/joystick_knob.png
           grep -q TAMU_TERRAIN_MIX_BAKED_OK screenshots-mix-bake.log
           test -s assets/terrain25d/atlas_00_mix.png
-          # Reuse the exact 19-piece/76-view old construction generator, at
-          # native 128x128 per source view. The generator is deterministic.
-          # Godot displays these at 0.5 scale against its original R2 terrain.
-          mkdir -p assets/building
-          lua5.4 scripts/export_building_parts.lua > /tmp/tamu-building-parts.json
-          python3 scripts/building_default_assets.py \
-            --catalog /tmp/tamu-building-parts.json --output assets/building
-          python3 - <<'PYBUILD'
-          import json
-          from pathlib import Path
-          from PIL import Image
-          root=Path('assets/building')
-          manifest=json.loads((root/'building_default_manifest.json').read_text())
-          entries=manifest['entries']
-          assert len(entries)==76 and len({(e['def_id'],e['rotation']) for e in entries})==76
-          assert all(e['anchor']==[64,92] and e['colors']<=64 for e in entries)
-          with Image.open(root/'building_default_atlas.png') as atlas:
-              assert atlas.size==(1024,1280), atlas.size
-          print('TAMU_BUILDING_128_ATLAS_READY views=76 source_px=128 pivot=64,92 native_scale=0.5')
-          PYBUILD
-          godot --headless --path . --check-only --script res://scripts/modular_building_anchors.gd
           godot --headless --editor --path . --import --quit
           mkdir -p screenshots
           godot --headless --path . --script res://scripts/compile_content.gd | tee screenshots/content-compile.log
@@ -916,9 +895,8 @@ jobs:
               'chunks/merged_layer_1.verts','assets/profile_character/motion.json']
           for name in required:
               assert any(name in item for item in names), ('TAMU_128_RUNTIME_MISSING',name)
-          assert any('.godot/imported/building_default_atlas.png-' in item and item.endswith('.ctex') for item in names), 'TAMU_128_BUILDING_ATLAS_MISSING'
-          assert any('assets/building/building_default_manifest.json' in item for item in names), 'TAMU_128_BUILDING_MANIFEST_MISSING'
-          assert any('scripts/modular_building_anchors.gdc' in item for item in names), 'TAMU_128_BUILDING_PROJECTION_MISSING'
+          # Legacy 19-piece preview must never be recreated or exported.
+          assert not any('building_default_atlas' in item or 'building_default_manifest' in item or 'modular_building_anchors' in item or 'modular_building_catalog' in item for item in names), 'TAMU_RETIRED_BUILDING_PACK_LEAK'
           if mobile.is_file():
               assert p.stat().st_size < mobile.stat().st_size, ('TAMU_128_NOT_SMALLER',p.stat().st_size,mobile.stat().st_size)
           print('TAMU_128_SOURCE_PACK_OK files=',count,'bytes=',p.stat().st_size,'original_tile_px=128')
