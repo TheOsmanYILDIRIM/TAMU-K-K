@@ -1,5 +1,5 @@
 extends SceneTree
-const Engine = preload("res://scripts/production_engine.gd")
+const ProductionEngine = preload("res://scripts/production_engine.gd")
 const Workshop = preload("res://scripts/production_sandbox_ui.gd")
 func expect(ok: bool, label: String) -> void:
     if not ok:
@@ -7,7 +7,7 @@ func expect(ok: bool, label: String) -> void:
         quit(1)
 
 func _initialize() -> void:
-    var m = Engine.new()
+    var m = ProductionEngine.new()
     expect(m.initialize(),"catalog")
     expect(m.definitions["sites"].size()>=12,"sites")
     expect(m.definitions["modules"].size()>=30,"modules")
