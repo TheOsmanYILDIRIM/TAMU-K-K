@@ -1,6 +1,7 @@
 extends Node2D
 ## One exterior sprite, world-space doorway, proportional top-down interior.
 ## Session-only demonstration: NEVER writes placed instances or Stage6 saves.
+const ProductionUI = preload("res://scripts/production_sandbox_ui.gd")
 const WorldProjection = preload("res://scripts/world_projection.gd")
 const Navigation = preload("res://scripts/harvest_pathfinder.gd")
 const HOUSE_ID := "tamu:house_wood_lv1"
@@ -41,6 +42,7 @@ var room_floor: Control
 var room_avatar_parent: Node2D
 var indoor_position := Vector2.ZERO
 var indoor_held := Vector2.ZERO
+var production_ui: Control
 
 static func definition() -> Dictionary:
     return {"id": HOUSE_ID, "label": "Ahşap Kulübe", "level": 1,
@@ -363,6 +365,19 @@ func _create_interface() -> void:
     exit_button.pressed.connect(leave_house)
     room.add_child(exit_button)
     _add_touch_pad()
+    var workshop_button := Button.new()
+    workshop_button.name = "ProductionWorkshopEntry"
+    workshop_button.text = "ÜRETİM / TARLA"
+    workshop_button.position = Vector2(238, 98)
+    workshop_button.custom_minimum_size = Vector2(220, 58)
+    workshop_button.pressed.connect(_open_workshop)
+    room.add_child(workshop_button)
+    production_ui = ProductionUI.new()
+    production_ui.name = "ProductionSandbox"
+    room.add_child(production_ui)
+    production_ui.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    production_ui.closed.connect(_close_workshop)
+    production_ui.visible = false
     room.resized.connect(_layout_room)
     _layout_room()
     room.visible = false
@@ -397,6 +412,15 @@ func _layout_room() -> void:
     if room_floor != null:
         room_floor.position = (room.size - room_floor.size) * 0.5
 
+func _open_workshop() -> void:
+    if inside and production_ui != null:
+        indoor_held = Vector2.ZERO
+        production_ui.visible = true
+
+func _close_workshop() -> void:
+    if production_ui != null:
+        production_ui.visible = false
+
 func _hold_indoor(direction: Vector2) -> void:
     indoor_held = direction
 
@@ -425,6 +449,7 @@ func leave_house() -> void:
     indoor_held = Vector2.ZERO
     inside = false
     room.visible = false
+    _close_workshop()
     host.avatar.reparent(host.object_layer, false)
     host.profile_contact_shadow.visible = true
     host.actor_world = center_world + APPROACH_WORLD
@@ -434,6 +459,10 @@ func leave_house() -> void:
 
 func _process(delta: float) -> void:
     if not inside or host == null or host.profile_rig == null:
+        return
+    if production_ui != null and production_ui.visible:
+        host.call("_set_actor_clip", "SE", "idle")
+        host.profile_rig.advance(delta, 0.0)
         return
     var command: Vector2 = indoor_held if indoor_held.length_squared() > 0.01 else Input.get_vector(
         "ui_left", "ui_right", "ui_up", "ui_down")
