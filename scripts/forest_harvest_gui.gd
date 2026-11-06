@@ -165,7 +165,6 @@ func setup(game: Node2D) -> void:
     mark_label = panel.get_node("MarkAction/Caption")
     panel.visible = false
     for x in [
-        ["BuildAction","KUR","pick","_place_workbench"],
         ["StationAction","TEZGAH","hammer","core:bench_from_planks"],
         ["PlankAction","TAHTA","log","core:planks_from_log"],
         ["HarvestAction","TOPLA","basket","_try_harvest"]
