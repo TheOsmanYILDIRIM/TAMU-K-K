@@ -2,7 +2,7 @@ extends Control
 ## Touch-based, code-drawn workshop sandbox; no external image assets.
 signal closed
 const Engine = preload("res://scripts/production_engine.gd")
-var model: RefCounted
+var model
 var place_choice: OptionButton
 var module_choice: OptionButton
 var cells: Array[Button] = []
