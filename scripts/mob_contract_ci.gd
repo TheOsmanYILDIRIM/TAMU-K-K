@@ -114,6 +114,15 @@ func run() -> void:
     root.add_child(visual)
     check(visual.configure(SPECIES.rig, 0.13), "native rig build")
     if visual.installed:
+        visual.set_ground_height(17.5)
+        check(visual.position.is_equal_approx(Vector2.ZERO), "mob foot root unchanged for Y-sort")
+        check(is_equal_approx(visual.contact_shadow.position.y, -17.5), "mob shadow terrain foot")
+        check(is_equal_approx(visual.artwork.position.y, -float(SPECIES.rig.ground_y) - 17.5 / 0.13), "mob art terrain offset")
+        visual.face(Vector2(-15, 0))
+        check(visual.contact_shadow.scale.is_equal_approx(Vector2.ONE), "mob contact shadow never mirrored")
+        check(visual.get_node("Facing").scale.x < 0.0, "mob profile left-facing")
+
+    if visual.installed:
         for clip in SPECIES.rig.animations.get_animation_list():
             if clip == "RESET":
                 continue

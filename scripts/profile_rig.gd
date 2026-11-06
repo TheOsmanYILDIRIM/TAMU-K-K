@@ -1,26 +1,41 @@
 extends Node2D
-# Godot 4.6: original six PNG layers + editor-authored 23-bone numeric pose curves.
-# A mesh is deformed by joint matrices in code; NO AnimatedSprite2D or frame PNG atlases.
+# TAMU profile character — clean source-faithful numeric skinning.
+# Reconstructed independently from the editor's motion.json FK and six PNGs.
+# No Skeleton2D, Bone2D, AnimationPlayer, procedural sway, IK or foot shifting.
+# Each authored frame is evaluated exactly; mesh topology and textures persist.
 const ROOT := "res://assets/profile_character/"
+const SOURCE_SCALE := 0.067
+const SOURCE_GROUND_Y := 665.0
+const SKIN_HZ := 30.0
+# Source walk is 48 frames x 34ms. Its full left/right step cycle covers
+# ~96 projected pixels after authored leg poses were widened about 3x. Advance from actual
+# movement distance instead of wall-clock to remove apparent foot skating.
+const WALK_CYCLE_SCREEN_PIXELS := 96.0
 const CLIP_ALIAS := {
     "walk": "smooth_walk", "run": "smooth_run", "idle": "idle",
-    "slash": "slash", "stab": "stab", "die": "die", "sit": "sit",
+    "slash": "slash", "stab": "stab", "die": "die", "sit": "sit"
 }
-const SOURCE_SCALE := 0.061
-const SKIN_HZ := 30.0
-const MOBILE_SKIN_HZ := 15.0
 var source: Dictionary = {}
 var bones: Array = []
-var bone_parents: Array[int] = []
-var mesh_records: Array[Dictionary] = []
 var clips: Dictionary = {}
+var mesh_records: Array[Dictionary] = []
+var bind_origins: Array[Vector2] = []
+var parents: PackedInt32Array = PackedInt32Array()
+var posed_origins: Array[Vector2] = []
+var posed_angles: PackedFloat32Array = PackedFloat32Array()
 var current_clip := "idle"
-var elapsed := 0.0
-var render_accumulator := 0.0
 var configured := false
 var draw_updates := 0
+var elapsed := 0.0
+var accumulator := 0.0
+var last_frame := -1
+
+func _point(values: Array) -> Vector2:
+    return Vector2(float(values[0]), float(values[1]))
 
 func setup() -> bool:
+    if configured:
+        return false
     var path := ROOT + "motion.json"
     if not FileAccess.file_exists(path):
         push_error("TAMU_PROFILE_MOTION_MISSING")
@@ -31,208 +46,187 @@ func setup() -> bool:
         return false
     source = parsed
     bones = source.get("bones", [])
-    if bones.size() != 23 or source.get("order", []).size() != 6 or source.get("clips", []).size() != 7:
-        push_error("TAMU_PROFILE_RIG_TOPOLOGY_INVALID")
+    var order: Array = source.get("order", [])
+    var definitions: Array = source.get("clips", [])
+    if bones.size() != 23 or order.size() != 6 or definitions.size() != 7:
+        push_error("TAMU_PROFILE_SOURCE_TOPOLOGY_FAILED")
         return false
-    bone_parents.clear()
-    var names: Array[String] = []
-    for b in bones:
-        if not b is Dictionary or not b.has("bind_start") or not b.has("bind_end"):
+    var by_name: Dictionary = {}
+    for i in range(bones.size()):
+        var bone: Dictionary = bones[i]
+        if not bone.has("bind_start") or not bone.has("bind_end"):
             return false
-        var parent_name := str(b.get("parent", ""))
-        var index := names.find(parent_name) if not parent_name.is_empty() and parent_name != "<null>" else -1
-        if b.get("parent") != null and index < 0:
-            push_error("TAMU_PROFILE_RIG_PARENT_ORDER_INVALID")
-            return false
-        bone_parents.append(index)
-        names.append(str(b["name"]))
-    for clip in source["clips"]:
-        if not clip is Dictionary or clip.get("frames", []).is_empty():
-            return false
-        var key := str(clip["id"])
-        if clips.has(key):
-            return false
-        for frame in clip["frames"]:
-            if frame.get("a", []).size() != 23 or frame.get("root", []).size() != 2:
+        var parent_name: Variant = bone.get("parent")
+        var parent_index := -1
+        if parent_name != null:
+            parent_index = int(by_name.get(str(parent_name), -1))
+            if parent_index < 0:
+                push_error("TAMU_PROFILE_PARENT_ORDER_FAILED")
                 return false
-        clips[key] = clip
-    if clips.size() != 7:
-        return false
-    for name in source["order"]:
-        var path_png := ROOT + str(name) + ".png"
-        if not ResourceLoader.exists(path_png):
-            push_error("TAMU_PROFILE_ORIGINAL_PART_MISSING " + path_png)
+        parents.append(parent_index)
+        bind_origins.append(_point(bone["bind_start"]))
+        posed_origins.append(Vector2.ZERO)
+        by_name[str(bone["name"])] = i
+    posed_angles.resize(bones.size())
+    var meshes: Dictionary = source.get("meshes", {})
+    for name_value in order:
+        var name: String = str(name_value)
+        var filename := ROOT + name + ".png"
+        if not ResourceLoader.exists(filename) or not meshes.has(name):
+            push_error("TAMU_PROFILE_PART_MISSING " + filename)
             return false
-        var tex: Texture2D = load(path_png)
-        if tex == null:
+        var texture: Texture2D = load(filename)
+        var mesh: Dictionary = meshes[name]
+        var points: Array = mesh.get("bind_vertices", [])
+        var uv: Array = mesh.get("uv", [])
+        var influence: Array = mesh.get("vertex_influences", [])
+        var triangles: Array = mesh.get("triangles", [])
+        if texture == null or points.is_empty() or points.size() != uv.size() or points.size() != influence.size():
+            push_error("TAMU_PROFILE_MESH_INVALID " + name)
             return false
-        var mesh_data: Dictionary = source["meshes"].get(name, {})
-        var n: int = mesh_data.get("bind_vertices", []).size()
-        if n == 0 or mesh_data.get("uv", []).size() != n \
-                or mesh_data.get("rotation_centres", []).size() != n \
-                or mesh_data.get("vertex_influences", []).size() != n:
-            push_error("TAMU_PROFILE_SKIN_VERTICES_INVALID")
-            return false
-        var uvs := PackedVector2Array()
-        var indices := PackedInt32Array()
-        var texture_size := tex.get_size()
-        for uv in mesh_data["uv"]:
-            uvs.append(Vector2(float(uv[0]), float(uv[1])) / texture_size)
-        for tri in mesh_data["triangles"]:
+        var original := PackedVector2Array()
+        var texcoords := PackedVector2Array()
+        var weights: Array = []
+        for v in range(points.size()):
+            original.append(_point(points[v]))
+            texcoords.append(_point(uv[v]))
+            var vertex_weights: Array = []
+            var total := 0.0
+            for element in influence[v]:
+                var index := int(element[0])
+                var weight := float(element[1])
+                if index < 0 or index >= bones.size() or not is_finite(weight) or weight < 0.0:
+                    push_error("TAMU_PROFILE_WEIGHT_INVALID")
+                    return false
+                vertex_weights.append(Vector2(index, weight))
+                total += weight
+            if absf(total - 1.0) > 0.001:
+                push_error("TAMU_PROFILE_WEIGHT_SUM_FAILED")
+                return false
+            weights.append(vertex_weights)
+        var polygons: Array[PackedInt32Array] = []
+        for tri in triangles:
             if tri.size() != 3:
                 return false
-            for index in tri:
-                if int(index) < 0 or int(index) >= n:
+            var indices := PackedInt32Array()
+            for value in tri:
+                var index := int(value)
+                if index < 0 or index >= points.size():
                     return false
-                indices.append(int(index))
-        var node := MeshInstance2D.new()
-        node.name = "Original_" + str(name)
-        node.texture = tex
-        node.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-        add_child(node)
-        mesh_records.append({"node": node, "data": mesh_data, "uvs": uvs, "indices": indices, "count": n})
-    # Source 1178px-high character in ~72px Godot world profile; feet at Y~689.
+                indices.append(index)
+            polygons.append(indices)
+        var layer := Polygon2D.new()
+        layer.name = "Source_" + name
+        layer.texture = texture
+        layer.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+        layer.polygon = original
+        layer.uv = texcoords
+        layer.polygons = polygons
+        add_child(layer)
+        mesh_records.append({"node": layer, "bind": original, "weights": weights, "count": original.size()})
+    for clip_value in definitions:
+        var clip: Dictionary = clip_value
+        var frames: Array = clip.get("frames", [])
+        var key: String = str(clip.get("id", ""))
+        if key.is_empty() or frames.is_empty() or clips.has(key) or float(clip.get("ms", 0)) <= 0.0:
+            return false
+        for frame_value in frames:
+            var frame: Dictionary = frame_value
+            if frame.get("a", []).size() != bones.size() or frame.get("root", []).size() != 2:
+                return false
+        clips[key] = clip
     scale = Vector2.ONE * SOURCE_SCALE
-    position = Vector2(0.0, -689.0 * SOURCE_SCALE)
+    position = Vector2(0.0, -SOURCE_GROUND_Y * SOURCE_SCALE)
     configured = true
-    set_clip("idle")
-    _render_pose(_sample(0.0))
-    print("TAMU_PROFILE_NATIVE_RIG_READY bones=", bones.size(), " parts=", mesh_records.size(),
-        " clips=", clips.size(), " frames=310 no_spritesheet=true")
+    _show_frame(0)
+    print("TAMU_PROFILE_SOURCE_FK_ACTIVE bones=23 parts=6 clips=7 no_ik=true")
     return true
 
 func set_clip(action: String) -> void:
     var next: String = str(CLIP_ALIAS.get(action, "idle"))
-    if clips.has(next) and next != current_clip:
+    if configured and current_clip != next and clips.has(next):
         current_clip = next
         elapsed = 0.0
-        render_accumulator = 0.0
+        accumulator = 0.0
+        last_frame = -1
+        _show_frame(0)
 
-func advance(delta: float) -> void:
-    if not configured or not is_finite(delta) or delta < 0.0:
-        return
-    elapsed += minf(delta, 0.1)
-    render_accumulator += delta
-    var skin_hz := MOBILE_SKIN_HZ if OS.has_feature("mobile") else SKIN_HZ
-    if render_accumulator < 1.0 / skin_hz:
-        return
-    render_accumulator = fmod(render_accumulator, 1.0 / skin_hz)
-    _render_pose(_sample(elapsed))
+func _evaluate_frame(frame: Dictionary) -> void:
+    # Same parent-relative FK as the verified motion.json GIF renderer.
+    var angles: Array = frame["a"]
+    var root_value: Vector2 = _point(frame["root"])
+    for i in range(bones.size()):
+        var parent_index: int = parents[i]
+        var local_angle: float = float(angles[i])
+        if parent_index < 0:
+            posed_origins[i] = root_value
+            posed_angles[i] = local_angle
+        else:
+            var offset: Vector2 = bind_origins[i] - bind_origins[parent_index]
+            posed_origins[i] = posed_origins[parent_index] + offset.rotated(posed_angles[parent_index])
+            posed_angles[i] = posed_angles[parent_index] + local_angle
 
-func _frame(clip: Dictionary, index: int) -> Dictionary:
-    var frames: Array = clip["frames"]
-    var n := frames.size()
-    var j := posmod(index, n) if bool(clip["loop"]) else clampi(index, 0, n - 1)
-    return frames[j]
-
-func _wrap_angle(angle: float) -> float:
-    return atan2(sin(angle), cos(angle))
-
-func _cubic(a: float, b: float, c: float, d: float, t: float) -> float:
-    return b + 0.5 * t * (c - a + t * (2.0 * a - 5.0 * b + 4.0 * c - d \
-        + t * (3.0 * (b - c) + d - a)))
-
-func _sample(t: float) -> Dictionary:
+func _show_frame(index: int) -> void:
     var clip: Dictionary = clips[current_clip]
-    var count: int = clip["frames"].size()
-    var ms: float = float(clip["ms"])
-    var position_frame := t * 1000.0 / ms
-    position_frame = fposmod(position_frame, float(count)) if bool(clip["loop"]) \
-        else clampf(position_frame, 0.0, float(count - 1))
-    var k := floori(position_frame)
-    var ratio := position_frame - float(k)
-    var b := _frame(clip, k)
-    if ratio < 0.0000001 or str(clip.get("interpolation", "")) == "hold":
-        return b
-    var a := _frame(clip, k - 1)
-    var c := _frame(clip, k + 1)
-    var d := _frame(clip, k + 2)
-    var smooth := str(clip.get("interpolation", "")) == "smooth"
-    var root := []
-    var angles := []
-    for i in range(2):
-        root.append(_cubic(float(a["root"][i]), float(b["root"][i]),
-            float(c["root"][i]), float(d["root"][i]), ratio) if smooth else \
-            lerpf(float(b["root"][i]), float(c["root"][i]), ratio))
-    for i in range(bones.size()):
-        var bv := float(b["a"][i])
-        var av := bv + _wrap_angle(float(a["a"][i]) - bv)
-        var cv := bv + _wrap_angle(float(c["a"][i]) - bv)
-        var dv := cv + _wrap_angle(float(d["a"][i]) - float(c["a"][i]))
-        angles.append(_cubic(av, bv, cv, dv, ratio) if smooth else lerpf(bv, cv, ratio))
-    return {"root": root, "a": angles}
-
-func _solve(pose: Dictionary) -> Array[Transform2D]:
-    var transforms: Array[Transform2D] = []
-    var world_angles: Array[float] = []
-    for i in range(bones.size()):
-        var b: Dictionary = bones[i]
-        var parent: int = bone_parents[i]
-        var angle: float = float(pose["a"][i]) + (world_angles[parent] if parent >= 0 else 0.0)
-        var bind: Array = b["bind_start"]
-        var bind_at := Vector2(float(bind[0]), float(bind[1]))
-        var joint := Vector2(float(pose["root"][0]), float(pose["root"][1]))
-        if parent >= 0:
-            joint = transforms[parent] * bind_at
-        transforms.append(Transform2D(angle, joint - bind_at.rotated(angle)))
-        world_angles.append(angle)
-    return transforms
-
-func _render_pose(pose: Dictionary) -> void:
-    var matrices := _solve(pose)
+    var frames: Array = clip["frames"]
+    if index < 0 or index >= frames.size():
+        return
+    _evaluate_frame(frames[index])
     for record in mesh_records:
-        var d: Dictionary = record["data"]
-        var points := PackedVector2Array()
-        var n: int = record["count"]
-        points.resize(n)
-        for i in range(n):
-            var vertex: Array = d["bind_vertices"][i]
-            var centre: Array = d["rotation_centres"][i]
-            var influences: Array = d["vertex_influences"][i]
-            var r0 := 0.0
-            var r1 := 0.0
-            var r2 := 0.0
-            var r3 := 0.0
-            var tx := 0.0
-            var ty := 0.0
-            for entry in influences:
-                var bone_id := int(entry[0])
-                var w := float(entry[1])
-                var matrix: Transform2D = matrices[bone_id]
-                r0 += matrix.x.x * w
-                r1 += matrix.y.x * w
-                r2 += matrix.x.y * w
-                r3 += matrix.y.y * w
-                tx += matrix.origin.x * w
-                ty += matrix.origin.y * w
-            var x := float(vertex[0])
-            var y := float(vertex[1])
-            var dx := x - float(centre[0])
-            var dy := y - float(centre[1])
-            var correction := 1.0 / maxf(0.00000001, sqrt(r0 * r0 + r2 * r2)) - 1.0
-            points[i] = Vector2(r0 * x + r1 * y + tx + correction * (r0 * dx + r1 * dy),
-                r2 * x + r3 * y + ty + correction * (r2 * dx + r3 * dy))
-        var arrays := []
-        arrays.resize(Mesh.ARRAY_MAX)
-        arrays[Mesh.ARRAY_VERTEX] = points
-        arrays[Mesh.ARRAY_TEX_UV] = record["uvs"]
-        arrays[Mesh.ARRAY_INDEX] = record["indices"]
-        var mesh := ArrayMesh.new()
-        mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-        record["node"].mesh = mesh
+        var original: PackedVector2Array = record["bind"]
+        var vertex_weights: Array = record["weights"]
+        var output := PackedVector2Array()
+        output.resize(original.size())
+        for v in range(original.size()):
+            var total := Vector2.ZERO
+            for pair in vertex_weights[v]:
+                var bi: int = int(pair.x)
+                var weight: float = pair.y
+                var displaced := posed_origins[bi] + (original[v] - bind_origins[bi]).rotated(posed_angles[bi])
+                total += displaced * weight
+            output[v] = total
+        var layer: Polygon2D = record["node"]
+        layer.polygon = output
+    last_frame = index
     draw_updates += 1
 
+func advance(delta: float, projected_travel_pixels: float = 0.0) -> void:
+    if not configured or not is_finite(delta) or delta <= 0.0:
+        return
+    var clip: Dictionary = clips[current_clip]
+    var frames: Array = clip["frames"]
+    var duration: float = float(clip["ms"]) / 1000.0
+    if current_clip == "smooth_walk" or current_clip == "smooth_run":
+        # Travel is measured after collision/clamping; blocked steps add zero.
+        var travel: float = maxf(0.0, projected_travel_pixels) if is_finite(projected_travel_pixels) else 0.0
+        elapsed += (travel / WALK_CYCLE_SCREEN_PIXELS) * duration * float(frames.size())
+    else:
+        elapsed += minf(delta, 0.1)
+    accumulator += minf(delta, 0.1)
+    var index: int = floori(elapsed / duration)
+    if bool(clip["loop"]):
+        index = posmod(index, frames.size())
+    else:
+        index = mini(index, frames.size() - 1)
+    if index != last_frame and accumulator >= 1.0 / SKIN_HZ:
+        _show_frame(index)
+        accumulator = 0.0
+
+func _toe_position(index: int) -> Vector2:
+    var bone: Dictionary = bones[index]
+    var local_tip: Vector2 = _point(bone["bind_end"]) - bind_origins[index]
+    return posed_origins[index] + local_tip.rotated(posed_angles[index])
+
 func verify_contract() -> bool:
-    if not configured or bones.size() != 23 or mesh_records.size() != 6 or clips.size() != 7:
+    if not configured or bones.size() != 23 or mesh_records.size() != 6 or clips.size() != 7 or draw_updates < 1:
         return false
-    var count := 0
+    var frames_total := 0
     for clip in clips.values():
-        count += clip["frames"].size()
-    if count != 310:
+        frames_total += clip["frames"].size()
+    if frames_total != 310:
         return false
     for record in mesh_records:
-        if record["node"].mesh == null or record["node"].mesh.get_surface_count() != 1:
+        var layer: Polygon2D = record["node"]
+        if layer.texture == null or layer.polygon.size() != record["count"] or layer.get_bone_count() != 0:
             return false
-        if record["node"].mesh.surface_get_array_len(0) != record["count"]:
-            return false
-    return draw_updates > 0
+    return true

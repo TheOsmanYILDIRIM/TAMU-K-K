@@ -111,3 +111,43 @@ func credit_harvest(event: Dictionary) -> Dictionary:
         return {"ok": false, "status": "invalid_preview"}
     applied[transaction_id] = true
     return {"ok": true, "status": "credited"}
+
+# Runtime slot operations: no save schema migration. These accept only the
+# existing v1 stack shape. Stateful/unstackable instance metadata needs its
+# own versioned save migration before being enabled.
+static func _plain_stack(entry: Dictionary) -> bool:
+    return entry.size() == 2 and entry.has("def_id") and entry.has("count")
+
+func move_stack(from_slot: int, to_slot: int, quantity: int) -> Dictionary:
+    if from_slot < 0 or from_slot >= capacity or to_slot < 0 or to_slot >= capacity or from_slot == to_slot:
+        return {"ok": false, "status": "invalid_slot"}
+    if quantity <= 0:
+        return {"ok": false, "status": "invalid_quantity"}
+    var staged: Array = preview()
+    if not validate_preview(staged):
+        return {"ok": false, "status": "invalid_inventory"}
+    var source: Variant = staged[from_slot]
+    if not source is Dictionary or not _plain_stack(source):
+        return {"ok": false, "status": "invalid_source"}
+    if quantity > int(source["count"]):
+        return {"ok": false, "status": "insufficient_items"}
+    var target: Variant = staged[to_slot]
+    if target == null:
+        staged[to_slot] = {"def_id": source["def_id"], "count": quantity}
+    elif target is Dictionary:
+        if not _plain_stack(target):
+            return {"ok": false, "status": "unsupported_instance_state"}
+        if str(target["def_id"]) != str(source["def_id"]):
+            return {"ok": false, "status": "incompatible_stack"}
+        var available: int = catalog.max_stack(str(source["def_id"])) - int(target["count"])
+        if quantity > available:
+            return {"ok": false, "status": "stack_full"}
+        target["count"] = int(target["count"]) + quantity
+    else:
+        return {"ok": false, "status": "invalid_target"}
+    source["count"] = int(source["count"]) - quantity
+    if int(source["count"]) == 0:
+        staged[from_slot] = null
+    if not commit_preview(staged):
+        return {"ok": false, "status": "invalid_preview"}
+    return {"ok": true, "status": "moved", "quantity": quantity}

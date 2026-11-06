@@ -1,6 +1,14 @@
 extends CanvasLayer
+signal isolation_requested(mode: String)
+# Same full authored scene, one subsystem changed at a time.
+const ISOLATION_MODES = ["full", "mob_visual_off", "mob_ai_off",
+    "mob_all_off", "solar_off", "objects_off", "terrain_off", "player_rig_off"]
+var isolation_mode := "full"
+var isolation_elapsed := 0.0
+var isolation_sequence := 0
+var isolation_label: Label
 # JSONL perf telemetry. Sampling never blocks rendering with filesystem writes.
-const LIMIT := 1200
+const LIMIT := 5000
 var samples: Array[Dictionary] = []
 var last_sample_usec := 0
 var seconds := 0.0
@@ -50,9 +58,36 @@ func _ready() -> void:
         toggle_button.text = "GİZLE" if values.visible else "GÖSTER"
     )
     buttons.add_child(toggle_button)
+    var iso_row := HBoxContainer.new()
+    stack.add_child(iso_row)
+    var iso_button := Button.new()
+    iso_button.name = "IsolationCycle"
+    iso_button.text = "İZOLASYON ▶"
+    iso_button.pressed.connect(next_isolation_mode)
+    iso_row.add_child(iso_button)
+    isolation_label = Label.new()
+    isolation_label.name = "IsolationMode"
+    isolation_label.text = "full"
+    iso_row.add_child(isolation_label)
     status = Label.new()
     status.text = "JSONL • RAM buffer"
     stack.add_child(status)
+
+func next_isolation_mode() -> void:
+    var index: int = ISOLATION_MODES.find(isolation_mode)
+    isolation_requested.emit(ISOLATION_MODES[(index + 1) % ISOLATION_MODES.size()])
+
+func set_isolation_mode(mode: String) -> void:
+    if not ISOLATION_MODES.has(mode) or isolation_mode == mode:
+        return
+    isolation_mode = mode
+    isolation_elapsed = 0.0
+    isolation_sequence += 1
+    if isolation_label != null:
+        isolation_label.text = mode
+    if status != null:
+        status.text = "15 sn sabit dur; sonra diğer profil. Sonunda LOG İNDİR."
+    print("TAMU_PERF_ISOLATION profile=", mode, " sequence=", isolation_sequence)
 
 func reset_logs() -> void:
     samples.clear()
@@ -68,7 +103,8 @@ func _percentile(data: Array[float], percentile: float) -> float:
     ordered.sort()
     return ordered[clampi(ceili(percentile * ordered.size())-1,0,ordered.size()-1)]
 
-func record(delta: float, terrain_chunks: int, available_chunks: int, objects: int, vertices: int, actor_position: Vector2, streaming_usec: int, rig_usec: int, mode: String) -> void:
+func record(delta: float, terrain_chunks: int, available_chunks: int, objects: int, vertices: int, actor_position: Vector2, streaming_usec: int, rig_usec: int, mode: String, mob_usec: int = 0, mob_think_usec: int = 0, mob_scan_usec: int = 0,
+        mob_nav_usec: int = 0, mob_move_usec: int = 0) -> void:
     if not enabled:
         return
     count += 1
@@ -83,6 +119,12 @@ func record(delta: float, terrain_chunks: int, available_chunks: int, objects: i
         "fps_engine": Engine.get_frames_per_second(),
         "streaming_main_ms": snappedf(streaming_usec/1000.0,0.001),
         "rig_main_ms": snappedf(rig_usec/1000.0,0.001),
+        # MobWorld has process_priority=10; one-frame lag versus main._process.
+        "mob_cpu_ms_previous_frame": snappedf(float(mob_usec)/1000.0,0.001),
+        "mob_think_ms_previous_frame": snappedf(float(mob_think_usec)/1000.0,0.001),
+        "mob_resource_scan_ms_previous_frame": snappedf(float(mob_scan_usec)/1000.0,0.001),
+        "mob_navigation_ms_previous_frame": snappedf(float(mob_nav_usec)/1000.0,0.001),
+        "mob_movement_ms_previous_frame": snappedf(float(mob_move_usec)/1000.0,0.001),
         "chunks_loaded": terrain_chunks,
         "chunks_available": available_chunks,
         "objects_total": objects,
@@ -90,6 +132,9 @@ func record(delta: float, terrain_chunks: int, available_chunks: int, objects: i
         "actor_x": snappedf(actor_position.x,0.01),
         "actor_y": snappedf(actor_position.y,0.01),
         "scenario": mode,
+        "isolation_profile": isolation_mode,
+        "isolation_sequence": isolation_sequence,
+        "isolation_elapsed_ms": snappedf(isolation_elapsed * 1000.0, 1.0),
         "draw_calls": Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
         "render_objects": Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME),
         "static_memory_bytes": Performance.get_monitor(Performance.MEMORY_STATIC),
@@ -100,9 +145,11 @@ func record(delta: float, terrain_chunks: int, available_chunks: int, objects: i
     if samples.size() > LIMIT:
         samples.pop_front()
     seconds += delta
+    isolation_elapsed += delta
     if count % 30 == 0:
         var frames: Array[float] = []
-        for entry in samples:
+        # Keep all 5000 export entries; sort only 120 recent samples for HUD.
+        for entry in samples.slice(maxi(0, samples.size() - 120)):
             frames.append(float(entry["frame_ms"]))
         p95_ms = _percentile(frames,0.95)
         p99_ms = _percentile(frames,0.99)
@@ -171,7 +218,10 @@ func test_gate() -> bool:
     if samples.size() < 30:
         return false
     for row in samples:
-        if row["schema"] != "tamu.perf.godot.v1" or not row.has("streaming_main_ms"):
+        if row["schema"] != "tamu.perf.godot.v1" or not row.has("streaming_main_ms") \
+                or not row.has("mob_resource_scan_ms_previous_frame") \
+                or not row.has("mob_navigation_ms_previous_frame") \
+                or not row.has("mob_movement_ms_previous_frame"):
             return false
     var records := build_jsonl().split("\n", false)
     if records.size() != samples.size():

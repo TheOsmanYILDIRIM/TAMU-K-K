@@ -1,6 +1,6 @@
 {
   "format": "tamu-native-profile-source/v1",
-  "description": "User-supplied original Rigby six transparent PNG layers + mobile editor 23-bone weighted meshes and sampled numeric pose curves. No spritesheet playback.",
+  "description": "Original Rigby six PNG layers and 23-bone editor meshes; walk/run numeric animation frames retargeted for threefold stride reach (anatomically bounded). Pristine motion.json remains in the uploaded Tamu Karakter.zip and Git history; no runtime IK.",
   "original_rigby_sha256": "5745eed01a8b78d604bdbd5d2e72f58f9fc0e8790762ce337e41a8c2086b6d07",
   "editor_rigId": "5745eed01a8b78d604bdbd5d2e72f58f9fc0e8790762ce337e41a8c2086b6d07",
   "source_images_sha256": {
@@ -11,7 +11,7 @@
     "05_sag_bacak.png": "32b56a30507173739b412b4e0dff09c931b461d25d1793642926564f2f5fb554",
     "06_govde.png": "24696e3ee29f2b17b2143e6de360686473c76333ad0d4055887cdc7d1ba52747"
   },
-  "motion_sha256": "6f23953105bc435db2e27ffb75ef0f1614f73a04406d2d0c0f497f6dc8a40f7d",
+  "motion_sha256": "fd7b60ad5612f8e9c0c719200b1a355cb16c0b07853759051a2d5b7f17392dda",
   "bones": 23,
   "parts": 6,
   "clips": {

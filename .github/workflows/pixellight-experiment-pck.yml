@@ -1,0 +1,106 @@
+name: PixelLight 2D isolated PCK (Godot 4.6)
+on:
+  push:
+    branches:
+      - experiment/pixellight2d-godot46-20261103
+    paths:
+      - 'addons/pixel_light_2d/**'
+      - 'scenes/pixellight_experiment.tscn'
+      - 'scripts/pixellight_experiment.gd'
+      - 'scripts/pixellight_world.gd'
+      - 'scripts/world_projection.gd'
+      - '.github/workflows/pixellight-experiment-pck.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated_pck:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4.6 and export templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=https://github.com/godotengine/godot-builds/releases/download/4.6-stable
+          curl -fL --retry 3 "$BASE/Godot_v4.6-stable_linux.x86_64.zip" -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.6-stable_linux.x86_64
+          sudo install /tmp/Godot_v4.6-stable_linux.x86_64 /usr/local/bin/godot
+          curl -fL --retry 3 "$BASE/Godot_v4.6-stable_export_templates.tpz" -o /tmp/templates.tpz
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.6.stable"
+          mkdir -p /tmp/pixellight-templates
+          unzip -q /tmp/templates.tpz -d /tmp/pixellight-templates
+          cp /tmp/pixellight-templates/templates/* "$HOME/.local/share/godot/export_templates/4.6.stable/"
+      - name: Build isolated experiment and validate export
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/tamu-pixellight/src/{addons,scripts,scenes}
+          cp -a addons/pixel_light_2d /tmp/tamu-pixellight/src/addons/
+          cp scenes/pixellight_experiment.tscn /tmp/tamu-pixellight/src/scenes/
+          cp scripts/pixellight_experiment.gd /tmp/tamu-pixellight/src/scripts/
+          cp scripts/pixellight_world.gd scripts/world_projection.gd /tmp/tamu-pixellight/src/scripts/
+          cat > /tmp/tamu-pixellight/src/project.godot <<'EOF'
+          config_version=5
+          [application]
+          config/name="TAMU PixelLight isolated experiment"
+          run/main_scene="res://scenes/pixellight_experiment.tscn"
+          config/features=PackedStringArray("4.6", "GL Compatibility")
+          [rendering]
+          renderer/rendering_method="gl_compatibility"
+          renderer/rendering_method.mobile="gl_compatibility"
+          EOF
+          cat > /tmp/tamu-pixellight/src/export_presets.cfg <<'EOF'
+          [preset.0]
+          name="Android"
+          platform="Android"
+          runnable=false
+          advanced_options=false
+          dedicated_server=false
+          custom_features=""
+          export_filter="all_resources"
+          include_filter=""
+          exclude_filter=""
+          export_path=""
+          script_export_mode=2
+          EOF
+          cd /tmp/tamu-pixellight/src
+          godot --headless --editor --path . --import --quit 2>&1 | tee /tmp/pixellight-import.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:' /tmp/pixellight-import.log; then exit 1; fi
+          # Execute the genuine addon under the production GL Compatibility renderer.
+          # Snapshot is a desktop CI visual smoke, not an Android FPS result.
+          TAMU_PIXELLIGHT_TEST=1 timeout --kill-after=3s 50s \
+            xvfb-run -a -s '-screen 0 720x540x24' godot --path . \
+            --rendering-method gl_compatibility --resolution 720x540 --quit-after 90 \
+            2>&1 | tee /tmp/pixellight-visual.log
+          grep -q 'TAMU_PIXELLIGHT_VISUAL_OK' /tmp/pixellight-visual.log
+          grep -q 'TAMU_PIXELLIGHT_ATLAS_BRIDGE_OK' /tmp/pixellight-visual.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:' /tmp/pixellight-visual.log; then exit 1; fi
+          test -s /tmp/tamu-pixellight-preview.png
+          mkdir -p "$GITHUB_WORKSPACE/build"
+          cp /tmp/tamu-pixellight-preview.png "$GITHUB_WORKSPACE/build/pixellight-preview.png"
+          godot --headless --path . --export-pack Android "$GITHUB_WORKSPACE/build/tamu-pixellight-isolated.pck" 2>&1 | tee /tmp/pixellight-export.log
+          test -s "$GITHUB_WORKSPACE/build/tamu-pixellight-isolated.pck"
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path(__import__('os').environ['GITHUB_WORKSPACE'])/'build/tamu-pixellight-isolated.pck'
+          b=p.read_bytes()
+          assert b[:4]==b'GDPC'
+          assert b'pixellight_experiment' in b
+          assert b'pixel_light.gd' in b or b'pixel_light.gdc' in b
+          assert b'pixellight_world.gd' in b or b'pixellight_world.gdc' in b
+          print('PIXELLIGHT_PCK_CONTENT_OK',len(b))
+          PY
+          mkdir -p /tmp/pixellight-isolated-boot
+          cd /tmp/pixellight-isolated-boot
+          timeout --kill-after=3s 30s godot --headless --main-pack "$GITHUB_WORKSPACE/build/tamu-pixellight-isolated.pck" --quit-after 15 2>&1 | tee /tmp/pixellight-boot.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|ERROR:' /tmp/pixellight-boot.log; then exit 1; fi
+          sha256sum "$GITHUB_WORKSPACE/build/tamu-pixellight-isolated.pck" > "$GITHUB_WORKSPACE/build/SHA256SUMS"
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: tamu-pixellight-isolated-pck
+          path: build/
+          if-no-files-found: error

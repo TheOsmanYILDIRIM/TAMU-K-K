@@ -3,10 +3,14 @@ extends RefCounted
 # Terrain water/slope semantics are not contained in the compiled visual meshes:
 # unverified building footprints fail closed rather than fabricate dry land.
 const ROOT := "res://chunks/"
+# Stable authored obstacle broadphase: immutable grid, dynamic depleted filtering.
+const OBSTACLE_CELL := 256.0
+const MAX_QUERY_CELLS := 64
 const WorldProjection = preload("res://scripts/world_projection.gd")
 const Surface = preload("res://scripts/r2_surface.gd")
 var records: Dictionary = {}
 var boxes: Array[Dictionary] = []
+var obstacle_cells: Dictionary = {}
 var depleted_ids: Dictionary = {}
 var region_id := ""
 var source_run_id := -1
@@ -70,9 +74,28 @@ func initialize() -> bool:
         return false
     records = next_records
     boxes = next_boxes
+    obstacle_cells = _index_obstacles(next_boxes)
     region_id = str(region.get("region_id", ""))
     source_run_id = int(region["source_run_id"])
     return not region_id.is_empty()
+
+func _index_obstacles(source: Array[Dictionary]) -> Dictionary:
+    # Each rectangle is inserted into every touched 256-unit source cell.
+    # Queries then examine only candidates in the touched cells, not all 832.
+    var out: Dictionary = {}
+    for i in range(source.size()):
+        var item: Dictionary = source[i]
+        var lo_x := floori(float(item["x"]) / OBSTACLE_CELL)
+        var lo_y := floori(float(item["y"]) / OBSTACLE_CELL)
+        var hi_x := floori((float(item["x"]) + float(item["w"])) / OBSTACLE_CELL)
+        var hi_y := floori((float(item["y"]) + float(item["h"])) / OBSTACLE_CELL)
+        for cy in range(lo_y, hi_y + 1):
+            for cx in range(lo_x, hi_x + 1):
+                var key := Vector2i(cx, cy)
+                if not out.has(key):
+                    out[key] = []
+                out[key].append(i)
+    return out
 
 func matches_object(item: Dictionary) -> bool:
     var id := str(item.get("id", ""))
@@ -87,11 +110,36 @@ func matches_object(item: Dictionary) -> bool:
 func obstacles(x1: float, y1: float, x2: float, y2: float) -> Array:
     if not is_finite(x1) or not is_finite(y1) or not is_finite(x2) or not is_finite(y2):
         return [{"x": 0, "y": 0, "w": INF, "h": INF}]
+    if x2 < x1 or y2 < y1:
+        return []
+    var lo_x := floori(x1 / OBSTACLE_CELL)
+    var lo_y := floori(y1 / OBSTACLE_CELL)
+    var hi_x := floori(x2 / OBSTACLE_CELL)
+    var hi_y := floori(y2 / OBSTACLE_CELL)
+    var candidate_indices: Array[int] = []
+    # Huge area queries keep the original exhaustive semantics without
+    # enumerating millions of empty cells.
+    if obstacle_cells.is_empty() or (hi_x - lo_x + 1) * (hi_y - lo_y + 1) > MAX_QUERY_CELLS:
+        for i in range(boxes.size()):
+            candidate_indices.append(i)
+    else:
+        var visited: Dictionary = {}
+        for cy in range(lo_y, hi_y + 1):
+            for cx in range(lo_x, hi_x + 1):
+                for i in obstacle_cells.get(Vector2i(cx, cy), []):
+                    if not visited.has(i):
+                        visited[i] = true
+                        candidate_indices.append(i)
+        candidate_indices.sort()
     var found: Array = []
-    for item in boxes:
+    # Preserve the original source ordering and exact rectangle intersection.
+    # Depletion is checked live; harvesting never leaves stale collision.
+    for i in candidate_indices:
+        var item: Dictionary = boxes[i]
         if depleted_ids.has(str(item["id"])):
             continue
-        if item["x"] < x2 and item["x"]+item["w"] > x1 and item["y"] < y2 and item["y"]+item["h"] > y1:
+        if item["x"] < x2 and item["x"] + item["w"] > x1 \
+                and item["y"] < y2 and item["y"] + item["h"] > y1:
             found.append(item)
     return found
 

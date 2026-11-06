@@ -130,3 +130,170 @@ GitHub Actions'taki `LOVE Stage 5 inventory crafting building` workflow'u Lua 5.
 ## 🎨 Obje texture sürüm arşivi (Google Drive)
 
 GPT Image kaynakları, Python ile işlenmiş adaylar ve izometrik kontrol görsellerinin **tüm sürümleri** Drive'daki [Texture_Archive](https://drive.google.com/drive/folders/1n3nkFdX3rPluAHU5aS95Ci5nYBp8_CHe) altında obje kimliğine göre saklanır. [Üretim/kalite yönergesi](TEXTURE_PRODUCTION_GUIDE.md) ve [Python hazırlama aracı](scripts/texture_prepare.py). Zemin texture'ları tamamlanmıştır; yeni üretim kapsamı mevcut ağaç ve kaya objeleridir. Drive saklama işlemi otomatik senkronize değildir; her onaylı kaynak/aday yüklenip dosya kimliği ve SHA-256 manifestte doğrulanmalıdır. Drive klasörü oyun runtime bağımlılığı değildir.
+
+---
+
+## TAMU bina PNG üretimi — iki referans, 3×3 teknik izometrik standart (2026-11-06)
+
+> **Durum:** Görsel üretimi için belgelenmiş tasarım/deney standardı. İki referanslı 3×3 bina yaklaşımı kullanıcı tarafından beğenildi; bütün PNG üretimlerinin matematiksel doğruluğu, gerçek Android görüntüsü, nihai collision/interior entegrasyonu **henüz doğrulanmış değildir**. Bu bölüm kaynak oyunun canlı davranışını değiştirmez.
+
+### 1. Neden bu üretim yöntemine geçildi?
+
+Önceki TAMU inşaat prototipi, temel/duvar/kapı/pencere/çatı parçalarını ayrı sprite'larla birleştiriyordu; 19 parça tanımı ve 4 rotasyonda 76 görsel üretiliyordu. Bu, görsel birleşim, ölçek, üst üste çizilme ve mobil yerleştirme sorunları yarattı. Yeni **hedef mimari** dış dünyada tek izometrik PNG ile temsil edilen, metadata üzerinden footprint/kapı/çarpışma/interior bilgisi taşıyan, seviye bazlı binalardır. Çit gibi serbest objeler daha sonra bağımsız olabilir. **Henüz uygulanmış yeni oyun mekaniği değildir.**
+
+İlk üretimlerde yalnızca TAMU harita görseli referans alınarak bir ahşap kulübe istendi. Evde bazı dış duvar/çatı kenarları doğru izometrik yöne yaklaşırken kapılı ön cephe ve kimi çatı çizgileri farklı perspektife kaydı. Bunun nedeni promptun fotoğrafik üç çeyrek perspektifi tamamen dışlayamaması ve harita görselinin *stil* sağlamasına karşın kesin geometri şablonu sunmamasıydı. HTML'deki grid sorunun kök nedeni değildi; hatalı geometri PNG'nin içinde oluşturulmuştu.
+
+### 2. Her üretimde iki ayrı görsel referans
+
+**Ref A — TAMU harita/stil referansı:** Kullanıcının sohbette verdiği `harita_Ref.png` (ve aynı dünya stilini gösteren oyun görüntüleri). Referansın görevi yalnızca atmosfer/renk paleti, 2.5D dünya hissi, yumuşak ışık, materyal yoğunluğu, dokusal ayrıntı ve genel nesne stilini belirlemektir. Kaynak görsel kullanıcı girdisidir; bu rehber dosyanın GitHub'a yüklendiğini ileri sürmez. Harita ekranındaki UI, zemin veya başka objeler bina PNG'sine taşınmaz.
+
+**Ref B — 3×3 teknik izometrik referans:** Sohbette **SVG kodu** verilerek oluşturulması tarif edilen teknik `isometric_ref_3x3.svg` şablonu. Bu referansın işlevi estetik değil, **kamera eksenleri**, paralel çizgiler, çatının iki kenarı ve taban footprint'inin değişmez yönünü kilitlemektir. SVG'nin kendisi bu commit'e eklenmemiştir. Önceki sohbette yazılan örnek SVG kodunun bütün iç grid çizgilerinin koordinatları bir testle onaylanmadığından, üretimde kanonik ölçüt olarak aşağıdaki matematiksel projeksiyon kullanılmalıdır.
+
+**Referans önceliği:** Ref B geometri için kesin kaynak; Ref A görsel stil için kesin kaynak. İkisi birlikte model girdisi olmalı. Ref A tek başına perspektif/footprint kısıtı olarak değerlendirilmemeli.
+
+### 3. Matematiksel koordinat ve ölçek sözleşmesi
+
+TAMU kodundaki `scripts/world_projection.gd` ile uyumlu dünya → ekran izdüşümü:
+
+```text
+screen_x = 0.70710678118 * (world_x - world_y)
+screen_y = 0.35355339059 * (world_x + world_y)
+screen_z = -world_height_screen_offset  # düşey doğrultu: x değişmez
+```
+
+Dolayısıyla **+X dünya ekseni** sağa 2, aşağı 1 oranıyla; **+Y dünya ekseni** sola 2, aşağı 1 oranıyla ilerler. Ekrandaki zemin izdüşümü her iki yatay eksende mutlak **0.5 eğim** taşır. Fotoğrafik perspektif yakınsaması, vanishing point, lens distorsiyonu, serbest kamera rotasyonu **yasaktır**. Düşey bina köşeleri her zaman dikey; mahya/saçak/pencere üstleri/kapı yatay çizgileri, ait oldukları dünya yatay eksenine paralel olmalıdır.
+
+Bir dünya hücresi = **32 world unit**. Başlangıç kulübesinin footprint'i **3×3 hücre = 96×96 world unit**. Matematiksel gridin dört dünya köşesi `(0,0), (96,0), (96,96), (0,96)` olarak tanımlanır; bu noktalar yukarıdaki formülle projekte edilerek tam simetrik bir eşkenar dörtgen verir. Görselin RGBA tuvalinin **1024×1024 olması asla tek başına 3×3 ölçeği garanti etmez**: sprite taban teması, kapı, pivot ve görsel-to-world ölçek metadata ile kalibre edilmeli. Dünya verilerindeki footprint ile yalnızca PNG şeffaf boşluğu aynı kavram değildir.
+
+İnsan ölçeği testi: oyunun referans karakter görünür yüksekliği yaklaşık **72 oyun-ekran pikselidir** (ilgili canlı görüntü ve kamera zoom'una bağlı); kapı kullanılabilir yükseklikte, duvar ve çatı karakterden büyük/gerçekçi görünmelidir. **İnsanın yarısı kadar görünen ev reddedilir.** Ağaç boyu tek başına güvenilir ölçek kıstası değildir. 1024 kaynak PNG, oyun içinde gerektiğinde uygun filtreyle küçültülecek *kaynak görseldir*; geometrik projeksiyonu veya footprint'i değiştirmek için keyfî sprite esnetmesi yapılmaz.
+
+### 4. Ref B teknik şablonunu kodla yeniden üretme
+
+Aşağıdaki Python 3 kodu üçüncü taraf paket kullanmadan, **kontrol edilebilir 3×3 SVG** üretir. Kodda `tile=32`, eksen ölçeği `s=2.5`: projeksiyon katsayıları, dünyadaki 32 birimlik hücreye görselde 80 piksel genişlik ve 40 piksel yükseklik düşecek şekilde ortak çarpanla büyütülür. Bu, perspektif değişikliği değil, tekdüze ekran çözünürlüğü ölçeklemesidir. Çıktı `isometric_ref_3x3.svg` dosyasıdır.
+
+```python
+from pathlib import Path
+
+TILE = 32
+ZOOM = 2.5
+CX, CY = 512, 440
+def iso(ix, iy, z=0):
+    wx, wy = ix * TILE, iy * TILE
+    return (
+        round(CX + 0.70710678118 * (wx - wy) * ZOOM),
+        round(CY + 0.35355339059 * (wx + wy) * ZOOM - z * ZOOM),
+    )
+def pt(ix, iy):
+    x, y = iso(ix, iy)
+    return f"{x},{y}"
+parts = ['<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">',
+         '<rect width="1024" height="1024" fill="#f7f7f4"/>']
+# Her satır tam olarak izometrik X/Y akslarına paralel çizilir.
+for i in range(4):
+    parts.append(f'<polyline points="{pt(i,0)} {pt(i,3)}" stroke="#777" stroke-width="2" fill="none"/>')
+    parts.append(f'<polyline points="{pt(0,i)} {pt(3,i)}" stroke="#777" stroke-width="2" fill="none"/>')
+corners = " ".join([pt(0,0), pt(3,0), pt(3,3), pt(0,3)])
+parts.append(f'<polygon points="{corners}" stroke="#386a4a" stroke-width="5" fill="#b5d5a7" fill-opacity="0.18"/>')
+x0, y0 = iso(0,0)
+parts.append(f'<line x1="{x0}" y1="{y0}" x2="{x0}" y2="{y0-230}" stroke="#4f9d63" stroke-width="4"/>')
+parts.append('</svg>')
+Path("isometric_ref_3x3.svg").write_text("\n".join(parts), encoding="utf-8")
+```
+
+Bu koda göre Ref B, **temel/cephe yönlerinin sabit geometrik rehberi** olarak modele eklenir; oyun sprite'ının içine çizilmez. Teknik doğrulamada gridin iç çizgileri yeniden projeksiyon formülüyle karşılaştırılır.
+
+### 5. Ana üretim promptu (İngilizce, model girdisi)
+
+Aşağıdaki **ORTAK PROMPT** her bina çeşidinde aynıdır. Ardından 6. bölümden **tek** yapı türü tanımı eklenir. Bütün çeşitlemelerde iki referansı da yeniden yüklemek gerekir:
+
+```text
+Using two provided references, create EXACTLY ONE standalone TAMU exterior isometric game building sprite.
+
+REFERENCE A: TAMU MAP STYLE. Match the natural forest-survival world,
+earthy material palette, texture density, lighting softness, and edge treatment.
+REFERENCE B: CODE-GENERATED 3x3 ISOMETRIC GRID. Treat this as the strict,
+higher-priority geometric contract for all axes, facade edges and footprint.
+Do not copy any part of either reference into the resulting image.
+
+CAMERA: Fixed orthographic 2.5D isometric projection. Ground-plane world
+X maps to screen (right 2, down 1); world Y maps to (left 2, down 1).
+Both projected horizontal world axes have slopes +0.5 and -0.5.
+All vertical edges remain perfectly vertical. NO vanishing points,
+NO lens perspective, NO converging lines, NO front-facade skew.
+Foundation, front/side walls, roof ridge, roof eaves, window frames
+and door structure must use exactly the SAME shared axes.
+Show the roof and the TWO exterior walls visible from Reference B.
+
+WORLD SCALE: Exactly 3x3 placement footprint, one cell = 32 TAMU world units,
+base = 96x96 world units. Entire ground-contact perimeter follows Reference B.
+The building is realistically habitable relative to a standing game character.
+Its front-facing entrance must be a plausible human-sized door.
+No miniature toy proportions, no floating base.
+
+MATERIAL AND ARCHITECTURE: [INSERT ONE OF SIX SUBJECT VARIANTS BELOW]
+
+OUTPUT: ONE full building sprite only, transparent RGBA PNG, 1024x1024
+source resolution, no background, terrain, grass, shadows baked into a
+ground plane, trees, rocks, props, fences, people, UI, text or labels.
+Keep the entire roof and foundation visible. No cropping. Keep camera
+and footprint identical for every building of this series.
+
+FINAL SELF-CHECK: Both ground axes are exactly symmetric (slope ±0.5).
+All roof and wall horizontal edges are parallel to one of those axes;
+all verticals are perfectly vertical. The door sits in a correct facade.
+If any original visual styling conflicts with strict geometry,
+correct the geometry instead of preserving the distortion.
+```
+
+### 6. Altı farklı bina türü: ortak prompt + SUBJECT VARIANT
+
+| Model | Seviye/kullanım | Promptun `MATERIAL AND ARCHITECTURE` kısmına eklenecek metin |
+|---|---|---|
+| **Ahşap kulübe** | Lv1 / başlangıç evi | `Level 1 wooden survival cabin. Rough plank walls, sturdy corner timber posts, hand-built stone foundations, low weathered gable roof, one front-facing wooden entrance, two small glazed windows. Modest realistically habitable compact form; no toy proportions.` |
+| **Taş ev** | Lv2 / dayanıklı konut | `Level 2 stone cottage. Uneven hand-set masonry walls, reinforced timber framing, weathered slate-and-wood pitched roof, solid front door, small windows and a modest stone chimney. Keep the entire roof within the same 3x3 footprint logic.` |
+| **Avcı evi** | Lv2 / orman barınağı | `Level 2 hunter's lodge. Dark aged timber, prominent log beam joints, moss-stained shingles, modest protected doorway, small front and side windows, restrained rustic framing and sturdy stone footings. No antlers, animals or loose props.` |
+| **Marangoz atölyesi** | Yapı / üretim | `Compact woodworker's workshop. Reinforced wooden walls, a wider front entrance for handling lumber, functional pitched roof, stone footings, discrete ventilation and one side window. Practical construction. No exterior equipment piles, signs or loose tools.` |
+| **Depo** | Yapı / saklama | `Compact survival storehouse. Heavy horizontal timber boards, front double loading doors, steep weatherproof roof, reinforced stone plinth, small high ventilation openings. Secure simple utilitarian silhouette, still exactly 3x3, never an enormous warehouse.` |
+| **Gelişmiş ev** | Lv3 / gelişmiş konut | `Level 3 upgraded survival home. Carefully fitted timber, dressed stone foundation, fine wooden siding, weathered shingle roof, sturdy framed front entrance and tasteful modest glazed windows. Better craftsmanship, not a castle, palace or oversized building.` |
+
+Bu altı prompt **altı farklı dış mimari görsel** üretir; her birinin 3×3 footprint'i, kamera yönü ve grid aksları aynıdır. Gerçek seviye (Lv1–Lv3) yapısal yetkileri, malzeme maliyetleri, interior kapasitesi, dayanıklılık ve oyun dengesinin bu görsel taslakla tanımlandığı **iddia edilmez**.
+
+### 7. PNG teslimi ve oyun verisi sözleşmesi
+
+Minimum önerilen bir yapı tanımı (gelecek tasarım; şu anda aktif şema değildir):
+
+```json
+{
+  "id": "tamu:house_wood_lv1",
+  "level": 1,
+  "exterior_png": "house_wood_lv1.png",
+  "canvas_px": [1024, 1024],
+  "footprint_cells": [3, 3],
+  "cell_world_units": 32,
+  "pivot_px": null,
+  "door_world_offset": null,
+  "collision_polygon_world": null,
+  "interior_id": null
+}
+```
+
+`null` değerler **bilinçli olarak ölçülmemiş** bağlantı alanlarıdır; üretimde bina sprite'ından taban referans noktası ölçülerek pivot kaydedilir, kapı konumu world offset'e çevrilir, çarpışma poligonu gerçek bina tabanına göre ayrı onaylanır, iç mekân bağlantısı şemaya bağlanır. Bunlar modelin PNG'sinden veya 1024×1024 tuval ölçüsünden otomatik doğru çıkarılmış gibi gösterilmez. Dış dünya görseli veri kontrollü; `core:*` ID ve save sürüm sözleşmeleri korunmalıdır.
+
+### 8. Bina kabul testi (HTML laboratuvarı ve sonrasında Godot)
+
+1. PNG'nin alpha kanalı şeffaf ve yalnız tek bina içeriyor; zemin/çit/UI yok.
+2. Ref B SVG'nin dört köşesi 3×3 olarak tam izdüşürülüyor; evin gerçek temel kenarları bu aksta. **Kapılı ön duvar yanlış açıdaysa reddet.**
+3. Mahya ve saçak çizgileri ilgili zemin kenarına paralel; pencerelerin üstleri uyumlu; düşeyler dik.
+4. PNG'yi keserek/esneterek perspektif hatasını gizleme; hatalı görünümü referansla tekrar üret.
+5. HTML test ortamına `terrain.png`, transparan `objects.png`, `alignment.json` ve bina PNG'sini yükle. Üç kaynak 2026-11-05 deney koşusundaki 128 px bake'den gelebilir: [GitHub Actions #42104704821](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/42104704821). İki büyük harita eş boyutlu **4888×2621**, kayıtlı **832** çevre objesi vardır.
+6. Grid'i 32 world unit aç; bina footprint'ini 3×3 seç, kapıya karakter yüksekliği kıyası yap, taşı, sabitle ve başka ağacın önüne/arkasına getir.
+7. Derinlik (Y-sort), taban çarpışması ve kapı tetikleyicisini **aynı dünya ayak izi** üzerinden hesapla. Tek bake `objects.png` katmanı bireysel obje z-sırasını tam olarak yeniden sağlayamaz; HTML laboratuvarındaki önde/arkada görünüm yaklaşık olabilir.
+8. Final kabul ayrı kapılardır: SVG matematiksel çizgi kontrolü; görsel manuel onay; HTML kayıt/taşıma testi; Godot yerleştirme/çarpışma; export/Android gerçek cihaz. Bunlardan biri geçmeden tamamı başarılı sayılmaz.
+
+### 9. Bu denemede ne yapıldı / henüz ne yapılmadı?
+
+- **Yapıldı:** İlk tek-referanslı ahşap ev üretiminde yüzey/açı uyumsuzluğu görüldü; teknik 3×3 SVG referansı için kod ve iki-referanslı iyileştirilmiş prompt hazırlandı; kullanıcı teknik referans yaklaşımını beğendi; aynı esasla altı bina türü için prompt çeşitlemeleri tanımlandı.
+- **Harita kaynak kanıtı:** Tek seferlik 128 px bake workflow'u, `experiment/tamu-128-layered-bake-20261105` dalında [#42104704821](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/42104704821) başarılı; terrain ve nesneler ayrı PNG olarak aynı dünya görüntü koordinatına bake edildi.
+- **Yapılmadı:** Bu belge içinde PNG dosyaları depoya yüklenmedi, üretici modelin projeksiyonu matematiksel olarak otomatik doğrulanmadı; yeni bina blueprint/interior/placement sistemi ana oyuna entegre edilmedi; Android oyun içi kabul yapılmadı.
+- **Korunanlar:** Orijinal terrain, kanonik dünya kimlikleri/objeler, Stage5/6 save sistemi, eski LÖVE kaynakları, `main` ve kullanıcı görselleri değiştirilmedi.
+

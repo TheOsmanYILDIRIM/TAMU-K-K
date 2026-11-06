@@ -11,4 +11,5 @@ label = "Yaprakkulak"
 policy = ExtResource("2")
 rig = ExtResource("3")
 tags = PackedStringArray("herbivore", "prey", "small")
+art_scale = 0.15
 spawn_count = 6

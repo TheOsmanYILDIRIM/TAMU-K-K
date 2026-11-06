@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - experiment/godot4-android-apk-20261031
+      - experiment/limboai-godot46-20261104
       - main
   pull_request:
     branches:
@@ -11,8 +12,51 @@ on:
 permissions:
   contents: read
   actions: read
+# On the same source branch, newer push/PR/dispatch supersedes older
+# runs of this workflow. Other branches and other workflows stay independent.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 jobs:
+  limbo_contract:
+    if: github.ref_name != 'experiment/limboai-godot46-20261104'
+    name: Pinned native LimboAI GDExtension 4.6 BT contract (Linux)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify and load genuine LimboAI v1.8.1 native GDExtension
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=https://github.com/godotengine/godot-builds/releases/download/4.6-stable
+          curl -fL --retry 3 "$BASE/Godot_v4.6-stable_linux.x86_64.zip" -o /tmp/tamu-limbo-godot.zip
+          unzip -q /tmp/tamu-limbo-godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.6-stable_linux.x86_64
+          sudo install /tmp/Godot_v4.6-stable_linux.x86_64 /usr/local/bin/godot
+          curl -fL --retry 3 'https://github.com/limbonaut/limboai/releases/download/v1.8.1/limboai%2Bv1.8.1.gdextension-4.6.zip' -o /tmp/tamu-limbo-v1.8.1.zip
+          echo '0910411f8dbc0da8920f6c8bbbb6397c347cd9f2f193942468a702dfb11d5f0e  /tmp/tamu-limbo-v1.8.1.zip' | sha256sum -c -
+          mkdir -p /tmp/tamu-limbo-upstream addons/limboai/bin
+          unzip -q /tmp/tamu-limbo-v1.8.1.zip -d /tmp/tamu-limbo-upstream
+          manifest="$(find /tmp/tamu-limbo-upstream -type f -name '*.gdextension' -print -quit)"
+          test -n "$manifest"
+          cp -a "$(dirname "$manifest")/." addons/limboai/bin/
+          test -s addons/limboai/bin/limboai.gdextension
+          echo "TAMU_LIMBOAI_MANIFEST_PATH=$manifest"
+          head -50 addons/limboai/bin/limboai.gdextension
+          find addons/limboai/bin -type f | head -20
+          timeout --kill-after=3s 75s godot --headless --editor --path . --import --quit 2>&1 | tee limbo-import.log
+          timeout --kill-after=3s 40s godot --headless --path . --script res://scripts/mob_limboai_probe_ci.gd 2>&1 | tee limbo-native.log
+          grep -q 'TAMU_LIMBOAI_BT_CONTRACT_OK tasks=3 manual=true class=BTPlayer' limbo-native.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_LIMBOAI_.*FAILED|TAMU_LIMBOAI_EXTENSION_MISSING' limbo-native.log; then exit 1; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tamu-limboai-native-contract
+          path: limbo-native.log
+          if-no-files-found: warn
   fx_contract:
+    if: github.ref_name != 'experiment/limboai-godot46-20261104'
     name: Independent Godot FX and audio contract
     runs-on: ubuntu-24.04
     timeout-minutes: 8
@@ -27,6 +71,9 @@ jobs:
           unzip -q /tmp/godot-fx.zip -d /tmp
           chmod +x /tmp/Godot_v4.6-stable_linux.x86_64
           sudo install /tmp/Godot_v4.6-stable_linux.x86_64 /usr/local/bin/godot
+          # Native MobNavigation must parse independently, not only as a dependency.
+          godot --headless --path . --check-only --script res://scripts/mob_navigation.gd 2>&1 | tee /tmp/tamu-mob-native-parse.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:' /tmp/tamu-mob-native-parse.log; then exit 1; fi
           timeout --kill-after=3s 45s godot --headless --path . --script res://scripts/fx_contract_ci.gd 2>&1 | tee fx-contract.log
           grep -q 'TAMU_FX_CONTRACT_OK voices=8' fx-contract.log
           grep -q TAMU_SHADOW_ALPHA_CONTOUR_OK fx-contract.log
@@ -56,6 +103,13 @@ jobs:
           PY
           timeout --kill-after=3s 35s godot --headless --path . --script res://scripts/gameplay_contract_ci.gd 2>&1 | tee gameplay-native.log
           grep -q TAMU_NATIVE_GAMEPLAY_CONTRACT_OK gameplay-native.log
+          timeout --kill-after=3s 35s godot --headless --path . --script res://scripts/crafting_book_ci.gd 2>&1 | tee crafting-ui.log
+          grep -q TAMU_CRAFT_MAIN_UI_OK crafting-ui.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_CRAFT_MAIN_UI_FAILED' crafting-ui.log; then exit 1; fi
+          timeout --kill-after=3s 15s godot --headless --path . --check-only --script res://scripts/material_fabrication.gd 2>&1 | tee material-parse.log || true
+          timeout --kill-after=3s 35s godot --headless --path . --script res://scripts/material_fabrication_ci.gd 2>&1 | tee material-fabrication.log
+          grep -q TAMU_MATERIAL_FABRICATION_OK material-fabrication.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_MATERIAL_FABRICATION_FAILED' material-fabrication.log; then exit 1; fi
           timeout --kill-after=3s 25s godot --headless --path . --script res://scripts/harvest_navigation_ci.gd 2>&1 | tee harvest-navigation.log
           grep -q TAMU_NAV_INCREMENTAL_ASTAR_OK harvest-navigation.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_NAV_.*FAILED' harvest-navigation.log; then exit 1; fi
@@ -79,6 +133,9 @@ jobs:
             fx-contract.log
             fx-visual.log
             gameplay-native.log
+            crafting-ui.log
+            material-fabrication.log
+            material-parse.log
             save-*.log
             live-*.log
             mod-fast.log
@@ -125,26 +182,6 @@ jobs:
           assert hires[:8]==b'\\x89PNG\\r\\n\\x1a\\n'.decode('unicode_escape').encode('latin1'), 'TAMU_HIRES_ATLAS_BAD_PNG'
           (out/'atlas_objects_hires.png').write_bytes(hires)
           print('TAMU_HIRES_ATLAS_SHA_OK bytes=',len(hires))
-          rig=pathlib.Path('assets/osman_rig/images')
-          rig.mkdir(parents=True,exist_ok=True)
-          for name in ('front_leg_L.png','front_leg_R.png','front_torso.png',
-                       'front_arm_L.png','front_arm_R.png','front_head.png',
-                       'back_leg_L.png','back_leg_R.png','back_torso.png',
-                       'back_arm_L.png','back_arm_R.png','back_head.png'):
-              (rig/name).write_bytes(z.read('assets/osman_rig/images/'+name))
-          for entry in z.namelist():
-              if entry.startswith('assets/osman_rig/images/') and entry.endswith('.png'):
-                  (rig/pathlib.Path(entry).name).write_bytes(z.read(entry))
-          for name in ('rig.json','directions.json','display.json'):
-              (rig.parent/name).write_bytes(z.read('assets/osman_rig/'+name))
-          rig_doc=json.loads((rig.parent/'rig.json').read_text())
-          directions=json.loads((rig.parent/'directions.json').read_text())['directions']
-          clips={c['name']:c for c in rig_doc.get('animations',[])}
-          assert len(directions)==4 and len(clips)==44, (len(directions),len(clips))
-          assert all(len(x['animations'])==11 for x in directions.values())
-          assert all(clip in clips for d in directions.values() for clip in d['animations'].values())
-          assert len(list(rig.glob('*.png')))==30
-          print('TAMU_ORIGINAL_RIG_METADATA_OK png=30 directions=4 clips=44')
           shadows=pathlib.Path('assets/terrain25d/static_shadow')
           shadows.mkdir(parents=True,exist_ok=True)
           for n in ('objects_shadow_manifest.json','shadows_12.png'):
@@ -189,30 +226,6 @@ jobs:
           assert all(-1024<=o['x']<2304 and -1536<=o['y']<1536 for o in data['objects'])
           print('TAMU_R2_OBJECT_PARITY_OK',len(ids))
           PY
-          (cd /tmp/tamu-love && lua5.4 - <<'LUA'
-          local R=dofile('player/rigby_runtime.lua')
-          local cases={
-            {'linear',-1,'linear'}, {'stepped',-1,'stepped'},
-            {'bezier',-1,{bezier={0.2,0.0,0.65,1.0}}},
-            {'beziers',0,{beziers={{0.3,0.1,0.5,0.9},{0.7,0.4,0.9,0.6}}}},
-            {'beziers',1,{beziers={{0.3,0.1,0.5,0.9},{0.7,0.4,0.9,0.6}}}}
-          }
-          local out=assert(io.open('chunks/rigby_curve_reference.txt','w'))
-          for _,entry in ipairs(cases) do
-            for _,time in ipairs({0,0.01,0.1,0.15,0.25,0.3,0.45,0.5,0.6,0.75,0.85,0.9,0.99,1.0}) do
-              local comp=entry[2]>=0 and entry[2]+1 or nil
-              local start=comp and {10,10} or 10
-              local finish=comp and {30,30} or 30
-              local keys={{time=0,value=start,curve=entry[3]},{time=1,value=finish}}
-              local expected=R.sample(keys,time,comp)
-              out:write(string.format('%s,%d,%.8f,%.12f\n',entry[1],entry[2],time,expected))
-            end
-          end
-          out:close()
-          print('TAMU_LUA_RIGBY_CURVE_REFERENCE_OK samples=70')
-          LUA
-          )
-          cp /tmp/tamu-love/chunks/rigby_curve_reference.txt chunks/rigby_curve_reference.txt
       - name: Verify exact authored source and generate build-only hash manifest
         shell: bash
         run: |
@@ -236,8 +249,7 @@ jobs:
               entries[stem]={'verts':sha(raw),'meta':sha(meta)}
           asset_paths=['assets/terrain25d/atlas_00.png',
                        'assets/terrain25d/atlas_01.png',
-                       'assets/terrain25d/manifest.json',
-                       'assets/osman_rig/rig.json']
+                       'assets/terrain25d/manifest.json']
           integrity={'source_run_id':41234831527,'index_sha256':sha(root/'index.json'),
                      'objects_sha256':sha(root/'r2_objects.json'),
                      'chunks':entries,'assets':{name:sha(name) for name in asset_paths}}
@@ -286,37 +298,6 @@ jobs:
           assert len({x['z'] for x in manifest['layers']})==2
           print('TAMU_REGION_CHUNK_CONTRACT_OK regions=1 source_cells=156')
           print('TAMU_MERGE_SOURCE_PARITY_OK original_chunks=156 layers=2 vertices=',total)
-          PY
-      - name: Verify original Rigby weighted mesh topology and influences
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import json,pathlib,math
-          rig=json.loads(pathlib.Path('assets/osman_rig/rig.json').read_text())
-          weighted=[]
-          for slot in rig['slots']:
-              for attachment in slot.get('attachments',[]):
-                  if 'weights' not in attachment:
-                      continue
-                  assert attachment['type']=='mesh'
-                  weights=attachment['weights']
-                  assert len(attachment['uvs'])==2*len(weights)
-                  assert len(attachment['triangles'])%3==0
-                  assert all(0<=i<len(weights) for i in attachment['triangles'])
-                  for vertex in weights:
-                      assert vertex
-                      assert abs(sum(p['weight'] for p in vertex)-1.0)<1e-5
-                      assert all(math.isfinite(p['x']) and math.isfinite(p['y']) and
-                                 math.isfinite(p['weight']) and 0<=p['bone']<len(rig['bones'])
-                                 for p in vertex)
-                  weighted.append(attachment)
-          assert len(rig['bones'])==40 and len(rig['slots'])==24
-          assert len(weighted)==4
-          assert sum(len(a['weights']) for a in weighted)==1624
-          assert sum(len(a['triangles'])//3 for a in weighted)==2930
-          assert sum(sum(len(v) for v in a['weights']) for a in weighted)==2082
-          print('TAMU_RIGBY_WEIGHTED_SOURCE_OK meshes=4 vertices=1624 triangles=2930 influences=2082')
           PY
       - name: Validate shared canonical gameplay JSON source
         shell: bash
@@ -449,11 +430,44 @@ jobs:
           test -s assets/gui/joystick_knob.png
           grep -q TAMU_TERRAIN_MIX_BAKED_OK screenshots-mix-bake.log
           test -s assets/terrain25d/atlas_00_mix.png
+          # Reuse the exact 19-piece/76-view old construction generator, at
+          # native 128x128 per source view. The generator is deterministic.
+          # Godot displays these at 0.5 scale against its original R2 terrain.
+          mkdir -p assets/building
+          lua5.4 scripts/export_building_parts.lua > /tmp/tamu-building-parts.json
+          python3 scripts/building_default_assets.py \
+            --catalog /tmp/tamu-building-parts.json --output assets/building
+          python3 - <<'PYBUILD'
+          import json
+          from pathlib import Path
+          from PIL import Image
+          root=Path('assets/building')
+          manifest=json.loads((root/'building_default_manifest.json').read_text())
+          entries=manifest['entries']
+          assert len(entries)==76 and len({(e['def_id'],e['rotation']) for e in entries})==76
+          assert all(e['anchor']==[64,92] and e['colors']<=64 for e in entries)
+          with Image.open(root/'building_default_atlas.png') as atlas:
+              assert atlas.size==(1024,1280), atlas.size
+          print('TAMU_BUILDING_128_ATLAS_READY views=76 source_px=128 pivot=64,92 native_scale=0.5')
+          PYBUILD
+          godot --headless --path . --check-only --script res://scripts/modular_building_anchors.gd
           godot --headless --editor --path . --import --quit
           mkdir -p screenshots
           godot --headless --path . --script res://scripts/compile_content.gd | tee screenshots/content-compile.log
           grep -q 'TAMU_CATALOG_BINARY_COMPILE_OK definitions=7 recipes=2' screenshots/content-compile.log
           test -s data/catalog/compiled_catalog.res
+          # The 128-only run needs assets/import/catalog, not all visual/FPS suites.
+          if [ "${{ github.ref_name }}" = "experiment/limboai-godot46-20261104" ]; then
+            echo TAMU_ONLY_128_PREPARED
+            exit 0
+          fi
+      - name: Full native acceptance checks (other branches only)
+        if: github.ref_name != 'experiment/limboai-godot46-20261104'
+        shell: bash
+        env:
+          TAMU_VISUAL_CI: '1'
+        run: |
+          set -euo pipefail
           timeout --kill-after=3s 60s godot --headless --path . --script res://scripts/mob_contract_ci.gd 2>&1 | tee screenshots/mob-contract.log
           grep -q TAMU_MOB_CONTRACT_OK screenshots/mob-contract.log
           timeout --kill-after=3s 60s godot --headless --path . --script res://scripts/profile_rig_ci.gd 2>&1 | tee screenshots/profile-rig-contract.log
@@ -515,6 +529,54 @@ jobs:
           grep -q TAMU_VISUAL_CAPTURE_OK screenshots/profile-live.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_PROFILE_.*FAILED' screenshots/profile-live.log; then exit 1; fi
           cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" screenshots/profile-live.png
+          # Real authored R2 scene with opt-in, capped PixelLight (not synthetic demo).
+          TAMU_PIXELLIGHT_WORLD=1 TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged TAMU_VISUAL_CASE=profile timeout --kill-after=3s 90s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 2>&1 | tee screenshots/pixellight-world.log
+          grep -q 'TAMU_PIXELLIGHT_WORLD_ACTIVE objects=' screenshots/pixellight-world.log
+          grep -q TAMU_VISUAL_CAPTURE_OK screenshots/pixellight-world.log
+          grep -q TAMU_YDEPTH_SHADOW_ORDER_OK screenshots/pixellight-world.log
+          grep -q TAMU_HARVEST_SELECTION_OK screenshots/pixellight-world.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_PROFILE_.*FAILED|TAMU_PIXELLIGHT_WORLD_NO_SAMPLES' screenshots/pixellight-world.log; then exit 1; fi
+          cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" screenshots/pixellight-world.png
+          # Combined fixture: original 6-PNG weighted profile + Yaprakkulak +
+          # opt-in PixelLight base occluders in the SAME authored R2 viewport.
+          TAMU_PIXELLIGHT_WORLD=1 TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged TAMU_VISUAL_CASE=combo timeout --kill-after=3s 90s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 2>&1 | tee screenshots/pixellight-combined.log
+          grep -q TAMU_PROFILE_ONLY_VISIBLE_OK screenshots/pixellight-combined.log
+          grep -Eq 'TAMU_MOB_READY species=core:yaprakkulak count=[1-9]' screenshots/pixellight-combined.log
+          grep -q 'TAMU_PIXELLIGHT_WORLD_ACTIVE objects=' screenshots/pixellight-combined.log
+          grep -q TAMU_YDEPTH_SHADOW_ORDER_OK screenshots/pixellight-combined.log
+          grep -q TAMU_VISUAL_CAPTURE_OK screenshots/pixellight-combined.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_PROFILE_.*FAILED|TAMU_MOB_.*FAILED|TAMU_PIXELLIGHT_WORLD_NO_SAMPLES' screenshots/pixellight-combined.log; then exit 1; fi
+          cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" screenshots/pixellight-combined.png
+          # Emulate the low-end Android render path in GL Compatibility CI.
+          # Do not equate Xvfb FPS to an actual physical Android device.
+          TAMU_AI_LITE=1 TAMU_MOBILE_PERF=1 TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged TAMU_VISUAL_CASE=combo timeout --kill-after=3s 90s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 2>&1 | tee screenshots/mobile-fast-combined.log
+          grep -q 'TAMU_MOB_LITE_ACTIVE native_bt=false nav=direct_budgeted decisions=central' screenshots/mobile-fast-combined.log
+          grep -q 'TAMU_MOBILE_FAST_MODE renderer=viewport' screenshots/mobile-fast-combined.log
+          grep -q 'TAMU_OBJECT_HIRES_ACTIVE active=false atlas=1056' screenshots/mobile-fast-combined.log
+          grep -q TAMU_MOBILE_CULL_OK screenshots/mobile-fast-combined.log
+          grep -q TAMU_PROFILE_ONLY_VISIBLE_OK screenshots/mobile-fast-combined.log
+          grep -Eq 'TAMU_MOB_READY species=core:yaprakkulak count=[1-9]' screenshots/mobile-fast-combined.log
+          grep -q TAMU_YDEPTH_SHADOW_ORDER_OK screenshots/mobile-fast-combined.log
+          grep -q TAMU_VISUAL_CAPTURE_OK screenshots/mobile-fast-combined.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_MOB_.*FAILED|TAMU_MOBILE_.*FAILED|TAMU_OBJECT_TERRAIN_REVEAL_FAILED' screenshots/mobile-fast-combined.log; then exit 1; fi
+          cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" screenshots/mobile-fast-combined.png
+          # Runtime A/B on SAME authentic 156-cell, 832-object scene.
+          # Draw-call and FPS logs are desktop software GL, NOT Android claims.
+          mkdir -p /tmp/tamu-perf-isolation-home
+          XDG_DATA_HOME=/tmp/tamu-perf-isolation-home TAMU_VISUAL_CI=0 TAMU_MOBILE_PERF=1 TAMU_PERF_ISOLATION_CI=1 TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged timeout --kill-after=3s 100s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 125 2>&1 | tee screenshots/perf-isolation.log
+          grep -q 'TAMU_PERF_ISOLATION_GATE_OK profiles=8 objects=832 region=1' screenshots/perf-isolation.log
+          grep -Eq 'TAMU_MOB_READY species=core:yaprakkulak count=[1-9]' screenshots/perf-isolation.log
+          grep -q 'TAMU_PERF_ISOLATION_APPLIED profile=mob_visual_off' screenshots/perf-isolation.log
+          grep -q 'TAMU_PERF_ISOLATION_APPLIED profile=mob_ai_off' screenshots/perf-isolation.log
+          grep -q 'TAMU_PERF_ISOLATION_APPLIED profile=solar_off' screenshots/perf-isolation.log
+          grep -q 'TAMU_PERF_ISOLATION_APPLIED profile=objects_off' screenshots/perf-isolation.log
+          grep -q 'TAMU_PERF_ISOLATION_APPLIED profile=terrain_off' screenshots/perf-isolation.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_PERF_ISOLATION_.*FAILED|TAMU_MOB_.*FAILED' screenshots/perf-isolation.log; then exit 1; fi
+          TAMU_UI_CAPTURE=1 timeout --kill-after=3s 65s xvfb-run -a -s '-screen 0 720x1280x24' godot --path . --rendering-method gl_compatibility --resolution 720x1280 --script res://scripts/crafting_book_ci.gd 2>&1 | tee screenshots/crafting-book-visual.log
+          grep -q TAMU_CRAFT_MAIN_UI_OK screenshots/crafting-book-visual.log
+          test -s screenshots/book-library.png
+          test -s screenshots/book-axe.png
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_CRAFT_MAIN_UI_FAILED' screenshots/crafting-book-visual.log; then exit 1; fi
           # Each cumulative visual stage gets a real Godot GL screenshot and
           # runtime drawcall/FPS telemetry on the same CI runner and camera.
           # This is a desktop Xvfb comparison, not an Android FPS claim.
@@ -609,8 +671,6 @@ jobs:
           grep -q TAMU_VISUAL_CAPTURE_OK screenshots/run.log
           grep -q TAMU_MERGED_TERRAIN_OK screenshots/run.log
           grep -q 'TAMU_REGION_LOAD_OK region=fisilti_ormani source_cells=156' screenshots/run.log
-          grep -q TAMU_NATIVE_BONE_FK_READY screenshots/run.log
-          grep -q TAMU_RIGBY_CURVE_PARITY_OK screenshots/run.log
           grep -q TAMU_CATALOG_BINARY_OK screenshots/run.log
           grep -q TAMU_CONTENT_MOD_BOUNDARY_OK screenshots/run.log
           grep -q TAMU_USER_MOD_BOUNDARY_OK screenshots/run.log
@@ -622,12 +682,10 @@ jobs:
           grep -q TAMU_BUILDING_BOUNDARY_OK screenshots/run.log
           grep -q TAMU_GAMEPLAY_DOMAIN_OK screenshots/run.log
           grep -q TAMU_GAMEPLAY_HARVEST_INVENTORY_OK screenshots/run.log
-          grep -q TAMU_RIGBY_WEIGHTED_MESH_OK screenshots/run.log
           grep -q TAMU_WORLD_PROJECTION_GATE_OK screenshots/run.log
           grep -q TAMU_STREAM_SCHEDULER_OK screenshots/run.log
           grep -q TAMU_VIEWPORT_COVERAGE_OK screenshots/run.log
           grep -q TAMU_YDEPTH_SHADOW_ORDER_OK screenshots/run.log
-          grep -q TAMU_LOVE_VISUAL_SCALE_OK screenshots/run.log
           grep -q TAMU_RESIDENT_BUDGET_OK screenshots/run.log
           grep -q 'TAMU_WORLD_SOURCE_READY chunks=156' screenshots/run.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|Invalid operands' screenshots/run.log; then echo 'TAMU_RUNTIME_SCRIPT_GATE_FAILED'; exit 1; fi
@@ -643,6 +701,7 @@ jobs:
           print('TAMU_GODOT_VISUAL_SMOKE_OK',i.size)
           PY
       - name: Export standalone PCK and verify isolated boot
+        if: github.ref_name != 'experiment/limboai-godot46-20261104'
         shell: bash
         run: |
           set -euo pipefail
@@ -668,7 +727,10 @@ jobs:
           banned=('plasma','screenshots/','game/love/','art-source/','docs/','object-studio/','world-builder/')
           bad=[s for s in names if any(x in s for x in banned) or s.endswith(('.apk','.love','.mp3'))]
           assert not bad, f'PCK_FORBIDDEN_FILES {bad[:15]}'
-          required=('chunks/r2_objects.json','chunks/merged_layer_1.verts','data/catalog/compiled_catalog.res','assets/terrain25d/atlas_00.png','assets/terrain25d/atlas_objects_hires.png','assets/osman_rig/images/front_head.png')
+          # Legacy Rigby references must not be shipped after profile-only cutover.
+          legacy=[n for n in names if 'assets/osman_rig/' in n or 'scripts/rigby_fk.' in n or 'scripts/rigby_skinned.' in n]
+          assert not legacy, f'PCK_LEGACY_CHARACTER_LEAK {legacy[:12]}'
+          required=('chunks/r2_objects.json','chunks/merged_layer_1.verts','data/catalog/compiled_catalog.res','assets/terrain25d/atlas_00.png','assets/terrain25d/atlas_objects_hires.png','assets/profile_character/01_bas.png')
           assert all(any(key in s for s in names) for key in required), 'PCK_REQUIRED_ASSET_MISSING'
           runtime_scripts=('domain_catalog','domain_inventory','domain_harvesting',
               'domain_crafting','domain_building','gameplay_session','harvest_pathfinder',
@@ -680,6 +742,8 @@ jobs:
           assert not missing_scripts, f'PCK_RUNTIME_SCRIPTS_MISSING {missing_scripts}'
           assert any('scripts/object_shadow.gdshader' in path for path in names), 'PCK_SHADOW_SHADER_MISSING'
           assert any('scripts/harvest_outline.gdshader' in path for path in names), 'PCK_HARVEST_OUTLINE_SHADER_MISSING'
+          assert any('scripts/pixellight_world.gd' in path for path in names), 'PCK_PIXELLIGHT_WORLD_MISSING'
+          assert any('addons/pixel_light_2d/pixel_light.gd' in path for path in names), 'PCK_PIXELLIGHT_CORE_MISSING'
           assert any('scripts/forest_focus.gdshader' in path for path in names), 'PCK_FOREST_FOCUS_SHADER_MISSING'
           assert any('assets/gui/panel.png' in path for path in names), 'PCK_HARVEST_GUI_PANEL_MISSING'
           assert any('assets/gui/heading_tree.png' in path for path in names), 'PCK_HARVEST_GUI_HEADING_MISSING'
@@ -705,7 +769,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           p=Path('build/tamu-android-content.pck').read_bytes()
-          for name in (b'chunks/index.json',b'chunks/r2_objects.json',b'chunks/source_integrity.json',b'chunks/merged_terrain.json',b'merged_layer_0.verts',b'merged_layer_1.verts',b'assets/osman_rig/rig.json',b'data/catalog/manifest.json',b'data/catalog/definitions/oak_tree.json',b'data/catalog/recipes/planks_from_log.json',b'data/catalog/compiled_catalog.res'):
+          for name in (b'chunks/index.json',b'chunks/r2_objects.json',b'chunks/source_integrity.json',b'chunks/merged_terrain.json',b'merged_layer_0.verts',b'merged_layer_1.verts',b'assets/profile_character/motion.json',b'data/catalog/manifest.json',b'data/catalog/definitions/oak_tree.json',b'data/catalog/recipes/planks_from_log.json',b'data/catalog/compiled_catalog.res'):
               assert name in p, f'ANDROID_ASSET_EXPORT_MISSING: {name!r}'
           print('TAMU_ANDROID_CONTENT_PACK_OK bytes=',len(p))
           PY
@@ -744,6 +808,7 @@ jobs:
           echo TAMU_EXPORTED_PROFILE_PACK_OK
           sha256sum build/tamu-android-content.pck
       - name: Benchmark balanced and mobile texture PCKs and visual quality
+        if: github.ref_name != 'experiment/limboai-godot46-20261104'
         shell: bash
         run: |
           set -euo pipefail
@@ -794,27 +859,232 @@ jobs:
           Path('screenshots/texture-quality-comparison.json').write_text(json.dumps(records,indent=2))
           print('TAMU_TEXTURE_QUALITY_PCK_COMPARE_OK tiers=3')
           PYQUALITY
-      # One independent artifact per quality: users download ONLY their chosen PCK.
+      - name: Build source-only 128px terrain and object PCK, verify isolated boot
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Keep original sources: remove only 3 optional HD atlas references
+          # from the export allowlist, never rescale 6-part player/Yaprakkulak.
+          cp export_presets.cfg /tmp/tamu-export-presets-128-original.cfg
+          trap 'cp /tmp/tamu-export-presets-128-original.cfg export_presets.cfg' EXIT
+          python3 - <<'PY128CFG'
+          from pathlib import Path
+          preset=Path('export_presets.cfg')
+          content=preset.read_text()
+          removed=[
+              'res://assets/terrain25d/atlas_00_hires.png',
+              'res://assets/terrain25d/atlas_00_mix_hires.png',
+              'res://assets/terrain25d/atlas_objects_hires.png',
+          ]
+          for path in removed:
+              entry=', "'+path+'"'
+              assert content.count(entry)==1, ('TAMU_128_EXPORT_PRESET_MISSING',path)
+              content=content.replace(entry,'')
+          preset.write_text(content)
+          print('TAMU_128_SOURCE_PRESET_OK excluded_optional_hd=3')
+          PY128CFG
+          godot --headless --path . --export-pack Android build/tamu-android-content-128.pck
+          python3 - <<'PY128PCK'
+          from pathlib import Path
+          import struct
+          p=Path('build/tamu-android-content-128.pck')
+          mobile=Path('build/tamu-android-content-mobile.pck')
+          with p.open('rb') as f:
+              header=f.read(40)
+              assert header[:4]==b'GDPC' and struct.unpack_from('<I',header,4)[0]==3
+              offset=struct.unpack_from('<Q',header,32)[0]
+              f.seek(offset)
+              count=struct.unpack('<I',f.read(4))[0]
+              names=[]
+              for _ in range(count):
+                  length=struct.unpack('<I',f.read(4))[0]
+                  name=f.read(length).split(bytes([0]),1)[0].decode()
+                  f.seek(36,1)
+                  names.append(name.lower())
+          lowres=[
+              'atlas_00.png-', 'atlas_00_mix.png-', 'atlas_01.png-',
+          ]
+          for name in lowres:
+              assert any(name in item and item.endswith('.ctex') for item in names), ('TAMU_128_MISSING_ORIGINAL_ATLAS',name)
+          highres=[
+              'atlas_00_hires.png-', 'atlas_00_mix_hires.png-', 'atlas_objects_hires.png-',
+          ]
+          for name in highres:
+              assert not any(name in item and item.endswith('.ctex') for item in names), ('TAMU_128_HD_ATLAS_LEAK',name)
+          required=['scripts/profile_rig.gdc','scripts/mob_world.gdc','scripts/main.gdc',
+              'scripts/pixellight_world.gdc','chunks/r2_objects.json',
+              'chunks/merged_layer_1.verts','assets/profile_character/motion.json']
+          for name in required:
+              assert any(name in item for item in names), ('TAMU_128_RUNTIME_MISSING',name)
+          assert any('.godot/imported/building_default_atlas.png-' in item and item.endswith('.ctex') for item in names), 'TAMU_128_BUILDING_ATLAS_MISSING'
+          assert any('assets/building/building_default_manifest.json' in item for item in names), 'TAMU_128_BUILDING_MANIFEST_MISSING'
+          assert any('scripts/modular_building_anchors.gdc' in item for item in names), 'TAMU_128_BUILDING_PROJECTION_MISSING'
+          if mobile.is_file():
+              assert p.stat().st_size < mobile.stat().st_size, ('TAMU_128_NOT_SMALLER',p.stat().st_size,mobile.stat().st_size)
+          print('TAMU_128_SOURCE_PACK_OK files=',count,'bytes=',p.stat().st_size,'original_tile_px=128')
+          PY128PCK
+          # Critical: run without access to source files, like Android Loader.
+          absolute="$PWD/build/tamu-android-content-128.pck"
+          mkdir -p /tmp/tamu-128-only
+          (
+              cd /tmp/tamu-128-only
+              TAMU_MOBILE_PERF=1 TAMU_PRODUCTION_SMOKE=1 XDG_DATA_HOME=/tmp/tamu-128-only \
+                timeout --kill-after=3s 50s godot --headless --main-pack "$absolute" --quit-after 90
+          ) 2>&1 | tee screenshots/128-only-boot.log
+          grep -q TAMU_STAGE6_PRODUCTION_SMOKE_OK screenshots/128-only-boot.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_STAGE6_PRODUCTION_GATE_FAILED|TAMU_R2_AUTHORITY_UNAVAILABLE' screenshots/128-only-boot.log; then exit 1; fi
+          (
+              cd /tmp/tamu-128-only
+              TAMU_MOBILE_PERF=1 TAMU_VISUAL_CI=1 TAMU_VISUAL_CASE=profile XDG_DATA_HOME=/tmp/tamu-128-only \
+                timeout --kill-after=3s 75s xvfb-run -a -s '-screen 0 720x1100x24' \
+                godot --rendering-method gl_compatibility --resolution 720x1100 --main-pack "$absolute" --quit-after 115
+          ) 2>&1 | tee screenshots/128-only-profile.log
+          grep -q 'TAMU_OBJECT_HIRES_ACTIVE active=false atlas=1056' screenshots/128-only-profile.log
+          grep -q TAMU_PROFILE_ONLY_VISIBLE_OK screenshots/128-only-profile.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_PROFILE_.*FAILED' screenshots/128-only-profile.log; then exit 1; fi
+          sha256sum build/tamu-android-content-128.pck
+      - name: LimboAI native BTPlayer active in real authored Yaprakkulak scene
+        if: github.ref_name != 'experiment/limboai-godot46-20261104'
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 'https://github.com/limbonaut/limboai/releases/download/v1.8.1/limboai%2Bv1.8.1.gdextension-4.6.zip' -o /tmp/tamu-actual-limbo.zip
+          echo '0910411f8dbc0da8920f6c8bbbb6397c347cd9f2f193942468a702dfb11d5f0e  /tmp/tamu-actual-limbo.zip' | sha256sum -c -
+          mkdir -p /tmp/tamu-full-limbo addons/limboai/bin
+          unzip -q /tmp/tamu-actual-limbo.zip -d /tmp/tamu-full-limbo
+          manifest="$(find /tmp/tamu-full-limbo -type f -name '*.gdextension' -print -quit)"
+          test -n "$manifest"
+          cp -a "$(dirname "$manifest")/." addons/limboai/bin/
+          test -s addons/limboai/bin/limboai.gdextension
+          timeout --kill-after=3s 75s godot --headless --editor --path . --import --quit 2>&1 | tee screenshots/limboai-import.log
+          TAMU_LIMBOAI=1 TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged TAMU_VISUAL_CI=1 TAMU_VISUAL_CASE=combo \
+            timeout --kill-after=3s 90s xvfb-run -a -s '-screen 0 720x1100x24' \
+            godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 \
+            2>&1 | tee screenshots/limboai-mobs-live.log
+          grep -Eq 'TAMU_LIMBOAI_ACTIVE players=[1-9]' screenshots/limboai-mobs-live.log
+          grep -q TAMU_VISUAL_CAPTURE_OK screenshots/limboai-mobs-live.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_LIMBOAI_.*FAILED|TAMU_LIMBOAI_.*UNAVAILABLE|TAMU_MOB_.*FAILED' screenshots/limboai-mobs-live.log; then exit 1; fi
+          cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" screenshots/limboai-mobs-live.png
+          # Reproduce Android's fast-mode viewport culling with real native BTPlayer.
+          TAMU_MOBILE_PERF=1 TAMU_LIMBOAI=1 TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged TAMU_VISUAL_CI=1 TAMU_VISUAL_CASE=combo \
+            timeout --kill-after=3s 90s xvfb-run -a -s '-screen 0 720x1100x24' \
+            godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 \
+            2>&1 | tee screenshots/limboai-mobile-visible.log
+          grep -q TAMU_MOB_MOBILE_VISIBLE_OK screenshots/limboai-mobile-visible.log
+          grep -q TAMU_PROFILE_GAMEPLAY_RIG_ACTIVE screenshots/limboai-mobile-visible.log
+          grep -Eq 'TAMU_MOB_ANDROID_STATUS total=[1-9].*visible=[1-9].*limbo=ON' screenshots/limboai-mobile-visible.log
+          # Do not use TAMU_VISUAL_CI=1 in the production-path smoke. This
+          # exercises the real Stage6 game session and creature creation.
+          mkdir -p /tmp/tamu-limbo-production-home
+          XDG_DATA_HOME=/tmp/tamu-limbo-production-home TAMU_MOBILE_PERF=1 TAMU_LIMBOAI=1 TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged \
+            timeout --kill-after=3s 90s xvfb-run -a -s '-screen 0 720x1100x24' \
+            godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 \
+            2>&1 | tee screenshots/limboai-production-mobile.log
+          grep -q 'TAMU_PROFILE_GAMEPLAY_RIG_ACTIVE bones=23' screenshots/limboai-production-mobile.log
+          grep -q 'TAMU_LIMBOAI_ACTIVE players=6' screenshots/limboai-production-mobile.log
+          grep -q 'TAMU_MOB_READY species=core:yaprakkulak count=6' screenshots/limboai-production-mobile.log
+          grep -Eq 'TAMU_MOB_ANDROID_STATUS total=6 visible=[1-6] limbo=ON' screenshots/limboai-production-mobile.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_MOB_NO_VALID_SPAWN|TAMU_LIMBOAI_.*FAILED|TAMU_MOB_.*FAILED' screenshots/limboai-production-mobile.log; then exit 1; fi
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_MOB_MOBILE_VISIBLE_FAILED|TAMU_LIMBOAI_.*FAILED' screenshots/limboai-mobile-visible.log; then exit 1; fi
+      - name: Build standalone LimboAI Android ARM64 debug APK
+        if: github.ref_name != 'experiment/limboai-godot46-20261104'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Use the verified upstream v1.8.1 extension already unpacked by the native-scene step.
+          manifest=addons/limboai/bin/limboai.gdextension
+          test -s "$manifest"
+          grep -q 'android.debug.arm64' "$manifest"
+          test -s addons/limboai/bin/liblimboai.android.editor.arm64.so
+          test "$(file -b addons/limboai/bin/liblimboai.android.editor.arm64.so | grep -c 'aarch64')" -eq 1
+          # The standalone APK, unlike an external PCK, includes its own native extension.
+          # Enable LimboAI by project setting because Android does not inherit CI env vars.
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('project.godot')
+          s=p.read_text()
+          assert '[tamu]' not in s
+          p.write_text(s+'\n[tamu]\nai/use_limboai=true\n')
+          p=Path('export_presets.cfg')
+          s=p.read_text()
+          needle='include_filter="'
+          assert s.count(needle)==1
+          s=s.replace(needle,needle+'addons/limboai/bin/*.gdextension,addons/limboai/bin/*arm64*.so,',1)
+          s=s.replace('org.osman.tamu.godotbenchmark', 'org.osman.tamu.limboexperiment', 1)
+          p.write_text(s)
+          PY
+          mkdir -p build "$HOME/.android"
+          keytool -genkeypair -noprompt -keystore "$HOME/.android/tamu-ci-debug.keystore" \
+            -storepass android -keypass android -alias androiddebugkey -keyalg RSA \
+            -keysize 2048 -validity 3650 -dname "CN=TAMU CI,OU=Experimental,O=TAMU,C=TR"
+          export GODOT_ANDROID_KEYSTORE_DEBUG_PATH="$HOME/.android/tamu-ci-debug.keystore"
+          export GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey
+          export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android
+          export JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/temurin-17-jdk-amd64}"
+          export ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          test -x "$ANDROID_HOME/platform-tools/adb"
+          # Editor settings must be explicitly configured in headless CI.
+          cat > /tmp/tamu_android_settings.gd <<'GD'
+          extends SceneTree
+          func _initialize() -> void:
+              var settings = EditorInterface.get_editor_settings()
+              settings.set_setting("export/android/android_sdk_path", OS.get_environment("ANDROID_HOME"))
+              settings.set_setting("export/android/java_sdk_path", OS.get_environment("JAVA_HOME"))
+              # Godot editor persists EditorSettings during orderly shutdown.
+              quit()
+          GD
+          timeout 60s godot --headless --editor --path . --script /tmp/tamu_android_settings.gd 2>&1 | tee screenshots/limboai-android-settings.log
+          timeout 90s godot --headless --editor --path . --import --quit 2>&1 | tee screenshots/limboai-android-import.log
+          timeout --kill-after=5s 240s godot --headless --path . --export-debug Android \
+            build/TAMU_LimboAI_Android_arm64.apk 2>&1 | tee screenshots/limboai-android-export.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile, hashlib
+          p=Path("build/TAMU_LimboAI_Android_arm64.apk")
+          assert p.is_file() and p.stat().st_size>1000000, "APK missing"
+          with zipfile.ZipFile(p) as z:
+              assert z.testzip() is None
+              n=z.namelist()
+              libs=[x for x in n if 'limboai' in x.lower() and x.endswith('.so') and 'arm64' in x.lower()]
+              assert libs, "LimboAI ARM64 native library absent from APK"
+              assert any('limboai.gdextension' in x for x in n), "LimboAI manifest absent from APK"
+              assert any(x.startswith('lib/arm64-v8a/') and 'godot' in x.lower() for x in n), "Godot ARM64 engine absent"
+              print("TAMU_LIMBOAI_ANDROID_APK_OK bytes=",p.stat().st_size,"native=",libs)
+          print("SHA256",hashlib.sha256(p.read_bytes()).hexdigest())
+          PY
+      - uses: actions/upload-artifact@v4
+        if: github.ref_name != 'experiment/limboai-godot46-20261104'
+        with:
+          name: tamu-limboai-android-arm64-debug-apk
+          path: build/TAMU_LimboAI_Android_arm64.apk
+          if-no-files-found: warn
       - uses: actions/upload-artifact@v4
         if: always()
+        with:
+          name: tamu-godot-128px-source-pck
+          path: build/tamu-android-content-128.pck
+          if-no-files-found: warn
+      # One independent artifact per quality: users download ONLY their chosen PCK.
+      - uses: actions/upload-artifact@v4
+        if: github.ref_name != 'experiment/limboai-godot46-20261104'
         with:
           name: tamu-godot-mobile-pck
           path: build/tamu-android-content-mobile.pck
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: github.ref_name != 'experiment/limboai-godot46-20261104'
         with:
           name: tamu-godot-balanced-pck
           path: build/tamu-android-content-balanced.pck
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: github.ref_name != 'experiment/limboai-godot46-20261104'
         with:
           name: tamu-godot-full-pck
           path: build/tamu-android-content.pck
           if-no-files-found: warn
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: github.ref_name != 'experiment/limboai-godot46-20261104'
         with:
           name: tamu-godot-test-results
           path: |

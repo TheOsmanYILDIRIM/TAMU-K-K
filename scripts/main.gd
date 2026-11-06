@@ -1,9 +1,9 @@
 extends Node2D
 const WorldProjection = preload("res://scripts/world_projection.gd")
+const BuildingAnchors = preload("res://scripts/modular_building_anchors.gd")
 const WorldSource = preload("res://scripts/world_source.gd")
 const WorldStream = preload("res://scripts/world_stream.gd")
 const MergedTerrain = preload("res://scripts/merged_terrain.gd")
-const RigbySkinned = preload("res://scripts/rigby_skinned.gd")
 const ProfileRig = preload("res://scripts/profile_rig.gd")
 const GameplaySession = preload("res://scripts/gameplay_session.gd")
 const R2Authority = preload("res://scripts/r2_authority.gd")
@@ -16,9 +16,10 @@ const SHADOW_SHADER = preload("res://scripts/object_shadow.gdshader")
 const SELECTION_SHADER = preload("res://scripts/harvest_outline.gdshader")
 const FOREST_GUI = preload("res://scripts/forest_harvest_gui.gd")
 const MODULAR_HUD = preload("res://scripts/modular_hud.gd")
+const CRAFTING_BOOK = preload("res://scripts/crafting_book_ui.gd")
 const ShadowVolume = preload("res://scripts/shadow_volume.gd")
+const PixelLightWorld = preload("res://scripts/pixellight_world.gd")
 const VisualEnvironment = preload("res://scripts/visual_environment.gd")
-var rigby_skin: Dictionary = {}
 var merged_mode: bool = OS.get_environment("TAMU_TERRAIN_MODE") != "legacy"
 # Each independently authored region is a separate logical chunk, not one global world.
 var region_chunks: Dictionary = {}
@@ -65,6 +66,9 @@ var silhouette_shadows: Array[Sprite2D] = []
 var silhouette_material: ShaderMaterial
 var audio_cues: Node
 var impact_effects: Node2D
+const MAX_VISIBLE_GROUND_LOOT := 48
+var ground_loot_sprites: Dictionary = {}
+var ground_glow_cache: Array[Texture2D] = []
 var day_clock := 10.5
 var sun_direction := Vector2.ZERO
 var sun_level := 1.0
@@ -75,6 +79,7 @@ var forest_gui: CanvasLayer
 var selected_harvest: Dictionary = {}
 var selected_harvest_outline: Sprite2D
 var modular_hud: CanvasLayer
+var crafting_book: CanvasLayer
 var ui_touch_ids: Dictionary = {}
 var world_touch_pointer := -1
 var harvest_navigation = HarvestNavigation.new()
@@ -94,8 +99,6 @@ const ACTOR_COLLISION_RADIUS := 9.0
 const LOVE_CAMERA_ZOOM := 1.7
 const LOVE_PLAYER_HEIGHT := 72.0
 const LOVE_OBJECT_PIVOT := 124.0 / 128.0
-var avatar_visual_scale := 1.0
-var avatar_scale_initialized := false
 # Original R2 ecology was exported using Iso.project(x,y,height*0.35).
 const R2_HEIGHT_SCREEN_SCALE := 0.35
 var actor_ground_sample_at := Vector2(INF, INF)
@@ -103,16 +106,22 @@ var actor_ground_screen_offset := 0.0
 var avatar: Node2D
 var actor_world := Vector2(64.0, 128.0)
 var actor_speed := 96.0
-var avatar_parts: Dictionary = {}
-var avatar_motion := 0.0
-var actor_facing_back := false
-var rig_directions: Dictionary = {}
-var rig_animations: Dictionary = {}
+var sprint_held := false
+var action_clip_until := 0.0
+var action_clip := ""
+# Profile art has only left/right sides. Store that choice independently of
+# legacy Rigby's four authored clip directions.
+var profile_facing_sign := 1.0
 var actor_direction := "SE"
-var actor_action := "idle"
-var active_source_clip := ""
-var native_rig: Skeleton2D
 var profile_rig: Node2D
+var profile_contact_shadow: Polygon2D
+var pixellight_world_light: PointLight2D
+var fast_cull_visible_nodes := 0
+var fast_cull_total_nodes := 0
+const ISOLATION_MODES = ["full", "mob_visual_off", "mob_ai_off",
+    "mob_all_off", "solar_off", "objects_off", "terrain_off", "player_rig_off"]
+var perf_isolation_mode := "full"
+var shadow_layer: Node2D
 
 func _update_sun(delta: float) -> void:
     day_clock = fposmod(day_clock + delta * 24.0 / DAY_SECONDS, 24.0)
@@ -210,7 +219,9 @@ func _selection_art(item: Dictionary) -> Dictionary:
     if harvest_alpha_cache.has(key):
         return harvest_alpha_cache[key]
     var sprite: Sprite2D = item["sprite"]
-    var original: Image = sprite.texture.get_image()
+    var original: Image = item.get("pixel_alpha_image", null)
+    if original == null:
+        original = sprite.texture.get_image()
     if original == null or original.is_empty():
         return {}
     var padding := 5
@@ -303,8 +314,103 @@ func _harvest_at_screen(screen_point: Vector2) -> bool:
         return false
     return _select_harvest(chosen)
 
+func _sync_ground_loot_visuals() -> void:
+    if gameplay == null or object_layer == null:
+        return
+    if ground_glow_cache.is_empty():
+        for i in range(1, 5):
+            var path := "res://assets/items/glow/gold_%02d.png" % i
+            ground_glow_cache.append(load(path) if ResourceLoader.exists(path, "Texture2D") else null)
+    var pending: Array[Dictionary] = gameplay.pending_ground_loot()
+    for drop in pending:
+        if ground_loot_sprites.size() >= MAX_VISIBLE_GROUND_LOOT:
+            break
+        var loot_id := str(drop.get("id", ""))
+        if loot_id.is_empty() or ground_loot_sprites.has(loot_id):
+            continue
+        var texture: Texture2D = gameplay.item_texture(str(drop.get("def_id", "")))
+        if texture == null:
+            continue
+        var source_id := str(drop.get("source_id", ""))
+        var source: Dictionary = harvested_by_id.get(source_id, {})
+        var p := Vector2(float(drop.get("x", 0.0)), float(drop.get("y", 0.0)))
+        var screen_pos := WorldProjection.to_screen(p)
+        if source.has("sprite"):
+            screen_pos = (source["sprite"] as Sprite2D).position
+        var node := Node2D.new()
+        node.name = "GroundItem"
+        node.position = screen_pos + Vector2(float(posmod(hash(loot_id), 17) - 8), -9.0)
+        object_layer.add_child(node)
+        var variation := posmod(hash(loot_id), 4)
+        var back: Texture2D = ground_glow_cache[variation]
+        if back != null:
+            var glow := Sprite2D.new()
+            glow.texture = back
+            glow.scale = Vector2.ONE * 0.125
+            glow.modulate.a = 0.76
+            node.add_child(glow)
+        var icon := Sprite2D.new()
+        icon.name = "PickupItemIcon"
+        icon.texture = texture
+        icon.scale = Vector2.ONE * 0.125
+        node.add_child(icon)
+        ground_loot_sprites[loot_id] = node
+
+func _collect_ground_loot(loot_id: String) -> bool:
+    var result: Dictionary = gameplay.pickup_ground_loot(
+        loot_id, actor_world, _next_gameplay_command("pickup"))
+    if not bool(result.get("ok", false)):
+        _harvest_feedback("YERDEN ALMA: " + str(result.get("status", "failed")))
+        return false
+    var node: Node2D = ground_loot_sprites.get(loot_id)
+    ground_loot_sprites.erase(loot_id)
+    _sync_ground_loot_visuals()
+    audio_cues.cue("harvest_complete")
+    _harvest_feedback("ALINDI: " + str(result.get("item_id", "")) + " x" + str(result.get("amount", 0)))
+    # Successful pickup only. A missing optional texture must never trap loot.
+    if node != null:
+        node.z_index = 9
+        var tween := create_tween().set_parallel(true)
+        tween.tween_property(node, "position", avatar.position + Vector2(0, -36), 0.22)
+        tween.tween_property(node, "scale", Vector2.ONE * 0.45, 0.22)
+        tween.tween_property(node, "modulate:a", 0.0, 0.22)
+        tween.chain().tween_callback(node.queue_free)
+    print("TAMU_GROUND_PICKUP_OK id=", loot_id, " item=", result.get("item_id", ""))
+    return true
+
+func _try_nearby_loot() -> bool:
+    var best_id := ""
+    var best_distance := 52.0 * 52.0
+    for record in gameplay.pending_ground_loot():
+        var p := Vector2(float(record["x"]), float(record["y"]))
+        var d := actor_world.distance_squared_to(p)
+        if d < best_distance:
+            best_distance = d
+            best_id = str(record["id"])
+    if best_id.is_empty():
+        return false
+    _collect_ground_loot(best_id)
+    return true
+
+func _ground_loot_at_screen(screen_point: Vector2) -> bool:
+    var closest := ""
+    var best := 29.0 * 29.0
+    for loot_id in ground_loot_sprites:
+        var node: Node2D = ground_loot_sprites[loot_id]
+        var screen := node.get_global_transform_with_canvas() * Vector2.ZERO
+        var dist := screen.distance_squared_to(screen_point)
+        if dist < best:
+            best = dist
+            closest = str(loot_id)
+    if closest.is_empty():
+        return false
+    _collect_ground_loot(closest)
+    return true
+
 func _try_harvest() -> void:
     if selected_harvest.is_empty():
+        if _try_nearby_loot():
+            return
         _harvest_feedback("ÖNCE BİR AĞACA VEYA KAYAYA DOKUN")
         print("TAMU_HARVEST_NO_SELECTION")
         return
@@ -338,6 +444,7 @@ func _try_harvest() -> void:
         _next_gameplay_command("harvest"))
     var status := str(result.get("status","unknown"))
     if status=="started":
+        _play_action_clip("slash")
         audio_cues.cue("harvest_start")
         impact_effects.burst(item["sprite"].position,str(item["kind"]),6)
         _harvest_feedback("TOPLANIYOR…")
@@ -385,6 +492,136 @@ func _sync_building_visuals() -> void:
             placed_visuals[instance_id].queue_free()
             placed_visuals.erase(instance_id)
 
+# Isolated 128px world-alignment review: no inventory debit, save, or collision.
+# The authored LÖVE 19-piece atlas uses 128x128 sprites with pivot (64,92) at
+# 2 pixels/world unit. Native TAMU terrain uses half that scale. No fake build
+# transactions are written; this experiment can be disabled with
+# TAMU_BUILDING_DEMO=0 without touching the canonical building session.
+func _show_modular_building_demo() -> void:
+    if OS.get_environment("TAMU_BUILDING_DEMO") == "0" or object_layer == null or authority == null:
+        return
+    if not BuildingAnchors.verify_projection_contract():
+        push_error("TAMU_BUILDING_PROJECTION_CONTRACT_FAILED")
+        return
+    var manifest_path := "res://assets/building/building_default_manifest.json"
+    var atlas_path := "res://assets/building/building_default_atlas.png"
+    if not FileAccess.file_exists(manifest_path) or not ResourceLoader.exists(atlas_path):
+        push_error("TAMU_BUILDING_ATLAS_MISSING")
+        return
+    var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(manifest_path))
+    if not parsed is Dictionary:
+        push_error("TAMU_BUILDING_MANIFEST_INVALID")
+        return
+    var atlas: Texture2D = load(atlas_path)
+    if atlas == null:
+        push_error("TAMU_BUILDING_TEXTURE_UNAVAILABLE")
+        return
+    var entry_index := {}
+    for entry in parsed.get("entries", []):
+        if entry is Dictionary:
+            entry_index[str(entry.get("def_id",""))+":"+str(int(entry.get("rotation",-1)))] = entry
+
+    # A uniformly scaled preview is important: reducing only the sprite size
+    # would create gaps at the 32-unit module joints. Do not change gameplay
+    # anchors, build costs, collisions or Stage6 save coordinates.
+    # Character height is roughly 72 game pixels; a 24-unit wall at 0.8x
+    # was only 19px tall and made the whole cabin toy-sized. Use a 1.75x
+    # structural/world preview scale (~42px wall, ~73px ridge height).
+    # Scale the module spacing and vertical offsets together to keep seams.
+    const PREVIEW_FACTOR := 1.75
+    const PREVIEW_CELL := 32.0 * PREVIEW_FACTOR
+    var base := actor_world + Vector2(124.0,-64.0)
+    var pieces: Array[Dictionary] = []
+    for ix in range(2):
+        for iy in range(2):
+            var local := Vector2(float(ix),float(iy)) * PREVIEW_CELL
+            pieces.append({"id":"tamu:foundation_wood","offset":local,"z":0.0,"rotation":0,"house":true})
+            pieces.append({"id":"tamu:floor_wood","offset":local,"z":4.0*PREVIEW_FACTOR,"rotation":0,"house":true})
+            if iy == 0:
+                pieces.append({"id":"tamu:wall_wood","offset":local+Vector2(0,-PREVIEW_CELL*0.5),
+                    "z":6.0*PREVIEW_FACTOR,"rotation":0,"house":true})
+            if iy == 1:
+                pieces.append({"id":"tamu:doorway_wood" if ix==1 else "tamu:wall_wood",
+                    "offset":local+Vector2(0,PREVIEW_CELL*0.5),
+                    "z":6.0*PREVIEW_FACTOR,"rotation":0,"house":true})
+            if ix == 0:
+                pieces.append({"id":"tamu:window_wood","offset":local+Vector2(-PREVIEW_CELL*0.5,0),
+                    "z":6.0*PREVIEW_FACTOR,"rotation":1,"house":true})
+            if ix == 1:
+                pieces.append({"id":"tamu:wall_wood","offset":local+Vector2(PREVIEW_CELL*0.5,0),
+                    "z":6.0*PREVIEW_FACTOR,"rotation":1,"house":true})
+            pieces.append({"id":"tamu:roof_slope_wood","offset":local+Vector2(0,-PREVIEW_CELL*0.5),
+                "z":30.0*PREVIEW_FACTOR,"rotation":2,"house":true})
+            pieces.append({"id":"tamu:roof_slope_wood","offset":local+Vector2(0,PREVIEW_CELL*0.5),
+                "z":30.0*PREVIEW_FACTOR,"rotation":0,"house":true})
+
+    # Six modules per side: fence, corner continuity, a front gate. The fence
+    # terrain foot is sampled independently from each local ground location.
+    for i in range(6):
+        var x := float(i-2) * PREVIEW_CELL
+        pieces.append({"id":"tamu:fence_wood","offset":Vector2(x,-2.0*PREVIEW_CELL),
+            "z":0.0,"rotation":0,"house":false})
+        pieces.append({"id":"tamu:fence_gate_wood" if i==2 else "tamu:fence_wood",
+            "offset":Vector2(x,3.0*PREVIEW_CELL),"z":0.0,"rotation":0,"house":false})
+    for i in range(1,5):
+        var y := float(i-2) * PREVIEW_CELL
+        pieces.append({"id":"tamu:fence_wood","offset":Vector2(-2.0*PREVIEW_CELL,y),
+            "z":0.0,"rotation":1,"house":false})
+        pieces.append({"id":"tamu:fence_wood","offset":Vector2(3.0*PREVIEW_CELL,y),
+            "z":0.0,"rotation":1,"house":false})
+
+    # Keep the 2x2 house structurally coplanar. Select the lowest terrain
+    # sample so its base cannot float above higher spots on uneven terrain.
+    var house_ground := INF
+    for ix in range(2):
+        for iy in range(2):
+            var corner := base + Vector2(float(ix),float(iy)) * PREVIEW_CELL
+            house_ground = minf(house_ground, authority.terrain.height_at(corner.x,corner.y))
+    if not is_finite(house_ground):
+        push_error("TAMU_BUILDING_TERRAIN_UNAVAILABLE")
+        return
+
+    var count := 0
+    for part in pieces:
+        var key := str(part["id"])+":"+str(part["rotation"])
+        if not entry_index.has(key):
+            push_error("TAMU_BUILDING_MISSING_VIEW "+key)
+            continue
+        var entry: Dictionary = entry_index[key]
+        var rect_data: Array = entry["atlas_rect"]
+        if rect_data.size() != 4:
+            push_error("TAMU_BUILDING_INVALID_ATLAS_RECT "+key)
+            continue
+        var world_pos: Vector2 = base + part["offset"]
+        var terrain_height: float = house_ground if bool(part["house"]) else authority.terrain.height_at(world_pos.x,world_pos.y)
+        if not is_finite(terrain_height):
+            push_error("TAMU_BUILDING_TERRAIN_INVALID "+key)
+            continue
+        var sprite := Sprite2D.new()
+        sprite.name = "ConstructionReview_" + str(count)
+        sprite.texture = atlas
+        sprite.region_enabled = true
+        sprite.region_rect = Rect2(float(rect_data[0]),float(rect_data[1]),
+            float(rect_data[2]),float(rect_data[3]))
+        sprite.centered = false
+        var scale_value: float = BuildingAnchors.SPRITE_SCALE * PREVIEW_FACTOR
+        # Only raise the ART, not the Y-sort origin: roofs/walls must stay
+        # interleaved with authored rocks, trees, and the player.
+        sprite.offset = -BuildingAnchors.SPRITE_PIVOT - Vector2(0.0,float(part["z"])/scale_value)
+        sprite.scale = Vector2.ONE * scale_value
+        sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+        sprite.position = BuildingAnchors.projected_foot(world_pos,terrain_height)
+        sprite.z_index = 0
+        # IMPORTANT: object_layer has y_sort_enabled=true. A nested Node2D
+        # would sort the entire house as ONE object at (0,0), over the world.
+        object_layer.add_child(sprite)
+        count += 1
+    if count != pieces.size():
+        push_error("TAMU_BUILDING_128_REVIEW_INCOMPLETE views=%d expected=%d" % [count, pieces.size()])
+    else:
+        print("TAMU_BUILDING_128_REVIEW_READY views=",count,
+            " house=32 fence=20 effective_scale=0.875 ysort=world terrain=authored")
+
 func _place_workbench() -> void:
     _cancel_auto_harvest()
     if gameplay == null or authority == null:
@@ -402,10 +639,23 @@ func _place_workbench() -> void:
         audio_cues.cue("craft_complete")
     print("TAMU_BUILD_COMMAND status=",result.get("status","unknown"))
 
-func _begin_craft(recipe_id: String) -> void:
+func _begin_craft(recipe_id: String) -> Dictionary:
     _cancel_auto_harvest()
     var result: Dictionary = gameplay.begin_craft(_next_gameplay_command("craft"), recipe_id)
     print("TAMU_CRAFT_COMMAND recipe=", recipe_id, " status=", result["status"])
+    return result
+
+func open_crafting_book() -> void:
+    if crafting_book != null:
+        _cancel_auto_harvest()
+        _release_joystick()
+        crafting_book.open_library()
+
+func open_inventory() -> void:
+    if crafting_book != null:
+        _cancel_auto_harvest()
+        _release_joystick()
+        crafting_book.open_inventory()
 
 func _tick_gameplay(dt: float) -> void:
     var changes: Array[Dictionary] = gameplay.tick(dt, actor_world)
@@ -423,7 +673,7 @@ func _tick_gameplay(dt: float) -> void:
             item["collected"] = true
             if not selected_harvest.is_empty() and str(selected_harvest["id"])==id:
                 _clear_harvest_selection()
-                _harvest_feedback("KAYNAK TOPLANDI")
+                _harvest_feedback("KAYNAK KIRILDI — YERDEN AL" if bool(change.get("ground_drop", false)) else "KAYNAK TOPLANDI")
             var sprite: Sprite2D = item["sprite"]
             sprite.set_meta("tamu_collected", true)
             sprite.visible = false
@@ -438,12 +688,17 @@ func _tick_gameplay(dt: float) -> void:
             authority.depleted_ids[id] = true
             audio_cues.cue("harvest_complete")
             impact_effects.burst(sprite.position, str(item["kind"]), 14)
+            if bool(change.get("ground_drop", false)):
+                _sync_ground_loot_visuals()
             print("TAMU_HARVEST_OK id=", id, " count=", harvested_count,
                 " item=", change["item_id"], " amount=", change["amount"])
         elif change["type"] == "CraftCompleted":
             audio_cues.cue("craft_complete")
             impact_effects.burst(WorldProjection.to_screen(actor_world), "craft", 12)
             print("TAMU_CRAFT_OK recipe=", change["recipe_id"])
+    # Reuse the authored chop until the actual harvest transaction completes.
+    if not gameplay.active_harvest.is_empty() and Time.get_ticks_msec() / 1000.0 >= action_clip_until:
+        _play_action_clip("slash")
 
 func _init_harvest_button() -> void:
     var ui := CanvasLayer.new()
@@ -600,6 +855,8 @@ func _release_joystick() -> void:
         joystick_knob.position = Vector2(47,47)
 
 func _world_ui_hit(point: Vector2) -> bool:
+    if crafting_book != null and crafting_book.is_open():
+        return true
     # Decorative HUD textures are IGNORE for Godot GUI dispatch, but they
     # must still shield the authored world from pointer selection/drag.
     if modular_hud != null and bool(modular_hud.call("blocks_world_input", point)):
@@ -613,11 +870,22 @@ func _world_ui_hit(point: Vector2) -> bool:
         for child in legacy.get_children():
             if child is Control and child.is_visible_in_tree() and child.get_global_rect().has_point(point):
                 return true
+    if perf_hud != null:
+        var perf_panel: Control = perf_hud.get("panel") as Control
+        if perf_panel != null and perf_panel.is_visible_in_tree() and perf_panel.get_global_rect().has_point(point):
+            return true
     if joystick_base != null and point.distance_to(_joystick_center()) <= 105.0:
+        return true
+    var mobs := get_node_or_null("MobWorld")
+    if mobs != null and mobs.has_method("info_blocks_input") and mobs.call("info_blocks_input", point):
         return true
     return false
 
 func _input(event: InputEvent) -> void:
+    if crafting_book != null and crafting_book.is_open():
+        _release_joystick()
+        drag = false
+        return
     if event is InputEventScreenTouch:
         if event.pressed:
             if _world_ui_hit(event.position):
@@ -642,157 +910,117 @@ func _input(event: InputEvent) -> void:
         get_viewport().set_input_as_handled()
 
 func _make_avatar() -> void:
-    var source = JSON.parse_string(FileAccess.get_file_as_string("res://assets/osman_rig/rig.json"))
-    var mapping = JSON.parse_string(FileAccess.get_file_as_string("res://assets/osman_rig/directions.json"))
-    if source is not Dictionary or mapping is not Dictionary or not mapping.has("directions"):
-        push_error("Original Rigby source or direction profile missing")
-        get_tree().quit(8)
-        return
-    for clip in source.get("animations", []):
-        rig_animations[str(clip["name"])] = clip
-    rig_directions = mapping["directions"]
-    if rig_animations.size() != 44 or rig_directions.size() != 4:
-        push_error("Original 44-clip / 4-direction Rigby contract mismatch")
-        get_tree().quit(9)
-        return
-    native_rig = load("res://scripts/rigby_fk.gd").new()
-    native_rig.configure(source)
+    # One source-faithful character: 23 authored FK bones, 6 weighted layers.
+    # No legacy sprites, Skeleton2D, extra IK or procedural body rotation.
     avatar = Node2D.new()
-    avatar.name = "OsmanNativeParts"
+    avatar.name = "OsmanProfile"
     avatar.z_index = 0
-    # Player and authored objects share one Godot native Y-sorted layer.
     object_layer.add_child(avatar)
-    avatar.add_child(native_rig)
-    for part in ["leg_L","leg_R","torso","arm_L","arm_R","head"]:
-        var sprite := Sprite2D.new()
-        sprite.name = part
-        sprite.centered = true
-        sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-        avatar.add_child(sprite)
-        avatar_parts[part] = sprite
-    _set_actor_clip("SE", "idle")
+    profile_rig = ProfileRig.new()
+    profile_rig.name = "TAMUProfileWeightedRig"
+    avatar.add_child(profile_rig)
+    if not profile_rig.setup() or not profile_rig.verify_contract():
+        push_error("TAMU_PROFILE_GAMEPLAY_SETUP_FAILED")
+        get_tree().quit(73)
+        return
+    avatar.scale = Vector2.ONE
+    if not profile_rig.visible or absf(profile_rig.scale.y / ProfileRig.SOURCE_SCALE - 1.0) > 0.025:
+        push_error("TAMU_PROFILE_GAMEPLAY_SCALE_FAILED")
+        get_tree().quit(75)
+        return
+    print("TAMU_PROFILE_VIEW_SCALE_OK world_height=72")
+    print("TAMU_PROFILE_GAMEPLAY_RIG_ACTIVE bones=23 parts=6 source_fk=true no_ik=true")
+    print("TAMU_PROFILE_ONLY_VISIBLE_OK legacy_sprites=0")
+    profile_contact_shadow = Polygon2D.new()
+    profile_contact_shadow.name = "ProfileGroundContact"
+    var footprint := PackedVector2Array()
+    for i in range(20):
+        var angle := TAU * float(i) / 20.0
+        footprint.append(Vector2(cos(angle) * ACTOR_COLLISION_RADIUS * 1.3,
+            sin(angle) * ACTOR_COLLISION_RADIUS * 0.34))
+    profile_contact_shadow.polygon = footprint
+    profile_contact_shadow.color = Color(0.05, 0.07, 0.06, 0.27)
+    profile_contact_shadow.z_index = -1
+    object_layer.add_child(profile_contact_shadow)
     _update_avatar()
-    _calibrate_avatar_scale()
-    if OS.get_environment("TAMU_VISUAL_CI") == "1":
-        print("TAMU_LOVE_VISUAL_SCALE_OK camera=", $Camera2D.zoom.x,
-            " actor_height=", snappedf(_avatar_visual_height() * avatar_visual_scale, 0.001),
-            " object_foot=124/128")
-    # Keep the old six PNGs as visible renderer until complete Rigby pose parity.
-    if OS.get_environment("TAMU_VISUAL_CI") == "1" or OS.get_environment("TAMU_RIGBY_SKIN_PREVIEW") == "1":
-        rigby_skin = RigbySkinned.build(source, native_rig)
-        if rigby_skin.is_empty():
-            push_error("TAMU_RIGBY_SKIN_BUILD_FAILED")
-            get_tree().quit(21)
-    # Dedicated authored profile: six original PNGs, runtime weighted meshes.
-    # Keep the legacy Rigby source and its visual-parity fixture intact in CI.
-    if OS.get_environment("TAMU_VISUAL_CI") != "1" or OS.get_environment("TAMU_VISUAL_CASE") == "profile":
-        profile_rig = ProfileRig.new()
-        profile_rig.name = "TAMUProfileWeightedRig"
-        avatar.add_child(profile_rig)
-        if not profile_rig.setup() or not profile_rig.verify_contract():
-            push_error("TAMU_PROFILE_GAMEPLAY_SETUP_FAILED")
-            get_tree().quit(73)
-            return
-        # The avatar parent retains the historical Rigby scale for CI and
-        # object-depth parity. Compensate it exactly once for the authored
-        # 1178px / 72-world-unit profile mesh; otherwise the profile is tiny.
-        if avatar_visual_scale <= 0.0:
-            push_error("TAMU_PROFILE_INVALID_PARENT_SCALE")
-            get_tree().quit(74)
-            return
-        profile_rig.scale /= avatar_visual_scale
-        profile_rig.position /= avatar_visual_scale
-        for legacy_part in avatar_parts.values():
-            legacy_part.visible = false
-        if not profile_rig.visible or absf(profile_rig.scale.y * avatar.scale.y / ProfileRig.SOURCE_SCALE - 1.0) > 0.025:
-            push_error("TAMU_PROFILE_GAMEPLAY_SCALE_FAILED")
-            get_tree().quit(75)
-            return
-        for legacy_part in avatar_parts.values():
-            if legacy_part.visible:
-                push_error("TAMU_PROFILE_LEGACY_SPRITE_STILL_VISIBLE")
-                get_tree().quit(76)
-                return
-        print("TAMU_PROFILE_VIEW_SCALE_OK world_height=72")
-        # Keep old pose source for historical visual tests only.
-        native_rig.visible = false
-        print("TAMU_PROFILE_GAMEPLAY_RIG_ACTIVE bones=23 parts=6")
-        print("TAMU_PROFILE_ONLY_VISIBLE_OK legacy_sprites=0")
+    print("TAMU_PROFILE_FOOT_CONTACT_READY radius=", ACTOR_COLLISION_RADIUS)
+
+
+func _play_action_clip(clip: String, seconds: float = 0.65) -> void:
+    if profile_rig == null or clip not in ["slash", "stab"]:
+        return
+    # Preserve the full authored non-looping clip instead of cutting it short.
+    var definition: Dictionary = profile_rig.clips.get(clip, {})
+    var duration := float(definition.get("ms", 0)) * float(definition.get("frames", []).size()) / 1000.0
+    action_clip = clip
+    action_clip_until = Time.get_ticks_msec() / 1000.0 + maxf(seconds, duration)
+    profile_rig.set_clip(clip)
 
 func _set_actor_clip(direction: String, action: String) -> void:
-    if not rig_directions.has(direction):
-        return
-    var clips: Dictionary = rig_directions[direction]["animations"]
-    if not clips.has(action):
-        return
-    var source_name: String = clips[action]
-    if not rig_animations.has(source_name):
-        push_error("Missing authored Rigby clip: " + source_name)
-        return
     actor_direction = direction
-    actor_action = action
-    active_source_clip = source_name
-    if native_rig != null and profile_rig == null:
-        native_rig.play_clip(source_name)
-    if profile_rig != null:
+    if profile_rig != null and Time.get_ticks_msec() / 1000.0 >= action_clip_until:
+        action_clip = ""
         profile_rig.set_clip(action)
-    _set_actor_facing(direction == "NW" or direction == "NE")
-    avatar.scale.x = (-1.0 if direction == "SW" or direction == "NE" else 1.0) * avatar_visual_scale
+    avatar.scale.x = profile_facing_sign
 
-func _set_actor_facing(back: bool) -> void:
-    if actor_facing_back == back and avatar_parts["head"].texture != null:
-        return
-    actor_facing_back = back
-    if profile_rig != null:
-        return  # No legacy texture swaps for code-driven profile animation.
-    var prefix := "back" if back else "front"
-    for part in avatar_parts:
-        avatar_parts[part].texture = load("res://assets/osman_rig/images/%s_%s.png" % [prefix,part])
-    if avatar_scale_initialized:
-        _calibrate_avatar_scale()
-
-func _avatar_visual_height() -> float:
-    var top := INF
-    var bottom := -INF
-    for part in avatar_parts.values():
-        var visual: Sprite2D = part
-        if visual.texture == null:
-            return 0.0
-        var rect: Rect2 = visual.get_rect()
-        var a := visual.position.y + rect.position.y * visual.scale.y
-        var b := a + rect.size.y * visual.scale.y
-        top = minf(top, minf(a, b))
-        bottom = maxf(bottom, maxf(a, b))
-    return bottom - top if is_finite(top) and is_finite(bottom) else 0.0
-
-func _calibrate_avatar_scale() -> void:
-    # Only on asset/facing changes, never once per frame. The six-part demo
-    # remains separate from the deferred native Rigby migration.
-    var raw_height := _avatar_visual_height()
-    if raw_height < 1.0:
-        push_error("TAMU_AVATAR_VISUAL_HEIGHT_INVALID")
-        return
-    avatar_visual_scale = LOVE_PLAYER_HEIGHT / raw_height
-    avatar.scale = Vector2((-1.0 if actor_direction == "SW" or actor_direction == "NE" else 1.0) * avatar_visual_scale, avatar_visual_scale)
-    avatar_scale_initialized = true
 
 func _update_avatar() -> void:
-    # Match the authored object's terrain-height offset without re-sampling when idle.
     if authority != null and actor_world.distance_squared_to(actor_ground_sample_at) > 0.000001:
         var ground_height: float = float(authority.terrain.height_at(actor_world.x, actor_world.y))
         if is_finite(ground_height):
             actor_ground_screen_offset = ground_height * R2_HEIGHT_SCREEN_SCALE
             actor_ground_sample_at = actor_world
-    avatar.position = WorldProjection.to_screen(actor_world) - Vector2(0.0, actor_ground_screen_offset)
-    avatar_parts["leg_L"].position = Vector2(-7, -10)
-    avatar_parts["leg_R"].position = Vector2(7, -10)
-    avatar_parts["torso"].position = Vector2(0, -33)
-    avatar_parts["head"].position = Vector2(0, -66)
-    avatar_parts["arm_L"].position = Vector2(-16, -35)
-    avatar_parts["arm_R"].position = Vector2(16, -35)
-    for part in avatar_parts:
-        avatar_parts[part].scale = Vector2(0.28,0.28)
+    var ground_anchor := WorldProjection.to_screen(actor_world)
+    if profile_contact_shadow != null:
+        profile_contact_shadow.position = ground_anchor - Vector2(0.0, actor_ground_screen_offset)
+    avatar.position = ground_anchor
+    if profile_rig != null:
+        profile_rig.position.y = -ProfileRig.SOURCE_GROUND_Y * ProfileRig.SOURCE_SCALE - actor_ground_screen_offset
 
+# A drawable can straddle an authored source cell; cull by its actual
+# projected bounds and keep a conservative shadow-margin against popping.
+# Region geometry and IDs remain one logical authored region.
+func _fast_view_rect() -> Rect2:
+    var camera: Camera2D = $Camera2D
+    var half_size := get_viewport_rect().size * 0.5 / camera.zoom
+    return Rect2(camera.get_screen_center_position() - half_size, half_size * 2.0)
+
+func _set_perf_isolation(mode: String) -> void:
+    if not ISOLATION_MODES.has(mode):
+        push_error("TAMU_PERF_ISOLATION_INVALID " + mode)
+        return
+    perf_isolation_mode = mode
+    var mobs: Node = get_node_or_null("MobWorld")
+    if mobs != null:
+        mobs.call("set_isolation_mode", mode)
+    if shadow_layer != null:
+        shadow_layer.visible = mode != "solar_off"
+    if profile_rig != null:
+        profile_rig.visible = mode != "player_rig_off"
+    if detail_environment != null:
+        detail_environment.visible = mode != "terrain_off"
+    for region_id in region_chunks:
+        var terrain_node: Node2D = region_chunks[region_id]
+        if is_instance_valid(terrain_node):
+            terrain_node.visible = mode != "terrain_off"
+    if object_layer != null and not object_visuals_by_chunk.is_empty():
+        _refresh_streaming_requests()
+    if perf_hud != null:
+        perf_hud.call("set_isolation_mode", mode)
+    print("TAMU_PERF_ISOLATION_APPLIED profile=", mode,
+        " regions=", region_chunks.size(), " authored_objects=", object_count)
+
+func _fast_node_in_view(node: Node2D, view: Rect2) -> bool:
+    if not node is Sprite2D:
+        return true
+    var sprite := node as Sprite2D
+    if sprite.texture == null:
+        return false
+    var source := sprite.get_rect()
+    var render_bounds := Rect2(sprite.position + source.position * sprite.scale, source.size * sprite.scale)
+    # Solar silhouette vertex shader sweeps further than its source crop.
+    var margin := 180.0 if sprite.material == silhouette_material else 54.0
+    return render_bounds.grow(margin).intersects(view)
 
 func _chunk_distance(stem: String) -> float:
     var parts := stem.split("_")
@@ -810,6 +1038,8 @@ func _refresh_streaming_requests() -> void:
     view_required = WorldStream.required_chunks(available_chunks, center, view_size, camera.zoom)
     if merged_mode:
         pending.clear()
+        var fast_mode := VisualEnvironment.mobile_fast_mode()
+        var fast_view := _fast_view_rect() if fast_mode else Rect2()
         # The terrain stays one authored region mesh, but its individual
         # foliage/rock sprites and alpha shadows are culled by visible source cell.
         for stem in object_visuals_by_chunk:
@@ -820,8 +1050,10 @@ func _refresh_streaming_requests() -> void:
             # objects on every camera plan when they are already correct.
             var nodes: Array = object_visuals_by_chunk[stem]
             var stale: bool = not nodes.is_empty() and is_instance_valid(nodes[0]) and                 nodes[0].visible != (show and not bool(nodes[0].get_meta("tamu_collected", false)))
-            if stale or not object_chunk_visibility.has(stem) or bool(object_chunk_visibility[stem]) != show:
-                _set_chunk_visuals_visible(str(stem), show)
+            # Camera motion within a 256-unit authored cell also changes
+            # per-object visibility; don't rely on a single cell sentinel.
+            if fast_mode or stale or not object_chunk_visibility.has(stem) or bool(object_chunk_visibility[stem]) != show:
+                _set_chunk_visuals_visible(str(stem), show, fast_view)
                 object_chunk_visibility[stem] = show
         camera_missing = 0
         last_plan_camera = center
@@ -848,6 +1080,13 @@ func _chunk_distance_to_actor(stem: String) -> float:
     return WorldProjection.chunk_center_from_key(stem).distance_squared_to(actor_world)
 
 func _ready() -> void:
+    if VisualEnvironment.mobile_fast_mode():
+        # canvas_items renders at the full Android display resolution.
+        # viewport renders into the 720x1280 base, then upscales once.
+        var root_window: Window = get_tree().root
+        root_window.content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
+        root_window.content_scale_size = Vector2i(720, 1280)
+        print("TAMU_MOBILE_FAST_MODE renderer=viewport base=720x1280 texture_tier=source")
     if OS.get_environment("TAMU_VISUAL_CI") == "1":
         if not WorldProjection.verify_contract():
             push_error("TAMU_WORLD_PROJECTION_GATE_FAILED")
@@ -868,7 +1107,7 @@ func _ready() -> void:
     silhouette_material.shader = SHADOW_SHADER
     terrain_atlas = load("res://assets/terrain25d/atlas_00.png")
     env_visual_stage = VisualEnvironment.level()
-    var terrain_hires := OS.get_environment("TAMU_TERRAIN_HIRES") != "0" and ResourceLoader.exists("res://assets/terrain25d/atlas_00_hires.png")
+    var terrain_hires := not VisualEnvironment.mobile_fast_mode() and OS.get_environment("TAMU_TERRAIN_HIRES") != "0" and ResourceLoader.exists("res://assets/terrain25d/atlas_00_hires.png")
     if terrain_hires:
         var terrain_path := "res://assets/terrain25d/atlas_00_mix_hires.png" if env_visual_stage >= 1 else "res://assets/terrain25d/atlas_00_hires.png"
         if ResourceLoader.exists(terrain_path):
@@ -929,6 +1168,9 @@ func _ready() -> void:
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and OS.get_environment("TAMU_VISUAL_CASE") == "dawn":
         day_clock = 6.0
     gameplay = GameplaySession.new()
+    # Keep historical visual regression instant-credit; production enables durable ground items.
+    if OS.get_environment("TAMU_VISUAL_CI") != "1":
+        gameplay.enable_ground_loot()
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and not gameplay.verify_contract():
         push_error("TAMU_GAMEPLAY_DOMAIN_GATE_FAILED")
         get_tree().quit(23)
@@ -971,6 +1213,7 @@ func _ready() -> void:
                     item["silhouette"].set_meta("tamu_collected", true)
                     item["silhouette"].visible = false
         authority.depleted_ids = gameplay.depleted.duplicate(true)
+        _sync_ground_loot_visuals()
         print("TAMU_STAGE6_PRODUCTION_ACTIVE world=",world["id"]," region=",authority.region_id)
         if OS.get_environment("TAMU_PRODUCTION_SMOKE") == "1":
             print("TAMU_STAGE6_PRODUCTION_SMOKE_OK status=",enabled["status"]," identity=",world["status"],
@@ -978,7 +1221,7 @@ func _ready() -> void:
             set_process(false)
             get_tree().quit()
             return
-    if env_visual_stage >= 3 and not OS.has_feature("mobile"):
+    if env_visual_stage >= 3 and not VisualEnvironment.mobile_fast_mode():
         var decor_manifest: Variant = JSON.parse_string(
             FileAccess.get_file_as_string("res://assets/terrain25d/manifest.json"))
         var decor_hires_active: bool = VisualEnvironment.apply_highres_object_uvs(decor_manifest)
@@ -996,22 +1239,12 @@ func _ready() -> void:
         _refresh_streaming_requests()
     _make_avatar()
     _sync_building_visuals()
-    if OS.get_environment("TAMU_VISUAL_CI") == "1":
-        if native_rig == null or not native_rig.verify_curve_reference("res://chunks/rigby_curve_reference.txt"):
-            push_error("TAMU_RIGBY_CURVE_GATE_FAILED")
-            get_tree().quit(20)
-            return
-        native_rig.advance(0.0)
-        if not RigbySkinned.update_pose(rigby_skin, native_rig, native_rig.bones) or not RigbySkinned.verify(rigby_skin):
-            push_error("TAMU_RIGBY_WEIGHTED_MESH_GATE_FAILED")
-            get_tree().quit(22)
-            return
-        print("TAMU_RIGBY_WEIGHTED_MESH_OK meshes=", rigby_skin["records"].size(),
-            " vertices=", rigby_skin["vertices"], " triangles=", rigby_skin["triangles"],
-            " influences=", rigby_skin["influences"])
+    _show_modular_building_demo()
     perf_hud = load("res://scripts/performance_hud.gd").new()
     add_child(perf_hud)
     perf_hud.layer = 118 # HUD _ready sets 100; override after attachment.
+    perf_hud.connect("isolation_requested", Callable(self, "_set_perf_isolation"))
+    _set_perf_isolation("full")
     _init_mobile_joystick()
     _init_harvest_button()
     forest_gui=FOREST_GUI.new()
@@ -1024,6 +1257,10 @@ func _ready() -> void:
     add_child(modular_hud)
     if modular_hud.setup(self):
         print("TAMU_MODULAR_HUD_READY")
+    crafting_book = CRAFTING_BOOK.new()
+    crafting_book.name = "TamuCraftingBook"
+    crafting_book.setup(gameplay, Callable(self, "_begin_craft"))
+    add_child(crafting_book)
     print("TAMU_GODOT_TERRAIN_START chunks=", pending.size())
 
 func _load_region(manifest_path: String) -> bool:
@@ -1040,6 +1277,7 @@ func _load_region(manifest_path: String) -> bool:
     var node: Node2D = unified["root"]
     add_child(node)
     region_chunks[region_id] = node
+    node.visible = perf_isolation_mode != "terrain_off"
     loaded = int(unified["source_cells"])
     vertices = int(unified["vertices"])
     for stem in object_visuals_by_chunk:
@@ -1069,10 +1307,20 @@ func _unload_region(region_id: String) -> bool:
     print("TAMU_REGION_UNLOAD_OK region=", region_id, " remaining=", region_chunks.size())
     return true
 
-func _set_chunk_visuals_visible(stem: String, show: bool) -> void:
+func _set_chunk_visuals_visible(stem: String, show: bool, viewport_bounds: Rect2 = Rect2()) -> void:
+    var fast_mode := VisualEnvironment.mobile_fast_mode()
+    var bounds := viewport_bounds if viewport_bounds.has_area() else (_fast_view_rect() if fast_mode else Rect2())
     for node in object_visuals_by_chunk.get(stem, []):
-        if is_instance_valid(node):
-            node.visible = show and not bool(node.get_meta("tamu_collected", false))
+        if not is_instance_valid(node):
+            continue
+        var visible_now := show and not bool(node.get_meta("tamu_collected", false)) \
+            and not bool(node.get_meta("tamu_pixellight_replaced_shadow", false))
+        if visible_now and perf_isolation_mode == "objects_off":
+            visible_now = false
+        if visible_now and fast_mode:
+            visible_now = _fast_node_in_view(node, bounds)
+        if node.visible != visible_now:
+            node.visible = visible_now
 
 func _load_chunk(stem: String) -> void:
     var payload: Dictionary = world_source.read_chunk(stem)
@@ -1160,15 +1408,28 @@ func _enforce_resident_budget() -> void:
 func _verify_visual_order() -> bool:
     if not object_layer.y_sort_enabled or object_layer.z_index <= 2:
         return false
-    if avatar.get_parent() != object_layer or not avatar_scale_initialized:
+    if avatar.get_parent() != object_layer or profile_rig == null:
         return false
-    if absf(_avatar_visual_height() * avatar_visual_scale - LOVE_PLAYER_HEIGHT) > 0.5:
+    if not profile_rig.visible and perf_isolation_mode != "player_rig_off":
         return false
     var expected_zoom := 0.82 if OS.get_environment("TAMU_VISUAL_CASE") == "zoom" else (2.0 if OS.get_environment("TAMU_VISUAL_CASE") == "grounding" else LOVE_CAMERA_ZOOM)
     if not is_equal_approx($Camera2D.zoom.x, expected_zoom):
         return false
-    if authority != null and absf(avatar.position.y - (WorldProjection.to_screen(actor_world).y - actor_ground_screen_offset)) > 0.01:
-        return false
+    if authority != null:
+        var projected_foot := WorldProjection.to_screen(actor_world)
+        if profile_rig != null:
+            if profile_contact_shadow == null or profile_contact_shadow.get_parent() != object_layer:
+                return false
+            if profile_contact_shadow.z_index != -1 or profile_contact_shadow.polygon.size() != 20:
+                return false
+            if profile_contact_shadow.position.distance_to(projected_foot - Vector2(0.0, actor_ground_screen_offset)) > 0.01:
+                return false
+            if avatar.position.distance_to(projected_foot) > 0.01:
+                return false
+            if absf(profile_rig.position.y + ProfileRig.SOURCE_GROUND_Y * ProfileRig.SOURCE_SCALE + actor_ground_screen_offset) > 0.01:
+                return false
+        elif absf(avatar.position.y - (projected_foot.y - actor_ground_screen_offset)) > 0.01:
+            return false
     for item in harvestables:
         var sprite: Sprite2D = item["sprite"]
         if sprite.get_parent() != object_layer or sprite.z_index != 0:
@@ -1210,9 +1471,9 @@ func _load_objects() -> void:
     object_layer.z_index = 2
     object_layer.y_sort_enabled = true
     add_child(object_layer)
-    var shadow_manifest = JSON.parse_string(FileAccess.get_file_as_string("res://assets/terrain25d/static_shadow/objects_shadow_manifest.json"))
-    var shadow_atlas: Texture2D = load("res://assets/terrain25d/static_shadow/shadows_12.png")
-    var shadow_layer := Node2D.new()
+    # Solar silhouettes use the actual authored AtlasTexture. The old
+    # separate baked shadow atlas/manifest were unused resident resources.
+    shadow_layer = Node2D.new()
     shadow_layer.name = "CanonicalR2Shadows"
     shadow_layer.z_index = 2
     add_child(shadow_layer)
@@ -1306,6 +1567,11 @@ func _load_objects() -> void:
                 $Camera2D.zoom = Vector2(2.0, 2.0)
                 _refresh_streaming_requests()
                 break
+    if OS.get_environment("TAMU_PIXELLIGHT_WORLD") == "1":
+        var pl_result: Dictionary = PixelLightWorld.install(harvestables, object_layer, actor_world)
+        pixellight_world_light = pl_result.get("light") as PointLight2D
+        if int(pl_result.get("count", 0)) == 0:
+            push_warning("TAMU_PIXELLIGHT_WORLD_NO_SAMPLES")
     print("TAMU_CANONICAL_OBJECTS_LOADED count=", object_count)
 
 var object_count: int = 0
@@ -1327,9 +1593,14 @@ func _process(delta: float) -> void:
         _cancel_auto_harvest()
         _harvest_feedback("OTOMATİK YÜRÜYÜŞ DURDURULDU")
     var automatic_direction: Vector2 = _auto_harvest_direction(delta) if manual_direction.length_squared() <= 0.01 else Vector2.ZERO
-    var direction: Vector2 = manual_direction if manual_direction.length_squared() > 0.01 else automatic_direction
+    var manual_active: bool = manual_direction.length_squared() > 0.01
+    var direction: Vector2 = manual_direction if manual_active else automatic_direction
+    var projected_travel_pixels := 0.0
     if direction.length_squared() > 0.01:
-        var intended := direction * actor_speed * delta
+        # Joystick and keyboard are screen-space; route-following is already
+        # world-space. Convert only manual input via inverse isometric mapping.
+        var world_direction: Vector2 = WorldProjection.joystick_to_world(direction) if manual_active else direction
+        var intended := world_direction * actor_speed * (1.65 if sprint_held and manual_active else 1.0) * delta
         if not auto_harvest_id.is_empty() and not auto_route.is_empty():
             intended = intended.limit_length(actor_world.distance_to(auto_route[0]))
         var position_before: Vector2 = actor_world
@@ -1353,27 +1624,34 @@ func _process(delta: float) -> void:
         var next_direction := "NW" if direction.y < 0.0 else "SE"
         if direction.x < -0.05:
             next_direction = "NE" if direction.y < 0.0 else "SW"
-        _set_actor_clip(next_direction, "walk")
-        avatar_motion += delta * 10.0
-        avatar_parts["leg_L"].rotation = sin(avatar_motion)*0.16
-        avatar_parts["leg_R"].rotation = -sin(avatar_motion)*0.16
+        if profile_rig != null:
+            # The real Cartesian movement is projected through the existing
+            # 45-degree iso transform; diagonal and depth-only movement need
+            # no new front/back art. A blocked player keeps their last side.
+            profile_facing_sign = WorldProjection.profile_facing_sign(actor_world - position_before, profile_facing_sign)
+        var world_step: Vector2 = actor_world - position_before
+        var moved_distance: float = world_step.length()
+        projected_travel_pixels = WorldProjection.to_screen(world_step).length()
+        _set_actor_clip(next_direction, ("run" if sprint_held and manual_active else "walk") if moved_distance > 0.01 else "idle")
     else:
         _set_actor_clip(actor_direction, "idle")
-        avatar_parts["leg_L"].rotation = 0.0
-        avatar_parts["leg_R"].rotation = 0.0
     _update_avatar()
+    if pixellight_world_light != null:
+        pixellight_world_light.position = (profile_contact_shadow.position if profile_contact_shadow != null else avatar.position) + Vector2(0.0, -45.0)
     _tick_gameplay(delta)
-    # The legacy 40-bone reference must not update alongside the active
-    # 23-bone player in production; preserve it in dedicated CI fixtures.
-    if native_rig != null and (profile_rig == null or OS.get_environment("TAMU_VISUAL_CI") == "1"):
-        native_rig.advance(visual_delta)
-    if profile_rig != null:
-        profile_rig.advance(visual_delta)
+    if profile_rig != null and perf_isolation_mode != "player_rig_off":
+        profile_rig.advance(visual_delta, projected_travel_pixels)
     var rig_end := Time.get_ticks_usec()
     if direction.length_squared() > 0.01:
-        $Camera2D.position = $Camera2D.position.lerp(avatar.position, minf(delta * 4.0, 1.0))
+        # Follow the painted ground-contact point on elevated terrain, not the
+        # unprojected Y-sort anchor; this prevents apparent height drift.
+        var camera_target: Vector2 = profile_contact_shadow.position if profile_contact_shadow != null else avatar.position
+        $Camera2D.position = $Camera2D.position.lerp(camera_target, minf(delta * 4.0, 1.0))
     var camera_center: Vector2 = $Camera2D.get_screen_center_position()
-    if frame_no % 10 == 0 or camera_center.distance_squared_to(last_plan_camera) > 96.0 * 96.0 or $Camera2D.zoom != last_plan_zoom:
+    var fast_mode := VisualEnvironment.mobile_fast_mode()
+    var plan_period := 3 if fast_mode else 10
+    var plan_threshold := 36.0 if fast_mode else 96.0
+    if frame_no % plan_period == 0 or camera_center.distance_squared_to(last_plan_camera) > plan_threshold * plan_threshold or $Camera2D.zoom != last_plan_zoom:
         _refresh_streaming_requests()
     if not merged_mode:
         if not pending.is_empty():
@@ -1382,10 +1660,86 @@ func _process(delta: float) -> void:
             _enforce_resident_budget()
     var stream_end := Time.get_ticks_usec()
     if perf_hud != null:
-        perf_hud.record(delta,loaded,total_cached,object_count,vertices,actor_world,stream_end-rig_end,rig_end-frame_start,"walk" if direction.length_squared()>0.01 else "idle")
-    marker.text = "TAMU Godot R2 / authored area\n%d resident / %d source | %d verts\nViewport missing %d | Mesh est %.1f MiB\nFPS %d | frame %.2f ms | Time %.1f | Harvest %d\nOdun %d | Tas %d | Tahta %d | Tezgah %d" % [loaded, total_cached, vertices, camera_missing, float(vertices * WorldStream.ESTIMATED_BYTES_PER_VERTEX)/1048576.0, Engine.get_frames_per_second(), delta * 1000.0,day_clock,harvested_count, gameplay.count_item("core:wood_log"),gameplay.count_item("core:stone"),gameplay.count_item("core:wood_plank"),gameplay.count_item("core:workbench")]
+        var mob_node: Node = get_node_or_null("MobWorld")
+        var mob_usec: int = int(mob_node.get("last_process_usec")) if mob_node != null else 0
+        perf_hud.record(delta,loaded,total_cached,object_count,vertices,actor_world,
+            stream_end-rig_end,rig_end-frame_start,"walk" if direction.length_squared()>0.01 else "idle",
+            mob_usec,int(mob_node.get("last_think_usec")) if mob_node != null else 0,
+            int(mob_node.get("last_scan_usec")) if mob_node != null else 0,
+            int(mob_node.get("last_navigation_usec")) if mob_node != null else 0,
+            int(mob_node.get("last_movement_usec")) if mob_node != null else 0)
+    # HUD string formatting and inventory queries are diagnostic only;
+    # avoid running them every frame on Android.
+    if frame_no % 15 == 0:
+        marker.text = "TAMU Godot R2 / authored area\n%d resident / %d source | %d verts\nViewport missing %d | Mesh est %.1f MiB\nFPS %d | frame %.2f ms | Time %.1f | Harvest %d\nOdun %d | Tas %d | Tahta %d | Tezgah %d" % [loaded, total_cached, vertices, camera_missing, float(vertices * WorldStream.ESTIMATED_BYTES_PER_VERTEX)/1048576.0, Engine.get_frames_per_second(), delta * 1000.0,day_clock,harvested_count, gameplay.count_item("core:wood_log"),gameplay.count_item("core:stone"),gameplay.count_item("core:wood_plank"),gameplay.count_item("core:workbench")]
     if frame_no % 120 == 0:
         print("TAMU_GODOT_FRAME frame=", frame_no, " loaded=", loaded, " fps=", Engine.get_frames_per_second())
+    if OS.get_environment("TAMU_PERF_ISOLATION_CI") == "1":
+        if frame_no % 12 == 0 and frame_no >= 12 and frame_no <= 96:
+            var next_index := mini(floori(float(frame_no) / 12.0), ISOLATION_MODES.size() - 1)
+            _set_perf_isolation(ISOLATION_MODES[next_index])
+        if frame_no == 108:
+            var tagged := {}
+            for entry in perf_hud.get("samples"):
+                tagged[str(entry.get("isolation_profile", ""))] = true
+            for required in ISOLATION_MODES:
+                if not tagged.has(required):
+                    push_error("TAMU_PERF_ISOLATION_CI_MISSING " + required)
+                    get_tree().quit(84)
+                    return
+                var frame_ms: Array[float] = []
+                var draws: Array[float] = []
+                var mobs_ms: Array[float] = []
+                var mob_think_ms: Array[float] = []
+                var mob_nav_ms: Array[float] = []
+                var mob_move_ms: Array[float] = []
+                for entry in perf_hud.get("samples"):
+                    if str(entry.get("isolation_profile", "")) != required or float(entry.get("isolation_elapsed_ms", 0)) < 200.0:
+                        continue
+                    frame_ms.append(float(entry.get("frame_ms", 0)))
+                    draws.append(float(entry.get("draw_calls", 0)))
+                    mobs_ms.append(float(entry.get("mob_cpu_ms_previous_frame", 0)))
+                    mob_think_ms.append(float(entry.get("mob_think_ms_previous_frame", 0)))
+                    mob_nav_ms.append(float(entry.get("mob_navigation_ms_previous_frame", 0)))
+                    mob_move_ms.append(float(entry.get("mob_movement_ms_previous_frame", 0)))
+                frame_ms.sort()
+                draws.sort()
+                mobs_ms.sort()
+                mob_think_ms.sort()
+                mob_nav_ms.sort()
+                mob_move_ms.sort()
+                if not frame_ms.is_empty():
+                    var middle: int = frame_ms.size() / 2
+                    print("TAMU_PERF_ISOLATION_METRIC profile=", required,
+                        " frames=", frame_ms.size(), " frame_p50_ms=", frame_ms[middle],
+                        " draw_p50=", draws[mini(middle, draws.size()-1)],
+                        " mob_cpu_p50_ms_prev=", mobs_ms[mini(middle, mobs_ms.size()-1)],
+                        " think_p50_ms_prev=", mob_think_ms[mini(middle, mob_think_ms.size()-1)],
+                        " nav_p50_ms_prev=", mob_nav_ms[mini(middle, mob_nav_ms.size()-1)],
+                        " movement_p50_ms_prev=", mob_move_ms[mini(middle, mob_move_ms.size()-1)],
+                        " think_p95_ms_prev=", mob_think_ms[clampi(ceili(0.95 * mob_think_ms.size())-1,0,mob_think_ms.size()-1)],
+                        " nav_p95_ms_prev=", mob_nav_ms[clampi(ceili(0.95 * mob_nav_ms.size())-1,0,mob_nav_ms.size()-1)],
+                        " movement_p95_ms_prev=", mob_move_ms[clampi(ceili(0.95 * mob_move_ms.size())-1,0,mob_move_ms.size()-1)])
+            _set_perf_isolation("full")
+            if shadow_layer == null or not shadow_layer.visible or profile_rig == null or not profile_rig.visible or object_count != 832 or region_chunks.size() != 1:
+                push_error("TAMU_PERF_ISOLATION_RESTORE_FAILED")
+                get_tree().quit(85)
+                return
+            print("TAMU_PERF_ISOLATION_GATE_OK profiles=", ISOLATION_MODES.size(),
+                " objects=", object_count, " region=", region_chunks.size())
+            get_tree().quit()
+            return
+    if fast_mode and frame_no == 90:
+        var visible_nodes := 0
+        var total_nodes := 0
+        for stem in object_visuals_by_chunk:
+            for node in object_visuals_by_chunk[stem]:
+                total_nodes += 1
+                if node.visible:
+                    visible_nodes += 1
+        fast_cull_visible_nodes = visible_nodes
+        fast_cull_total_nodes = total_nodes
+        print("TAMU_MOBILE_CULL_OK visible_nodes=", visible_nodes, " total_nodes=", total_nodes)
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and OS.get_environment("TAMU_VISUAL_CASE") == "gui" and frame_no == 54:
         for candidate in harvestables:
             if str(candidate["kind"]) == "tree" and str(candidate.get("family","")) in ["oak","broadleaf"] and candidate["sprite"].visible:
@@ -1464,10 +1818,13 @@ func _process(delta: float) -> void:
             _refresh_streaming_requests()
         var visible_faults := 0
         var visible_fail_examples: Array[String] = []
+        var fast_view := _fast_view_rect() if fast_mode else Rect2()
         for stem in object_visuals_by_chunk:
             for node in object_visuals_by_chunk[stem]:
                 var source_visible: bool = view_required.has(stem) if merged_mode else (chunk_nodes.has(stem) and chunk_nodes[stem].visible)
-                var expected: bool = source_visible and not bool(node.get_meta("tamu_collected", false))
+                var expected: bool = source_visible and not bool(node.get_meta("tamu_collected", false)) and not bool(node.get_meta("tamu_pixellight_replaced_shadow", false))
+                if expected and fast_mode:
+                    expected = _fast_node_in_view(node, fast_view)
                 if node.visible != expected:
                     visible_faults += 1
                     if visible_fail_examples.size() < 3:
@@ -1520,11 +1877,11 @@ func _process(delta: float) -> void:
             " source_vertices=",vertices)
         print("TAMU_VISUAL_VARIANT mode=", "merged" if merged_mode else "legacy",
             " case=", OS.get_environment("TAMU_VISUAL_CASE"))
-        if error != OK or loaded < 16 or total_cached < 100 or vertices < 1000 or object_count < 10 or avatar_parts.size() != 6 or rig_animations.size() != 44 or active_source_clip == "":
+        if error != OK or loaded < 16 or total_cached < 100 or vertices < 1000 or object_count < 10 or profile_rig == null or not profile_rig.configured:
             push_error("TAMU_VISUAL_GATE_FAILED " + str(error))
             get_tree().quit(3)
         else:
-            print("TAMU_VISUAL_CAPTURE_OK chunks=", loaded, " vertices=", vertices, " objects=", object_count, " avatar_parts=", avatar_parts.size())
+            print("TAMU_VISUAL_CAPTURE_OK chunks=", loaded, " vertices=", vertices, " objects=", object_count, " profile_parts=", profile_rig.source.get("order", []).size())
             if harvestables.is_empty():
                 push_error("TAMU_HARVEST_TEST_EMPTY")
                 get_tree().quit(12)
@@ -1607,6 +1964,9 @@ func _process(delta: float) -> void:
             get_tree().quit()
 
 func _unhandled_input(event: InputEvent) -> void:
+    if crafting_book != null and crafting_book.is_open():
+        drag = false
+        return
     # Only a pointer started on the authored world may select or pan it.
     # Controls and art may belong to separate CanvasLayers; dispatch alone
     # cannot prevent all ScreenTouch/mouse-emulation leaks on Android.
@@ -1615,7 +1975,15 @@ func _unhandled_input(event: InputEvent) -> void:
             if ui_touch_ids.has(event.index) or _world_ui_hit(event.position)                     or world_touch_pointer >= 0:
                 return
             world_touch_pointer = event.index
-            if _harvest_at_screen(event.position):
+            var mobs := get_node_or_null("MobWorld")
+            if mobs != null and mobs.has_method("select_at_screen") and mobs.call("select_at_screen", event.position):
+                _clear_harvest_selection()
+                drag = false
+                get_viewport().set_input_as_handled()
+                return
+            if _ground_loot_at_screen(event.position) or _harvest_at_screen(event.position):
+                if mobs != null and mobs.has_method("hide_info"):
+                    mobs.call("hide_info")
                 drag = false
                 get_viewport().set_input_as_handled()
                 return
@@ -1637,7 +2005,15 @@ func _unhandled_input(event: InputEvent) -> void:
             if _world_ui_hit(event.position):
                 drag = false
                 return
-            if _harvest_at_screen(event.position):
+            var mobs := get_node_or_null("MobWorld")
+            if mobs != null and mobs.has_method("select_at_screen") and mobs.call("select_at_screen", event.position):
+                _clear_harvest_selection()
+                drag = false
+                get_viewport().set_input_as_handled()
+                return
+            if _ground_loot_at_screen(event.position) or _harvest_at_screen(event.position):
+                if mobs != null and mobs.has_method("hide_info"):
+                    mobs.call("hide_info")
                 drag = false
                 get_viewport().set_input_as_handled()
                 return

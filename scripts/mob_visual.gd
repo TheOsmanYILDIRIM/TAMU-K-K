@@ -3,6 +3,8 @@ extends Node2D
 var skeleton: Skeleton2D
 var player: AnimationPlayer
 var artwork: Node2D
+var contact_shadow: Polygon2D
+var ground_screen_height := 0.0
 var source: Resource
 var bone_nodes: Array[Bone2D] = []
 var current_clip := ""
@@ -25,6 +27,7 @@ func configure(data: Resource, scale_value: float) -> bool:
     shadow.polygon = ring
     shadow.color = Color(0.08, 0.10, 0.06, 0.23)
     add_child(shadow)
+    contact_shadow = shadow
     var mirror := Node2D.new()
     mirror.name = "Facing"
     # Animation paths are rooted at Facing, keeping mirroring out of bone transforms.
@@ -78,6 +81,15 @@ func configure(data: Resource, scale_value: float) -> bool:
     play("idle", 0.0)
     player.advance(0.0)
     return true
+
+# Root remains at the unraised Cartesian ground projection for the same
+# Y-sort contract as the player; only the artwork and footprint are lifted.
+func set_ground_height(screen_height: float) -> void:
+    if not installed or not is_finite(screen_height):
+        return
+    ground_screen_height = screen_height
+    contact_shadow.position.y = -screen_height
+    artwork.position.y = -float(source.ground_y) - screen_height / visual_scale
 
 func play(clip: String, blend: float = 0.14, rate: float = 1.0) -> bool:
     if not installed or not player.has_animation(clip):

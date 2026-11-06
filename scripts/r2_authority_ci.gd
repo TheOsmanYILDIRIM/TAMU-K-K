@@ -23,6 +23,25 @@ func _initialize() -> void:
                 passed = passed and before.get("status") == "existing"
             if passed:
                 print("TAMU_R2_AUTHORITY_OK phase=",phase," objects=",a.records.size()," obstacles=",a.boxes.size()," uuid=",before["id"])
+    # Compare broadphase queries against the original 832-box exhaustive search,
+    # including cross-cell rectangles and source-order parity.
+    if passed and phase == "reopen":
+        for iteration in range(160):
+            var item: Dictionary = a.boxes[(iteration * 37) % a.boxes.size()]
+            var x1 := float(item["x"]) - float(iteration % 6) * 79.0
+            var y1 := float(item["y"]) - float(iteration % 4) * 65.0
+            var x2 := float(item["x"]) + float(item["w"]) + float(iteration % 3) * 110.0
+            var y2 := float(item["y"]) + float(item["h"]) + float(iteration % 7) * 45.0
+            var expected: Array = []
+            for shape in a.boxes:
+                if float(shape["x"]) < x2 and float(shape["x"]) + float(shape["w"]) > x1 \
+                        and float(shape["y"]) < y2 and float(shape["y"]) + float(shape["h"]) > y1:
+                    expected.append(shape)
+            if a.obstacles(x1, y1, x2, y2) != expected:
+                passed = false
+                break
+        if passed:
+            print("TAMU_R2_OBSTACLE_INDEX_PARITY_OK queries=160 objects=", a.boxes.size())
     if passed and phase == "reopen" and not a.boxes.is_empty():
         var box: Dictionary = a.boxes[0]
         var before_hits: Array = a.obstacles(float(box["x"]),float(box["y"]),
