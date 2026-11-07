@@ -41,6 +41,20 @@ func _initialize() -> void:
         push_error("TAMU_HOUSE_DOOR_PROJECTION_FAILED")
         quit(96)
         return
+    if not Cabin.fallback_contains_source(Cabin.SOURCE_DOOR):
+        push_error("TAMU_HOUSE_FALLBACK_DOOR_HIT_FAILED")
+        quit(104)
+        return
+    if Cabin.fallback_contains_source(Vector2(-1000.0,-1000.0)):
+        push_error("TAMU_HOUSE_FALLBACK_HIT_LEAK")
+        quit(105)
+        return
+    cabin._create_procedural_exterior()
+    if cabin.exterior_fallback == null or cabin.exterior_fallback.get_child_count() < 15:
+        push_error("TAMU_HOUSE_FALLBACK_DRAW_FAILED")
+        quit(106)
+        return
+    print("TAMU_HOUSE_FALLBACK_CONTRACT_OK drawing=procedural door_hit=true")
     cabin.free()
     var p = Production.new()
     if not p.initialize() or p.definitions["modules"].size() < 30 or p.definitions["sites"].size() < 12:

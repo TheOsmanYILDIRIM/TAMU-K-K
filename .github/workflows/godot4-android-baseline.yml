@@ -499,6 +499,13 @@ jobs:
               cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" "screenshots/$case-$mode.png"
             done
           done
+          # Spawn-near cabin must render even when the user's source PNG is not packaged.
+          TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged TAMU_VISUAL_CASE=house timeout --kill-after=3s 90s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 2>&1 | tee screenshots/house-spawn.log
+          grep -q 'TAMU_SINGLE_HOUSE_READY' screenshots/house-spawn.log
+          grep -q 'TAMU_HOUSE_EXTERIOR art=code_drawn_fallback' screenshots/house-spawn.log
+          grep -q TAMU_VISUAL_CAPTURE_OK screenshots/house-spawn.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_HOUSE_NO_VERIFIED_SITE|TAMU_HOUSE_.*FAILED' screenshots/house-spawn.log; then exit 1; fi
+          cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" screenshots/house-spawn.png
           TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE=merged TAMU_VISUAL_CASE=mobs timeout --kill-after=3s 90s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 2>&1 | tee screenshots/mobs-live.log
           grep -Eq 'TAMU_MOB_READY species=core:yaprakkulak count=[1-9]' screenshots/mobs-live.log
           grep -q TAMU_VISUAL_CAPTURE_OK screenshots/mobs-live.log

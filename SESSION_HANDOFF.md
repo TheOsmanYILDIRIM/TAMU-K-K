@@ -1,3 +1,7 @@
+### 2026-11-07 — Spawn yakını kulübe ve bilgi ekranı
+- Kullanıcı PCK içinde bina bulamadı; nedeni PNG eksik olduğunda SingleSpriteCabin.setup() tamamen iptal olması. Öncelik orijinal PNG, yoksa Polygon2D/Line2D temsilî kulübe. Spawn yakınında daha esnek ama su/engel sınırları korunan aday alan; tıklama ile bilgi, İÇİNE GİR ile kapıya rota ve 3x3 oda.
+- scripts/house_world_ci.gd code-drawn house hit/drawing kapısını doğrular. Godot PCK CI ve Android cihaz testi ayrı. Orijinal kullanıcı PNG'si GitHub asset dizinine henüz yüklenmedi; kalıcı sanatsal varlık değildir.
+
 ### 2026-11-07 — PR #23 modüler üretim / açık tarla: ikinci geliştirme kesiti
 - Var olan feature/tamu-modular-production-and-farming-20261106 dalı ve kanonik Avenox Beyin oyun Godot görevi korunuyor; main ve eski save schema değişmiyor.
 - Makine bağlantısına yönlü su/elektrik araması, fiziksel bağ gerektiren baca/pressure tahliyesi, cevher kaybı onarımı, tarla pompa→boru→sulayıcı, oturumluk bina tasarım belleği, yangın söndürme ve onarım eklendi. Kullanıcı arayüzüne ürün seçimi/yön ve dokunmatik boyut düzeltmesi eklendi.

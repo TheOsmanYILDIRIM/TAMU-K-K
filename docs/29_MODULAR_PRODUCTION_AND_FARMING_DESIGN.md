@@ -108,3 +108,7 @@ Bu bölüm önceki oturumluk prototipe eklenen gerçek kodu anlatır. Üretim h�
 - **Regresyon:** Mevcut house_world_ci.gd içine bağlantısız baca/vananın işe yaramaması, cevher korunması, alan değişiminde düzenin korunması, sulama ve sökme, onarım/söndürme, elektrik portu rotasyonu kontrolleri eklendi. Bu satırın varlığı CI'nin geçtiği anlamına gelmez.
 
 Hâlâ açık: otoriter gerçek crafting transaction, kalıcı Stage6 schema migration, oyunda açık alan yerleştirme, gerçek avatar zehirlenmesi, hasarın fiziksel dünyaya yayılması, mob/tarım ekolojisi, bütün modüllerin tam işlevleri ve cihaz görsel kabulü.
+
+## 2026-11-07 — Spawn yakını görünür ev ve bilgi paneli
+
+Kullanıcı PCK'de evi göremedi: 1254px orijinal PNG GitHub kaynak ağacında bulunmadığından önceden setup() doğrudan başarısız oluyordu. scripts/single_house_world.gd artık önce orijinal PNG'yi dener; paketli görsel yoksa Godot Polygon2D/Line2D ile temsilî ahşap kulübe çizer. Bu geçici görsel orijinal kullanıcı PNG'si değildir. İki kademeli spawn yakınında arazi/engel kontrolü, her iki görsel için tıklama, bilgi paneli İÇİNE GİR butonu ve mevcut otomatik kapı rotası kullanılır. Testlerde procedural çizim ve hitbox doğrulanır; Stage6 ve R2 kimlikleri korunur. Gerçek cihaz görsel ve dokunmatik kabulü açık kalır.
