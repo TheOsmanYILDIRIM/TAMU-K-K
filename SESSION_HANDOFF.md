@@ -1,3 +1,8 @@
+### 2026-11-07 — PR #23 modüler üretim / açık tarla: ikinci geliştirme kesiti
+- Var olan feature/tamu-modular-production-and-farming-20261106 dalı ve kanonik Avenox Beyin oyun Godot görevi korunuyor; main ve eski save schema değişmiyor.
+- Makine bağlantısına yönlü su/elektrik araması, fiziksel bağ gerektiren baca/pressure tahliyesi, cevher kaybı onarımı, tarla pompa→boru→sulayıcı, oturumluk bina tasarım belleği, yangın söndürme ve onarım eklendi. Kullanıcı arayüzüne ürün seçimi/yön ve dokunmatik boyut düzeltmesi eklendi.
+- Test: house_world_ci.gd içinde genişletilmiş regresyon; native Godot CI ile başarı ayrıca doğrulanacak. Sahada kurulu kalıcı binalar, gerçek envanter/alaşım iş emri, World Stage6 migration, gerçek telefon görseli ve FPS **tamamlanmadı**.
+
 ### 2026-11-05 — Player action animations, sprint, and tap-to-inspect mobs
 - User requested using existing HUD controls for harvest/attack/run and opening mob information on touch like resource selection. On `experiment/limboai-godot46-20261104`, existing source `motion.json` clips are used; no IK, new sprite sheets, save schema or main merge.
 - `main.gd`: successful harvesting starts the source `slash` clip, repeats it only while authoritative `gameplay.active_harvest` remains active, holds each non-looping clip for its original `frames*ms` duration. Selected mob tap precedes resource hit testing; resource selection dismisses mob info. Player movement uses 1.65x sprint only while the existing HUD's sprint touch button is held and manual movement occurs, selecting `smooth_run`; otherwise `smooth_walk`.

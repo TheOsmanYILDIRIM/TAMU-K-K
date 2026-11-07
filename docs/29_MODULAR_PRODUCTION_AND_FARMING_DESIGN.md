@@ -93,3 +93,18 @@ AÇIK: 30 modülün tamamına özgü iş akışı, gerçek dünya üzerinde çok
 Sürümleme: Definition/Instance/State/Knowledge/Visual ayrı olmalı. Kalıcı işlem için atomik ledger, migration ve save replay gerekir. Yeni katalog Stage5 manifestine sessizce eklenmez; mevcut kullanıcının PNG, R2 dünya, kayıt ve karakter dosyaları korunur.
 
 İlgili tasarım belgeleri: docs/25_CRAFTING_BLUEPRINT_DISCOVERY_DESIGN.md ve docs/26_CORE_SKILL_CONTENT_FOUNDATION_RFC.md.
+
+## 2026-11-07 — Yönlü ağ ve risk işlemleri, ikinci kesit
+
+Bu bölüm önceki oturumluk prototipe eklenen gerçek kodu anlatır. Üretim hâlâ Stage5 envanterinden ayrı demo stoklarla ve Stage6 kaydını değiştirmeden çalışır.
+
+- **Döküm güvenliği:** Kalıp bağlanmadığında cevher kaybolmaz; ancak giriş/çıkış portlarına doğru bağlanan fırın → pota → kalıp zinciri stok üretir. Körüğün doğru yönden fırına hava vermesi üretim hızını artırır.
+- **Baca/vananın fiziksel bağlantısı:** Uzaktan yerleştirilen baca tüm binayı sihirli biçimde havalandırmaz; egzoz portu gerçekten baca girişine uymalıdır. Basınç vanası da yalnız doğru kazan bağlantısında etkilidir.
+- **İleri malzeme işlemleri:** Kömür ocağı kömür, testere tahta, kırıcı mıcır, öğütücü toz, dövme ocağı ve pres şekillendirilmiş metal elde edebilir. Bunlar **demo ürünleridir**; özgün alaşım/blueprint instance kaydı değillerdir.
+- **Yönlü kaynak grafı:** Pompa → boru → sulayıcı hattı çalışırken çevresindeki ürünü stoktan su tüketerek sular. Kesilen bağlantı otomatik sulamayı durdurur. Jeneratör → batarya → elektrik alıcısı yönlü enerji bağlantısı olarak doğrulanabilir; makine AI ve elektrikli üretim ekonomisi henüz yoktur.
+- **Tehlike müdahalesi:** Makineler durunca ısı/duman dağılır; başlayan yangın yapı hasarı yaratabilir. Oyuncu su harcayarak söndürür, odun/taş harcayarak duran binayı onarır. Yakın filtre tozu azaltır. Bunlar fiziksel dünya yangın yayılımına bağlanmamış iç simülasyondur.
+- **Bina belleği:** Yapı seçimi değiştirildiğinde eski makine ve ekin dizilimi oturum boyunca korunur; yeni alana geçiş çalışmayı otomatik sürdürmez. Bu, kayıt dosyasına yazma değildir.
+- **Dokunmatik kullanım:** Küçük ekran için ızgara hücreleri daraltıldı, dikey seçimler, ürün seçimi, yön göstergesi, SÖNDÜR ve ONAR eklendi.
+- **Regresyon:** Mevcut house_world_ci.gd içine bağlantısız baca/vananın işe yaramaması, cevher korunması, alan değişiminde düzenin korunması, sulama ve sökme, onarım/söndürme, elektrik portu rotasyonu kontrolleri eklendi. Bu satırın varlığı CI'nin geçtiği anlamına gelmez.
+
+Hâlâ açık: otoriter gerçek crafting transaction, kalıcı Stage6 schema migration, oyunda açık alan yerleştirme, gerçek avatar zehirlenmesi, hasarın fiziksel dünyaya yayılması, mob/tarım ekolojisi, bütün modüllerin tam işlevleri ve cihaz görsel kabulü.

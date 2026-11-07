@@ -5,6 +5,8 @@ const WorkshopEngine = preload("res://scripts/production_engine.gd")
 var model
 var place_choice: OptionButton
 var module_choice: OptionButton
+var crop_choice: OptionButton
+var selected_crop := "grain"
 var cells: Array[Button] = []
 var report: Label
 var selected := "furnace"
@@ -57,10 +59,10 @@ func _build() -> void:
     var note := Label.new()
     note.text = "OTURUMLUK DEMO • Gerçek envantere/kayıtlara dokunmaz."
     column.add_child(note)
-    var selects := HBoxContainer.new()
+    var selects := VBoxContainer.new()
     column.add_child(selects)
     place_choice = OptionButton.new()
-    place_choice.custom_minimum_size.x = 230
+    place_choice.custom_minimum_size.x = 170
     selects.add_child(place_choice)
     for id in model.definitions["sites"]:
         place_choice.add_item(str(model.definitions["sites"][id]["label"]))
@@ -74,6 +76,12 @@ func _build() -> void:
         module_choice.add_item("T%d %s" % [int(entry["tier"]),str(entry["label"])])
         module_choice.set_item_metadata(module_choice.item_count-1,id)
     module_choice.item_selected.connect(_module_changed)
+    crop_choice = OptionButton.new()
+    selects.add_child(crop_choice)
+    for id in model.definitions["crops"]:
+        crop_choice.add_item(str(model.definitions["crops"][id]["label"]))
+        crop_choice.set_item_metadata(crop_choice.item_count-1,id)
+    crop_choice.item_selected.connect(_crop_changed)
     var toolbar := HFlowContainer.new()
     column.add_child(toolbar)
     toolbar.add_child(_action("KUR",func() -> void: _set_mode("place")))
@@ -82,6 +90,8 @@ func _build() -> void:
     toolbar.add_child(_action("EK",func() -> void: _set_mode("plant")))
     toolbar.add_child(_action("SULA",func() -> void: _set_mode("water")))
     toolbar.add_child(_action("HASAT",func() -> void: _set_mode("harvest")))
+    toolbar.add_child(_action("SÖNDÜR",func() -> void: model.extinguish(); _redraw()))
+    toolbar.add_child(_action("ONAR",func() -> void: model.repair(); _redraw()))
     toolbar.add_child(_action("BAŞLAT",func() -> void: model.activate(true); _redraw()))
     toolbar.add_child(_action("DURDUR",func() -> void: model.activate(false); _redraw()))
     toolbar.add_child(_action("+10 sn",_ten_seconds))
@@ -93,7 +103,7 @@ func _build() -> void:
     for y in range(5):
         for x in range(5):
             var b := Button.new()
-            b.custom_minimum_size = Vector2(78,62)
+            b.custom_minimum_size = Vector2(54,58)
             b.pressed.connect(_on_cell.bind(Vector2i(x,y)))
             board.add_child(b)
             cells.append(b)
@@ -102,7 +112,7 @@ func _build() -> void:
     report.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     column.add_child(report)
     var explanation := Label.new()
-    explanation.text = "Örnek bağlantı: [Fırın] → [Pota] → [Kalıp] yatay diz. Parçalar yönlü soketlerle birleşir.\nFırın ahşap alanda ısı ve yangın riski; taş alanda farklı sonuç. Açık tarla: EK / SULA / BAŞLAT / HASAT."
+    explanation.text = "Fırın → pota → kalıp. Baca ve vana yalnızca fiziksel bağlantıda etkilidir.\nTarla: pompa → boru → sulayıcı; yanındaki bitkiyi sular. Yangında DURDUR/SÖNDÜR, hasarda ONAR."
     explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     column.add_child(explanation)
     for i in range(place_choice.item_count):
@@ -111,6 +121,9 @@ func _build() -> void:
     for i in range(module_choice.item_count):
         if str(module_choice.get_item_metadata(i))==selected:
             module_choice.select(i)
+    for i in range(crop_choice.item_count):
+        if str(crop_choice.get_item_metadata(i))==selected_crop:
+            crop_choice.select(i)
 
 func _site_changed(index: int) -> void:
     model.use_site(str(place_choice.get_item_metadata(index)))
@@ -118,6 +131,9 @@ func _site_changed(index: int) -> void:
 
 func _module_changed(index: int) -> void:
     selected = str(module_choice.get_item_metadata(index))
+
+func _crop_changed(index: int) -> void:
+    selected_crop = str(crop_choice.get_item_metadata(index))
 
 func _set_mode(action: String) -> void:
     mode = action
@@ -129,7 +145,7 @@ func _on_cell(p: Vector2i) -> void:
         "place": model.place(selected,p)
         "remove": model.remove(p)
         "rotate": model.rotate(p)
-        "plant": model.plant(p)
+        "plant": model.plant(p,selected_crop)
         "water": model.water(p)
         "harvest": model.harvest(p)
     _redraw()
@@ -164,7 +180,7 @@ func _redraw() -> void:
         var item: Dictionary = model.at(p)
         if not item.is_empty():
             var data: Dictionary = model.definitions["modules"][item["kind"]]
-            b.text=str(data["glyph"])+"\n"+str(data["label"]).substr(0,10)
+            b.text=str(data["glyph"])+["↑","→","↓","←"][int(item["rotation"])]+"\n"+str(data["label"]).substr(0,8)
             b.modulate=Color(1,0.65,0.48) if model.fire>20 else Color(0.87,0.92,1)
         elif model.crops.has(model.key(p)):
             var crop: Dictionary = model.crops[model.key(p)]

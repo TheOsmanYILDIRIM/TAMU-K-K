@@ -5,9 +5,10 @@ const DIRECTIONS := [Vector2i(0,-1),Vector2i(1,0),Vector2i(0,1),Vector2i(-1,0)]
 const SIDES := ["N","E","S","W"]
 var definitions: Dictionary = {}
 var site_id := "wood_cabin"
+var remembered_sites: Dictionary = {}
 var machines: Dictionary = {}
 var crops: Dictionary = {}
-var stock := {"fuel":45,"ore":30,"wood":25,"stone":25,"water":35,"seed":15,"ingot":0,"food":0,"plank":0,"gravel":0}
+var stock := {"fuel":45,"ore":30,"wood":25,"stone":25,"water":35,"seed":15,"ingot":0,"food":0,"plank":0,"gravel":0,"charcoal":0,"formed":0,"powder":0}
 var running := false
 var time_left := 0.0
 var ticks := 0
@@ -49,20 +50,25 @@ func key(p: Vector2i) -> String:
 func use_site(value: String) -> bool:
     if not definitions["sites"].has(value):
         return false
+    if value == site_id:
+        return true
+    remembered_sites[site_id] = {"machines": machines.duplicate(true), "crops": crops.duplicate(true),
+        "heat": heat, "smoke": smoke, "fire": fire, "dust": dust, "pressure": pressure,
+        "integrity": integrity, "exposure": exposure}
     site_id = value
-    machines.clear()
-    crops.clear()
+    var old: Dictionary = remembered_sites.get(value,{})
+    machines = old.get("machines",{}).duplicate(true)
+    crops = old.get("crops",{}).duplicate(true)
     running = false
-    ticks = 0
     time_left = 0.0
-    heat = 0.0
-    smoke = 0.0
-    fire = 0.0
-    dust = 0.0
-    pressure = 0.0
-    integrity = 100.0
-    exposure = 0.0
-    message = "Alan değiştirildi; demo düzen sıfırlandı."
+    heat = float(old.get("heat",0.0))
+    smoke = float(old.get("smoke",0.0))
+    fire = float(old.get("fire",0.0))
+    dust = float(old.get("dust",0.0))
+    pressure = float(old.get("pressure",0.0))
+    integrity = float(old.get("integrity",100.0))
+    exposure = float(old.get("exposure",0.0))
+    message = "Alan değiştirildi; önceki düzenler korunuyor."
     return true
 
 func place(kind: String, p: Vector2i) -> bool:
@@ -109,6 +115,43 @@ func connects(p: Vector2i,kind: String,flow: String) -> bool:
             return true
     return false
 
+func feeds(p: Vector2i,kind: String,flow: String) -> bool:
+    for dir in DIRECTIONS:
+        if str(at(p+dir).get("kind",""))==kind and joined(p+dir,p,flow):
+            return true
+    return false
+
+func nearby(p: Vector2i,kind: String) -> bool:
+    for dir in DIRECTIONS:
+        if str(at(p+dir).get("kind",""))==kind:
+            return true
+    return false
+
+func supplied_by(target: Vector2i, source: String, flow: String) -> bool:
+    if at(target).is_empty():
+        return false
+    var frontier: Array[Vector2i] = []
+    var visited: Dictionary = {}
+    for raw in machines:
+        if machines[raw]["kind"] != source:
+            continue
+        var parts: PackedStringArray = str(raw).split(":")
+        var p := Vector2i(int(parts[0]),int(parts[1]))
+        frontier.append(p)
+        visited[key(p)] = true
+    var cursor := 0
+    while cursor < frontier.size():
+        var current: Vector2i = frontier[cursor]
+        cursor += 1
+        if current == target:
+            return true
+        for offset in DIRECTIONS:
+            var next: Vector2i = current + offset
+            if not visited.has(key(next)) and joined(current,next,flow):
+                visited[key(next)] = true
+                frontier.append(next)
+    return false
+
 func network_edges() -> int:
     var count := 0
     for raw in machines:
@@ -130,8 +173,28 @@ func count_machine(kind: String) -> int:
 func activate(yes: bool) -> void:
     running = yes and integrity>0.0
 
+func extinguish() -> bool:
+    if stock["water"]<=0 or (fire<=0.0 and heat<8.0):
+        return false
+    stock["water"]-=1
+    running=false
+    fire=maxf(0.0,fire-28.0)
+    heat=maxf(0.0,heat-22.0)
+    smoke=maxf(0.0,smoke-8.0)
+    message="Yangına suyla müdahale edildi."
+    return true
+
+func repair() -> bool:
+    if running or integrity>=100.0 or stock["wood"]<=0 or stock["stone"]<=0:
+        return false
+    stock["wood"]-=1
+    stock["stone"]-=1
+    integrity=minf(100.0,integrity+16.0)
+    message="Yapı onarıldı. Odun ve taş harcandı."
+    return true
+
 func advance(delta: float) -> void:
-    if not running or not is_finite(delta):
+    if not is_finite(delta) or delta<=0.0:
         return
     time_left += clampf(delta,0.0,1.0)
     var loops := 0
@@ -142,6 +205,13 @@ func advance(delta: float) -> void:
 
 func step() -> void:
     if not running or integrity<=0:
+        heat*=0.82
+        smoke*=0.70
+        dust*=0.65
+        pressure*=0.65
+        fire=maxf(0.0,fire-0.5)
+        if fire>20.0:
+            integrity=maxf(0.0,integrity-fire*0.016)
         return
     ticks += 1
     var features: Array = site().get("tags",[])
@@ -160,12 +230,26 @@ func step() -> void:
         var effects: Dictionary = part.get("effects",{})
         if action in ["heat","charcoal","forge","warm","pressure"] and stock["fuel"]>0:
             source_heat+=float(effects.get("heat",0.0))
-            source_smoke+=float(effects.get("smoke",0.0))
-            source_pressure+=float(effects.get("pressure",0.0))
+            var exhaust: float = float(effects.get("smoke",0.0))
+            if connects(Vector2i(int(str(raw).split(":")[0]),int(str(raw).split(":")[1])),"vent","exhaust"):
+                exhaust*=0.20
+            source_smoke+=exhaust
+            var pressure_out: float = float(effects.get("pressure",0.0))
+            if connects(Vector2i(int(str(raw).split(":")[0]),int(str(raw).split(":")[1])),"valve","steam"):
+                pressure_out*=0.20
+            source_pressure+=pressure_out
+            if ticks%4==0:
+                stock["fuel"]-=1
             if action=="charcoal" and ticks%6==0 and stock["wood"]>0:
                 stock["wood"]-=1
+                stock["charcoal"]+=1
+            if action=="forge" and ticks%6==0 and stock["ingot"]>0:
+                stock["ingot"]-=1
+                stock["formed"]+=1
         if action in ["cut","crush","grind","press"]:
-            source_dust+=float(effects.get("dust",0.0))
+            var raw_point: PackedStringArray = str(raw).split(":")
+            var location := Vector2i(int(raw_point[0]),int(raw_point[1]))
+            source_dust+=float(effects.get("dust",0.0))*(0.35 if nearby(location,"filter") else 1.0)
             source_shake+=float(effects.get("vibration",0.0))
             if ticks%5==0 and action=="cut" and stock["wood"]>0:
                 stock["wood"]-=1
@@ -173,24 +257,52 @@ func step() -> void:
             if ticks%5==0 and action=="crush" and stock["stone"]>0:
                 stock["stone"]-=1
                 stock["gravel"]+=2
-        if action=="heat" and ticks%4==0 and stock["fuel"]>0:
-            stock["fuel"]-=1
-            var split: PackedStringArray = str(raw).split(":")
-            var p := Vector2i(int(split[0]),int(split[1]))
-            if connects(p,"crucible","heat") and stock["ore"]>0:
-                stock["ore"]-=1
+            if ticks%5==0 and action=="grind" and stock["gravel"]>0:
+                stock["gravel"]-=1
+                stock["powder"]+=2
+            if ticks%5==0 and action=="press" and stock["ingot"]>0:
+                stock["ingot"]-=1
+                stock["formed"]+=1
+        if action=="heat" and stock["fuel"]>0:
+            var parts: PackedStringArray = str(raw).split(":")
+            var furnace := Vector2i(int(parts[0]),int(parts[1]))
+            var is_boosted: bool = feeds(furnace,"bellows","air")
+            if is_boosted:
+                source_heat+=3.0
+            if nearby(furnace,"cooler"):
+                source_heat=maxf(0.0,source_heat-3.0)
+            if ticks%(3 if is_boosted else 4)==0:
+                var connected_mold := false
                 for d in DIRECTIONS:
-                    var pot: Vector2i = p+d
-                    if at(pot).get("kind","")=="crucible" and joined(p,pot,"heat"):
-                        if connects(pot,"mold","molten"):
-                            stock["ingot"]+=1
-                            message="Döküm tamamlandı: +1 külçe."
-                        else:
-                            message="Pota ısındı; döküm kalıbı bağlı değil."
+                    var pot: Vector2i = furnace+d
+                    if at(pot).get("kind","")=="crucible" and joined(furnace,pot,"heat") and connects(pot,"mold","molten"):
+                        connected_mold=true
+                        break
+                if connected_mold and stock["ore"]>0:
+                    stock["ore"]-=1
+                    stock["ingot"]+=1
+                    message="Döküm tamamlandı: +1 demo külçe."
+                elif not connected_mold:
+                    message="Pota ve kalıp bağlanmadan cevher tüketilmez."
+    if features.has("cultivation") and ticks%4==0:
+        for raw in machines:
+            if machines[raw]["kind"]!="sprinkler":
+                continue
+            var coords: PackedStringArray = str(raw).split(":")
+            var sprinkler := Vector2i(int(coords[0]),int(coords[1]))
+            if not supplied_by(sprinkler,"pump","water"):
+                continue
+            for dir in DIRECTIONS:
+                var target_key: String = key(sprinkler+dir)
+                if crops.has(target_key) and stock["water"]>0 and float(crops[target_key]["water"])<12.0:
+                    stock["water"]-=1
+                    crops[target_key]["water"]=minf(20.0,float(crops[target_key]["water"])+8.0)
+                    message="Bağlı sulama hattı çalıştı."
+
     heat=clampf(heat*(0.55 if outside else 0.85)+source_heat,0,100)
-    smoke=clampf(smoke*(0.35 if ventilated else 0.90)*(0.55 if count_machine("vent")>0 else 1.0)+source_smoke,0,100)
+    smoke=clampf(smoke*(0.35 if ventilated else 0.90)+source_smoke,0,100)
     dust=clampf(dust*(0.48 if ventilated else 0.80)+source_dust,0,100)
-    pressure=clampf(pressure*0.6+source_pressure-count_machine("valve")*8.0,0,100)
+    pressure=clampf(pressure*0.6+source_pressure,0,100)
     if features.has("flammable") and heat>38:
         fire=clampf(fire+(heat-38)*0.08,0,100)
     else:
@@ -216,13 +328,15 @@ func step() -> void:
     elif smoke>40:
         message="DUMAN: Yetersiz havalandırma."
 
-func plant(p: Vector2i) -> bool:
+func plant(p: Vector2i, crop_id: String = "grain") -> bool:
+    if not definitions["crops"].has(crop_id):
+        return false
     if not site().get("tags",[]).has("cultivation") or not inside(p) or stock["seed"]<=0:
         return false
     if crops.has(key(p)) or machines.has(key(p)):
         return false
     stock["seed"]-=1
-    crops[key(p)]={"kind":"grain","water":4.0,"growth":0.0,"ripe":false}
+    crops[key(p)]={"kind":crop_id,"water":4.0,"growth":0.0,"ripe":false}
     return true
 
 func water(p: Vector2i) -> bool:
