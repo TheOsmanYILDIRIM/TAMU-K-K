@@ -112,3 +112,7 @@ Hâlâ açık: otoriter gerçek crafting transaction, kalıcı Stage6 schema mig
 ## 2026-11-07 — Spawn yakını görünür ev ve bilgi paneli
 
 Kullanıcı PCK'de evi göremedi: 1254px orijinal PNG GitHub kaynak ağacında bulunmadığından önceden setup() doğrudan başarısız oluyordu. scripts/single_house_world.gd artık önce orijinal PNG'yi dener; paketli görsel yoksa Godot Polygon2D/Line2D ile temsilî ahşap kulübe çizer. Bu geçici görsel orijinal kullanıcı PNG'si değildir. İki kademeli spawn yakınında arazi/engel kontrolü, her iki görsel için tıklama, bilgi paneli İÇİNE GİR butonu ve mevcut otomatik kapı rotası kullanılır. Testlerde procedural çizim ve hitbox doğrulanır; Stage6 ve R2 kimlikleri korunur. Gerçek cihaz görsel ve dokunmatik kabulü açık kalır.
+
+## 2026-11-07 — Yoğun orman sahası için oturumluk yerleşim garantisi
+
+R2 yüzeyinde uygun 3×3 tamamen boş temel alanı bulunmadığı CI görüntü testinde doğrulandı. Mevcut gerçek çarpışma/su kurallarıyla boş aday arama korunur; hiçbir aday yoksa sadece oturumluk gösterim için spawn yakınındaki su olmayan, en az engelli konum seçilir. R2 ağaç/taş ID veya sayıları silinmez. Böyle bir demo konumunda İÇİNE GİR kapıya engelli rota zorlamadan doğrudan ayrı odayı açar; çıkışta oyuncu başlangıç spawn noktasına döner. Bu fallback kalıcı bina inşası veya gerçek dünya temizleme mekaniği değildir.

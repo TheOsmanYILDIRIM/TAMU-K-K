@@ -27,6 +27,8 @@ var exterior_image: Image
 var exterior_fallback: Node2D
 var door_marker: Polygon2D
 var center_world := Vector2.ZERO
+var spawn_world := Vector2.ZERO
+var forced_demo_site := false
 var footprint_box := Rect2()
 var selected := false
 var approaching := false
@@ -126,6 +128,7 @@ func _site_acceptable(at: Vector2, relaxed: bool = false) -> bool:
     return true
 
 func _find_site(player: Vector2) -> bool:
+    forced_demo_site = false
     # Actual authored R2 terrain varies by several height units even over 96u.
     # Check small deterministic candidates first; never bypass the 0.8 grade
     # tolerance, authored obstacle test or player footprint clearance.
@@ -152,13 +155,53 @@ func _find_site(player: Vector2) -> bool:
                 footprint_box = footprint
                 print("TAMU_HOUSE_SPAWN_SITE distance=",player.distance_to(at)," relaxed=",relaxed)
                 return true
-    push_warning("TAMU_HOUSE_NO_VERIFIED_SITE")
+    # Dense authored forest can contain no empty 3x3 plot near spawn.
+    # For this explicitly session-only showcase, keep existing R2 objects
+    # immutable and select a non-water point with the fewest overlaps.
+    # A forced demo house is a visual landmark, not a durable structure.
+    var best_score := INF
+    var best_count := 2147483647
+    var best := Vector2.ZERO
+    var found := false
+    for offset in candidates:
+        if offset.length() > 280.0:
+            continue
+        var at: Vector2 = player + offset
+        var half := Vector2(FOOTPRINT_CELLS) * CELL_WORLD * 0.5
+        var bounds := Rect2(at - half, half*2.0)
+        if bounds.grow(12.0).has_point(player):
+            continue
+        var center_surface: Dictionary = authority.surface(at.x,at.y)
+        var door_surface: Dictionary = authority.surface(
+            at.x+APPROACH_WORLD.x,at.y+APPROACH_WORLD.y)
+        if not center_surface.has("height") or not door_surface.has("height"):
+            continue
+        if str(center_surface.get("feature","")) == "water" or str(door_surface.get("feature","")) == "water":
+            continue
+        var overlaps: int = gameplay.movement_obstacles(
+            bounds.position.x,bounds.position.y,bounds.end.x,bounds.end.y).size()
+        var score: float = float(overlaps)*300.0 + offset.length()
+        if score < best_score:
+            found = true
+            best = at
+            best_score = score
+            best_count = overlaps
+    if found:
+        forced_demo_site = true
+        center_world = best
+        var half := Vector2(FOOTPRINT_CELLS) * CELL_WORLD * 0.5
+        footprint_box = Rect2(best-half,half*2.0)
+        print("TAMU_HOUSE_SPAWN_DEMO_NEAR distance=",player.distance_to(best),
+            " overlaps=",best_count)
+        return true
+    push_warning("TAMU_HOUSE_NO_NONWATER_SITE")
     return false
 
 func setup(game: Node2D, layer: Node2D, terrain: RefCounted, session: RefCounted) -> bool:
     host = game
     authority = terrain
     gameplay = session
+    spawn_world = host.actor_world
     if not verify_geometry():
         push_error("TAMU_HOUSE_GEOMETRY_INVALID")
         return false
@@ -193,7 +236,7 @@ func setup(game: Node2D, layer: Node2D, terrain: RefCounted, session: RefCounted
     door_marker.color = Color(0.98, 0.73, 0.22, 0.47)
     add_child(door_marker)
     _create_interface()
-    print("TAMU_SINGLE_HOUSE_READY id=", HOUSE_ID, " footprint=3x3 door_marked=true spawn=",center_world)
+    print("TAMU_SINGLE_HOUSE_READY id=", HOUSE_ID, " footprint=3x3 door_marked=true spawn=",center_world, " forced_demo=",forced_demo_site)
     return true
 
 # Projection shares the same virtual 1254px coordinates as the authored PNG.
@@ -335,6 +378,9 @@ func interact() -> bool:
     if not selected:
         return false
     host.call("_cancel_auto_harvest")
+    if forced_demo_site:
+        _enter_house()
+        return true
     cancel_approach()
     var outside: Vector2 = center_world + APPROACH_WORLD
     if host.actor_world.distance_to(outside) <= ENTER_DISTANCE:
@@ -557,7 +603,7 @@ func leave_house() -> void:
     _close_workshop()
     host.avatar.reparent(host.object_layer, false)
     host.profile_contact_shadow.visible = true
-    host.actor_world = center_world + APPROACH_WORLD
+    host.actor_world = spawn_world if forced_demo_site else center_world + APPROACH_WORLD
     host.call("_update_avatar")
     host.call("_release_joystick")
     print("TAMU_HOUSE_EXITED door_world=", host.actor_world)
