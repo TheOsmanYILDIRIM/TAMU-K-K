@@ -102,7 +102,10 @@ func _site_acceptable(at: Vector2, relaxed: bool = false) -> bool:
             var surface: Variant = authority.call("surface", point.x, point.y)
             if not surface is Dictionary:
                 return false
-            if not bool(surface.get("walkable", false)) or str(surface.get("feature", "")) == "water":
+            # R2Surface.walkable uses strict 0.12 grade for *walking*,
+            # and is not a building foundation verdict. Check actual feature,
+            # finite height and the chosen construction grade independently.
+            if str(surface.get("feature", "")) == "water" or not surface.has("height"):
                 return false
             if float(surface.get("grade", 0.0)) > (0.60 if relaxed else 0.28):
                 return false
