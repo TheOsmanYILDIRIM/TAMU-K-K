@@ -7,12 +7,16 @@ render_mode unshaded;
 uniform vec2 solar_dir = vec2(0.65, 0.25);
 uniform float solar_length : hint_range(0.1, 3.0) = 1.0;
 uniform float opacity : hint_range(0.0, 1.0) = 0.42;
+uniform float canopy_depth : hint_range(0.2, 0.6) = 0.41;
 
 void vertex() {
     float height = max(-VERTEX.y, 0.0);
     VERTEX.x += height * solar_dir.x * solar_length;
     // Offset projected alpha inside the sprite; do not start at the crop boundary.
-    VERTEX.y = -12.0 + VERTEX.y * 0.12 + height * solar_dir.y * solar_length;
+    // Keep a broad tree-crown footprint: never flatten to a side-on thin line.
+    float crown_weight = clamp(height / 100.0, 0.0, 1.0);
+    float volume_depth = mix(0.30, canopy_depth, crown_weight);
+    VERTEX.y = -12.0 + VERTEX.y * volume_depth + height * solar_dir.y * solar_length;
 }
 void fragment() {
     float silhouette = texture(TEXTURE, UV).a * COLOR.a;

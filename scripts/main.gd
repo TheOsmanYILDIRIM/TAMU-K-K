@@ -13,6 +13,9 @@ const WorldIdentity = preload("res://scripts/world_identity.gd")
 const AudioCues = preload("res://scripts/audio_cues.gd")
 const ImpactEffects = preload("res://scripts/impact_effects.gd")
 const SHADOW_SHADER = preload("res://scripts/object_shadow.gdshader")
+const SolarShadow = preload("res://scripts/solar_shadow.gd")
+const CONTACT_AO_SHADER = preload("res://scripts/contact_ao.gdshader")
+const OBJECT_DEPTH_SHADER = preload("res://scripts/object_depth.gdshader")
 const SELECTION_SHADER = preload("res://scripts/harvest_outline.gdshader")
 const FOREST_GUI = preload("res://scripts/forest_harvest_gui.gd")
 const MODULAR_HUD = preload("res://scripts/modular_hud.gd")
@@ -123,25 +126,32 @@ const ISOLATION_MODES = ["full", "mob_visual_off", "mob_ai_off",
     "mob_all_off", "solar_off", "objects_off", "terrain_off", "player_rig_off"]
 var perf_isolation_mode := "full"
 var shadow_layer: Node2D
+var contact_ao_material: ShaderMaterial
+var object_depth_material: ShaderMaterial
+var contact_ao_node: MultiMeshInstance2D
+var contact_ao_mesh: MultiMesh
+var contact_ao_index: Dictionary = {}
 
 func _update_sun(delta: float) -> void:
     day_clock = fposmod(day_clock + delta * 24.0 / DAY_SECONDS, 24.0)
-    var arc := (day_clock-6.0)/12.0
-    var light := clampf(sin(arc*PI),0.0,1.0)
+    # Actual solar elevation for 39N, equinox: noon = 51deg, not 90deg.
+    var solar: Dictionary = SolarShadow.sample(day_clock)
+    var light: float = float(solar["light"])
     var golden := clampf(maxf(0.0,1.0-absf(day_clock-7.7)/2.5)+maxf(0.0,1.0-absf(day_clock-17.2)/2.5),0.0,1.0)
-    var azimuth := -PI*0.65+arc*PI*1.3
-    var wx := -cos(azimuth)
-    var wy := -sin(azimuth)
-    sun_direction = Vector2((wx-wy)*sqrt(0.5),(wx+wy)*sqrt(0.5)*0.5).normalized()
+    sun_direction = -(solar["cast_direction"] as Vector2)
     sun_level = light
     var tint := Color(clampf(0.54+0.46*light+0.065*golden,0.0,1.0),clampf(0.62+0.38*light-0.045*golden,0.0,1.0),clampf(0.76+0.24*light-0.13*golden,0.0,1.0))
     daylight_layer.color = tint
     if frame_no % 12 == 0:
         if silhouette_material != null:
-            silhouette_material.set_shader_parameter("solar_dir", -sun_direction)
-            silhouette_material.set_shader_parameter("solar_length", clampf(0.28 + 1.05 * (1.0-light)/(light+0.31), 0.28, 2.65))
-            silhouette_material.set_shader_parameter("opacity", 0.36 * light)
-        # One authored alpha silhouette shadow per solid. No second polygon cast.
+            silhouette_material.set_shader_parameter("solar_dir", solar["cast_direction"])
+            silhouette_material.set_shader_parameter("solar_length", solar["cast_length"])
+            silhouette_material.set_shader_parameter("canopy_depth", lerpf(0.37, 0.43, light))
+            silhouette_material.set_shader_parameter("opacity", solar["cast_opacity"])
+        if object_depth_material != null:
+            object_depth_material.set_shader_parameter("light_axis", -sun_direction)
+            object_depth_material.set_shader_parameter("depth_strength", lerpf(0.075, 0.105, light))
+        # Original atlas-alpha shadow stays single; AO uses a separate batched mesh.
 
 # Existing interaction button: building entry takes priority over harvesting.
 func interact_world() -> void:
@@ -515,6 +525,7 @@ func _tick_gameplay(dt: float) -> void:
             if item.has("silhouette"):
                 item["silhouette"].set_meta("tamu_collected", true)
                 item["silhouette"].visible = false
+            _hide_contact_ao(id)
             harvested_count += 1
             authority.depleted_ids[id] = true
             audio_cues.cue("harvest_complete")
@@ -820,6 +831,8 @@ func _set_perf_isolation(mode: String) -> void:
         var terrain_node: Node2D = region_chunks[region_id]
         if is_instance_valid(terrain_node):
             terrain_node.visible = mode != "terrain_off"
+    if contact_ao_node != null:
+        contact_ao_node.visible = merged_mode and mode not in ["objects_off", "solar_off"] and not region_chunks.is_empty()
     if object_layer != null and not object_visuals_by_chunk.is_empty():
         _refresh_streaming_requests()
     if perf_hud != null:
@@ -922,6 +935,10 @@ func _ready() -> void:
     add_child(impact_effects)
     silhouette_material = ShaderMaterial.new()
     silhouette_material.shader = SHADOW_SHADER
+    contact_ao_material = ShaderMaterial.new()
+    contact_ao_material.shader = CONTACT_AO_SHADER
+    object_depth_material = ShaderMaterial.new()
+    object_depth_material.shader = OBJECT_DEPTH_SHADER
     terrain_atlas = load("res://assets/terrain25d/atlas_00.png")
     env_visual_stage = VisualEnvironment.level()
     var terrain_hires := not VisualEnvironment.mobile_fast_mode() and OS.get_environment("TAMU_TERRAIN_HIRES") != "0" and ResourceLoader.exists("res://assets/terrain25d/atlas_00_hires.png")
@@ -982,8 +999,11 @@ func _ready() -> void:
     daylight_layer = CanvasModulate.new()
     daylight_layer.name = "TAMUSunTint"
     add_child(daylight_layer)
-    if OS.get_environment("TAMU_VISUAL_CI") == "1" and OS.get_environment("TAMU_VISUAL_CASE") == "dawn":
-        day_clock = 6.0
+    if OS.get_environment("TAMU_VISUAL_CI") == "1":
+        match OS.get_environment("TAMU_VISUAL_CASE"):
+            "dawn": day_clock = 6.0
+            "night": day_clock = 0.0
+            "noon": day_clock = 12.0
     gameplay = GameplaySession.new()
     # Keep historical visual regression instant-credit; production enables durable ground items.
     if OS.get_environment("TAMU_VISUAL_CI") != "1":
@@ -1029,6 +1049,7 @@ func _ready() -> void:
                 if item.has("silhouette"):
                     item["silhouette"].set_meta("tamu_collected", true)
                     item["silhouette"].visible = false
+                _hide_contact_ao(str(item["id"]))
         authority.depleted_ids = gameplay.depleted.duplicate(true)
         _sync_ground_loot_visuals()
         print("TAMU_STAGE6_PRODUCTION_ACTIVE world=",world["id"]," region=",authority.region_id)
@@ -1101,6 +1122,8 @@ func _load_region(manifest_path: String) -> bool:
     add_child(node)
     region_chunks[region_id] = node
     node.visible = perf_isolation_mode != "terrain_off"
+    if contact_ao_node != null:
+        contact_ao_node.visible = merged_mode and perf_isolation_mode not in ["objects_off", "solar_off"]
     loaded = int(unified["source_cells"])
     vertices = int(unified["vertices"])
     for stem in object_visuals_by_chunk:
@@ -1125,6 +1148,8 @@ func _unload_region(region_id: String) -> bool:
     region_node.queue_free()
     loaded = 0
     vertices = 0
+    if contact_ao_node != null:
+        contact_ao_node.visible = false
     for stem in object_visuals_by_chunk:
         _set_chunk_visuals_visible(str(stem), false)
     print("TAMU_REGION_UNLOAD_OK region=", region_id, " remaining=", region_chunks.size())
@@ -1270,6 +1295,40 @@ func _verify_visual_order() -> bool:
                 return false
     return true
 
+# One shader/material and one MultiMesh2D draw node for every authored
+# tree/rock root. No per-object lights and no heightmap raymarch.
+func _install_contact_ao(anchors: Array[Dictionary]) -> void:
+    if anchors.is_empty():
+        return
+    var quad := QuadMesh.new()
+    quad.size = Vector2.ONE
+    contact_ao_mesh = MultiMesh.new()
+    contact_ao_mesh.transform_format = MultiMesh.TRANSFORM_2D
+    contact_ao_mesh.use_colors = true
+    contact_ao_mesh.mesh = quad
+    contact_ao_mesh.instance_count = anchors.size()
+    for i in range(anchors.size()):
+        var anchor: Dictionary = anchors[i]
+        var footprint: Vector2 = anchor["footprint"]
+        var foot: Vector2 = anchor["position"]
+        contact_ao_mesh.set_instance_transform_2d(i, Transform2D(0.0, footprint, 0.0, foot))
+        contact_ao_mesh.set_instance_color(i, Color(1.0, 1.0, 1.0, float(anchor["strength"])))
+        contact_ao_index[str(anchor["id"])] = i
+    contact_ao_node = MultiMeshInstance2D.new()
+    contact_ao_node.name = "TAMUBatchedContactAO"
+    contact_ao_node.multimesh = contact_ao_mesh
+    contact_ao_node.material = contact_ao_material
+    contact_ao_node.visible = merged_mode
+    shadow_layer.add_child(contact_ao_node)
+    shadow_layer.move_child(contact_ao_node, 0)
+
+
+func _hide_contact_ao(object_id: String) -> void:
+    if contact_ao_mesh == null or not contact_ao_index.has(object_id):
+        return
+    contact_ao_mesh.set_instance_color(int(contact_ao_index[object_id]), Color.TRANSPARENT)
+
+
 func _load_objects() -> void:
     var path := "res://chunks/r2_objects.json"
     var data = JSON.parse_string(FileAccess.get_file_as_string(path))
@@ -1303,6 +1362,7 @@ func _load_objects() -> void:
     object_layer.z_index = 3
     var atlas: Texture2D = load(VisualEnvironment.HIRES_OBJECT_ATLAS if object_hires_active else "res://assets/terrain25d/atlas_01.png")
     var size := atlas.get_size()
+    var ao_anchors: Array[Dictionary] = []
     for o in data["objects"]:
         var id: String = o["id"]
         var kind: String = o["kind"]
@@ -1351,6 +1411,8 @@ func _load_objects() -> void:
             sprite.flip_h = posmod(h, 2) == 0
         # Local ground anchor follows the atlas region height, never a fixed 60 px.
         sprite.offset = Vector2(0.0, area.size.y * (0.5 - LOVE_OBJECT_PIVOT))
+        if kind == "tree" or kind == "rock":
+            sprite.material = object_depth_material
         object_layer.add_child(sprite)
         object_visuals_by_chunk[visual_key].append(sprite)
         var item_record := {"id":id,"kind":kind,"radius":float(o["radius"]),"position":Vector2(float(o["x"]),float(o["y"])),"sprite":sprite,"shadow":null,"collected":false}
@@ -1376,7 +1438,12 @@ func _load_objects() -> void:
             object_visuals_by_chunk[visual_key].append(silhouette)
             item_record["silhouette"] = silhouette
             item_record["shadow"] = null
+            var foot_width := clampf(area.size.x * scale_value * (0.60 if kind == "tree" else 0.66), 10.0, 110.0)
+            ao_anchors.append({"id": id, "position": sprite.position - Vector2(0.0, 2.0),
+                "footprint": Vector2(foot_width, foot_width * (0.40 if kind == "tree" else 0.52)),
+                "strength": 1.0 if kind == "tree" else 0.78})
         object_count += 1
+    _install_contact_ao(ao_anchors)
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and OS.get_environment("TAMU_VISUAL_CASE") == "gui":
         for candidate in harvestables:
             if candidate["kind"] == "tree" and str(candidate.get("family","")) in ["oak","broadleaf"]:
@@ -1624,7 +1691,7 @@ func _process(delta: float) -> void:
         print("TAMU_REGION_RELOAD_OK id_replaced=true region_count=", region_chunks.size(),
             " vertices=", vertices)
     if OS.get_environment("TAMU_VISUAL_CI") == "1" and frame_no >= 90 and camera_missing == 0:
-        if harvest_button == null or silhouette_shadows.is_empty() or (day_clock <= 10.5 and OS.get_environment("TAMU_VISUAL_CASE") != "dawn") or harvest_button.get_global_rect().size.x < 100:
+        if harvest_button == null or silhouette_shadows.is_empty() or (day_clock <= 10.5 and OS.get_environment("TAMU_VISUAL_CASE") not in ["dawn", "night"]) or harvest_button.get_global_rect().size.x < 100:
             push_error("TAMU_SUN_HARVEST_BOOT_GATE_FAILED")
             get_tree().quit(11)
             return
@@ -1632,6 +1699,10 @@ func _process(delta: float) -> void:
         for sh in silhouette_shadows:
             if sh.visible and sh.texture != null:
                 drawn += 1
+        if merged_mode and (contact_ao_node == null or contact_ao_mesh == null or contact_ao_mesh.instance_count != contact_ao_index.size()):
+            push_error("TAMU_CONTACT_AO_BATCH_FAILED")
+            get_tree().quit(45)
+            return
         if drawn < 10 or not shadow_sprites.is_empty():
             push_error("TAMU_SINGLE_SHADOW_VISIBILITY_FAILED visible=" + str(drawn))
             get_tree().quit(14)
@@ -1647,6 +1718,8 @@ func _process(delta: float) -> void:
                 get_tree().quit(25)
                 return
         print("TAMU_FX_SYSTEM_OK silhouettes=",silhouette_shadows.size()," audio=true particles=true")
+        if merged_mode:
+            print("TAMU_CONTACT_AO_BATCH_OK instances=", contact_ao_mesh.instance_count)
         print("TAMU_GROUND_SHADOW_VISIBILITY_OK visible=",drawn)
         print("TAMU_SUN_HARVEST_BOOT_OK shadows=",silhouette_shadows.size()," hour=",day_clock)
         if perf_hud == null or not perf_hud.test_gate():
