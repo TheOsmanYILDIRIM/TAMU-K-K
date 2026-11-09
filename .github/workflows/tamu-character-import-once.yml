@@ -1,0 +1,57 @@
+name: Import TAMU character once
+on:
+  push:
+    branches:
+      - experiment/limboai-godot46-20261104
+    paths:
+      - .github/workflows/tamu-character-import-once.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Extract character assets and adapter just once
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import hashlib
+          zip_path=Path("TAMU_Character_Godot_Adapter.zip")
+          assert zip_path.is_file(), "Uploaded character ZIP not found"
+          with ZipFile(zip_path) as z:
+              expected = {
+                  "assets/profile_character/rev2d/OKU.txt",
+                  "assets/profile_character/rev2d/TAMU_walk.r2d.json",
+                  "assets/profile_character/rev2d/textures/01_yakin_bacak.png",
+                  "assets/profile_character/rev2d/textures/02_uzak_bacak.png",
+                  "assets/profile_character/rev2d/textures/03_govde.png",
+                  "assets/profile_character/rev2d/textures/04_yakin_kol.png",
+                  "assets/profile_character/rev2d/textures/05_uzak_kol.png",
+                  "assets/profile_character/rev2d/textures/06_bas.png",
+                  "scripts/profile_rig.gd",
+                  "README_TR.md",
+              }
+              assert set(z.namelist()) == expected, "Unexpected ZIP entries"
+              assert z.testzip() is None, "ZIP CRC error"
+              for name in sorted(expected - {"README_TR.md"}):
+                  target=Path(name)
+                  assert not target.exists() or name=="scripts/profile_rig.gd", f"Refusing to replace existing file: {name}"
+                  target.parent.mkdir(parents=True,exist_ok=True)
+                  data=z.read(name)
+                  assert data, f"Empty entry: {name}"
+                  target.write_bytes(data)
+                  assert hashlib.sha256(target.read_bytes()).digest() == hashlib.sha256(data).digest()
+          PY
+          git rm -- TAMU_Character_Godot_Adapter.zip
+          git add -- assets/profile_character/rev2d scripts/profile_rig.gd
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Import new TAMU character as normal sources, drop ZIP"
+          git push origin HEAD:experiment/limboai-godot46-20261104
