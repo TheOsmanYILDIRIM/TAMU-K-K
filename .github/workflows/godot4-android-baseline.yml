@@ -1012,7 +1012,7 @@ jobs:
           p=Path('project.godot')
           s=p.read_text()
           assert '[tamu]' not in s
-          p.write_text(s+'\n[tamu]\nai/use_limboai=true\n')
+          p.write_text(s+'\n[tamu]\nai/use_limboai=true\nmobile/full_quality=true\n')
           p=Path('export_presets.cfg')
           s=p.read_text()
           needle='include_filter="'

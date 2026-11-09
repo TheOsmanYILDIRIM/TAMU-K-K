@@ -18,6 +18,10 @@ const WorldProjection = preload("res://scripts/world_projection.gd")
 # Force this path in desktop CI with TAMU_MOBILE_PERF=1; TAMU_MOBILE_HD=1
 # restores full quality for testing a known-fast phone.
 static func mobile_fast_mode() -> bool:
+    # Standalone full-resolution APK opts out of the mobile low-quality path.
+    # Legacy/mobile benchmarks remain unchanged unless this setting is enabled.
+    if bool(ProjectSettings.get_setting("tamu/mobile/full_quality", false)):
+        return false
     return (OS.has_feature("mobile") or OS.get_environment("TAMU_MOBILE_PERF") == "1") \
         and OS.get_environment("TAMU_MOBILE_HD") != "1"
 
