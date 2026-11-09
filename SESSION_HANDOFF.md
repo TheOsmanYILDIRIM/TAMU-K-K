@@ -1,3 +1,10 @@
+### 2026-11-09 — Mobile renderer / cheap contact AO / lunar cast — awaiting CI and Android acceptance
+- User decision: Godot 4.6 Mobile (Vulkan) primary for TAMU; Compatibility/OpenGL 3 fallback retained. Work is on experiment/limboai-godot46-20261104, no main merge. Check Play Store device eligibility separately: runtime fallback is not proof of reach.
+- Preserve authored atlas alpha cast, prevent noon thin-line collapse using bounded crown depth, and blend day cast into persistent weaker fixed-direction night/moon cast.
+- Contact AO: one no-texture MultiMeshInstance2D containing grounded tree/rock ellipses; hide depleted/harvested instances. Shared sprite-side shader gives weak faux self-shading. No raycast, new light per object, new terrain material, fullscreen blur or GPU heightmap pass. AO approximates depth; it is not physically correct object-to-object occlusion.
+- Must verify CI native import/scene screenshots (including night), PCK exports, Android Vulkan vs GL fallback, device frame times and thermals separately. CI success is not physical device acceptance.
+- **DEFERRED (next graphics task, NOT part of this change):** HDR Bloom/Glow and LUT color grading, day/evening/night grading profiles, low/medium/high presets, exclude HUD from world postprocess. Keep this user decision in the next handoff.
+
 ### 2026-11-05 — Player action animations, sprint, and tap-to-inspect mobs
 - User requested using existing HUD controls for harvest/attack/run and opening mob information on touch like resource selection. On `experiment/limboai-godot46-20261104`, existing source `motion.json` clips are used; no IK, new sprite sheets, save schema or main merge.
 - `main.gd`: successful harvesting starts the source `slash` clip, repeats it only while authoritative `gameplay.active_harvest` remains active, holds each non-looping clip for its original `frames*ms` duration. Selected mob tap precedes resource hit testing; resource selection dismisses mob info. Player movement uses 1.65x sprint only while the existing HUD's sprint touch button is held and manual movement occurs, selecting `smooth_run`; otherwise `smooth_walk`.

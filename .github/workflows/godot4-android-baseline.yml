@@ -491,13 +491,14 @@ jobs:
             grep -q "TAMU_STAGE6_PRODUCTION_SMOKE_OK status=$target" "screenshots/prod-$target.log"
             if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_STAGE6_PRODUCTION_GATE_FAILED|TAMU_R2_AUTHORITY_UNAVAILABLE' "screenshots/prod-$target.log"; then exit 1; fi
           done
-          for case in center east west zoom north dawn reload grounding; do
+          for case in center east west zoom north dawn night reload grounding; do
             for mode in legacy merged; do
               TAMU_CATALOG_REQUIRE_BINARY=1 TAMU_TERRAIN_MODE="$mode" TAMU_VISUAL_CASE="$case" timeout --kill-after=3s 75s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 | tee "screenshots/$case-$mode.log"
               grep -q TAMU_VISUAL_CAPTURE_OK "screenshots/$case-$mode.log"
               grep -q "TAMU_OBJECT_HIRES_ACTIVE active=true atlas=4096" "screenshots/$case-$mode.log"
               grep -q TAMU_HARVEST_SELECTION_OK "screenshots/$case-$mode.log"
               grep -q TAMU_YDEPTH_SHADOW_ORDER_OK "screenshots/$case-$mode.log"
+              if [ "$mode" = merged ]; then grep -q TAMU_CONTACT_AO_BATCH_OK "screenshots/$case-$mode.log"; fi
               grep -q TAMU_VIEWPORT_COVERAGE_OK "screenshots/$case-$mode.log"
               if [ "$case" = reload ] && [ "$mode" = merged ]; then
                 grep -q 'TAMU_REGION_RELOAD_OK id_replaced=true region_count=1' "screenshots/$case-$mode.log"
@@ -726,6 +727,8 @@ jobs:
               if not any(f'scripts/{name}.gd' in path for path in names)]
           assert not missing_scripts, f'PCK_RUNTIME_SCRIPTS_MISSING {missing_scripts}'
           assert any('scripts/object_shadow.gdshader' in path for path in names), 'PCK_SHADOW_SHADER_MISSING'
+          assert any('scripts/contact_ao.gdshader' in path for path in names), 'PCK_CONTACT_AO_SHADER_MISSING'
+          assert any('scripts/object_depth.gdshader' in path for path in names), 'PCK_OBJECT_DEPTH_SHADER_MISSING'
           assert any('scripts/harvest_outline.gdshader' in path for path in names), 'PCK_HARVEST_OUTLINE_SHADER_MISSING'
           assert any('scripts/pixellight_world.gd' in path for path in names), 'PCK_PIXELLIGHT_WORLD_MISSING'
           assert any('addons/pixel_light_2d/pixel_light.gd' in path for path in names), 'PCK_PIXELLIGHT_CORE_MISSING'
