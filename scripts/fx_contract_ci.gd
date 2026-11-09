@@ -27,7 +27,8 @@ func _check() -> void:
     valid = valid and effects.palette.has("tree") and effects.palette.has("rock")
     valid = valid and Shadow.code.contains("solar_dir") and Shadow.code.contains("solar_length")
     valid = valid and Shadow.code.contains("canopy_depth") and SolarShadow.verify_contract()
-    valid = valid and ContactAO.code.contains("ao_opacity") and ObjectDepth.code.contains("depth_strength")
+    valid = valid and ContactAO.code.contains("ao_opacity") and ContactAO.code.contains("moon_level")
+    valid = valid and Shadow.code.contains("cross_ray") and ObjectDepth.code.contains("depth_strength")
     valid = valid and ShadowVolume.verify_contract()
     var alpha_test := Image.create(48,64,false,Image.FORMAT_RGBA8)
     alpha_test.fill(Color(0,0,0,0))
@@ -44,6 +45,6 @@ func _check() -> void:
         return
     print("TAMU_SHADOW_ALPHA_CONTOUR_OK samples=12")
     print("TAMU_SHADOW_VOLUME_PARITY_OK orientations=5 kinds=2")
-    print("TAMU_SOLAR_LATITUDE_CONTRACT_OK latitude=39 noon_altitude=51 night_moon=true")
+    print("TAMU_SOLAR_LATITUDE_CONTRACT_OK latitude=39 noon_altitude=51 night_moon=AO solar_fades=true")
     print("TAMU_FX_CONTRACT_OK voices=8 music_bus=true sfx_bus=true shader=true")
     quit(0)

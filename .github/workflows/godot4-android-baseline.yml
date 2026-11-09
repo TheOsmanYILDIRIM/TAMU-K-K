@@ -88,6 +88,9 @@ jobs:
           mkdir -p screenshots
           timeout --kill-after=3s 50s xvfb-run -a -s '-screen 0 540x360x24' godot --path . --rendering-method gl_compatibility --resolution 540x360 --script res://scripts/fx_visual_ci.gd 2>&1 | tee fx-visual.log
           grep -q 'TAMU_FX_VISUAL_OK' fx-visual.log
+          timeout --kill-after=3s 60s xvfb-run -a -s '-screen 0 1280x700x24' godot --path . --rendering-method gl_compatibility --resolution 1280x700 --script res://scripts/shadow_cycle_visual_ci.gd 2>&1 | tee fx-shadow-cycle.log
+          grep -q 'TAMU_SHADOW_CYCLE_PIXEL_OK' fx-shadow-cycle.log
+          test -s screenshots/fx-shadow-cycle.png
           grep -q TAMU_HARVEST_OUTLINE_VISUAL_OK fx-visual.log
           test -s screenshots/fx-harvest-selection.png
           grep -q TAMU_SHADOW_ALPHA_INSET_OK fx-visual.log
@@ -131,6 +134,8 @@ jobs:
           name: tamu-fx-visual-smoke
           path: |
             screenshots/fx-shadow-preview.png
+            screenshots/fx-shadow-cycle.png
+            fx-shadow-cycle.log
             fx-contract.log
             fx-visual.log
             gameplay-native.log

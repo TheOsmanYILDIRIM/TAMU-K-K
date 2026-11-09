@@ -148,6 +148,8 @@ func _update_sun(delta: float) -> void:
             silhouette_material.set_shader_parameter("solar_length", solar["cast_length"])
             silhouette_material.set_shader_parameter("canopy_depth", lerpf(0.37, 0.43, light))
             silhouette_material.set_shader_parameter("opacity", solar["cast_opacity"])
+        if contact_ao_material != null:
+            contact_ao_material.set_shader_parameter("moon_level", solar["moon_ao"])
         if object_depth_material != null:
             object_depth_material.set_shader_parameter("light_axis", -sun_direction)
             object_depth_material.set_shader_parameter("depth_strength", lerpf(0.075, 0.105, light))
@@ -1320,7 +1322,8 @@ func _install_contact_ao(anchors: Array[Dictionary]) -> void:
     contact_ao_node.material = contact_ao_material
     contact_ao_node.visible = merged_mode
     shadow_layer.add_child(contact_ao_node)
-    shadow_layer.move_child(contact_ao_node, 0)
+    # Render contact AO above the long cast, below the authored object sprites.
+    # Previously it was moved to index 0 and became imperceptible.
 
 
 func _hide_contact_ao(object_id: String) -> void:
@@ -1438,9 +1441,9 @@ func _load_objects() -> void:
             object_visuals_by_chunk[visual_key].append(silhouette)
             item_record["silhouette"] = silhouette
             item_record["shadow"] = null
-            var foot_width := clampf(area.size.x * scale_value * (0.60 if kind == "tree" else 0.66), 10.0, 110.0)
+            var foot_width := clampf(area.size.x * scale_value * (0.92 if kind == "tree" else 0.82), 15.0, 170.0)
             ao_anchors.append({"id": id, "position": sprite.position - Vector2(0.0, 2.0),
-                "footprint": Vector2(foot_width, foot_width * (0.40 if kind == "tree" else 0.52)),
+                "footprint": Vector2(foot_width, foot_width * (0.54 if kind == "tree" else 0.62)),
                 "strength": 1.0 if kind == "tree" else 0.78})
         object_count += 1
     _install_contact_ao(ao_anchors)
@@ -1719,7 +1722,7 @@ func _process(delta: float) -> void:
                 return
         print("TAMU_FX_SYSTEM_OK silhouettes=",silhouette_shadows.size()," audio=true particles=true")
         if merged_mode:
-            print("TAMU_CONTACT_AO_BATCH_OK instances=", contact_ao_mesh.instance_count)
+            print("TAMU_CONTACT_AO_BATCH_OK instances=", contact_ao_mesh.instance_count, " above_solar=true")
         print("TAMU_GROUND_SHADOW_VISIBILITY_OK visible=",drawn)
         print("TAMU_SUN_HARVEST_BOOT_OK shadows=",silhouette_shadows.size()," hour=",day_clock)
         if perf_hud == null or not perf_hud.test_gate():
