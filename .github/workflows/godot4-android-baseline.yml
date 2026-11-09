@@ -453,7 +453,7 @@ jobs:
           timeout --kill-after=3s 60s godot --headless --path . --script res://scripts/mob_contract_ci.gd 2>&1 | tee screenshots/mob-contract.log
           grep -q TAMU_MOB_CONTRACT_OK screenshots/mob-contract.log
           timeout --kill-after=3s 60s godot --headless --path . --script res://scripts/profile_rig_ci.gd 2>&1 | tee screenshots/profile-rig-contract.log
-          grep -q TAMU_PROFILE_NUMERIC_SKIN_OK screenshots/profile-rig-contract.log
+          grep -q 'TAMU_REV2D_CHARACTER_OK bones=41 parts=6 clips=2' screenshots/profile-rig-contract.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_PROFILE_.*FAILED' screenshots/profile-rig-contract.log; then exit 1; fi
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_MOB_.*FAILED' screenshots/mob-contract.log; then exit 1; fi
           mkdir -p /tmp/tamu-save-reopen-home
@@ -969,7 +969,7 @@ jobs:
             timeout --kill-after=3s 90s xvfb-run -a -s '-screen 0 720x1100x24' \
             godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 \
             2>&1 | tee screenshots/limboai-production-mobile.log
-          grep -q 'TAMU_PROFILE_GAMEPLAY_RIG_ACTIVE bones=23' screenshots/limboai-production-mobile.log
+          grep -q 'TAMU_PROFILE_GAMEPLAY_RIG_ACTIVE bones=41' screenshots/limboai-production-mobile.log
           grep -q 'TAMU_LIMBOAI_ACTIVE players=6' screenshots/limboai-production-mobile.log
           grep -q 'TAMU_MOB_READY species=core:yaprakkulak count=6' screenshots/limboai-production-mobile.log
           grep -Eq 'TAMU_MOB_ANDROID_STATUS total=6 visible=[1-6] limbo=ON' screenshots/limboai-production-mobile.log

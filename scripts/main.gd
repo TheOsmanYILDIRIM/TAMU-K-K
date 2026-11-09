@@ -746,7 +746,7 @@ func _make_avatar() -> void:
         get_tree().quit(75)
         return
     print("TAMU_PROFILE_VIEW_SCALE_OK world_height=72")
-    print("TAMU_PROFILE_GAMEPLAY_RIG_ACTIVE bones=23 parts=6 source_fk=true no_ik=true")
+    print("TAMU_PROFILE_GAMEPLAY_RIG_ACTIVE bones=41 parts=6 rev2d=true no_ik=true")
     print("TAMU_PROFILE_ONLY_VISIBLE_OK legacy_sprites=0")
     profile_contact_shadow = Polygon2D.new()
     profile_contact_shadow.name = "ProfileGroundContact"
