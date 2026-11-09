@@ -4,6 +4,7 @@ on:
     branches:
       - experiment/godot4-android-apk-20261031
       - experiment/limboai-godot46-20261104
+      - feature/tamu-modular-production-and-farming-20261106
       - main
   pull_request:
     branches:
@@ -975,11 +976,29 @@ jobs:
           grep -Eq 'TAMU_MOB_ANDROID_STATUS total=6 visible=[1-6] limbo=ON' screenshots/limboai-production-mobile.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_MOB_NO_VALID_SPAWN|TAMU_LIMBOAI_.*FAILED|TAMU_MOB_.*FAILED' screenshots/limboai-production-mobile.log; then exit 1; fi
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_MOB_MOBILE_VISIBLE_FAILED|TAMU_LIMBOAI_.*FAILED' screenshots/limboai-mobile-visible.log; then exit 1; fi
-      - name: Build standalone LimboAI Android ARM64 debug APK
+      - name: Build standalone full-resolution LimboAI Android ARM64 debug APK
         if: github.ref_name != 'experiment/limboai-godot46-20261104'
         shell: bash
         run: |
           set -euo pipefail
+          # Earlier comparison/128px jobs replace source atlases with lower tiers.
+          # Restore the verified FULL 384px terrain and 512px object originals
+          # before importing into the standalone APK; do not ship mobile-tier art.
+          cp /tmp/tamu-texture-quality/atlas_00_terrain_384.png assets/terrain25d/atlas_00_hires.png
+          cp /tmp/tamu-texture-quality/atlas_00_terrain_mix_384.png assets/terrain25d/atlas_00_mix_hires.png
+          cp /tmp/tamu-texture-quality/atlas_objects_512.png assets/terrain25d/atlas_objects_hires.png
+          python3 - <<'PYFULLAPK'
+          from pathlib import Path
+          from PIL import Image
+          root=Path('assets/terrain25d')
+          for name,other in [('atlas_00_hires.png','atlas_00_terrain_384.png'),('atlas_00_mix_hires.png','atlas_00_terrain_mix_384.png'),('atlas_objects_hires.png','atlas_objects_512.png')]:
+              src=Path('/tmp/tamu-texture-quality')/other
+              dst=root/name
+              assert dst.read_bytes()==src.read_bytes(), ('TAMU_FULL_APK_TEXTURE_MISMATCH',name)
+          assert Image.open(root/'atlas_objects_hires.png').size==(4096,4096)
+          assert Image.open(root/'atlas_00_hires.png').size==(5958,5106)
+          print('TAMU_ANDROID_FULLRES_SOURCE_OK terrain=384 objects=512')
+          PYFULLAPK
           # Use the verified upstream v1.8.1 extension already unpacked by the native-scene step.
           manifest=addons/limboai/bin/limboai.gdextension
           test -s "$manifest"
@@ -1044,7 +1063,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: github.ref_name != 'experiment/limboai-godot46-20261104'
         with:
-          name: tamu-limboai-android-arm64-debug-apk
+          name: tamu-limboai-android-arm64-fullres-debug-apk
           path: build/TAMU_LimboAI_Android_arm64.apk
           if-no-files-found: warn
       - uses: actions/upload-artifact@v4
