@@ -1,0 +1,8 @@
+TAMU • Referans yürüyüşü v6
+
+TAMU_walk.r2d.json dosyasını açıp walk klibini seçin. textures klasörü JSON ile aynı dizinde olmalı.
+Döngü 24 fps ve 53 karedir (2,208 saniye). Oyun karakteri yerinde yürür.
+
+Altı kaynak doku, düzenlenebilir iskelet ve idle klibi pakettedir. Sıfır uzunluklu follow kemikleri uzuvdaki perspektif kısalmasının direk olarak bot ve ellere aktarılmasını önler.
+
+Önizleme, paket içindeki JSON anahtarları, mesh ağırlıkları ve dokulardan üretildi. Mobil Rev2D içe aktarma denenmedi.
