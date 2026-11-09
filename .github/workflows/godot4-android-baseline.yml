@@ -872,6 +872,7 @@ jobs:
           preset.write_text(content)
           print('TAMU_128_SOURCE_PRESET_OK excluded_optional_hd=3')
           PY128CFG
+          mkdir -p build
           godot --headless --path . --export-pack Android build/tamu-android-content-128.pck
           python3 - <<'PY128PCK'
           from pathlib import Path

@@ -1,121 +1,88 @@
 extends SceneTree
-# Contract compares Godot pose evaluation with the original editor's
-# motion.json FK output. This is NOT a Skeleton2D/IK contract.
+# Rev2D source integration contract: 41 bones, six original PNG parts,
+# idle/walk animation and distance-controlled stride. No fabricated back view.
 const ProfileRig = preload("res://scripts/profile_rig.gd")
 
 func _initialize() -> void:
     call_deferred("_run")
 
-func _check_close(label: String, got: Vector2, expected: Vector2, tol: float = 0.025) -> bool:
-    if got.distance_to(expected) > tol:
-        push_error("TAMU_PROFILE_SOURCE_PARITY_FAILED " + label + " actual=" + str(got) + " expected=" + str(expected))
-        return false
-    return true
+func _fail(reason: String) -> void:
+    push_error("TAMU_REV2D_CHARACTER_FAILED " + reason)
+    quit(72)
 
 func _run() -> void:
     var character := ProfileRig.new()
     root.add_child(character)
     if not character.setup() or not character.verify_contract():
-        push_error("TAMU_PROFILE_SOURCE_SETUP_FAILED")
-        quit(71)
+        _fail("setup")
         return
-    if character.get_node_or_null("Skeleton2D") != null or character.has_method("_solve_planted_foot") or character.has_method("apply_world_step"):
-        push_error("TAMU_PROFILE_LEGACY_IK_PRESENT_FAILED")
-        quit(72)
+    if character.bones.size() != 41 or character.mesh_records.size() != 6:
+        _fail("source_topology")
         return
-    var original_mesh_ids: Array[int] = []
+    if character.clips.size() != 2 or not character.clips.has("idle") or not character.clips.has("walk"):
+        _fail("source_clips")
+        return
+    if character.get_node_or_null("Skeleton2D") != null:
+        _fail("unexpected_skeleton")
+        return
+    var ids: Array[int] = []
     for record in character.mesh_records:
         var polygon: Polygon2D = record["node"]
-        if polygon.texture == null or polygon.get_bone_count() != 0:
-            push_error("TAMU_PROFILE_SKIN_TOPOLOGY_FAILED")
-            quit(72)
+        if polygon.texture == null or polygon.get_bone_count() != 0 or polygon.polygon.size() != int(record["count"]):
+            _fail("mesh")
             return
-        original_mesh_ids.append(polygon.get_instance_id())
-    # Golden values are from the independent Python GIF renderer and original ZIP.
+        ids.append(polygon.get_instance_id())
     character.set_clip("walk")
-    character._show_frame(0)
-    if not _check_close("walk_head", character.posed_origins[5], Vector2(-2.6461, -235.9141)):
-        quit(72)
+    if character.current_clip != "walk":
+        _fail("walk_selection")
+        return
+    var duration := float(character.clips["walk"]["duration"])
+    character.advance(1.0 / 30.0, ProfileRig.WALK_CYCLE_SCREEN_PIXELS * 0.25)
+    if absf(character.elapsed - duration * 0.25) > 0.0001:
+        _fail("distance_phase")
+        return
+    var held := character.elapsed
+    character.advance(1.0 / 30.0, 0.0)
+    if absf(character.elapsed - held) > 0.0001:
+        _fail("blocked_stride")
         return
     character.set_clip("run")
-    character._show_frame(0)
-    if not _check_close("run_head", character.posed_origins[5], Vector2(26.4257, -234.7306)):
-        quit(72)
+    if character.current_clip != "walk":
+        _fail("temporary_run_fallback")
         return
     character.set_clip("idle")
-    character._show_frame(0)
-    if not _check_close("idle_head", character.posed_origins[5], Vector2(-14.7385, -257.9763)):
-        quit(72)
+    if character.current_clip != "idle":
+        _fail("idle_selection")
         return
-    if not _check_close("idle_left_toe", character._toe_position(10), Vector2(26.75, 662.4552), 0.05):
-        quit(72)
-        return
-    # Locomotion phase comes from *actual projected distance*, not time.
-    character.set_clip("walk")
-    var walk: Dictionary = character.clips["smooth_walk"]
-    var cycle_duration: float = float(walk["ms"]) * float(walk["frames"].size()) / 1000.0
-    character.advance(1.0 / 30.0, ProfileRig.WALK_CYCLE_SCREEN_PIXELS * 0.25)
-    if absf(character.elapsed - cycle_duration * 0.25) > 0.0001:
-        push_error("TAMU_PROFILE_STRIDE_DISTANCE_FAILED elapsed=" + str(character.elapsed))
-        quit(72)
-        return
-    var held_elapsed: float = character.elapsed
-    character.advance(1.0 / 30.0, 0.0)
-    if absf(character.elapsed - held_elapsed) > 0.0001:
-        push_error("TAMU_PROFILE_BLOCKED_STRIDE_FAILED")
-        quit(72)
-        return
-    print("TAMU_PROFILE_DISTANCE_STRIDE_OK cycle_px=", ProfileRig.WALK_CYCLE_SCREEN_PIXELS)
-    # Source-wide gait regression: edited motion frames, not merely speed.
-    for profile in [
-        {"clip": "walk", "base_left": 241.98977178, "base_right": 243.76446198, "minimum": 2.8},
-        {"clip": "run", "base_left": 370.2277222, "base_right": 361.34842996, "minimum": 2.6}
-    ]:
-        character.set_clip(str(profile["clip"]))
-        var min_x := Vector2(INF, INF)
-        var max_x := Vector2(-INF, -INF)
-        var sample_count: int = character.clips[character.current_clip]["frames"].size()
-        for sample in range(sample_count):
-            character._show_frame(sample)
-            var pelvis_x: float = character.posed_origins[0].x
-            var left_x: float = character._toe_position(10).x - pelvis_x
-            var right_x: float = character._toe_position(14).x - pelvis_x
-            min_x.x = minf(min_x.x, left_x)
-            min_x.y = minf(min_x.y, right_x)
-            max_x.x = maxf(max_x.x, left_x)
-            max_x.y = maxf(max_x.y, right_x)
-        var swing: Vector2 = max_x - min_x
-        if swing.x / float(profile["base_left"]) < float(profile["minimum"]) or swing.y / float(profile["base_right"]) < float(profile["minimum"]):
-            push_error("TAMU_PROFILE_STRIDE_WIDTH_FAILED " + str(profile["clip"]) + " swing=" + str(swing))
-            quit(72)
-            return
-    print("TAMU_PROFILE_STRIDE_WIDTH_OK walk_3x_target=true run_3x_target=true")
-    # Test all seven authored clips and frame transitions without any IK.
-    for action in ["idle", "walk", "run", "slash", "stab", "sit", "die"]:
-        character.set_clip(action)
-        for i in range(6):
-            character.advance(1.0 / 30.0)
+    for i in range(64):
+        var motion := 3.0 if i % 2 == 0 else 0.0
+        character.set_clip("walk")
+        character.advance(1.0 / 30.0, motion)
         if not character.verify_contract():
-            push_error("TAMU_PROFILE_POSE_FAILED " + action)
-            quit(72)
-            return
-        if absf(character.scale.y - ProfileRig.SOURCE_SCALE) > 0.001:
-            push_error("TAMU_PROFILE_SCALE_FAILED")
-            quit(72)
+            _fail("pose")
             return
         for j in range(character.mesh_records.size()):
             var record: Dictionary = character.mesh_records[j]
-            var polygon: Polygon2D = record["node"]
-            if polygon.get_instance_id() != original_mesh_ids[j] or polygon.polygon.size() != record["count"]:
-                push_error("TAMU_PROFILE_LAYER_REPLACED_FAILED")
-                quit(72)
+            var layer: Polygon2D = record["node"]
+            if layer.get_instance_id() != ids[j] or layer.polygon.size() != int(record["count"]):
+                _fail("layer_replaced")
                 return
-        for origin in character.posed_origins:
-            if not origin.is_finite():
-                push_error("TAMU_PROFILE_NONFINITE_POSE_FAILED")
-                quit(72)
+            for pos in layer.polygon:
+                if not pos.is_finite():
+                    _fail("nonfinite_vertex")
+                    return
+    for action in ["idle", "walk"]:
+        character.set_clip(action)
+        for step in range(12):
+            character._show_time(float(step) * 0.07)
+            var bottom := -INF
+            for record in character.mesh_records:
+                var layer: Polygon2D = record["node"]
+                if layer.name.begins_with("part_01_yakin_bacak") or layer.name.begins_with("part_02_uzak_bacak"):
+                    for vertex in layer.polygon:
+                        bottom = maxf(bottom, vertex.y + layer.position.y)
+            if not is_finite(bottom) or absf(bottom - ProfileRig.SOURCE_GROUND_Y) > 0.1:
+                _fail("foot_ground_contact")
                 return
-    print("TAMU_PROFILE_SOURCE_PARITY_OK clips=7 bones=23 parts=6")
-    print("TAMU_PROFILE_NO_IK_OK base_poses=exact mesh_objects=persistent")
-    print("TAMU_PROFILE_NUMERIC_SKIN_OK bones=23 parts=6 clips=7 frames=310")
+    print("TAMU_REV2D_CHARACTER_OK bones=41 parts=6 clips=2 extracted=true")
     quit(0)
