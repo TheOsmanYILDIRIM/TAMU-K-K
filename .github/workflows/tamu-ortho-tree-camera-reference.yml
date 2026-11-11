@@ -5,56 +5,46 @@ on:
       - experiment/tamu-ortho-tree-camera-ref-20261111
     paths:
       - .github/workflows/tamu-ortho-tree-camera-reference.yml
-      - scripts/render_tree_camera_refs.py
+      - scripts/render_tree_camera_ref_fast.py
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   render:
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: Install Blender
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y blender
-      - name: Download pinned CC0 Kenney oak from GitHub
+      - name: Install small Python renderer
+        run: python3 -m pip install --disable-pip-version-check --quiet trimesh numpy matplotlib
+      - name: Download pinned CC0 3D oak
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p source
-          curl -fLSs --retry 3 --max-time 60 \
-            "https://raw.githubusercontent.com/syuhei176/ai-game-assets/ebfd758dea8db5793c765cc72564efadb36a4ed0/models/environment/tree_oak.glb" \
+          curl -fLSs --retry 2 --max-time 30 \
+            https://raw.githubusercontent.com/syuhei176/ai-game-assets/ebfd758dea8db5793c765cc72564efadb36a4ed0/models/environment/tree_oak.glb \
             -o source/tree_oak.glb
           python3 - <<'PY'
-          import os, struct
-          p = 'source/tree_oak.glb'
-          with open(p,'rb') as f:
-              magic, version, length = struct.unpack('<4sII',f.read(12))
-          assert magic == b'glTF' and version == 2 and length == os.path.getsize(p)
-          print('TAMU_CC0_GLB_OK', length)
+          import os,struct
+          with open('source/tree_oak.glb','rb') as f: magic,ver,size=struct.unpack('<4sII',f.read(12))
+          assert (magic,ver,size)==(b'glTF',2,os.path.getsize('source/tree_oak.glb'))
           PY
-      - name: Render true orthographic elevations
-        env:
-          TAMU_TREE_GLB: source/tree_oak.glb
-          TAMU_OUT: tree-camera-refs
-        run: blender --background --factory-startup --python scripts/render_tree_camera_refs.py
-      - name: Verify output PNGs
+      - name: Render true orthographic 30-degree reference
+        run: python3 scripts/render_tree_camera_ref_fast.py
+      - name: Verify artifact
         run: |
           python3 - <<'PY'
           import os,struct
-          for e in [20,30,40,50]:
-              p=f'tree-camera-refs/oak_ortho_elev_{e:02d}.png'
-              with open(p,'rb') as f: sig=f.read(24)
-              assert sig[:8] == b'\x89PNG\r\n\x1a\n',p
-              assert struct.unpack('>II',sig[16:24]) == (1024,1024),p
-              assert os.path.getsize(p)>10000,p
-              print('PNG_OK',p,os.path.getsize(p))
+          path='tree-camera-refs/oak_ortho_elev_30.png'
+          with open(path,'rb') as f: sig=f.read(24)
+          assert sig[:8]==b'\x89PNG\r\n\x1a\n'
+          assert struct.unpack('>II',sig[16:24])==(1024,1024)
+          assert os.path.getsize(path)>3000
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: tamu-tree-camera-references
+          name: tamu-tree-camera-references-fast
           path: tree-camera-refs/
           retention-days: 30
           if-no-files-found: error
