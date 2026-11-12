@@ -100,7 +100,7 @@ func _verify() -> void:
         var old_pixel: Color = old_image.get_pixel(px,py)
         var normal_pixel: Color = normal_image.get_pixel(px,py)
         if str(entry.get("family","")) == "wetland":
-            if normal_pixel.a > 0.02 or pixel.distance_to(old_pixel) > 0.015:
+            if normal_pixel.a > 0.02 or (absf(pixel.r-old_pixel.r) + absf(pixel.g-old_pixel.g) + absf(pixel.b-old_pixel.b)) > 0.015:
                 _failed("wetland altered")
                 return
             kept_water += 1
@@ -108,7 +108,7 @@ func _verify() -> void:
             if normal_pixel.a < 0.98:
                 _failed("land normal missing")
                 return
-            if pixel.distance_to(old_pixel) > 0.1:
+            if (absf(pixel.r-old_pixel.r) + absf(pixel.g-old_pixel.g) + absf(pixel.b-old_pixel.b)) > 0.1:
                 changed += 1
             mapped += 1
     if mapped != 137 or kept_water != 31 or changed < 60:
