@@ -1,0 +1,45 @@
+name: TAMU HD bake low-sampling atlas and mobile tree textures
+on:
+  push:
+    branches:
+      - experiment/tamu-hd-forest-materials-20261112
+    paths:
+      - scripts/bake_tamu_hd_fast.py
+      - .github/workflows/tamu-hd-fast-bake.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  bake:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned image tools
+        run: python -m pip install --disable-pip-version-check "Pillow==11.3.0" "numpy==2.3.3"
+      - name: Bake mapped atlas, pre-mix height into normals, make 768px paired trees
+        run: python scripts/bake_tamu_hd_fast.py
+      - name: Commit baked runtime-only derivatives; preserve source files and main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/terrain/hd_fast_atlas assets/trees/mobile_768
+          test "$(git diff --cached --name-only | grep -c '^assets/trees/mobile_768/.*/.*\.png$')" -eq 16
+          test "$(git diff --cached --name-only | grep -c '^assets/terrain/hd_fast_atlas/.*\.png$')" -eq 2
+          git diff --cached --check
+          git commit -m 'assets(tamu-hd): bake UV-compatible fast land atlas and mobile tree normals'
+          for attempt in 1 2 3; do
+            git fetch origin experiment/tamu-hd-forest-materials-20261112
+            git rebase origin/experiment/tamu-hd-forest-materials-20261112
+            if git push origin HEAD:experiment/tamu-hd-forest-materials-20261112; then
+              echo TAMU_HD_FAST_ASSETS_PUBLISHED
+              exit 0
+            fi
+          done
+          echo TAMU_HD_FAST_PUBLISH_FAILED >&2
+          exit 1

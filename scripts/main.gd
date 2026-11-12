@@ -157,14 +157,17 @@ func _update_sun(delta: float) -> void:
         if object_depth_material != null:
             object_depth_material.set_shader_parameter("light_axis", -sun_direction)
             object_depth_material.set_shader_parameter("depth_strength", lerpf(0.075, 0.105, light))
-        if hd_terrain_material != null:
-            hd_terrain_material.set_shader_parameter("sun_cast_dir",solar["cast_direction"])
-            hd_terrain_material.set_shader_parameter("sun_altitude",solar["altitude_deg"])
-            hd_terrain_material.set_shader_parameter("sun_light",light)
-        for tree_material in hd_tree_materials:
-            tree_material.set_shader_parameter("sun_cast_dir",solar["cast_direction"])
-            tree_material.set_shader_parameter("sun_altitude",solar["altitude_deg"])
-            tree_material.set_shader_parameter("sun_light",light)
+        # Calculate the solar light unit vector ONCE per solar tick, not per pixel.
+        if hd_terrain_material != null or not hd_tree_materials.is_empty():
+            var cast: Vector2 = solar["cast_direction"]
+            var elev: float = deg_to_rad(float(solar["altitude_deg"]))
+            var light_vec := Vector3(-cast.x * cos(elev), -cast.y * cos(elev), maxf(sin(elev), 0.03)).normalized()
+            if hd_terrain_material != null:
+                hd_terrain_material.set_shader_parameter("sun_vector",light_vec)
+                hd_terrain_material.set_shader_parameter("sun_light",light)
+            for tree_material in hd_tree_materials:
+                tree_material.set_shader_parameter("sun_vector",light_vec)
+                tree_material.set_shader_parameter("sun_light",light)
         # Original atlas-alpha shadow stays single; AO uses a separate batched mesh.
 
 # Existing interaction button: building entry takes priority over harvesting.
@@ -953,9 +956,17 @@ func _ready() -> void:
     contact_ao_material.shader = CONTACT_AO_SHADER
     object_depth_material = ShaderMaterial.new()
     object_depth_material.shader = OBJECT_DEPTH_SHADER
-    terrain_atlas = load("res://assets/terrain25d/atlas_00.png")
+    # An HD atlas uses the EXACT legacy normalized UV layout. Avoid loading the
+    # huge legacy terrain atlas and mixing textures when the HD renderer is on.
+    var hd_bundle: Dictionary = TamuHdMaterials.terrain_bundle()
+    hd_terrain_material = hd_bundle.get("material") as ShaderMaterial
+    if hd_terrain_material != null:
+        terrain_atlas = hd_bundle["albedo"]
+        print("TAMU_HD_FAST_EXPERIMENT_ACTIVE atlas=1848x1584 height=baked trees=768px")
+    else:
+        terrain_atlas = load("res://assets/terrain25d/atlas_00.png")
     env_visual_stage = VisualEnvironment.level()
-    var terrain_hires := not VisualEnvironment.mobile_fast_mode() and OS.get_environment("TAMU_TERRAIN_HIRES") != "0" and ResourceLoader.exists("res://assets/terrain25d/atlas_00_hires.png")
+    var terrain_hires := hd_terrain_material == null and not VisualEnvironment.mobile_fast_mode() and OS.get_environment("TAMU_TERRAIN_HIRES") != "0" and ResourceLoader.exists("res://assets/terrain25d/atlas_00_hires.png")
     if terrain_hires:
         var terrain_path := "res://assets/terrain25d/atlas_00_mix_hires.png" if env_visual_stage >= 1 else "res://assets/terrain25d/atlas_00_hires.png"
         if ResourceLoader.exists(terrain_path):
@@ -965,7 +976,7 @@ func _ready() -> void:
             push_error("TAMU_TERRAIN_HIRES_MIX_MISSING")
             get_tree().quit(32)
             return
-    if env_visual_stage >= 1 and not terrain_hires:
+    if env_visual_stage >= 1 and not terrain_hires and hd_terrain_material == null:
         # Build-time packed derivative: one texture fetch rather than the
         # four-lookups-per-pixel prototype shader, with no extra draw calls.
         var mixed_path := "res://assets/terrain25d/atlas_00_mix.png"
@@ -974,9 +985,6 @@ func _ready() -> void:
             print("TAMU_TERRAIN_MIX_TEXTURE_READY")
         else:
             push_warning("TAMU_TERRAIN_MIX_NOT_BAKED: run scripts/bake_terrain_mix.py for authored blend; source atlas used")
-    hd_terrain_material = TamuHdMaterials.terrain_material()
-    if hd_terrain_material != null:
-        print("TAMU_HD_EXPERIMENT_ENABLED terrain_materials=6 tree_species=8")
     world_source = WorldSource.new()
     if not world_source.initialize():
         push_error("TAMU_WORLD_SOURCE_GATE_FAILED")

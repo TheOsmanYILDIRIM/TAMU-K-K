@@ -774,18 +774,17 @@ jobs:
                   'scripts/tamu_hd_materials.gd',
                   'scripts/tamu_hd_terrain.gdshader',
                   'scripts/tamu_hd_tree.gdshader',
-                  'assets/terrain/material_atlas/albedo.png',
-                  'assets/terrain/material_atlas/normal.png',
-                  'assets/terrain/material_atlas/height.png',
+                  'assets/terrain/hd_fast_atlas/albedo.png',
+                  'assets/terrain/hd_fast_atlas/normal.png',
               ]
               species = ('fractureborn_oak','skyward_forest_oak','stormslope_beech',
                   'marshkeeper_alder','rootbound_hornbeam','ironwind_pine',
                   'ashskin_birch','borderwatch_ash')
-              required_hd += [f'assets/trees/{species_name}/{channel}.png'
+              required_hd += [f'assets/trees/mobile_768/{species_name}/{channel}.png'
                   for species_name in species for channel in ('albedo','normal')]
               missing_hd = [key for key in required_hd if not any(key in s for s in names)]
               assert not missing_hd, f'PCK_HD_ASSET_OR_SHADER_MISSING {missing_hd}'
-              assert 680 <= count < 740, f'PCK_HD_FILE_COUNT_UNEXPECTED {count}'
+              assert 660 <= count < 740, f'PCK_HD_FILE_COUNT_UNEXPECTED {count}'
               print('TAMU_HD_PCK_CONTENT_OK',len(required_hd),'required_keys entries=',count)
           else:
               assert count < 680, f'PCK_TOO_MANY_FILES {count}'

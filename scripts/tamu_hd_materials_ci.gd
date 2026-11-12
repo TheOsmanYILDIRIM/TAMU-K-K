@@ -40,6 +40,12 @@ func _verify() -> void:
             if raw == null or raw.get_buffer(8) != PackedByteArray([137,80,78,71,13,10,26,10]):
                 _failed("terrain file not actual PNG " + path)
                 return
+    for name in names:
+        for channel in ["albedo","normal"]:
+            var mobile_path: String = "res://assets/trees/mobile_768/" + str(name) + "/" + channel + ".png"
+            if not ResourceLoader.exists(mobile_path) or (load(mobile_path) as Texture2D).get_size() != Vector2(768,768):
+                _failed("mobile tree missing or invalid " + mobile_path)
+                return
     var oak: Dictionary = HD.tree_asset(0, "oak")
     var pine: Dictionary = HD.tree_asset(0, "conifer")
     if oak.is_empty() or pine.is_empty():
@@ -49,9 +55,13 @@ func _verify() -> void:
     var parent := Node2D.new()
     parent.name = "MaterialScene"
     get_root().add_child(parent)
-    var old_atlas: Texture2D = load("res://assets/terrain25d/atlas_00.png")
-    if old_atlas == null:
-        _failed("canonical atlas")
+    var hd_atlas: Texture2D = load("res://assets/terrain/hd_fast_atlas/albedo.png")
+    if hd_atlas == null or hd_atlas.get_size() != Vector2(1848,1584):
+        _failed("packed HD atlas")
+        return
+    var hd_normal: Texture2D = load("res://assets/terrain/hd_fast_atlas/normal.png")
+    if hd_normal == null or hd_normal.get_size() != hd_atlas.get_size():
+        _failed("packed normal atlas")
         return
     var manifest: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://assets/terrain25d/manifest.json"))
     if not manifest is Dictionary:
@@ -87,7 +97,7 @@ func _verify() -> void:
     mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
     var terrain_node := MeshInstance2D.new()
     terrain_node.mesh = mesh
-    terrain_node.texture = old_atlas
+    terrain_node.texture = hd_atlas
     terrain_node.material = terrain
     parent.add_child(terrain_node)
     var tree := Sprite2D.new()
@@ -97,11 +107,12 @@ func _verify() -> void:
     tree.scale = Vector2.ONE * 0.23
     parent.add_child(tree)
     var noon = Solar.sample(12.0)
-    terrain.set_shader_parameter("sun_cast_dir",noon["cast_direction"])
-    terrain.set_shader_parameter("sun_altitude",noon["altitude_deg"])
+    var cast: Vector2 = noon["cast_direction"]
+    var elev: float = deg_to_rad(float(noon["altitude_deg"]))
+    var sun := Vector3(-cast.x*cos(elev),-cast.y*cos(elev),maxf(sin(elev),0.03)).normalized()
+    terrain.set_shader_parameter("sun_vector",sun)
     terrain.set_shader_parameter("sun_light",noon["light"])
-    tree.material.set_shader_parameter("sun_cast_dir",noon["cast_direction"])
-    tree.material.set_shader_parameter("sun_altitude",noon["altitude_deg"])
+    tree.material.set_shader_parameter("sun_vector",sun)
     tree.material.set_shader_parameter("sun_light",noon["light"])
     for i in range(8):
         await process_frame
@@ -121,5 +132,5 @@ func _verify() -> void:
     if err != OK:
         _failed("screenshot export")
         return
-    print("TAMU_HD_NATIVE_RENDER_OK terrain6 tree8 shader2 screenshot=",ProjectSettings.globalize_path(file_path))
+    print("TAMU_HD_NATIVE_RENDER_OK terrain6 tree8 shader2 optimized=2samples tree768 screenshot=",ProjectSettings.globalize_path(file_path))
     quit()
