@@ -1,0 +1,794 @@
+{
+  "schema_version": 1,
+  "experimental": true,
+  "tiers": {
+    "0": "İlkel",
+    "1": "El işçiliği",
+    "2": "Erken metalurji",
+    "3": "Hassas mühendislik",
+    "4": "Endüstri",
+    "5": "İleri / hibrit"
+  },
+  "sites": {
+    "wood_cabin": {
+      "label": "Ahşap kulübe",
+      "size": [
+        3,
+        3
+      ],
+      "tags": [
+        "shelter",
+        "flammable"
+      ],
+      "category": "interior"
+    },
+    "ventilated_wood": {
+      "label": "Havalandırmalı ahşap atölye",
+      "size": [
+        4,
+        4
+      ],
+      "tags": [
+        "shelter",
+        "flammable",
+        "ventilated"
+      ],
+      "category": "interior"
+    },
+    "stone_foundry": {
+      "label": "Taş dökümhane",
+      "size": [
+        4,
+        4
+      ],
+      "tags": [
+        "shelter",
+        "fire_resistant",
+        "ventilated"
+      ],
+      "category": "interior"
+    },
+    "heavy_workshop": {
+      "label": "Güçlendirilmiş atölye",
+      "size": [
+        5,
+        5
+      ],
+      "tags": [
+        "shelter",
+        "fire_resistant",
+        "heavy_support"
+      ],
+      "category": "interior"
+    },
+    "industry": {
+      "label": "Metal konstrüksiyon sanayi",
+      "size": [
+        5,
+        5
+      ],
+      "tags": [
+        "shelter",
+        "fire_resistant",
+        "heavy_support",
+        "ventilated",
+        "power_ready"
+      ],
+      "category": "interior"
+    },
+    "clean_lab": {
+      "label": "Korumalı laboratuvar",
+      "size": [
+        4,
+        4
+      ],
+      "tags": [
+        "shelter",
+        "clean",
+        "dry",
+        "protected"
+      ],
+      "category": "interior"
+    },
+    "greenhouse": {
+      "label": "Sera",
+      "size": [
+        5,
+        5
+      ],
+      "tags": [
+        "shelter",
+        "sunlit",
+        "cultivation"
+      ],
+      "category": "field"
+    },
+    "field": {
+      "label": "Açık tarla",
+      "size": [
+        5,
+        5
+      ],
+      "tags": [
+        "open_air",
+        "sunlit",
+        "cultivation"
+      ],
+      "category": "field"
+    },
+    "yard": {
+      "label": "Açık üretim sahası",
+      "size": [
+        5,
+        5
+      ],
+      "tags": [
+        "open_air",
+        "heavy_support"
+      ],
+      "category": "outdoor"
+    },
+    "lumberyard": {
+      "label": "Kereste sahası",
+      "size": [
+        5,
+        5
+      ],
+      "tags": [
+        "open_air",
+        "storage"
+      ],
+      "category": "outdoor"
+    },
+    "quarry": {
+      "label": "Taş ocağı",
+      "size": [
+        5,
+        5
+      ],
+      "tags": [
+        "open_air",
+        "heavy_support",
+        "mineral"
+      ],
+      "category": "outdoor"
+    },
+    "animal_pen": {
+      "label": "Hayvan ağılı",
+      "size": [
+        5,
+        5
+      ],
+      "tags": [
+        "open_air",
+        "livestock"
+      ],
+      "category": "outdoor"
+    }
+  },
+  "modules": {
+    "furnace": {
+      "label": "Küçük fırın",
+      "tier": 1,
+      "glyph": "F",
+      "action": "heat",
+      "ports": {
+        "N": [
+          {
+            "flow": "air",
+            "mode": "in"
+          }
+        ],
+        "E": [
+          {
+            "flow": "heat",
+            "mode": "out"
+          }
+        ],
+        "S": [
+          {
+            "flow": "exhaust",
+            "mode": "out"
+          }
+        ]
+      },
+      "effects": {
+        "heat": 8,
+        "smoke": 5
+      }
+    },
+    "bellows": {
+      "label": "Körük",
+      "tier": 1,
+      "glyph": "K",
+      "action": "assist",
+      "ports": {
+        "E": [
+          {
+            "flow": "air",
+            "mode": "out"
+          }
+        ]
+      },
+      "effects": {}
+    },
+    "crucible": {
+      "label": "Eritme potası",
+      "tier": 2,
+      "glyph": "P",
+      "action": "melt",
+      "ports": {
+        "W": [
+          {
+            "flow": "heat",
+            "mode": "in"
+          }
+        ],
+        "E": [
+          {
+            "flow": "molten",
+            "mode": "out"
+          }
+        ]
+      },
+      "effects": {}
+    },
+    "mold": {
+      "label": "Döküm kalıbı",
+      "tier": 2,
+      "glyph": "D",
+      "action": "cast",
+      "ports": {
+        "W": [
+          {
+            "flow": "molten",
+            "mode": "in"
+          }
+        ]
+      },
+      "effects": {}
+    },
+    "vent": {
+      "label": "Baca / egzoz",
+      "tier": 1,
+      "glyph": "B",
+      "action": "vent",
+      "ports": {
+        "N": [
+          {
+            "flow": "exhaust",
+            "mode": "in"
+          }
+        ],
+        "E": [
+          {
+            "flow": "exhaust",
+            "mode": "in"
+          }
+        ],
+        "S": [
+          {
+            "flow": "exhaust",
+            "mode": "in"
+          }
+        ],
+        "W": [
+          {
+            "flow": "exhaust",
+            "mode": "in"
+          }
+        ]
+      },
+      "effects": {}
+    },
+    "charcoal_kiln": {
+      "label": "Kömür ocağı",
+      "tier": 1,
+      "glyph": "O",
+      "action": "charcoal",
+      "ports": {},
+      "effects": {
+        "heat": 5,
+        "smoke": 6
+      }
+    },
+    "forge": {
+      "label": "Dövme ocağı",
+      "tier": 2,
+      "glyph": "V",
+      "action": "forge",
+      "ports": {},
+      "effects": {
+        "heat": 6,
+        "smoke": 3
+      }
+    },
+    "saw": {
+      "label": "Testere tezgâhı",
+      "tier": 1,
+      "glyph": "T",
+      "action": "cut",
+      "ports": {},
+      "effects": {
+        "dust": 3
+      }
+    },
+    "crusher": {
+      "label": "Taş kırıcı",
+      "tier": 2,
+      "glyph": "C",
+      "action": "crush",
+      "ports": {},
+      "effects": {
+        "dust": 4,
+        "vibration": 5
+      }
+    },
+    "grinder": {
+      "label": "Öğütücü",
+      "tier": 2,
+      "glyph": "G",
+      "action": "grind",
+      "ports": {},
+      "effects": {
+        "dust": 3,
+        "vibration": 2
+      }
+    },
+    "press": {
+      "label": "Mekanik pres",
+      "tier": 3,
+      "glyph": "R",
+      "action": "press",
+      "ports": {},
+      "effects": {
+        "vibration": 7
+      }
+    },
+    "boiler": {
+      "label": "Basınç kazanı",
+      "tier": 3,
+      "glyph": "Q",
+      "action": "pressure",
+      "ports": {
+        "E": [
+          {
+            "flow": "steam",
+            "mode": "out"
+          }
+        ]
+      },
+      "effects": {
+        "heat": 5,
+        "pressure": 7
+      }
+    },
+    "valve": {
+      "label": "Tahliye vanası",
+      "tier": 3,
+      "glyph": "X",
+      "action": "safety",
+      "ports": {
+        "W": [
+          {
+            "flow": "steam",
+            "mode": "in"
+          }
+        ]
+      },
+      "effects": {}
+    },
+    "pump": {
+      "label": "Su pompası",
+      "tier": 2,
+      "glyph": "U",
+      "action": "pump",
+      "ports": {
+        "E": [
+          {
+            "flow": "water",
+            "mode": "out"
+          }
+        ]
+      },
+      "effects": {}
+    },
+    "pipe": {
+      "label": "Su borusu",
+      "tier": 2,
+      "glyph": "I",
+      "action": "pipe",
+      "ports": {
+        "W": [
+          {
+            "flow": "water",
+            "mode": "in"
+          }
+        ],
+        "E": [
+          {
+            "flow": "water",
+            "mode": "out"
+          }
+        ]
+      },
+      "effects": {}
+    },
+    "sprinkler": {
+      "label": "Sulayıcı",
+      "tier": 2,
+      "glyph": "S",
+      "action": "water",
+      "ports": {
+        "W": [
+          {
+            "flow": "water",
+            "mode": "in"
+          }
+        ]
+      },
+      "effects": {}
+    },
+    "generator": {
+      "label": "Jeneratör",
+      "tier": 4,
+      "glyph": "J",
+      "action": "power",
+      "ports": {
+        "E": [
+          {
+            "flow": "electric",
+            "mode": "out"
+          }
+        ]
+      },
+      "effects": {
+        "heat": 3
+      }
+    },
+    "battery": {
+      "label": "Batarya",
+      "tier": 4,
+      "glyph": "A",
+      "action": "store",
+      "ports": {
+        "W": [
+          {
+            "flow": "electric",
+            "mode": "in"
+          }
+        ],
+        "E": [
+          {
+            "flow": "electric",
+            "mode": "out"
+          }
+        ]
+      },
+      "effects": {}
+    },
+    "conveyor": {
+      "label": "Taşıyıcı",
+      "tier": 3,
+      "glyph": "Y",
+      "action": "transfer",
+      "ports": {
+        "W": [
+          {
+            "flow": "material",
+            "mode": "in"
+          }
+        ],
+        "E": [
+          {
+            "flow": "material",
+            "mode": "out"
+          }
+        ]
+      },
+      "effects": {}
+    },
+    "robot_arm": {
+      "label": "Robot kol",
+      "tier": 4,
+      "glyph": "R",
+      "action": "automation",
+      "ports": {
+        "W": [
+          {
+            "flow": "electric",
+            "mode": "in"
+          }
+        ]
+      },
+      "effects": {}
+    },
+    "scanner": {
+      "label": "Analiz cihazı",
+      "tier": 3,
+      "glyph": "Z",
+      "action": "scan",
+      "ports": {
+        "W": [
+          {
+            "flow": "electric",
+            "mode": "in"
+          }
+        ]
+      },
+      "effects": {}
+    },
+    "bench": {
+      "label": "Çalışma tezgâhı",
+      "tier": 1,
+      "glyph": "M",
+      "action": "bench",
+      "ports": {},
+      "effects": {}
+    },
+    "heater": {
+      "label": "Isıtıcı",
+      "tier": 2,
+      "glyph": "H",
+      "action": "warm",
+      "ports": {},
+      "effects": {
+        "heat": 5
+      }
+    },
+    "filter": {
+      "label": "Toz filtresi",
+      "tier": 3,
+      "glyph": "L",
+      "action": "filter",
+      "ports": {},
+      "effects": {}
+    },
+    "planter": {
+      "label": "Ekim aparatı",
+      "tier": 1,
+      "glyph": "E",
+      "action": "seed",
+      "ports": {},
+      "effects": {}
+    },
+    "seed_hopper": {
+      "label": "Tohum haznesi",
+      "tier": 2,
+      "glyph": "N",
+      "action": "seedstore",
+      "ports": {},
+      "effects": {}
+    },
+    "harvest_arm": {
+      "label": "Hasat kolu",
+      "tier": 4,
+      "glyph": "W",
+      "action": "harvest",
+      "ports": {
+        "W": [
+          {
+            "flow": "electric",
+            "mode": "in"
+          }
+        ]
+      },
+      "effects": {}
+    },
+    "cooler": {
+      "label": "Soğutucu",
+      "tier": 3,
+      "glyph": "C",
+      "action": "cool",
+      "ports": {},
+      "effects": {}
+    },
+    "research": {
+      "label": "Numune masası",
+      "tier": 2,
+      "glyph": "N",
+      "action": "research",
+      "ports": {},
+      "effects": {}
+    },
+    "alloy_furnace": {
+      "label": "Kontrollü alaşım fırını",
+      "tier": 4,
+      "glyph": "F",
+      "action": "heat",
+      "ports": {
+        "N": [
+          {
+            "flow": "air",
+            "mode": "in"
+          }
+        ],
+        "E": [
+          {
+            "flow": "heat",
+            "mode": "out"
+          }
+        ],
+        "S": [
+          {
+            "flow": "exhaust",
+            "mode": "out"
+          }
+        ]
+      },
+      "effects": {
+        "heat": 13,
+        "smoke": 8
+      }
+    }
+  },
+  "tool_levels": {
+    "axe": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "axe_hatchet": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "axe_felling": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "axe_splitting": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "pickaxe": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "shovel": [
+      1,
+      2,
+      3
+    ],
+    "hoe": [
+      1,
+      2,
+      4
+    ],
+    "hammer": [
+      1,
+      2,
+      3
+    ],
+    "tongs": [
+      2,
+      3
+    ],
+    "knife": [
+      1,
+      2,
+      3
+    ],
+    "sickle": [
+      1,
+      2,
+      4
+    ],
+    "saw": [
+      1,
+      2,
+      4
+    ],
+    "measuring_tool": [
+      2,
+      3,
+      4
+    ],
+    "scanner": [
+      3,
+      4,
+      5
+    ],
+    "drill": [
+      3,
+      4
+    ],
+    "watering_can": [
+      1,
+      2
+    ],
+    "seed_tool": [
+      1,
+      2,
+      4
+    ],
+    "repair_tool": [
+      1,
+      3,
+      4
+    ],
+    "chisel": [
+      1,
+      2,
+      3
+    ],
+    "file": [
+      2,
+      3
+    ],
+    "farming_tool": [
+      1,
+      2,
+      4
+    ]
+  },
+  "interaction_families": {
+    "heat": [
+      "flammable",
+      "fire_resistant",
+      "open_air"
+    ],
+    "smoke": [
+      "ventilated",
+      "open_air"
+    ],
+    "pressure": [
+      "heavy_support"
+    ],
+    "vibration": [
+      "heavy_support"
+    ],
+    "dust": [
+      "ventilated",
+      "open_air"
+    ],
+    "electric": [
+      "dry",
+      "power_ready"
+    ],
+    "water": [
+      "dry",
+      "cultivation"
+    ],
+    "sun": [
+      "sunlit"
+    ],
+    "animals": [
+      "livestock",
+      "protected"
+    ],
+    "contamination": [
+      "clean"
+    ],
+    "special_energy": [
+      "protected"
+    ],
+    "weather": [
+      "shelter",
+      "open_air"
+    ]
+  },
+  "crops": {
+    "grain": {
+      "label": "Tahıl",
+      "growth_seconds": 30
+    },
+    "roots": {
+      "label": "Kök bitkisi",
+      "growth_seconds": 24
+    },
+    "berries": {
+      "label": "Meyve",
+      "growth_seconds": 36
+    }
+  },
+  "note": "Bu katalogda bazı makineler yalnız port/etki tanımıdır; tüm üretim işlemleri henüz uygulanmadı. Demo stokları Stage5 değildir."
+}
