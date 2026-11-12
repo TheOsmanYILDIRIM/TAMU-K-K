@@ -23,6 +23,7 @@ const CRAFTING_BOOK = preload("res://scripts/crafting_book_ui.gd")
 const ShadowVolume = preload("res://scripts/shadow_volume.gd")
 const PixelLightWorld = preload("res://scripts/pixellight_world.gd")
 const VisualEnvironment = preload("res://scripts/visual_environment.gd")
+const TamuHdMaterials = preload("res://scripts/tamu_hd_materials.gd")
 var merged_mode: bool = OS.get_environment("TAMU_TERRAIN_MODE") != "legacy"
 # Each independently authored region is a separate logical chunk, not one global world.
 var region_chunks: Dictionary = {}
@@ -127,6 +128,9 @@ const ISOLATION_MODES = ["full", "mob_visual_off", "mob_ai_off",
 var perf_isolation_mode := "full"
 var shadow_layer: Node2D
 var contact_ao_material: ShaderMaterial
+var hd_terrain_material: ShaderMaterial
+var hd_tree_cache: Dictionary = {}
+var hd_tree_materials: Array[ShaderMaterial] = []
 var object_depth_material: ShaderMaterial
 var contact_ao_node: MultiMeshInstance2D
 var contact_ao_mesh: MultiMesh
@@ -153,6 +157,14 @@ func _update_sun(delta: float) -> void:
         if object_depth_material != null:
             object_depth_material.set_shader_parameter("light_axis", -sun_direction)
             object_depth_material.set_shader_parameter("depth_strength", lerpf(0.075, 0.105, light))
+        if hd_terrain_material != null:
+            hd_terrain_material.set_shader_parameter("sun_cast_dir",solar["cast_direction"])
+            hd_terrain_material.set_shader_parameter("sun_altitude",solar["altitude_deg"])
+            hd_terrain_material.set_shader_parameter("sun_light",light)
+        for tree_material in hd_tree_materials:
+            tree_material.set_shader_parameter("sun_cast_dir",solar["cast_direction"])
+            tree_material.set_shader_parameter("sun_altitude",solar["altitude_deg"])
+            tree_material.set_shader_parameter("sun_light",light)
         # Original atlas-alpha shadow stays single; AO uses a separate batched mesh.
 
 # Existing interaction button: building entry takes priority over harvesting.
@@ -962,6 +974,9 @@ func _ready() -> void:
             print("TAMU_TERRAIN_MIX_TEXTURE_READY")
         else:
             push_warning("TAMU_TERRAIN_MIX_NOT_BAKED: run scripts/bake_terrain_mix.py for authored blend; source atlas used")
+    hd_terrain_material = TamuHdMaterials.terrain_material()
+    if hd_terrain_material != null:
+        print("TAMU_HD_EXPERIMENT_ENABLED terrain_materials=6 tree_species=8")
     world_source = WorldSource.new()
     if not world_source.initialize():
         push_error("TAMU_WORLD_SOURCE_GATE_FAILED")
@@ -1121,6 +1136,10 @@ func _load_region(manifest_path: String) -> bool:
         push_error("TAMU_DUPLICATE_REGION " + region_id)
         return false
     var node: Node2D = unified["root"]
+    if hd_terrain_material != null:
+        for surface in node.get_children():
+            if surface is MeshInstance2D:
+                surface.material = hd_terrain_material
     add_child(node)
     region_chunks[region_id] = node
     node.visible = perf_isolation_mode != "terrain_off"
@@ -1219,6 +1238,8 @@ func _load_chunk(stem: String) -> void:
         var instance := MeshInstance2D.new()
         instance.mesh = mesh
         instance.texture = terrain_atlas
+        if hd_terrain_material != null:
+            instance.material = hd_terrain_material
         instance.z_index = 0 if str(surf["key"]).begins_with("!") else 1
         group.add_child(instance)
         vertices += count
@@ -1409,18 +1430,31 @@ func _load_objects() -> void:
         var scale_value := float(scales.get(family, 0.5)) * visual_jitter
         if object_hires_active:
             scale_value *= 128.0 / (size.x / 8.0) # Preserve 128px logical footprint across 512/384/256 atlas tiers
+        var hd_asset: Dictionary = {}
+        if kind == "tree" and hd_terrain_material != null:
+            var hd_key := "pine" if family == "conifer" else ("broadleaf_%d" % posmod(h, 7))
+            if not hd_tree_cache.has(hd_key):
+                hd_tree_cache[hd_key] = TamuHdMaterials.tree_asset(h, family)
+                if not (hd_tree_cache[hd_key] as Dictionary).is_empty():
+                    hd_tree_materials.append(hd_tree_cache[hd_key]["material"])
+            hd_asset = hd_tree_cache[hd_key]
+        if not hd_asset.is_empty():
+            sprite.texture = hd_asset["albedo"]
+            scale_value *= area.size.y / sprite.texture.get_height()
         sprite.scale = Vector2.ONE * scale_value
         if env_visual_stage >= 2:
             sprite.flip_h = posmod(h, 2) == 0
         # Local ground anchor follows the atlas region height, never a fixed 60 px.
-        sprite.offset = Vector2(0.0, area.size.y * (0.5 - LOVE_OBJECT_PIVOT))
-        if kind == "tree" or kind == "rock":
+        sprite.offset = Vector2(0.0, sprite.texture.get_height() * (0.5 - LOVE_OBJECT_PIVOT))
+        if not hd_asset.is_empty():
+            sprite.material = hd_asset["material"]
+        elif kind == "tree" or kind == "rock":
             sprite.material = object_depth_material
         object_layer.add_child(sprite)
         object_visuals_by_chunk[visual_key].append(sprite)
         var item_record := {"id":id,"kind":kind,"radius":float(o["radius"]),"position":Vector2(float(o["x"]),float(o["y"])),"sprite":sprite,"shadow":null,"collected":false}
         harvestables.append(item_record)
-        item_record["alpha_key"]=str(a["id"])
+        item_record["alpha_key"]=str(hd_asset["id"]) if not hd_asset.is_empty() else str(a["id"])
         item_record["family"]=family
         harvested_by_id[id] = item_record
         # Single alpha silhouette cast, one shared solar material.
@@ -1428,7 +1462,7 @@ func _load_objects() -> void:
             # Exact object atlas alpha silhouette projected in the sun direction.
             var silhouette := Sprite2D.new()
             silhouette.name = "AuthoredSilhouetteShadow"
-            silhouette.texture = tex
+            silhouette.texture = sprite.texture
             silhouette.flip_h = sprite.flip_h
             silhouette.centered = sprite.centered
             silhouette.offset = sprite.offset
@@ -1441,7 +1475,7 @@ func _load_objects() -> void:
             object_visuals_by_chunk[visual_key].append(silhouette)
             item_record["silhouette"] = silhouette
             item_record["shadow"] = null
-            var foot_width := clampf(area.size.x * scale_value * (0.92 if kind == "tree" else 0.82), 15.0, 170.0)
+            var foot_width := clampf(sprite.texture.get_width() * scale_value * (0.92 if kind == "tree" else 0.82), 15.0, 170.0)
             ao_anchors.append({"id": id, "position": sprite.position - Vector2(0.0, 2.0),
                 "footprint": Vector2(foot_width, foot_width * (0.54 if kind == "tree" else 0.62)),
                 "strength": 1.0 if kind == "tree" else 0.78})

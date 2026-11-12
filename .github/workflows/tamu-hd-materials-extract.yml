@@ -1,0 +1,40 @@
+name: TAMU HD materials - unpack uploads in isolated experiment
+on:
+  push:
+    branches:
+      - experiment/tamu-hd-forest-materials-20261112
+    paths:
+      - scripts/prepare_tamu_hd_assets.py
+      - .github/workflows/tamu-hd-materials-extract.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  extract:
+    if: github.repository == 'TheOsmanYILDIRIM/TAMU-K-K'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Pillow
+        run: python -m pip install --disable-pip-version-check pillow
+      - name: Verify ZIPs, expand 6 terrain and 8 trees, build GPU atlases
+        run: python scripts/prepare_tamu_hd_assets.py
+      - name: Commit expanded assets and remove uploaded ZIPs from experiment
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/trees assets/terrain
+          git rm -- TAMU_Doga_Assetleri_Bolum_1_Terrain_20261112.zip TAMU_Doga_Assetleri_Bolum_2_Agaclar_20261112.zip
+          git diff --cached --check
+          test "$(git diff --cached --name-only | grep -c '^assets/trees/.*\.png$')" -eq 16
+          test "$(git diff --cached --name-only | grep -c '^assets/terrain/.*\.png$')" -eq 21
+          git commit -m "assets(tamu): unpack six terrain sets and eight trees for isolated HD test"
+          git push origin HEAD:experiment/tamu-hd-forest-materials-20261112
