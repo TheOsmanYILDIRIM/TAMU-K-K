@@ -10,6 +10,8 @@ on:
       - scripts/tamu_hd_terrain.gdshader
       - scripts/tamu_hd_tree.gdshader
       - scripts/tamu_hd_materials.gd
+      - assets/terrain/**
+      - assets/trees/**
 permissions:
   contents: read
 jobs:
@@ -50,14 +52,14 @@ jobs:
         run: |
           set -euo pipefail
           timeout 160s godot --headless --editor --path "$TEST" --import --quit 2>&1 | tee /tmp/tamu-hd-import.log
-          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Shader compilation failed' /tmp/tamu-hd-import.log; then exit 1; fi
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Shader compilation failed|Not a PNG file|Error importing' /tmp/tamu-hd-import.log; then exit 1; fi
       - name: Real Godot GL viewport material render
         shell: bash
         run: |
           set -euo pipefail
           timeout 160s xvfb-run -a -s '-screen 0 1280x720x24' godot --path "$TEST" --rendering-method gl_compatibility --script res://scripts/tamu_hd_materials_ci.gd 2>&1 | tee /tmp/tamu-hd-render.log
           grep -q 'TAMU_HD_NATIVE_RENDER_OK terrain6 tree8 shader2' /tmp/tamu-hd-render.log
-          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Shader compilation failed|TAMU_HD_NATIVE_FAIL' /tmp/tamu-hd-render.log; then exit 1; fi
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Shader compilation failed|TAMU_HD_NATIVE_FAIL|Not a PNG file|Error importing' /tmp/tamu-hd-render.log; then exit 1; fi
           test -s "$HOME/.local/share/godot/app_userdata/TAMU HD Test/tamu_hd_native_noon.png"
       - uses: actions/upload-artifact@v4
         if: always()
