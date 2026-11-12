@@ -1,0 +1,27 @@
+{
+  "schema": "tamu.hd-materials.v1",
+  "tile_size": 512,
+  "atlas": [
+    3,
+    2
+  ],
+  "terrain_order": [
+    "forest_grass",
+    "forest_rocky",
+    "forest_sparse_litter",
+    "forest_roots_litter",
+    "conifer_needle_litter",
+    "forest_moss_pebbles"
+  ],
+  "tree_ids": [
+    "fractureborn_oak",
+    "skyward_forest_oak",
+    "stormslope_beech",
+    "marshkeeper_alder",
+    "rootbound_hornbeam",
+    "ironwind_pine",
+    "ashskin_birch",
+    "borderwatch_ash"
+  ],
+  "notes": "Experimental shader relighting; height is low-relief shading only. UV seams not yet verified."
+}
