@@ -578,7 +578,10 @@ jobs:
           # runtime drawcall/FPS telemetry on the same CI runner and camera.
           # This is a desktop Xvfb comparison, not an Android FPS claim.
           for stage in base mix variation detail; do
-            TAMU_VISUAL_STAGE="$stage" TAMU_TERRAIN_MODE=merged TAMU_VISUAL_CASE=center \
+            # The old 4-stage thresholds describe the legacy texture mix, not
+            # the opt-in HD material shader. Preserve this baseline unchanged;
+            # the separate HD native viewport gate checks the new textures.
+            TAMU_HD_MATERIALS=0 TAMU_VISUAL_STAGE="$stage" TAMU_TERRAIN_MODE=merged TAMU_VISUAL_CASE=center \
               timeout --kill-after=3s 75s xvfb-run -a -s '-screen 0 720x1100x24' \
               godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 \
               | tee "screenshots/stage-$stage.log"

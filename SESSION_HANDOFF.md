@@ -1,3 +1,8 @@
+### 2026-11-12 — HD CI correction after full visual regression failure
+- Godot run #43276832833 failed only at existing visual-stage threshold: mix stage rgb_mean_delta=0.095 vs legacy expected >0.12, while HD shader was active (TAMU_HD_TERRAIN_READY) and legacy staged RGB comparison was no longer like-for-like. Other independent LimboAI and FX jobs passed. The failure happened before PCK/APK artifact acceptance.
+- The four-stage legacy golden/stage comparison now runs with TAMU_HD_MATERIALS=0 only for that old baseline loop (not for build/export/runtime). New normal/height rendering remains tested in the separate independent Godot HD shader viewport test, with strict PNG image-import checks. No increase/relaxation of pixel threshold; save/collision/world, root game source branch and main unchanged.
+- Native HD clean-import run #43276832655 and full baseline retry pending on this correction; no PCK/APK verified yet.
+
 ### 2026-11-12 — HD forest textures: native result and JPEG-as-PNG repair
 - User upload extracted into experiment branch by workflow #43272309818 SUCCESS; 6 terrain sets x albedo/height/normal, 8 trees x albedo/normal, plus real 3x2 atlas PNGs. User's 18 source terrain images were discovered to contain JPEG magic despite .png extension. Standalone original atlases render, but Godot imports of these 18 source files failed. This is a real-format discrepancy, not an alpha bug in trees.
 - Workflow #43276403386 SUCCESS fixed all 18 source files by losslessly storing the same decoded JPEG pixels as genuine RGB PNG, preserving dimensions and UV alignment. Experiment branch resulting asset commit 2e997d283df8a60f961764d0195f5970ef6160ab; main and gameplay branch untouched. No new color/height estimation was performed.
