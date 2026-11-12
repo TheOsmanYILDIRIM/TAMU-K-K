@@ -35,6 +35,11 @@ func _verify() -> void:
             if not ResourceLoader.exists(path):
                 _failed("terrain missing " + path)
                 return
+            # A .png filename is insufficient: previous source files held JPEG data.
+            var raw: FileAccess = FileAccess.open(path, FileAccess.READ)
+            if raw == null or raw.get_buffer(8) != PackedByteArray([137,80,78,71,13,10,26,10]):
+                _failed("terrain file not actual PNG " + path)
+                return
     var oak: Dictionary = HD.tree_asset(0, "oak")
     var pine: Dictionary = HD.tree_asset(0, "conifer")
     if oak.is_empty() or pine.is_empty():

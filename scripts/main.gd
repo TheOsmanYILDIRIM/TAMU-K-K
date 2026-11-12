@@ -1443,7 +1443,9 @@ func _load_objects() -> void:
             scale_value *= area.size.y / sprite.texture.get_height()
         sprite.scale = Vector2.ONE * scale_value
         if env_visual_stage >= 2:
-            sprite.flip_h = posmod(h, 2) == 0
+            # Horizontal mirroring without X-normal inversion breaks directional relighting.
+            # Preserve legacy sprite jitter but keep HD normal vectors anatomically aligned.
+            sprite.flip_h = posmod(h, 2) == 0 and hd_asset.is_empty()
         # Local ground anchor follows the atlas region height, never a fixed 60 px.
         sprite.offset = Vector2(0.0, sprite.texture.get_height() * (0.5 - LOVE_OBJECT_PIVOT))
         if not hd_asset.is_empty():
