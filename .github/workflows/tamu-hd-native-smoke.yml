@@ -1,0 +1,70 @@
+name: TAMU HD native shader and material smoke (isolated)
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - experiment/tamu-hd-forest-materials-20261112
+    paths:
+      - scripts/tamu_hd_materials_ci.gd
+      - .github/workflows/tamu-hd-native-smoke.yml
+      - scripts/tamu_hd_terrain.gdshader
+      - scripts/tamu_hd_tree.gdshader
+      - scripts/tamu_hd_materials.gd
+permissions:
+  contents: read
+jobs:
+  hd-godot-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Godot 4.6 and software GL dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri libgl1
+          curl -fL --retry 3 https://github.com/godotengine/godot-builds/releases/download/4.6-stable/Godot_v4.6-stable_linux.x86_64.zip -o /tmp/tamu-godot.zip
+          unzip -q /tmp/tamu-godot.zip -d /tmp
+          sudo install -m 755 /tmp/Godot_v4.6-stable_linux.x86_64 /usr/local/bin/godot
+          godot --version
+      - name: Prepare an independent shader-test Godot project
+        shell: bash
+        run: |
+          set -euo pipefail
+          TEST="$RUNNER_TEMP/tamu-hd-native"
+          mkdir -p "$TEST/scripts" "$TEST/assets/terrain25d" "$TEST/assets/terrain" "$TEST/assets/trees"
+          printf '[application]\nconfig/name="TAMU HD Test"\n[display]\nwindow/size/viewport_width=720\nwindow/size/viewport_height=480\n[rendering]\nrenderer/rendering_method="gl_compatibility"\nrenderer/rendering_method.mobile="gl_compatibility"\n' > "$TEST/project.godot"
+          cp scripts/tamu_hd_materials.gd scripts/tamu_hd_materials_ci.gd scripts/tamu_hd_terrain.gdshader scripts/tamu_hd_tree.gdshader scripts/solar_shadow.gd scripts/world_projection.gd "$TEST/scripts/"
+          cp game/love/assets/terrain25d/manifest.json "$TEST/assets/terrain25d/manifest.json"
+          cp game/love/assets/terrain25d/atlas_00.png "$TEST/assets/terrain25d/atlas_00.png"
+          cp -r assets/terrain/material_atlas "$TEST/assets/terrain/"
+          for dir in assets/terrain/*; do
+            [ "$(basename "$dir")" = material_atlas ] && continue
+            cp -r "$dir" "$TEST/assets/terrain/"
+          done
+          cp -r assets/trees/. "$TEST/assets/trees/"
+          echo "TEST=$TEST" >> "$GITHUB_ENV"
+      - name: Parse and import native textures and shaders
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 160s godot --headless --editor --path "$TEST" --import --quit 2>&1 | tee /tmp/tamu-hd-import.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Shader compilation failed' /tmp/tamu-hd-import.log; then exit 1; fi
+      - name: Real Godot GL viewport material render
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 160s xvfb-run -a -s '-screen 0 1280x720x24' godot --path "$TEST" --rendering-method gl_compatibility --script res://scripts/tamu_hd_materials_ci.gd 2>&1 | tee /tmp/tamu-hd-render.log
+          grep -q 'TAMU_HD_NATIVE_RENDER_OK terrain6 tree8 shader2' /tmp/tamu-hd-render.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Shader compilation failed|TAMU_HD_NATIVE_FAIL' /tmp/tamu-hd-render.log; then exit 1; fi
+          test -s "$HOME/.local/share/godot/app_userdata/TAMU HD Test/tamu_hd_native_noon.png"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tamu-hd-native-render-evidence
+          path: |
+            /tmp/tamu-hd-import.log
+            /tmp/tamu-hd-render.log
+            ~/.local/share/godot/app_userdata/TAMU HD Test/tamu_hd_native_noon.png
+          if-no-files-found: warn
