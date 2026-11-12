@@ -5,6 +5,7 @@ on:
       - experiment/godot4-android-apk-20261031
       - experiment/limboai-godot46-20261104
       - feature/tamu-modular-production-and-farming-20261106
+      - experiment/tamu-hd-forest-materials-20261112
       - main
   pull_request:
     branches:
