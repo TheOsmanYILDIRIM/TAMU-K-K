@@ -1,0 +1,44 @@
+name: TAMU HD repair mislabeled terrain JPEG sources
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - experiment/tamu-hd-forest-materials-20261112
+    paths:
+      - scripts/repair_tamu_hd_png.py
+      - .github/workflows/tamu-hd-repair-source-png.yml
+permissions:
+  contents: write
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install image verifier
+        run: python -m pip install --disable-pip-version-check pillow
+      - name: Repair ONLY 18 terrain images that have JPEG bytes under .png names
+        run: python scripts/repair_tamu_hd_png.py
+      - name: Commit exact-pixel decoded PNG sources on experiment branch only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/terrain/
+          git diff --cached --check
+          changed="$(git diff --cached --name-only | grep -c '^assets/terrain/.*\.png$' || true)"
+          test "$changed" -eq 18 || { echo "EXPECTED_18_PNG_REPAIRS actual=$changed"; exit 1; }
+          git commit -m "fix(tamu-hd): reencode 18 mislabeled terrain JPEG files as true PNG"
+          for attempt in 1 2 3; do
+            git fetch origin experiment/tamu-hd-forest-materials-20261112
+            git rebase origin/experiment/tamu-hd-forest-materials-20261112
+            if git push origin HEAD:experiment/tamu-hd-forest-materials-20261112; then
+              echo TAMU_HD_TRUE_PNG_PUBLISHED
+              exit 0
+            fi
+          done
+          exit 1
