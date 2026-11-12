@@ -1,0 +1,124 @@
+{
+  "schema": "tamu.hd-fast-materials.v1",
+  "terrain": {
+    "slots": 168,
+    "wetland_preserved": 31,
+    "new_land": 137,
+    "materials": {
+      "forest_grass": 36,
+      "forest_rocky": 34,
+      "forest_sparse_litter": 31,
+      "forest_roots_litter": 13,
+      "conifer_needle_litter": 12,
+      "forest_moss_pebbles": 11
+    },
+    "source_sha256": {
+      "assets/terrain/forest_grass/albedo.png": "e92204234ef39cb884d22e3f61379532f11c7d016ccf0b91a6541c883a69077d",
+      "assets/terrain/forest_grass/normal.png": "07e73d37529a1e6523ae6b62bffd92fb38af1cb8bd461399552f8b903c91a0c2",
+      "assets/terrain/forest_grass/height.png": "91c98c812ab804d71f8c498edfa9e9beb0d31d02629e165725a27d3d28aa2053",
+      "assets/terrain/forest_rocky/albedo.png": "381f8ff57bc6f1f2adcda63ae9e049547a100ffff328904cb669a315f0577924",
+      "assets/terrain/forest_rocky/normal.png": "0ecc9cbf942568c05870f59889af802b9256c5c72009e0656aeb04aff2b029e2",
+      "assets/terrain/forest_rocky/height.png": "9e83186cd91e62fba5335558457a396f34d6183834b64949129c8eef78b9e417",
+      "assets/terrain/forest_sparse_litter/albedo.png": "38839a687682123b60a93bec2cf9334c8b6e7cfb9017db218b4deb34ab58ef40",
+      "assets/terrain/forest_sparse_litter/normal.png": "5f652717136b21fdf763e483a0a5ebcc437a4b7ff53c10708678e1cfc022478e",
+      "assets/terrain/forest_sparse_litter/height.png": "09029d20fff014064dcaba612efa59e9d4b9632b45dcbeb61683bfa97383c839",
+      "assets/terrain/forest_roots_litter/albedo.png": "1df92f191ee414a6b1594e1e11b46cdd089f72b8d61d3747f071764c76842f73",
+      "assets/terrain/forest_roots_litter/normal.png": "826807f1a73b17783e748790d76ace9a3398bd65f4623fb8c98cd9866c3d7903",
+      "assets/terrain/forest_roots_litter/height.png": "767600a72b54da97134777178575ec65d247ea9167f670cc3de2689d99f2550e",
+      "assets/terrain/conifer_needle_litter/albedo.png": "a8dc91b6ab1cf2fa99d3da4335b24a8619e30fc773ce1a3ec67496baf1d129d4",
+      "assets/terrain/conifer_needle_litter/normal.png": "05ab6237539629a6cb38ab97ce0f51d74f51a71e0e60ad2791b7cc60881152f2",
+      "assets/terrain/conifer_needle_litter/height.png": "0548022ac6d9c1410e6b728ca17d7e3a0108b86d89992ea6f4c1240b41ad6e9c",
+      "assets/terrain/forest_moss_pebbles/albedo.png": "a3dd58bf82c13b48236c41db8ff76b7fca5fcd9413a77d5d814683ebeee1e7d3",
+      "assets/terrain/forest_moss_pebbles/normal.png": "3402f8f4eead29dceb45de04ce8f7485ce1a6d45fb26b6d96711dbb0ce544d9d",
+      "assets/terrain/forest_moss_pebbles/height.png": "a15fef43a80eb37f428fcd303ea3311b364902f502872f62dedfa12ea0c64f31"
+    },
+    "packed_sha256": {
+      "albedo.png": "91b5bed1c0baa92c30b2b63352b7c633d07b45b08b9de362137324b4144af4ce",
+      "normal.png": "3528054901c33aa2056f16fad0c66ab943c463f75063989c0f9cf2ab4fe89717"
+    }
+  },
+  "trees": {
+    "fractureborn_oak": {
+      "size": [
+        768,
+        768
+      ],
+      "source_normal": "b9c9acb7a7b3dcfcefc2b92f892e702d2bbdad3ae3c369a1a1b57849c733782a",
+      "mobile_albedo": "899fb9c435921b3fc370d6c50f00aed021e096f9fd729ab8922f543e950e559b",
+      "mobile_normal": "11869d3d8c5c7ea5db4b12d7979e1f912dcfac8e84626c1993a62581e13ce20a"
+    },
+    "skyward_forest_oak": {
+      "size": [
+        768,
+        768
+      ],
+      "source_normal": "6ce15e78cc44c0ca63ede128176c4828eec087dbf968e32fa07b99f7b89349ff",
+      "mobile_albedo": "4821cb93080162247f140e920c781856874ded4f8f6a984a99de72510708b42d",
+      "mobile_normal": "b4ee065ac5339c64f279869722a35c2ff7c42337613c63788186ece12e3a1b07"
+    },
+    "stormslope_beech": {
+      "size": [
+        768,
+        768
+      ],
+      "source_normal": "8ec03a2199dea263e986ee42dd5044360e89cb895ea2b265d1177579de6052fc",
+      "mobile_albedo": "ef26d988b9a0c1f8a01a624d0239a1eb5f2367b47e5a6450edf987eca4de7d21",
+      "mobile_normal": "4c860b29a9b34b23e018af8031866429ec6251d4808d0a1d73fcd9ef83d9285e"
+    },
+    "marshkeeper_alder": {
+      "size": [
+        768,
+        768
+      ],
+      "source_normal": "9579e1b91fe6b66c32592ec65d04ce938186c3bc2825059766ac46af7a10149a",
+      "mobile_albedo": "d310285ce6e5c40de0fae85e884c5418f7ac9b1f8fb139cfd417c15cbe36da8c",
+      "mobile_normal": "cb7bbc89b1eb19db71f9bc09d93a99886c7855efc5f6c151e7ba4d832c398ceb"
+    },
+    "rootbound_hornbeam": {
+      "size": [
+        768,
+        768
+      ],
+      "source_normal": "963e4274781ffda1c152c33614bdaf0d58a60a087c9bf4ff091b63c1012b7f6c",
+      "mobile_albedo": "16e8ede46e206f4640aa3fe806e22472dfe7d0918b73c4cd0754aa3f08a7c743",
+      "mobile_normal": "4b6d9a31ce73621ae2f6f653174b1666aa445d31c9148f9c82e42427ba703479"
+    },
+    "ironwind_pine": {
+      "size": [
+        768,
+        768
+      ],
+      "source_normal": "b879da30b42adbb221210ab80831eacea6d2d8d74091989ca559471533b4fd96",
+      "mobile_albedo": "52dd8472815c7c8bb3ed245eab11bba5cf07593501f2f734ac23fbe57dffa87b",
+      "mobile_normal": "cbbc493ac6995702eb46447560a9959174a5aa543e8cfc6868e3e852dbf4d62d"
+    },
+    "ashskin_birch": {
+      "size": [
+        768,
+        768
+      ],
+      "source_normal": "2b637286342f52bae032843d10f1e577b6026e718b3a4000bf3d0ac3dc206b64",
+      "mobile_albedo": "651ae341ea2f4a20f5c9ccfe8fc80d262e957fb0c66783ab13fa6520d275c7c7",
+      "mobile_normal": "c87d2e9fc6206e950896ddc96b5e0546ddb4a0503f4ba0b34e9d95a7385315e7"
+    },
+    "borderwatch_ash": {
+      "size": [
+        768,
+        768
+      ],
+      "source_normal": "9a1b1bb280d1c2bcdb8bcb725b38ed9e56c7f48c3a91f2fe4ac4daa7a85c60e1",
+      "mobile_albedo": "bda143173b9a93f810167ccd4f5c90fe64de697ef204780f90bfd6e3dfbc7c19",
+      "mobile_normal": "cd82961bdf1673052703a904030006a44f03563cb213cacbde8d03a363888661"
+    }
+  },
+  "runtime_samples": "terrain: albedo+normal only (height baked into normal)",
+  "source_tree_size": [
+    1254,
+    1254
+  ],
+  "runtime_tree_size": [
+    768,
+    768
+  ],
+  "notes": "Legacy wetland albedo unchanged, no canonical gameplay/collision modified."
+}
