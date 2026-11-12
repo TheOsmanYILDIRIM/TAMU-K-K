@@ -21,7 +21,7 @@ static func _material_index(family: String, slot: Vector2i) -> int:
         "dirt": return 2
         "forest":
             return 3 if posmod(slot.x + slot.y * 3, 3) == 0 else (4 if posmod(slot.x + slot.y * 3, 3) == 1 else 5)
-        "wetland": return 5
+        "wetland": return -1 # preserve authored water/wetland atlas instead of repainting it
     return -1
 
 static func terrain_material() -> ShaderMaterial:
@@ -53,7 +53,7 @@ static func terrain_material() -> ShaderMaterial:
         if index >= 0:
             lookup.set_pixel(slot.x,slot.y,Color8(index,0,0,255))
             used += 1
-    if used != 168:
+    if used != 137:
         push_warning("TAMU_HD_TERRAIN_SLOTS_INVALID " + str(used))
         return null
     var material := ShaderMaterial.new()
@@ -62,7 +62,7 @@ static func terrain_material() -> ShaderMaterial:
     material.set_shader_parameter("tamu_normal",load(ROOT + "normal.png"))
     material.set_shader_parameter("tamu_height",load(ROOT + "height.png"))
     material.set_shader_parameter("family_lookup",ImageTexture.create_from_image(lookup))
-    print("TAMU_HD_TERRAIN_READY materials=6 atlas=1536x1024 slots=",used)
+    print("TAMU_HD_TERRAIN_READY materials=6 atlas=1536x1024 land_slots=",used," wetland_preserved=31")
     return material
 
 static func tree_asset(seed: int, family: String) -> Dictionary:
@@ -90,4 +90,4 @@ static func tree_asset(seed: int, family: String) -> Dictionary:
     return {"id":name, "albedo":albedo, "material":mat}
 
 static func verify_contract() -> bool:
-    return MATERIALS.size() == 6 and SPECIES.size() == 8 and _material_index("wetland",Vector2i.ZERO) == 5
+    return MATERIALS.size() == 6 and SPECIES.size() == 8 and _material_index("wetland",Vector2i.ZERO) == -1
