@@ -46,6 +46,9 @@ jobs:
             cp -r "$dir" "$TEST/assets/terrain/"
           done
           cp -r assets/trees/. "$TEST/assets/trees/"
+          test -s "$TEST/assets/terrain/hd_fast_atlas/albedo.png"
+          test -s "$TEST/assets/terrain/hd_fast_atlas/normal.png"
+          test -s "$TEST/assets/trees/mobile_768/ironwind_pine/normal.png"
           echo "TEST=$TEST" >> "$GITHUB_ENV"
       - name: Parse and import native textures and shaders
         shell: bash

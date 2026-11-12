@@ -79,6 +79,43 @@ func _verify() -> void:
     if not found:
         _failed("grass material uv")
         return
+    # Verify ACTUAL mapped material pixels and preserved wetland, not file presence.
+    # Canonical manifest is 14x12 132px slots. Build proof without touching game data.
+    var old_image := Image.load_from_file("res://assets/terrain25d/atlas_00.png")
+    var new_image := Image.load_from_file("res://assets/terrain/hd_fast_atlas/albedo.png")
+    var normal_image := Image.load_from_file("res://assets/terrain/hd_fast_atlas/normal.png")
+    if old_image == null or new_image == null or normal_image == null:
+        _failed("atlas pixel evidence unavailable")
+        return
+    var changed := 0
+    var kept_water := 0
+    var mapped := 0
+    for entry in manifest.get("assets", []):
+        if str(entry.get("kind","")) != "terrain" or str(entry.get("atlas_page","")) != "atlas_00.png":
+            continue
+        var uv: Array = entry.get("uv_rect",[])
+        var px := clampi(floori(float(uv[0])*14.0),0,13)*132 + 66
+        var py := clampi(floori(float(uv[1])*12.0),0,11)*132 + 66
+        var pixel: Color = new_image.get_pixel(px,py)
+        var old_pixel: Color = old_image.get_pixel(px,py)
+        var normal_pixel: Color = normal_image.get_pixel(px,py)
+        if str(entry.get("family","")) == "wetland":
+            if normal_pixel.a > 0.02 or pixel.distance_to(old_pixel) > 0.015:
+                _failed("wetland altered")
+                return
+            kept_water += 1
+        else:
+            if normal_pixel.a < 0.98:
+                _failed("land normal missing")
+                return
+            if pixel.distance_to(old_pixel) > 0.1:
+                changed += 1
+            mapped += 1
+    if mapped != 137 or kept_water != 31 or changed < 60:
+        _failed("HD atlas no visible land replacement mapped=%d changed=%d wetland=%d" % [mapped,changed,kept_water])
+        return
+    print("TAMU_HD_PIXEL_PROOF_OK land=137 wetland=31 changed=",changed)
+
     var vertices := PackedVector2Array([
         Vector2(15, 18), Vector2(345, 18), Vector2(345, 330),
         Vector2(15, 18), Vector2(345, 330), Vector2(15, 330)])
