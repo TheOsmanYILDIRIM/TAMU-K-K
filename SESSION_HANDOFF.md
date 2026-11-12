@@ -1,3 +1,8 @@
+### 2026-11-12 — HD PCK file-count acceptance correction
+- On HD experiment workflow #43279603581, old stage visual comparison passed, and Godot exported the standalone PCK; the export verification failed specifically at PCK_TOO_MANY_FILES 685 vs the legacy hard bound <680. No accepted PCK/APK artifact resulted. This is NOT a shader parse failure.
+- The original legacy cap remains unchanged on all other branches. On this isolated experiment branch only, enforce 680 <= entries <740 AND required presence of all 16 paired tree images, 3 packed terrain atlas images, 2 shader files and HD material loader in the PCK, alongside existing forbidden-file, legacy-source, mandatory gameplay assets, and <180MB checks. Keep the PCK isolated boot, Android export and native screenshot gates.
+- Next verify full CI run, artifact PCK and APK; actual Android device tests remain open. No main or production feature branch mutations.
+
 ### 2026-11-12 — HD CI correction after full visual regression failure
 - Godot run #43276832833 failed only at existing visual-stage threshold: mix stage rgb_mean_delta=0.095 vs legacy expected >0.12, while HD shader was active (TAMU_HD_TERRAIN_READY) and legacy staged RGB comparison was no longer like-for-like. Other independent LimboAI and FX jobs passed. The failure happened before PCK/APK artifact acceptance.
 - The four-stage legacy golden/stage comparison now runs with TAMU_HD_MATERIALS=0 only for that old baseline loop (not for build/export/runtime). New normal/height rendering remains tested in the separate independent Godot HD shader viewport test, with strict PNG image-import checks. No increase/relaxation of pixel threshold; save/collision/world, root game source branch and main unchanged.

@@ -763,9 +763,32 @@ jobs:
           assert any('scripts/terrain_mix.gdshader' in path for path in names), 'PCK_TERRAIN_MIX_SHADER_MISSING'
           assert any('assets/terrain25d/atlas_00_mix.png' in path for path in names), 'PCK_BAKED_TERRAIN_MIX_MISSING'
           print('TAMU_EXPORTED_RUNTIME_SCRIPTS_OK',len(runtime_scripts))
-          # Current Godot Yaprakkulak rig/AI and HD tier remaps total 641 pack entries.
-          # Keep a bounded guard; the forbidden-source and required-asset gates above remain enforced.
-          assert count < 680, f'PCK_TOO_MANY_FILES {count}'
+          # The legacy project has <680 entries. The isolated HD experiment
+          # explicitly includes 8 RGBA trees, 3 GPU atlas maps and shaders.
+          # Never relax legacy budget, and do not accept higher counts without
+          # proving every new shader/source image entry is in the exported PCK.
+          import os
+          is_hd = os.environ.get('GITHUB_REF_NAME') == 'experiment/tamu-hd-forest-materials-20261112'
+          if is_hd:
+              required_hd = [
+                  'scripts/tamu_hd_materials.gd',
+                  'scripts/tamu_hd_terrain.gdshader',
+                  'scripts/tamu_hd_tree.gdshader',
+                  'assets/terrain/material_atlas/albedo.png',
+                  'assets/terrain/material_atlas/normal.png',
+                  'assets/terrain/material_atlas/height.png',
+              ]
+              species = ('fractureborn_oak','skyward_forest_oak','stormslope_beech',
+                  'marshkeeper_alder','rootbound_hornbeam','ironwind_pine',
+                  'ashskin_birch','borderwatch_ash')
+              required_hd += [f'assets/trees/{species_name}/{channel}.png'
+                  for species_name in species for channel in ('albedo','normal')]
+              missing_hd = [key for key in required_hd if not any(key in s for s in names)]
+              assert not missing_hd, f'PCK_HD_ASSET_OR_SHADER_MISSING {missing_hd}'
+              assert 680 <= count < 740, f'PCK_HD_FILE_COUNT_UNEXPECTED {count}'
+              print('TAMU_HD_PCK_CONTENT_OK',len(required_hd),'required_keys entries=',count)
+          else:
+              assert count < 680, f'PCK_TOO_MANY_FILES {count}'
           assert p.stat().st_size < 180*1024*1024, f'PCK_TOO_LARGE {p.stat().st_size}' # HD tier-specific PCK budget; original source assets excluded from exported pack
           print('TAMU_CLEAN_PCK_OK',p.stat().st_size,'files',count)
           PY
