@@ -854,7 +854,7 @@ jobs:
             cp "/tmp/tamu-texture-quality/atlas_00_terrain_mix_${terrain}.png" assets/terrain25d/atlas_00_mix_hires.png
             cp "/tmp/tamu-texture-quality/atlas_objects_${obj}.png" assets/terrain25d/atlas_objects_hires.png
             godot --headless --editor --path . --import --quit
-            TAMU_TERRAIN_MODE=merged TAMU_VISUAL_CASE=center timeout --kill-after=3s 75s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 | tee "screenshots/quality-${variant}.log"
+            TAMU_HD_MATERIALS=0 TAMU_TERRAIN_MODE=merged TAMU_VISUAL_CASE=center timeout --kill-after=3s 75s xvfb-run -a -s '-screen 0 720x1100x24' godot --path . --rendering-method gl_compatibility --resolution 720x1100 --quit-after 210 | tee "screenshots/quality-${variant}.log"
             grep -q TAMU_TERRAIN_HIRES_ACTIVE "screenshots/quality-${variant}.log"
             grep -q TAMU_OBJECT_HIRES_ACTIVE "screenshots/quality-${variant}.log"
             cp "$HOME/.local/share/godot/app_userdata/oyun/tamu-godot-visual.png" "screenshots/quality-${variant}.png"
