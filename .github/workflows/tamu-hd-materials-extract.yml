@@ -37,4 +37,16 @@ jobs:
           test "$(git diff --cached --name-only | grep -c '^assets/trees/.*\.png$')" -eq 16
           test "$(git diff --cached --name-only | grep -c '^assets/terrain/.*\.png$')" -eq 21
           git commit -m "assets(tamu): unpack six terrain sets and eight trees for isolated HD test"
-          git push origin HEAD:experiment/tamu-hd-forest-materials-20261112
+          # Keep independent code commits added after this workflow was queued.
+          # No force-push: replay only this newly produced asset commit.
+          for attempt in 1 2 3; do
+            git fetch origin experiment/tamu-hd-forest-materials-20261112
+            git rebase origin/experiment/tamu-hd-forest-materials-20261112
+            if git push origin HEAD:experiment/tamu-hd-forest-materials-20261112; then
+              echo "TAMU_HD_ASSET_COMMIT_PUBLISHED"
+              exit 0
+            fi
+            echo "Concurrent branch advancement, retry $attempt"
+          done
+          echo "TAMU_HD_ASSET_PUSH_FAILED" >&2
+          exit 1
