@@ -1,0 +1,128 @@
+name: TAMU TripoSR ONNX CPU tree trial
+on:
+  push:
+    branches: [experiment/tamu-3d-stock-stack-20261113]
+    paths: [.github/workflows/triposr-tree-cpu.yml]
+  workflow_dispatch:
+    inputs:
+      albedo_path:
+        description: 'Optional repository tree albedo PNG path'
+        required: false
+        type: string
+jobs:
+  reconstruct:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU dependencies
+        run: pip install 'numpy<2.1' pillow scipy scikit-image trimesh onnxruntime huggingface_hub matplotlib
+      - name: Reconstruct newest tree albedo
+        env:
+          INPUT_ALBEDO: ${{ inputs.albedo_path }}
+        run: |
+          cat > /tmp/triposr_cpu.py <<'PY'
+          import os, glob, json, time
+          from pathlib import Path
+          import numpy as np
+          from PIL import Image
+          from scipy.ndimage import map_coordinates
+          from skimage.measure import marching_cubes
+          import trimesh
+          import onnxruntime as ort
+          from huggingface_hub import snapshot_download
+          import matplotlib
+          matplotlib.use('Agg')
+          import matplotlib.pyplot as plt
+
+          out=Path('triposr-output');out.mkdir(exist_ok=True)
+          override=os.getenv('INPUT_ALBEDO','').strip()
+          if override:
+              paths=[Path(override)]
+          else:
+              paths=[p for p in Path('assets').rglob('*.png') if 'albedo' in p.name.lower() and any(s in str(p).lower() for s in ('tree','oak','pine','ash','flora','vegetation'))]
+              if not paths:
+                  paths=[p for p in Path('.').rglob('*.png') if 'albedo' in p.name.lower() and any(s in str(p).lower() for s in ('tree','oak','pine','ash','flora','vegetation')) and '.git' not in p.parts]
+              paths.sort(key=lambda p:p.stat().st_mtime,reverse=True)
+          if not paths or not paths[0].is_file(): raise RuntimeError('No tree albedo PNG found; set workflow_dispatch albedo_path to exact path')
+          src=paths[0]; print('SOURCE_ALBEDO',src,flush=True)
+          im=Image.open(src).convert('RGBA')
+          a=np.asarray(im.getchannel('A'))
+          yy,xx=np.where(a>8)
+          if len(xx)<100: raise RuntimeError('Input albedo has no meaningful alpha silhouette')
+          crop=im.crop((int(xx.min()),int(yy.min()),int(xx.max()+1),int(yy.max()+1)))
+          side=max(crop.size); canvas=Image.new('RGBA',(side,side))
+          canvas.alpha_composite(crop,((side-crop.width)//2,(side-crop.height)//2))
+          frame=int(np.ceil(side/.85)); padded=Image.new('RGBA',(frame,frame))
+          padded.alpha_composite(canvas,((frame-side)//2,(frame-side)//2))
+          padded=padded.resize((512,512),Image.Resampling.LANCZOS)
+          rgba=np.asarray(padded,dtype=np.float32)/255.
+          rgb=rgba[:,:,:3]*rgba[:,:,3:4]+.5*(1-rgba[:,:,3:4])
+          Image.fromarray(np.uint8(np.clip(rgb*255,0,255))).save(out/'model_input.png')
+          im.save(out/'source_albedo.png')
+          model=snapshot_download('cgb/triposr-onnx-webgpu',allow_patterns=['triplane_q8.onnx','triplane_q8.onnx.data','decoder.onnx'])
+          print('MODEL_FILES',os.listdir(model),flush=True)
+          opts=ort.SessionOptions();opts.intra_op_num_threads=4;opts.inter_op_num_threads=1
+          enc=ort.InferenceSession(str(Path(model)/'triplane_q8.onnx'),sess_options=opts,providers=['CPUExecutionProvider'])
+          dec=ort.InferenceSession(str(Path(model)/'decoder.onnx'),sess_options=opts,providers=['CPUExecutionProvider'])
+          t0=time.monotonic()
+          planes=enc.run(None,{enc.get_inputs()[0].name:rgb.transpose(2,0,1)[None].astype(np.float32)})[0][0]
+          print('TRIPLANE',planes.shape,'SECONDS',round(time.monotonic()-t0,2),flush=True)
+          assert planes.shape==(3,40,64,64),planes.shape
+          n=112;radius=.87
+          grid=np.linspace(-radius,radius,n,dtype=np.float32)
+          field=np.empty((n,n,n),dtype=np.float32)
+          def features(xyz):
+              uv=xyz/radius
+              parts=[]
+              for k,(i,j) in enumerate(((0,1),(0,2),(1,2))):
+                  # align_corners=false, coordinates in normalized [-1,1]
+                  coords=np.vstack(((uv[:,j]+1)*32-.5,(uv[:,i]+1)*32-.5))
+                  v=map_coordinates(planes[k],np.vstack((np.repeat(np.arange(40),len(xyz)),np.tile(coords,(40,1)))),order=1,mode='nearest')
+                  parts.append(v.reshape(40,len(xyz)).T)
+              return np.concatenate(parts,axis=1).astype(np.float32)
+          # Memory bounded: sample 112^3 positions in 8192-point batches.
+          for start in range(0,n**3,8192):
+              ids=np.arange(start,min(start+8192,n**3))
+              ijk=np.column_stack(np.unravel_index(ids,(n,n,n)))
+              xyz=grid[ijk]
+              f=features(xyz)
+              density=dec.run(None,{dec.get_inputs()[0].name:f})[0].reshape(-1)
+              field.ravel()[start:start+len(ids)]=density
+              if start%(8192*20)==0:print('DENSITY',start,'/',n**3,flush=True)
+          iso=25.0
+          print('DENSITY_RANGE',float(field.min()),float(field.max()),flush=True)
+          if not field.min()<iso<field.max():raise RuntimeError(f'No surface at iso {iso}: range {field.min()}..{field.max()}')
+          verts,faces,_,_=marching_cubes(field,level=iso,spacing=(2*radius/(n-1),)*3)
+          verts=verts-radius
+          colors=[]
+          for start in range(0,len(verts),8192):
+              f=features(verts[start:start+8192].astype(np.float32))
+              result=dec.run(None,{dec.get_inputs()[0].name:f})
+              colors.append(np.uint8(np.clip(result[1]*255,0,255)))
+          mesh=trimesh.Trimesh(vertices=verts,faces=faces,vertex_colors=np.concatenate(colors),process=False)
+          mesh.export(out/'tree_3d.glb')
+          fig=plt.figure(figsize=(12,4))
+          for idx,(elev,azim) in enumerate(((15,30),(15,150),(65,30)),1):
+              ax=fig.add_subplot(1,3,idx,projection='3d')
+              ax.plot_trisurf(verts[:,0],verts[:,1],verts[:,2],triangles=faces,color='#73986a',linewidth=0,alpha=1)
+              ax.view_init(elev=elev,azim=azim);ax.set_axis_off()
+          fig.savefig(out/'preview.png',dpi=100);plt.close(fig)
+          (out/'metrics.json').write_text(json.dumps({'source':str(src),'vertices':len(verts),'faces':len(faces),'seconds':round(time.monotonic()-t0,2),'density_min':float(field.min()),'density_max':float(field.max()),'iso':iso},indent=2))
+          print('SUCCESS',out/'tree_3d.glb',flush=True)
+          PY
+          python /tmp/triposr_cpu.py
+      - name: Upload result or diagnostic inputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tamu-triposr-tree-cpu
+          path: triposr-output/
+          if-no-files-found: warn
