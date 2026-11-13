@@ -152,19 +152,47 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+      # Cache only the Android files, not the entire ~2 GB export-template tree.
+      # Immutable Godot 4.6 stable toolchain; HD branch only, never production branches.
+      - name: Restore pinned Godot 4.6 Android toolchain cache (HD only)
+        if: github.ref_name == 'experiment/tamu-hd-forest-materials-20261112'
+        id: hd_toolchain
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/tamu-hd-godot46/Godot_v4.6-stable_linux.x86_64
+            ~/.local/share/godot/export_templates/4.6.stable/android_debug.apk
+            ~/.local/share/godot/export_templates/4.6.stable/android_release.apk
+          key: tamu-hd-ubuntu2404-godot46-android-toolchain-v1
       - name: Install Godot 4.6 and PCK export templates
         shell: bash
         run: |
           set -euo pipefail
           BASE=https://github.com/godotengine/godot-builds/releases/download/4.6-stable
-          curl -fL --retry 3 "$BASE/Godot_v4.6-stable_linux.x86_64.zip" -o /tmp/godot.zip
-          unzip -q /tmp/godot.zip -d /tmp
-          chmod +x /tmp/Godot_v4.6-stable_linux.x86_64
-          sudo install /tmp/Godot_v4.6-stable_linux.x86_64 /usr/local/bin/godot
-          curl -fL --retry 3 "$BASE/Godot_v4.6-stable_export_templates.tpz" -o /tmp/templates.tpz
-          mkdir -p "$HOME/.local/share/godot/export_templates/4.6.stable"
-          unzip -q /tmp/templates.tpz -d /tmp/godot-templates
-          cp /tmp/godot-templates/templates/* "$HOME/.local/share/godot/export_templates/4.6.stable/"
+          BIN="$HOME/.cache/tamu-hd-godot46/Godot_v4.6-stable_linux.x86_64"
+          TEMPLATES="$HOME/.local/share/godot/export_templates/4.6.stable"
+          if [ "${{ steps.hd_toolchain.outputs.cache-hit }}" = "true" ]; then
+            test -s "$BIN"
+            test -s "$TEMPLATES/android_debug.apk"
+            test -s "$TEMPLATES/android_release.apk"
+            echo "TAMU_HD_TOOLCHAIN_CACHE_HIT godot=4.6 android_templates=2"
+          else
+            curl -fL --retry 3 "$BASE/Godot_v4.6-stable_linux.x86_64.zip" -o /tmp/godot.zip
+            unzip -q /tmp/godot.zip -d /tmp
+            mkdir -p "$(dirname "$BIN")"
+            cp /tmp/Godot_v4.6-stable_linux.x86_64 "$BIN"
+            curl -fL --retry 3 "$BASE/Godot_v4.6-stable_export_templates.tpz" -o /tmp/templates.tpz
+            mkdir -p "$TEMPLATES"
+            unzip -q /tmp/templates.tpz -d /tmp/godot-templates
+            # Keep the existing complete template install on cold runs.
+            cp /tmp/godot-templates/templates/* "$TEMPLATES/"
+            test -s "$TEMPLATES/android_debug.apk"
+            test -s "$TEMPLATES/android_release.apk"
+            echo "TAMU_HD_TOOLCHAIN_CACHE_MISS downloaded=true"
+          fi
+          chmod +x "$BIN"
+          sudo install -m 755 "$BIN" /usr/local/bin/godot
+          test "$(godot --headless --version | head -1)" = "4.6.stable.official.89f1e1c14" || godot --headless --version
           godot --headless --version
       - name: Recover exact TAMU binary terrain and texture atlas
         env:
@@ -335,6 +363,13 @@ jobs:
           assert recipes['core:bench_from_planks']['duration_ticks']==60
           print('TAMU_CANONICAL_GAMEPLAY_SOURCE_OK definitions=7 recipes=2 same_json=true')
           PY
+      - name: Restore deterministic HD texture tier cache
+        if: github.ref_name == 'experiment/tamu-hd-forest-materials-20261112'
+        id: hd_texture_cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/tamu-texture-quality
+          key: tamu-hd-tiers-v2-origin41234831527-${{ hashFiles('scripts/build_tamu_texture_tiers.py', 'game/love/assets/terrain25d/terrain_originals.part*', 'game/love/assets/terrain25d/atlas_objects_hires.part*', 'game/love/assets/terrain25d/manifest.json') }}
       - name: Reconstruct exact source art and generate RGBA/RGB quality tiers
         shell: bash
         run: |
@@ -360,7 +395,15 @@ jobs:
                   (dest/pathlib.Path(name).name).write_bytes(z.read(name))
           print('TAMU_TERRAIN_ORIGINALS_AUTHENTIC_OK sheets=15 sha256='+expected)
           PYTEX
-          python3 scripts/build_tamu_texture_tiers.py --manifest assets/terrain25d/manifest.json --sources /tmp/tamu-terrain-originals --output /tmp/tamu-texture-quality --objects-atlas assets/terrain25d/atlas_objects_hires.png
+          if [ "${{ steps.hd_texture_cache.outputs.cache-hit }}" = "true" ]; then
+            test -s /tmp/tamu-texture-quality/atlas_00_terrain_384.png
+            test -s /tmp/tamu-texture-quality/atlas_00_terrain_mix_384.png
+            test -s /tmp/tamu-texture-quality/objects_quality_report.json
+            echo "TAMU_HD_TEXTURE_TIER_CACHE_HIT"
+          else
+            python3 scripts/build_tamu_texture_tiers.py --manifest assets/terrain25d/manifest.json --sources /tmp/tamu-terrain-originals --output /tmp/tamu-texture-quality --objects-atlas assets/terrain25d/atlas_objects_hires.png
+            echo "TAMU_HD_TEXTURE_TIER_CACHE_MISS"
+          fi
           cp /tmp/tamu-texture-quality/atlas_00_terrain_384.png assets/terrain25d/atlas_00_hires.png
           cp /tmp/tamu-texture-quality/atlas_00_terrain_mix_384.png assets/terrain25d/atlas_00_mix_hires.png
           python3 - <<'PYTEX'
@@ -377,6 +420,16 @@ jobs:
           assert set(obj)=={'512','384','256'}
           print('TAMU_TERRAIN_RGB_TIER_GATE_OK materials=168 tiers=384,256,128 object_tiers=512,384,256')
           PYTEX
+      # Import artifacts are disposable: an exact source fingerprint and pinned
+      # engine version prevent reuse across incompatible assets or renderer versions.
+      # Godot still runs --import below and verifies/reimports changed resources.
+      - name: Restore generated Godot texture import cache (HD only)
+        if: github.ref_name == 'experiment/tamu-hd-forest-materials-20261112'
+        id: hd_import_cache
+        uses: actions/cache@v4
+        with:
+          path: .godot/imported/
+          key: tamu-hd-godot46-import-v2-origin41234831527-${{ hashFiles('project.godot', 'export_presets.cfg', 'assets/terrain/**/*.png', 'assets/trees/**/*.png', 'game/love/assets/terrain25d/terrain_originals.part*', 'game/love/assets/terrain25d/atlas_objects_hires.part*', 'scripts/build_tamu_texture_tiers.py', 'scripts/bake_terrain_mix.py', 'scripts/build_forest_gui.py', 'scripts/bake_minimap_ci.gd', 'assets/ui/hud/packs/*.zip', 'ui/selection/packs/*.zip') }}
       - name: Native Godot scene and screenshot smoke (Xvfb)
         shell: bash
         env:
@@ -437,6 +490,7 @@ jobs:
           test -s assets/gui/joystick_knob.png
           grep -q TAMU_TERRAIN_MIX_BAKED_OK screenshots-mix-bake.log
           test -s assets/terrain25d/atlas_00_mix.png
+          echo "TAMU_HD_IMPORT_CACHE_STATE=${{ steps.hd_import_cache.outputs.cache-hit }}"
           godot --headless --editor --path . --import --quit
           mkdir -p screenshots
           godot --headless --path . --script res://scripts/compile_content.gd | tee screenshots/content-compile.log
