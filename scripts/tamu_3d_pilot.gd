@@ -47,6 +47,7 @@ func _ready() -> void:
     inv.name = "PilotInventory"
     add_child(inv)
     system_status["inventory"] = "gloot_instantiated_no_save_migration"
+    _setup_touch_ui()
     ready_verified = true
     print("TAMU3D_STACK_READY terrain=Terrain3D camera=PhantomCamera player=Jeheno nav=GodotNavigation models=2 inventory=GLoot")
 
@@ -176,3 +177,67 @@ func _setup_assets() -> bool:
     sun.rotation_degrees = Vector3(-48, -35, 0)
     add_child(sun)
     return true
+
+
+func _setup_touch_ui() -> void:
+    # Mobile-only controls wired into Jeheno's existing action names.
+    if not OS.has_feature("mobile"):
+        return
+    var layer := CanvasLayer.new()
+    layer.name = "PilotMobileControls"
+    add_child(layer)
+    var root_control := Control.new()
+    root_control.name = "HUD"
+    root_control.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    root_control.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    layer.add_child(root_control)
+
+    var panel := PanelContainer.new()
+    panel.name = "MovePad"
+    panel.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+    panel.offset_left = 18.0
+    panel.offset_top = -242.0
+    panel.offset_right = 230.0
+    panel.offset_bottom = -18.0
+    root_control.add_child(panel)
+
+    var grid := GridContainer.new()
+    grid.columns = 3
+    panel.add_child(grid)
+    var actions := {
+        1: ["▲", "play_char_move_forward_action"],
+        3: ["◀", "play_char_move_left_action"],
+        5: ["▶", "play_char_move_right_action"],
+        7: ["▼", "play_char_move_backward_action"],
+    }
+    for index in 9:
+        if not actions.has(index):
+            var blank := Control.new()
+            blank.custom_minimum_size = Vector2(60, 60)
+            grid.add_child(blank)
+            continue
+        var definition: Array = actions[index]
+        var button := Button.new()
+        button.text = str(definition[0])
+        button.custom_minimum_size = Vector2(60, 60)
+        button.add_theme_font_size_override("font_size", 25)
+        grid.add_child(button)
+        var action := str(definition[1])
+        button.button_down.connect(_touch_press.bind(action))
+        button.button_up.connect(_touch_release.bind(action))
+
+    var subtitle := Label.new()
+    subtitle.text = "TAMU 3D / hazır varlık önizlemesi"
+    subtitle.add_theme_font_size_override("font_size", 18)
+    subtitle.set_anchors_preset(Control.PRESET_TOP_LEFT)
+    subtitle.offset_left = 20.0
+    subtitle.offset_top = 28.0
+    root_control.add_child(subtitle)
+
+
+func _touch_press(action: String) -> void:
+    Input.action_press(action)
+
+
+func _touch_release(action: String) -> void:
+    Input.action_release(action)
