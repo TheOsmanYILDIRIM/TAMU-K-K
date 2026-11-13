@@ -146,7 +146,7 @@ func _verify() -> void:
     var noon = Solar.sample(12.0)
     var cast: Vector2 = noon["cast_direction"]
     var elev: float = deg_to_rad(float(noon["altitude_deg"]))
-    var sun := Vector3(-cast.x*cos(elev),-cast.y*cos(elev),maxf(sin(elev),0.03)).normalized()
+    var sun := Vector3(-cast.x*cos(elev),cast.y*cos(elev),maxf(sin(elev),0.06)).normalized()
     terrain.set_shader_parameter("sun_vector",sun)
     terrain.set_shader_parameter("sun_light",noon["light"])
     tree.material.set_shader_parameter("sun_vector",sun)
@@ -213,5 +213,40 @@ func _verify() -> void:
         return
     print("TAMU_HD_LIGHT_CYCLE_OK tree_samples=", samples, " tree_night_ratio=", snappedf(tree_night / tree_day, 0.001),
         " ground_night_ratio=", snappedf(ground_night / ground_day, 0.001))
+    # Same daylight intensity, opposing sun azimuths: generated normal-map
+    # pixels MUST change; a global brightness slider cannot pass this test.
+    tree.material.set_shader_parameter("sun_light", 1.0)
+    terrain.set_shader_parameter("sun_light", 1.0)
+    var side_frames: Array[Image] = []
+    for side in [-0.82, 0.82]:
+        var side_sun := Vector3(float(side), 0.12, 0.56).normalized()
+        tree.material.set_shader_parameter("sun_vector", side_sun)
+        terrain.set_shader_parameter("sun_vector", side_sun)
+        for frame in range(8):
+            await process_frame
+        side_frames.append(get_root().get_texture().get_image())
+    var direction_change := 0.0
+    var direction_energy := 0.0
+    var direction_samples := 0
+    for y in range(225, 392, 7):
+        for x in range(425, 587, 7):
+            var source_uv := (Vector2(x, y) - tree.position) / tree.scale + Vector2(384.0, 384.0)
+            if source_uv.x < 0.0 or source_uv.y < 0.0 or source_uv.x >= 768.0 or source_uv.y >= 768.0:
+                continue
+            if original_tree.get_pixel(int(source_uv.x), int(source_uv.y)).a < 0.5:
+                continue
+            var a: Color = side_frames[0].get_pixel(x, y)
+            var b: Color = side_frames[1].get_pixel(x, y)
+            direction_change += absf(a.r-b.r) + absf(a.g-b.g) + absf(a.b-b.b)
+            direction_energy += (a.r+a.g+a.b+b.r+b.g+b.b) * 0.5
+            direction_samples += 1
+    var direction_ratio := direction_change / maxf(direction_energy, 0.001)
+    if direction_samples < 20 or direction_ratio < 0.025:
+        _failed("HD tree has no directional surface response samples=%d ratio=%.4f" % [direction_samples, direction_ratio])
+        return
+    if side_frames[0].save_png("user://tamu_hd_native_left.png") != OK or side_frames[1].save_png("user://tamu_hd_native_right.png") != OK:
+        _failed("directional screenshot export")
+        return
+    print("TAMU_HD_DIRECTIONAL_OK samples=", direction_samples, " response_ratio=", snappedf(direction_ratio, 0.001))
     print("TAMU_HD_NATIVE_RENDER_OK terrain6 tree8 shader2 optimized=2samples tree768 screenshot=",ProjectSettings.globalize_path(file_path))
     quit()

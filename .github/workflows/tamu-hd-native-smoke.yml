@@ -71,5 +71,5 @@ jobs:
           path: |
             /tmp/tamu-hd-import.log
             /tmp/tamu-hd-render.log
-            ~/.local/share/godot/app_userdata/TAMU HD Test/tamu_hd_native_noon.png
+            ~/.local/share/godot/app_userdata/TAMU HD Test/tamu_hd_native_*.png
           if-no-files-found: warn

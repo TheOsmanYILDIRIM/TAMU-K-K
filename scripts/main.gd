@@ -161,7 +161,7 @@ func _update_sun(delta: float) -> void:
         if hd_terrain_material != null or not hd_tree_materials.is_empty():
             var cast: Vector2 = solar["cast_direction"]
             var elev: float = deg_to_rad(float(solar["altitude_deg"]))
-            var light_vec := Vector3(-cast.x * cos(elev), -cast.y * cos(elev), maxf(sin(elev), 0.03)).normalized()
+            var light_vec := Vector3(-cast.x * cos(elev), cast.y * cos(elev), maxf(sin(elev), 0.06)).normalized()
             if hd_terrain_material != null:
                 hd_terrain_material.set_shader_parameter("sun_vector",light_vec)
                 hd_terrain_material.set_shader_parameter("sun_light",light)
