@@ -43,16 +43,32 @@ jobs:
           import matplotlib.pyplot as plt
 
           out=Path('triposr-output');out.mkdir(exist_ok=True)
+          import zipfile
           override=os.getenv('INPUT_ALBEDO','').strip()
+          # New November 12 tree art was committed as a ZIP at repository root.
+          # Do not silently fall back to old sprite atlases or terrain albedos.
+          bundle=Path('TAMU_Doga_Assetleri_Bolum_2_Agaclar_20261112.zip')
           if override:
-              paths=[Path(override)]
+              src=Path(override)
+              if not src.is_file(): raise FileNotFoundError(f'Explicit albedo path not found: {src}')
           else:
-              paths=[p for p in Path('assets').rglob('*.png') if 'albedo' in p.name.lower() and any(s in str(p).lower() for s in ('tree','oak','pine','ash','flora','vegetation'))]
-              if not paths:
-                  paths=[p for p in Path('.').rglob('*.png') if 'albedo' in p.name.lower() and any(s in str(p).lower() for s in ('tree','oak','pine','ash','flora','vegetation')) and '.git' not in p.parts]
-              paths.sort(key=lambda p:p.stat().st_mtime,reverse=True)
-          if not paths or not paths[0].is_file(): raise RuntimeError('No tree albedo PNG found; set workflow_dispatch albedo_path to exact path')
-          src=paths[0]; print('SOURCE_ALBEDO',src,flush=True)
+              if not bundle.is_file(): raise FileNotFoundError(f'Expected latest tree asset bundle not found: {bundle}')
+              with zipfile.ZipFile(bundle) as z:
+                  entries=[i for i in z.infolist() if not i.is_dir() and i.filename.lower().endswith('.png')]
+                  candidates=[i for i in entries if 'albedo' in i.filename.lower() and not any(q in i.filename.lower() for q in ('normal','height','preview','_nrm'))]
+                  print('TREE_BUNDLE_PNGS',len(entries),'ALBEDO_CANDIDATES',[x.filename for x in candidates],flush=True)
+                  if not candidates:
+                      raise RuntimeError('Latest tree ZIP contains no albedo PNG; files: '+repr([i.filename for i in entries[:70]]))
+                  # Stable alphabetical choice, prioritizing clearly labelled tree albedo.
+                  candidates.sort(key=lambda x:(0 if any(q in x.filename.lower() for q in ('oak','mese','meşe','agac','ağaç','tree')) else 1,x.filename.lower()))
+                  selected=candidates[0]
+                  data=z.read(selected)
+                  from io import BytesIO
+                  Image.open(BytesIO(data)).verify()
+                  src=out/'selected_tree_albedo.png'
+                  src.write_bytes(data)
+                  print('SOURCE_ARCHIVE',bundle,'ENTRY',selected.filename,'SIZE',len(data),flush=True)
+          print('SOURCE_ALBEDO',src,flush=True)
           im=Image.open(src).convert('RGBA')
           a=np.asarray(im.getchannel('A'))
           yy,xx=np.where(a>8)
