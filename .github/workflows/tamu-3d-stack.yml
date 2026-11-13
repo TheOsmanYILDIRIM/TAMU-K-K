@@ -47,7 +47,7 @@ jobs:
           test -s assets/tamu_3d/forest.glb
           test -s assets/tamu_3d/crew.glb
 
-      - name: Enable Jolt and editor tooling in runner ONLY
+      - name: Configure Jolt; defer editor plugin activation until import completes
         shell: bash
         run: |
           set -euo pipefail
@@ -58,7 +58,9 @@ jobs:
           3d/physics_engine="Jolt Physics"
 
           [editor_plugins]
-          enabled=PackedStringArray("res://addons/terrain_3d/plugin.cfg", "res://addons/asset_placer/plugin.cfg", "res://addons/phantom_camera/plugin.cfg", "res://addons/gloot/plugin.cfg")
+          # Editor-only Asset Placer cannot synchronize during first headless import.
+          # Source plugins stay installed; enable them when opening the editor UI.
+          enabled=PackedStringArray()
           EOF
 
       - name: Install pinned Godot 4.6 stable Linux
