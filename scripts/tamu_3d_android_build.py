@@ -64,6 +64,8 @@ def make_isolated_project():
         'window/handheld/orientation=1\n'
         'window/stretch/mode="canvas_items"\n'
         'window/stretch/aspect="expand"\n'
+        '\n[autoload]\n'
+        'PhantomCameraManager="*res://addons/phantom_camera/scripts/managers/phantom_camera_manager.gd"\n'
         '\n[physics]\n'
         '3d/physics_engine="Jolt Physics"\n'
         '\n[rendering]\n'
