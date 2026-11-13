@@ -169,5 +169,49 @@ func _verify() -> void:
     if err != OK:
         _failed("screenshot export")
         return
+    # Regression: both textured trees and land must get darker when sun_light reaches zero.
+    terrain.set_shader_parameter("sun_light", 0.0)
+    tree.material.set_shader_parameter("sun_light", 0.0)
+    for i in range(8):
+        await process_frame
+    var midnight_image: Image = get_root().get_texture().get_image()
+    if midnight_image == null or midnight_image.is_empty():
+        _failed("midnight framebuffer")
+        return
+    var original_tree: Image = (oak["albedo"] as Texture2D).get_image()
+    var tree_day := 0.0
+    var tree_night := 0.0
+    var samples := 0
+    for y in range(225, 392, 7):
+        for x in range(425, 587, 7):
+            var source_uv := (Vector2(x, y) - tree.position) / tree.scale + Vector2(384.0, 384.0)
+            if source_uv.x < 0.0 or source_uv.y < 0.0 or source_uv.x >= 768.0 or source_uv.y >= 768.0:
+                continue
+            if original_tree.get_pixel(int(source_uv.x), int(source_uv.y)).a < 0.5:
+                continue
+            var midday_pixel: Color = image.get_pixel(x,y)
+            var midnight_pixel: Color = midnight_image.get_pixel(x,y)
+            tree_day += midday_pixel.r + midday_pixel.g + midday_pixel.b
+            tree_night += midnight_pixel.r + midnight_pixel.g + midnight_pixel.b
+            samples += 1
+    if samples < 20 or tree_day <= 0.01 or tree_night >= tree_day * 0.62:
+        _failed("HD tree does not darken at midnight samples=%d day=%.3f night=%.3f" % [samples, tree_day, tree_night])
+        return
+    var ground_day := 0.0
+    var ground_night := 0.0
+    for point in [Vector2i(65,65),Vector2i(130,110),Vector2i(240,220)]:
+        var d: Color = image.get_pixel(point.x,point.y)
+        var n: Color = midnight_image.get_pixel(point.x,point.y)
+        ground_day += d.r+d.g+d.b
+        ground_night += n.r+n.g+n.b
+    if ground_day <= 0.01 or ground_night >= ground_day * 0.62:
+        _failed("HD land does not darken at midnight day=%.3f night=%.3f" % [ground_day, ground_night])
+        return
+    var night_path := "user://tamu_hd_native_midnight.png"
+    if midnight_image.save_png(night_path) != OK:
+        _failed("midnight screenshot export")
+        return
+    print("TAMU_HD_LIGHT_CYCLE_OK tree_samples=", samples, " tree_night_ratio=", snappedf(tree_night / tree_day, 0.001),
+        " ground_night_ratio=", snappedf(ground_night / ground_day, 0.001))
     print("TAMU_HD_NATIVE_RENDER_OK terrain6 tree8 shader2 optimized=2samples tree768 screenshot=",ProjectSettings.globalize_path(file_path))
     quit()
