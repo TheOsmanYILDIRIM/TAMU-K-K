@@ -1,5 +1,16 @@
 # TAMU 3D ready-stack — 2026-11-13 isolated prototype
 
+## 2026-11-13 — Standalone Android preview APK (verified CI)
+
+- **APK:** [TAMU-3D-Preview-Android-ARM64-APK](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/43458854494/artifacts/14054369011)
+- **Successful run:** [GitHub Actions #43458854494](https://github.com/TheOsmanYILDIRIM/TAMU-K-K/actions/runs/43458854494), source SHA 9637449543aace1c8948ae985317cdab7d0c9983
+- **Actual APK name:** TAMU_3D_Preview_ARM64.apk; APK ZIP uncompressed size 49,291,757 bytes; SHA256 3be112499741505854d18e9d340ad8d32e57a2cbd4c559ef57c72d2a75325c2a
+- **Native checks:** bundled lib/arm64-v8a/libterrain.android.debug.arm64.so and lib/arm64-v8a/libgodot_android.so, Terrain3D .gdextension manifest, ZIP CRC, unique app package org.osman.tamu.preview3d, normal 2.5D project files excluded.
+- **Build process:** scripts/tamu_3d_android_build.py makes a temporary standalone project at build/tamu-3d-android-src, using the pinned vendor source plus scenes/tamu_3d_pilot.tscn as main; PhantomCameraManager autoload resolves scene-tree initialization before the scene.
+- **Scope:** visual and system prototype (temporary flat terrain, demo character, imported nature GLB packs, touch movement buttons). NOT a migrated authored 3D Fısıltı Ormanı / 832 objects / Stage6 gameplay. Native Linux import/start passed. Real phone boot, touchscreen usability, rendering and FPS have NOT been verified.
+- Install: download the artifact ZIP, extract TAMU_3D_Preview_ARM64.apk and install it on Android ARM64. Godot Loader is not involved.
+
+
 ## Scope and safety
 
 This branch was created from \`feature/tamu-modular-production-and-farming-20261106\`
