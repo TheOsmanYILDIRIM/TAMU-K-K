@@ -1,0 +1,196 @@
+name: TAMU needle-tools SF3D ONNX CPU tree trial
+on:
+  push:
+    branches: [experiment/tamu-3d-stock-stack-20261113]
+    paths: [.github/workflows/sf3d-tree-cpu.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reconstruct:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      OMP_NUM_THREADS: "2"
+      OPENBLAS_NUM_THREADS: "2"
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      HF_HUB_ENABLE_HF_TRANSFER: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install ONNX CPU runtime and mesh libraries
+        run: |
+          python -m pip install 'numpy<2.1' pillow onnxruntime huggingface_hub hf_xet trimesh scikit-image onnx
+      - name: Extract latest original TAMU tree image
+        run: |
+          mkdir -p sf3d-output
+          python - <<'PY'
+          import zipfile,io
+          from PIL import Image
+          p='TAMU_Doga_Assetleri_Bolum_2_Agaclar_20261112.zip'
+          source='trees/ashskin_birch/albedo.png'
+          with zipfile.ZipFile(p) as z:
+              image=Image.open(io.BytesIO(z.read(source))).convert('RGBA')
+          image.save('sf3d-output/source_albedo.png')
+          print('TREE_ALBEDO_OK',source,image.size,flush=True)
+          PY
+      - name: Download needle-tools ONNX assets and validate manifest
+        run: |
+          python - <<'PY'
+          import os,json,hashlib
+          from pathlib import Path
+          from huggingface_hub import snapshot_download
+          dst=Path(os.environ['RUNNER_TEMP'])/'sf3d-onnx'
+          snapshot_download(repo_id='needle-tools/SF3D-webgpu',local_dir=dst,allow_patterns=['onnx/*.onnx','tets_*.bin','features_mlp_weights.json','assets-manifest.json'])
+          manifest=json.loads((dst/'assets-manifest.json').read_text())
+          for name,meta in manifest['assets'].items():
+              p=dst/name
+              assert p.exists(),name
+              h=hashlib.sha256()
+              with p.open('rb') as f:
+                  for part in iter(lambda:f.read(4*1024*1024),b''):h.update(part)
+              assert p.stat().st_size==meta['bytes'] and h.hexdigest()==meta['sha256'],f'Asset integrity mismatch: {name}'
+              print('ASSET_VERIFIED',name,p.stat().st_size,flush=True)
+          Path('sf3d-output/manifest_verified.json').write_text(json.dumps(manifest,indent=2))
+          PY
+      - name: Run ONNX CPU graph diagnostics and first-stage inference
+        run: |
+          cat > /tmp/sf3d_onnx.py <<'PY'
+          import os,json,time,traceback
+          from pathlib import Path
+          import numpy as np
+          from PIL import Image
+          import onnxruntime as ort
+          root=Path(os.environ['RUNNER_TEMP'])/'sf3d-onnx'
+          out=Path('sf3d-output')
+          image=Image.open(out/'source_albedo.png').convert('RGBA')
+          a=np.asarray(image.getchannel('A'))
+          y,x=np.where(a>127)
+          if not len(x):raise RuntimeError('empty input alpha')
+          crop=image.crop((int(x.min()),int(y.min()),int(x.max()+1),int(y.max()+1)))
+          size=max(crop.size); canvas=Image.new('RGBA',(size,size),(0,0,0,0))
+          canvas.alpha_composite(crop,((size-crop.width)//2,(size-crop.height)//2))
+          canvas=canvas.resize((int(size/.85),)*2)
+          canvas=canvas.resize((512,512),Image.Resampling.BICUBIC)
+          canvas.save(out/'model_input_rgba.png')
+          arr=np.asarray(canvas).astype(np.float32)/255.
+          rgb=arr[:,:,:3]*arr[:,:,3:]+.5*(1-arr[:,:,3:])
+          opts=ort.SessionOptions()
+          opts.intra_op_num_threads=2
+          opts.graph_optimization_level=ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+          report={'source':'trees/ashskin_birch/albedo.png','model':'needle-tools/SF3D-webgpu','device':'CPUExecutionProvider','graphs':{}}
+          sessions={}
+          for name in ['image_tokenizer_single','backbone_fp16','decoder_single']:
+              p=root/'onnx'/f'{name}.onnx'
+              t=time.monotonic()
+              try:
+                  sess=ort.InferenceSession(str(p),sess_options=opts,providers=['CPUExecutionProvider'])
+                  sessions[name]=sess
+                  graph={'load_seconds':round(time.monotonic()-t,2),
+                    'inputs':[{'name':v.name,'shape':v.shape,'type':v.type} for v in sess.get_inputs()],
+                    'outputs':[{'name':v.name,'shape':v.shape,'type':v.type} for v in sess.get_outputs()]}
+                  print('GRAPH_OK',name,json.dumps(graph),flush=True)
+              except Exception as exc:
+                  graph={'error':type(exc).__name__+': '+str(exc)}
+                  print('GRAPH_FAIL',name,graph['error'],flush=True)
+              report['graphs'][name]=graph
+              (out/'onnx_report.json').write_text(json.dumps(report,indent=2))
+          if 'image_tokenizer_single' not in sessions:
+              raise RuntimeError('Cannot load image tokenizer on CPU')
+          enc=sessions['image_tokenizer_single']
+          # Native SF3D camera: camera-to-world and normalized 40 degree FoV.
+          c2w=np.array([[[0,0,1,1.6],[1,0,0,0],[0,1,0,0],[0,0,0,1]]],dtype=np.float32)
+          focal=.5/np.tan(np.deg2rad(20.0))
+          intr=np.array([[[focal,0,.5],[0,focal,.5],[0,0,1]]],dtype=np.float32)
+          inputs={'rgb':rgb[None].astype(np.float32),'c2w':c2w,'intrinsic_normed':intr}
+          t=time.monotonic()
+          tokens=enc.run(None,inputs)[0]
+          del sessions['image_tokenizer_single']
+          report['encoder']={'seconds':round(time.monotonic()-t,2),'shape':list(tokens.shape),'min':float(tokens.min()),'max':float(tokens.max())}
+          print('IMAGE_ENCODER_OK',report['encoder'],flush=True)
+          (out/'onnx_report.json').write_text(json.dumps(report,indent=2))
+          t=time.monotonic()
+          triplane=sessions['backbone_fp16'].run(None,{'image_tokens':tokens})[0]
+          del sessions['backbone_fp16']
+          report['backbone']={'seconds':round(time.monotonic()-t,2),'shape':list(triplane.shape),'min':float(triplane.min()),'max':float(triplane.max())}
+          print('BACKBONE_OK',report['backbone'],flush=True)
+          (out/'onnx_report.json').write_text(json.dumps(report,indent=2))
+          # Original tet vertices are stored in [0,1] grid units and query in [-1,1].
+          tv=np.fromfile(root/'tets_vertices.bin',dtype='<f4').reshape(-1,3)
+          ti=np.fromfile(root/'tets_indices.bin',dtype='<i4').reshape(-1,4)
+          report['tet_grid']={'vertices':len(tv),'tetrahedra':len(ti),'bounds':[float(tv.min()),float(tv.max())],'index_bounds':[int(ti.min()),int(ti.max())]}
+          print('TET_GRID',report['tet_grid'],flush=True)
+          if ti.min()<0 or ti.max()>=len(tv):raise RuntimeError('Invalid tetrahedra indices')
+          if not np.isfinite(tv).all():raise RuntimeError('Invalid tetrahedra coordinates')
+          dec=sessions['decoder_single']
+          sdf=np.empty(len(tv),dtype=np.float32)
+          offsets=np.empty_like(tv)
+          t=time.monotonic()
+          for k in range(0,len(tv),4096):
+              points=(tv[k:k+4096]*2.-1.).astype(np.float32)[None]
+              val,off=dec.run(None,{'triplane':triplane,'positions':points})
+              n=len(points[0])
+              sdf[k:k+n]=val.reshape(-1)-10.0
+              offsets[k:k+n]=off.reshape(-1,3)
+              if k%(4096*16)==0:print('DECODING',k,'/',len(tv),flush=True)
+          report['decoder']={'seconds':round(time.monotonic()-t,2),'min_density':float(sdf.min()+10.),'max_density':float(sdf.max()+10.),'occupied_points':int(np.sum(sdf>0))}
+          print('DECODER_OK',report['decoder'],flush=True)
+          (out/'onnx_report.json').write_text(json.dumps(report,indent=2))
+          if not (sdf.min()<0<sdf.max()):raise RuntimeError('No zero level surface in predicted density')
+          # Match official SF3D marching-tetrahedra case table and edge ordering.
+          table=np.array([
+            [-1,-1,-1,-1,-1,-1],[1,0,2,-1,-1,-1],[4,0,3,-1,-1,-1],[1,4,2,1,3,4],
+            [3,1,5,-1,-1,-1],[2,3,0,2,5,3],[1,4,0,1,5,4],[4,2,5,-1,-1,-1],
+            [4,5,2,-1,-1,-1],[4,1,0,4,5,1],[3,2,0,3,5,2],[1,3,5,-1,-1,-1],
+            [4,1,2,4,3,1],[3,0,4,-1,-1,-1],[2,0,1,-1,-1,-1],[-1,-1,-1,-1,-1,-1]
+          ],dtype=np.int32)
+          ntri=np.array([0,1,1,2,1,2,2,1,1,2,2,1,2,1,1,0],dtype=np.int32)
+          edge=np.array([[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]])
+          occupied=sdf>0
+          code=occupied[ti].astype(np.uint8)@np.array([1,2,4,8],dtype=np.uint8)
+          valid=(code>0)&(code<15)
+          faces_tets=ti[valid];cases=code[valid]
+          print('SURFACE_TETRAHEDRA',len(faces_tets),flush=True)
+          if not len(faces_tets):raise RuntimeError('No surface tetrahedra')
+          all_edges=np.sort(faces_tets[:,edge].reshape(-1,2),axis=1)
+          unique,inv=np.unique(all_edges,axis=0,return_inverse=True)
+          crossing=occupied[unique[:,0]]!=occupied[unique[:,1]]
+          mapping=np.full(len(unique),-1,dtype=np.int32)
+          mapping[crossing]=np.arange(crossing.sum(),dtype=np.int32)
+          indices=mapping[inv].reshape(-1,6)
+          e=unique[crossing]
+          a=sdf[e[:,0]];b=sdf[e[:,1]]
+          fraction=(a/(a-b)).astype(np.float32)
+          displaced=tv+np.tanh(offsets)*(1.0/128.0)
+          surface=(displaced[e[:,0]]+(displaced[e[:,1]]-displaced[e[:,0]])*fraction[:,None])*2.0-1.0
+          onlyone=ntri[cases]==1;onlytwo=ntri[cases]==2
+          face1=np.take_along_axis(indices[onlyone],table[cases[onlyone],:3],axis=1)
+          face2=np.take_along_axis(indices[onlytwo],table[cases[onlytwo],:6],axis=1).reshape(-1,3)
+          faces=np.concatenate([face1,face2],axis=0)
+          if np.any(faces<0):raise RuntimeError('Invalid marching tetrahedra face mapping')
+          import trimesh
+          # A projection from the original albedo is an explicit preview-color fallback;
+          # the native SF3D UV baker is NOT included in the ONNX graph exports.
+          uv=np.stack(((surface[:,1]+1)*.5,(1-surface[:,2])*.5),axis=-1)
+          xy=np.minimum(511,np.maximum(0,np.rint(uv*511).astype(np.int32)))
+          rgba=np.asarray(canvas)
+          colors=rgba[xy[:,1],xy[:,0],:3]
+          mesh=trimesh.Trimesh(vertices=surface,faces=faces,vertex_colors=colors,process=False)
+          glb=out/'tree_sf3d_onnx.glb'
+          mesh.export(glb)
+          check=trimesh.load(glb,force='mesh')
+          if len(check.vertices)<10 or len(check.faces)<10:raise RuntimeError('GLB has no mesh')
+          report['mesh']={'vertices':len(check.vertices),'triangles':len(check.faces),'glb_bytes':glb.stat().st_size,'color_method':'albedo front projection, NOT native texture baking'}
+          (out/'onnx_report.json').write_text(json.dumps(report,indent=2))
+          print('GLB_VERIFIED',report['mesh'],flush=True)
+          PY
+          python /tmp/sf3d_onnx.py
+      - name: Upload CPU test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tamu-sf3d-onnx-cpu
+          path: sf3d-output/
+          if-no-files-found: warn

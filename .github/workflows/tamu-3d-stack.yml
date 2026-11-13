@@ -1,0 +1,224 @@
+name: TAMU 3D pinned vendor stack and native pilot
+
+on:
+  push:
+    branches:
+      - experiment/tamu-3d-stock-stack-20261113
+    paths:
+      - .github/workflows/tamu-3d-stack.yml
+      - scripts/tamu_3d_*
+      - scenes/tamu_3d_*
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tamu-3d-stack-single-branch
+  cancel-in-progress: true
+
+jobs:
+  native_3d_pilot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Checkout isolated TAMU experimental branch
+        uses: actions/checkout@v4
+
+      - name: Check dependency manifest before network operations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/tamu_3d_vendor.py audit
+          python3 -m py_compile scripts/tamu_3d_vendor.py
+
+      - name: Download version-pinned MIT Godot addons and CC0 models
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/tamu_3d_vendor.py install
+          python3 scripts/tamu_3d_vendor.py verify
+          test -s addons/terrain_3d/plugin.cfg
+          test -s addons/asset_placer/plugin.cfg
+          test -s addons/phantom_camera/plugin.cfg
+          test -s addons/gloot/plugin.cfg
+          test -s addons/JehenoThirdPersonController/PlayerCharacter/player_character_scene.tscn
+          test -s assets/tamu_3d/nature.glb
+          test -s assets/tamu_3d/forest.glb
+          test -s assets/tamu_3d/crew.glb
+
+      - name: Configure Jolt; defer editor plugin activation until import completes
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Never commit changes to existing production project.godot.
+          cat >> project.godot <<'EOF'
+
+          [physics]
+          3d/physics_engine="Jolt Physics"
+
+          [editor_plugins]
+          # Editor-only Asset Placer cannot synchronize during first headless import.
+          # Source plugins stay installed; enable them when opening the editor UI.
+          enabled=PackedStringArray()
+          EOF
+
+      - name: Install pinned Godot 4.6 stable Linux
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 \
+            'https://github.com/godotengine/godot-builds/releases/download/4.6-stable/Godot_v4.6-stable_linux.x86_64.zip' \
+            -o /tmp/tamu-godot-4.6.zip
+          unzip -q /tmp/tamu-godot-4.6.zip -d /tmp
+          sudo install /tmp/Godot_v4.6-stable_linux.x86_64 /usr/local/bin/godot
+          godot --version
+
+      - name: Import real third-party 3D resources
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --kill-after=5s 240s godot --headless --path . --editor --import --quit 2>&1 | tee tamu-3d-import.log
+          if grep -E 'SCRIPT ERROR:|Parse Error:|ERROR:.*Failed loading GDExtension' tamu-3d-import.log; then
+            echo 'TAMU3D_IMPORT_ERRORS_DETECTED'
+            exit 1
+          fi
+
+      - name: Test Terrain3D, Phantom, controller, Navigation and GLoot
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --kill-after=5s 150s godot --headless --path . \
+            --script res://scripts/tamu_3d_smoke.gd 2>&1 | tee tamu-3d-native.log
+          grep -q 'TAMU3D_NATIVE_BOOT_OK' tamu-3d-native.log
+          if grep -E 'SCRIPT ERROR:|Parse Error:|TAMU3D_.*FAILED|TAMU3D_.*MISSING' tamu-3d-native.log; then
+            exit 1
+          fi
+
+
+      - name: Install Godot 4.6 Android export templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=https://github.com/godotengine/godot-builds/releases/download/4.6-stable
+          curl -fL --retry 3 "$BASE/Godot_v4.6-stable_export_templates.tpz" -o /tmp/tamu3d-templates.tpz
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.6.stable" /tmp/tamu3d-templates
+          unzip -q /tmp/tamu3d-templates.tpz -d /tmp/tamu3d-templates
+          cp /tmp/tamu3d-templates/templates/* "$HOME/.local/share/godot/export_templates/4.6.stable/"
+          test -s "$HOME/.local/share/godot/export_templates/4.6.stable/android_debug.apk"
+
+      - name: Create isolated 3D Android project without original TAMU gameplay
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile scripts/tamu_3d_android_build.py
+          python3 scripts/tamu_3d_android_build.py --prepare
+          test -s build/tamu-3d-android-src/addons/terrain_3d/bin/libterrain.android.debug.arm64.so
+          test -s build/tamu-3d-android-src/assets/tamu_3d/forest.glb
+          test ! -e build/tamu-3d-android-src/scripts/main.gd
+
+      - name: Import isolated 3D project and verify main scene
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --kill-after=5s 180s godot --headless --editor --path build/tamu-3d-android-src --import --quit 2>&1 | tee tamu-3d-android-import.log
+          if grep -E 'SCRIPT ERROR:|Parse Error:|ERROR:.*Failed loading GDExtension' tamu-3d-android-import.log; then exit 1; fi
+          timeout --kill-after=5s 60s godot --headless --path build/tamu-3d-android-src --quit-after 20 2>&1 | tee tamu-3d-android-preview-boot.log
+          grep -q 'TAMU3D_STACK_READY' tamu-3d-android-preview-boot.log
+          if grep -E 'SCRIPT ERROR:|Parse Error:|TAMU3D_.*MISSING|TAMU3D_.*FAILED' tamu-3d-android-preview-boot.log; then exit 1; fi
+
+      - name: Configure Android SDK and temporary debug signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.android"
+          keytool -genkeypair -noprompt -keystore "$HOME/.android/tamu3d-debug.keystore" \
+            -storepass android -keypass android -alias androiddebugkey -keyalg RSA \
+            -keysize 2048 -validity 3650 -dname "CN=TAMU 3D Test,OU=CI,O=TAMU,C=TR"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$HOME/.android/tamu3d-debug.keystore" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+
+      - name: Export self-contained Android ARM64 APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/tamu3d-android-settings.gd <<'GD'
+          extends SceneTree
+          func _initialize() -> void:
+              var settings = EditorInterface.get_editor_settings()
+              settings.set_setting("export/android/android_sdk_path", OS.get_environment("ANDROID_HOME"))
+              settings.set_setting("export/android/java_sdk_path", OS.get_environment("JAVA_HOME"))
+              quit()
+          GD
+          timeout --kill-after=5s 60s godot --headless --editor --path build/tamu-3d-android-src \
+            --script /tmp/tamu3d-android-settings.gd 2>&1 | tee tamu-3d-android-settings.log
+          mkdir -p build/tamu-3d-android-release
+          timeout --kill-after=5s 300s godot --headless --path build/tamu-3d-android-src \
+            --export-debug Android "$GITHUB_WORKSPACE/build/tamu-3d-android-release/TAMU_3D_Preview_ARM64.apk" \
+            2>&1 | tee tamu-3d-android-export.log
+          python3 - <<'PY'
+          import hashlib, zipfile
+          from pathlib import Path
+          p=Path("build/tamu-3d-android-release/TAMU_3D_Preview_ARM64.apk")
+          assert p.is_file() and p.stat().st_size>1000000, "APK missing"
+          with zipfile.ZipFile(p) as z:
+              assert z.testzip() is None, "APK ZIP CRC failed"
+              names=z.namelist()
+              native=[n for n in names if n.startswith("lib/arm64-v8a/") and "terrain" in n.lower() and n.endswith(".so")]
+              engine=[n for n in names if n.startswith("lib/arm64-v8a/") and "godot" in n.lower() and n.endswith(".so")]
+              manifest=[n for n in names if n.endswith(".gdextension") and "terrain" in n.lower()]
+              assert native, "Terrain3D ARM64 extension missing from APK"
+              assert engine, "Godot ARM64 engine missing from APK"
+              assert manifest, "Terrain3D GDExtension manifest missing from APK"
+              assert "AndroidManifest.xml" in names
+              print("TAMU3D_ANDROID_APK_OK bytes=%d native=%s engine=%s" %
+                    (p.stat().st_size,native,engine))
+          print("TAMU3D_ANDROID_APK_SHA256",hashlib.sha256(p.read_bytes()).hexdigest())
+          PY
+          sha256sum build/tamu-3d-android-release/TAMU_3D_Preview_ARM64.apk \
+            > build/tamu-3d-android-release/SHA256SUMS
+
+      - name: Upload installable TAMU 3D Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TAMU-3D-Preview-Android-ARM64-APK
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            build/tamu-3d-android-release/TAMU_3D_Preview_ARM64.apk
+            build/tamu-3d-android-release/SHA256SUMS
+
+      - name: Upload verified runnable 3D add-ons and CC0 models
+        uses: actions/upload-artifact@v4
+        with:
+          name: tamu-3d-stack-godot46-pinned
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            addons/terrain_3d/
+            addons/asset_placer/
+            addons/phantom_camera/
+            addons/gloot/
+            addons/JehenoThirdPersonController/
+            assets/tamu_3d/
+            scripts/tamu_3d_pilot.gd
+            scripts/tamu_3d_smoke.gd
+            scenes/tamu_3d_pilot.tscn
+
+      - name: Upload native evidence separately
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tamu-3d-stack-native-evidence
+          if-no-files-found: warn
+          retention-days: 30
+          path: |
+            tamu-3d-import.log
+            tamu-3d-native.log
+            tamu-3d-android-import.log
+            tamu-3d-android-preview-boot.log
+            tamu-3d-android-settings.log
+            tamu-3d-android-export.log
+            assets/tamu_3d/vendor_manifest.json

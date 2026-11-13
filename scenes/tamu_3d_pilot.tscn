@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/tamu_3d_pilot.gd" id="1_tamu3d"]
+
+[node name="TAMU_3D_Pilot" type="Node3D"]
+script = ExtResource("1_tamu3d")
