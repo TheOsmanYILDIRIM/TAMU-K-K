@@ -11,6 +11,20 @@ var ready_verified := false
 var system_status: Dictionary = {}
 
 
+func _enter_tree() -> void:
+    # Phantom Camera installs this autoload via its editor plugin. Our isolated
+    # pilot must also work without changing the existing 2.5D project.godot.
+    if Engine.has_singleton("PhantomCameraManager"):
+        return
+    var manager_script: Script = load("res://addons/phantom_camera/scripts/managers/phantom_camera_manager.gd")
+    if manager_script == null:
+        push_error("TAMU3D_PHANTOM_MANAGER_SCRIPT_MISSING")
+        return
+    var manager: Node = manager_script.new()
+    manager.name = "PhantomCameraManager"
+    get_tree().root.add_child(manager)
+
+
 func _ready() -> void:
     if not ClassDB.class_exists("Terrain3D") or not ClassDB.class_exists("Terrain3DTextureAsset"):
         push_error("TAMU3D_TERRAIN3D_NATIVE_MISSING")
