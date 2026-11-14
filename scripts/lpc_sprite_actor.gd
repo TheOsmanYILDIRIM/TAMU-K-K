@@ -4,7 +4,7 @@ class_name LPCSpriteActor
 # Import an attributed sheet separately. Body and equipment sheets can be layered.
 @export var sheet_paths: PackedStringArray = PackedStringArray()
 @export var frame_size := Vector2i(64, 64)
-@export var walk_first_row := 8
+@export var walk_first_row := 0
 @export var walk_frame_count := 9
 @export var walk_fps := 8.0
 @export var idle_frame := 0
@@ -57,7 +57,8 @@ func set_motion(world_velocity: Vector2, delta: float) -> void:
     _draw_current_frame()
 
 func _direction_offset() -> int:
-    # Classic LPC animation rows: up, left, down, right.
+    # Direction rows in a per-animation walk.png: north, west, south, east.
+    # For a combined sheet set walk_first_row to the actual row (e.g. 7).
     if facing == Vector2.UP:
         return 0
     if facing == Vector2.LEFT:
