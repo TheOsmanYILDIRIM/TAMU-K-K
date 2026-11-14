@@ -1,0 +1,200 @@
+name: TAMU topdown authored gameplay smoke
+on:
+  push:
+    branches: [experiment/tamu-topdown-lpc-20261114]
+    paths: [.github/workflows/tamu-topdown-authored-smoke.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 32
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4.6
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=https://github.com/godotengine/godot-builds/releases/download/4.6-stable
+          curl -fL --retry 3 "$BASE/Godot_v4.6-stable_linux.x86_64.zip" -o /tmp/tamu-godot.zip
+          unzip -q /tmp/tamu-godot.zip -d /tmp
+          sudo install -m 755 /tmp/Godot_v4.6-stable_linux.x86_64 /usr/local/bin/godot
+          godot --headless --version
+      - name: Recover exact TAMU binary terrain and texture atlas
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/tamu-canonical assets/terrain25d chunks
+          gh run download 41234831527 --repo "${{ github.repository }}" --name tamu-authored-r2-binary-cache --dir /tmp/tamu-canonical
+          python3 - <<'PY'
+          import zipfile, zlib, pathlib, json, hashlib
+          root=pathlib.Path('/tmp/tamu-canonical')
+          archive=next(root.rglob('tamu-authored-compiled.love'))
+          z=zipfile.ZipFile(archive)
+          out=pathlib.Path('assets/terrain25d')
+          for name in ('atlas_00.png','atlas_01.png','manifest.json'):
+              (out/name).write_bytes(z.read('assets/terrain25d/'+name))
+          parts=sorted(pathlib.Path('game/love/assets/terrain25d').glob('atlas_objects_hires.part[0-9][0-9]'))
+          assert len(parts)==8, 'TAMU_HIRES_PART_COUNT_INVALID'
+          hires=b''.join(p.read_bytes() for p in parts)
+          assert hashlib.sha256(hires).hexdigest()=='eaa7573e51d18d28f7dacb0848476b03724cb71dbdae8b41063dca4e1bb4c625', 'TAMU_HIRES_ATLAS_SHA_MISMATCH'
+          assert hires[:8]==b'\\x89PNG\\r\\n\\x1a\\n'.decode('unicode_escape').encode('latin1'), 'TAMU_HIRES_ATLAS_BAD_PNG'
+          (out/'atlas_objects_hires.png').write_bytes(hires)
+          print('TAMU_HIRES_ATLAS_SHA_OK bytes=',len(hires))
+          shadows=pathlib.Path('assets/terrain25d/static_shadow')
+          shadows.mkdir(parents=True,exist_ok=True)
+          for n in ('objects_shadow_manifest.json','shadows_12.png'):
+              (shadows/n).write_bytes(z.read('assets/terrain25d/static_shadow/'+n))
+          binaries=next(root.rglob('c_0_0.meta.json')).parent
+          count=0
+          index=[]
+          for meta_path in sorted(binaries.glob('c_*.meta.json')):
+              stem=meta_path.name[:-10]
+              meta=json.loads(meta_path.read_text())
+              raw=zlib.decompress((binaries/(stem+'.verts.z')).read_bytes())
+              assert len(raw)==20*sum(x['count'] for x in meta['meshes'])
+              pathlib.Path('chunks',stem+'.verts').write_bytes(raw)
+              pathlib.Path('chunks',stem+'.json').write_text(json.dumps(meta,separators=(',',':')))
+              index.append(stem)
+              count+=1
+          assert count>=100, f'Expected authored cache >100 chunks, got {count}'
+          world=json.loads(z.read('assets/worldbuild/osman_overworld.v2.json'))
+          bounds=world['bounds']
+          assert (bounds['max_x']-bounds['min_x'])//256==128
+          assert (bounds['max_y']-bounds['min_y'])//256==128
+          pathlib.Path('chunks/index.json').write_text(json.dumps({'available':index,'bounds':bounds},separators=(',',':')))
+          print('TAMU_EXACT_ASSET_GATE_OK chunks=', count,'design_grid=128x128')
+          PY
+      - name: Export canonical R2 ecology objects using original Lua world logic
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lua5.4 >/dev/null
+          mkdir -p /tmp/tamu-love
+          unzip -q "$(find /tmp/tamu-canonical -name tamu-authored-compiled.love -print -quit)" -d /tmp/tamu-love
+          mkdir -p /tmp/tamu-love/chunks
+          cp game/love/tests/export_godot_population.lua /tmp/tamu-love/tests/export_godot_population.lua
+          (cd /tmp/tamu-love && lua5.4 tests/export_godot_population.lua)
+          cp /tmp/tamu-love/chunks/r2_objects.json chunks/r2_objects.json
+          python3 - <<'PY'
+          import json
+          data=json.load(open('chunks/r2_objects.json'))
+          ids=[o['id'] for o in data['objects']]
+          assert len(ids)==len(set(ids)) and len(ids)>100
+          assert all(-1024<=o['x']<2304 and -1536<=o['y']<1536 for o in data['objects'])
+          print('TAMU_R2_OBJECT_PARITY_OK',len(ids))
+          PY
+      - name: Verify exact authored source and generate build-only hash manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,pathlib
+          root=pathlib.Path('chunks')
+          idx=json.loads((root/'index.json').read_text())
+          objects=json.loads((root/'r2_objects.json').read_text())
+          stems=idx['available']
+          assert len(stems)==156 and len(set(stems))==156
+          ids=[o['id'] for o in objects['objects']]
+          assert len(ids)==832 and len(set(ids))==832
+          sha=lambda p:hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+          entries={}
+          for stem in stems:
+              raw=root/(stem+'.verts')
+              meta=root/(stem+'.json')
+              info=json.loads(meta.read_text())
+              assert raw.stat().st_size==sum(int(s['count']) for s in info['meshes'])*20
+              entries[stem]={'verts':sha(raw),'meta':sha(meta)}
+          asset_paths=['assets/terrain25d/atlas_00.png',
+                       'assets/terrain25d/atlas_01.png',
+                       'assets/terrain25d/manifest.json']
+          integrity={'source_run_id':41234831527,'index_sha256':sha(root/'index.json'),
+                     'objects_sha256':sha(root/'r2_objects.json'),
+                     'chunks':entries,'assets':{name:sha(name) for name in asset_paths}}
+          (root/'source_integrity.json').write_text(json.dumps(integrity,sort_keys=True,separators=(',',':')))
+          assert len(json.loads((root/'source_integrity.json').read_text())['chunks'])==156
+          print('TAMU_SOURCE_INTEGRITY_OK chunks=156 objects=832 origin_run=41234831527')
+          PY
+      - name: Bake original terrain into one complete authored world
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,hashlib,pathlib
+          root=pathlib.Path('chunks')
+          idx=json.loads((root/'index.json').read_text())
+          integrity=json.loads((root/'source_integrity.json').read_text())
+          assert len(idx['available'])==156 and integrity['source_run_id']==41234831527
+          layers={0:bytearray(),1:bytearray()}
+          total=0
+          for stem in idx['available']:
+              meta=json.loads((root/(stem+'.json')).read_text())
+              raw=(root/(stem+'.verts')).read_bytes()
+              assert hashlib.sha256(raw).hexdigest()==integrity['chunks'][stem]['verts']
+              offset=0
+              for surf in meta['meshes']:
+                  count=int(surf['count'])
+                  n=count*20
+                  part=raw[offset:offset+n]
+                  assert count%3==0 and len(part)==n
+                  z=0 if str(surf['key']).startswith('!') else 1
+                  layers[z].extend(part)
+                  offset+=n
+                  total+=count
+              assert offset==len(raw),stem
+          manifest={'schema':'tamu.region.terrain.v1','region_id':'fisilti_ormani',
+                    'source_run_id':41234831527,'source_chunks':156,'vertices':total,'layers':[]}
+          for z in (0,1):
+              blob=bytes(layers[z])
+              assert len(blob)>0 and len(blob)%60==0
+              (root/('merged_layer_%d.verts'%z)).write_bytes(blob)
+              manifest['layers'].append({'z':z,'file':'merged_layer_%d.verts'%z,
+                                         'count':len(blob)//20,'sha256':hashlib.sha256(blob).hexdigest()})
+          (root/'merged_terrain.json').write_text(json.dumps(manifest,separators=(',',':')))
+          assert sum(x['count'] for x in manifest['layers'])==total
+          assert manifest['region_id']=='fisilti_ormani' and manifest['source_chunks']==156
+          assert len({x['z'] for x in manifest['layers']})==2
+          print('TAMU_REGION_CHUNK_CONTRACT_OK regions=1 source_cells=156')
+          print('TAMU_MERGE_SOURCE_PARITY_OK original_chunks=156 layers=2 vertices=',total)
+          PY
+      - name: Stage credited LPC body animations for runtime proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p assets/lpc/body/bodies/male
+          for action in walk idle slash spellcast; do
+            source="third_party/lpc-source/spritesheets/body/bodies/male/$action.png"
+            if test -s "$source"; then
+              cp "$source" "assets/lpc/body/bodies/male/$action.png"
+            fi
+          done
+          test -s assets/lpc/body/bodies/male/walk.png
+          cp third_party/lpc-source/CREDITS.csv assets/lpc/CREDITS.txt
+      - name: Native Godot 4.6 top-down gameplay and screenshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb >/dev/null
+          mkdir -p screenshots
+          timeout --kill-after=3s 150s godot --headless --editor --path . --import --quit > screenshots/topdown-import.log 2>&1 || { tail -100 screenshots/topdown-import.log; exit 1; }
+          timeout --kill-after=3s 45s godot --headless --path . --script res://scripts/topdown_game_ci.gd > screenshots/topdown-contract.log 2>&1 || { cat screenshots/topdown-contract.log; exit 1; }
+          grep -q TAMU_TOPDOWN_LPC_GAMEPLAY_CONTRACT_OK screenshots/topdown-contract.log
+          XDG_DATA_HOME="$RUNNER_TEMP/tamu-topdown-data" timeout --kill-after=5s 90s xvfb-run -a -s '-screen 0 720x1280x24' godot --path . --rendering-method gl_compatibility --resolution 720x1280 --script res://scripts/topdown_visual_ci.gd > screenshots/topdown-visual.log 2>&1 || { cat screenshots/topdown-visual.log; exit 1; }
+          grep -q TAMU_TOPDOWN_AUTHORED_SCENE_OK screenshots/topdown-visual.log
+          test -s screenshots/topdown-gameplay.png
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_TOPDOWN_.*FAILED' screenshots/topdown-*.log; then exit 1; fi
+          echo TAMU_TOPDOWN_NATIVE_VISUAL_ACCEPTED
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tamu-topdown-visual-evidence
+          path: screenshots/topdown-*
+          if-no-files-found: warn
