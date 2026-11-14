@@ -43,7 +43,7 @@ func _ready() -> void:
     source = WorldSource.new()
     authority = R2Authority.new()
     gameplay = GameplaySession.new()
-    if gameplay.catalog == null or not source.initialize() or not authority.initialize():
+    if gameplay.catalog == null or gameplay.catalog.definitions.is_empty() or not source.initialize() or not authority.initialize():
         push_error("TAMU_TOPDOWN_SOURCE_INVALID: original R2 assets are required")
         _make_failure_overlay("R2 kaynak/veri eksik. Kaydedilmiş dünya değiştirilmedi.")
         return
@@ -261,6 +261,7 @@ func _harvest() -> void:
     status.text = "TOPLANIYOR..." if result.get("status") == "started" else "TOPLA: " + str(result.get("status"))
     if result.get("status") == "started":
         action_hold = 0.5
+        actor.play_action("slash", 0.65)
 
 func _pickup_nearest() -> void:
     var closest := ""
@@ -284,14 +285,19 @@ func _pickup(id: String) -> void:
 func _begin_craft(recipe_id: String) -> Dictionary:
     var result: Dictionary = gameplay.begin_craft(_command("topdown_craft"), recipe_id)
     status.text = "ÜRETİM BAŞLADI" if result.get("ok", false) else "ÜRETİM: " + str(result.get("status", "failed"))
+    if result.get("status") == "started":
+        actor.play_action("spellcast", 0.5)
     return result
 
 func _safe_move(next_position: Vector2) -> bool:
     if not bool(_terrain(next_position).get("walkable", false)):
         return false
     var radius := PLAYER_RADIUS
-    for box in gameplay.movement_obstacles(next_position.x - radius,
-            next_position.y - radius, next_position.x + radius, next_position.y + radius):
+    var blocks: Array = authority.obstacles(next_position.x - radius,
+        next_position.y - radius, next_position.x + radius, next_position.y + radius)
+    blocks.append_array(gameplay.movement_obstacles(next_position.x - radius,
+        next_position.y - radius, next_position.x + radius, next_position.y + radius))
+    for box in blocks:
         var rect := Rect2(Vector2(float(box["x"]), float(box["y"])),
             Vector2(float(box["w"]), float(box["h"]))).grow(radius)
         if rect.has_point(next_position):
@@ -395,8 +401,8 @@ func _make_ui() -> void:
         b.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
         b.position = part["offset"]
         b.focus_mode = Control.FOCUS_NONE
-        b.button_down.connect(func(): movement_buttons[key] = true)
-        b.button_up.connect(func(): movement_buttons[key] = false)
+        b.button_down.connect(_touch_direction.bind(key, true))
+        b.button_up.connect(_touch_direction.bind(key, false))
         controls.add_child(b)
 
 func _make_button(parent: Control, name: String, offset: Vector2,
@@ -415,3 +421,6 @@ func _make_button(parent: Control, name: String, offset: Vector2,
     b.add_theme_font_size_override("font_size", 20)
     b.pressed.connect(callback)
     parent.add_child(b)
+
+func _touch_direction(key: String, active: bool) -> void:
+    movement_buttons[key] = active
