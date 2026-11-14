@@ -8,6 +8,7 @@ const WorldSource = preload("res://scripts/world_source.gd")
 const WorldIdentity = preload("res://scripts/world_identity.gd")
 const LPCActor = preload("res://scripts/lpc_sprite_actor.gd")
 const CraftingBook = preload("res://scripts/crafting_book_ui.gd")
+const ProductionSandboxUI = preload("res://scripts/production_sandbox_ui.gd")
 const TERRAIN_MANIFEST := "res://game/love/assets/terrain25d/manifest.json"
 const TERRAIN_ATLAS := "res://assets/terrain25d/atlas_00.png"
 const TILE := 64.0
@@ -32,6 +33,7 @@ var texture_cache: Dictionary = {}
 var buttons_layer: CanvasLayer
 var status: Label
 var book: CanvasLayer
+var workshop: CanvasLayer
 var command_sequence := 0
 var movement_buttons: Dictionary = {}
 var last_direction := Vector2.DOWN
@@ -221,7 +223,7 @@ func _draw() -> void:
             draw_circle(p, 3.0, Color("#fff3ae"))
 
 func _input(event: InputEvent) -> void:
-    if not world_ready or (book != null and book.is_open()):
+    if not world_ready or (book != null and book.is_open()) or (workshop != null and workshop.visible):
         return
     if event is InputEventScreenTouch and event.pressed:
         _select_at_screen(event.position)
@@ -341,7 +343,7 @@ func _process(delta: float) -> void:
                 "up": touch.y -= 1.0
                 "down": touch.y += 1.0
     var direction := (manual + touch).limit_length(1.0)
-    if book != null and book.is_open():
+    if (book != null and book.is_open()) or (workshop != null and workshop.visible):
         direction = Vector2.ZERO
     var moving := Vector2.ZERO
     var step := direction * actor_speed * minf(delta, 0.1)
@@ -414,6 +416,8 @@ func _make_ui() -> void:
         Vector2(174, 84), func(): book.open_inventory())
     _make_button(controls, "KUR", Vector2(-196, -479),
         Vector2(174, 84), Callable(self, "_place_workbench"))
+    _make_button(controls, "ATÖLYE", Vector2(-196, -576),
+        Vector2(174, 84), Callable(self, "_open_workshop"))
     var pad := [
         {"key": "up", "name": "▲", "offset": Vector2(104, -275)},
         {"key": "left", "name": "◀", "offset": Vector2(28, -195)},
@@ -492,3 +496,19 @@ func _sync_equipment() -> void:
         return
     if actor.set_layers(layers):
         appearance_signature = signature
+
+func _open_workshop() -> void:
+    # Reuses the established self-contained machinery/farming prototype.
+    # Its own UI labels state that its resources are session-only.
+    if workshop == null:
+        workshop = CanvasLayer.new()
+        workshop.layer = 150
+        workshop.name = "TAMUWorkshopDemo"
+        add_child(workshop)
+        var panel := ProductionSandboxUI.new()
+        panel.name = "Workshop"
+        panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+        panel.closed.connect(func() -> void: workshop.visible = false)
+        workshop.add_child(panel)
+    workshop.visible = true
+    status.text = "ATÖLYE: OTURUMLUK ÜRETİM/TARLA DEMOSU"
