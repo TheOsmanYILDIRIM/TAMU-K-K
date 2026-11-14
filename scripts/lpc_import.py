@@ -59,7 +59,7 @@ def catalog(copy_all: bool) -> None:
     # Full artist catalog stays in external checkout by default: importing every
     # artwork file into res:// would be expensive on Android.
     source = checkout("ULPC", SOURCE_URL, SOURCE_SHA,
-                      ["spritesheets", "sheet_definitions", "CREDITS.csv", "README.md"])
+                      ["spritesheets", "sheet_definitions"])
     sprites = source / "spritesheets"
     if not sprites.is_dir():
         raise RuntimeError("Pinned source does not contain spritesheets/")
