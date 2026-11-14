@@ -1,0 +1,136 @@
+name: TAMU top-down LPC runtime asset and contract
+
+on:
+  push:
+    branches: [experiment/tamu-topdown-lpc-20261114]
+    paths:
+      - .github/workflows/tamu-topdown-lpc.yml
+      - scripts/topdown_game.gd
+      - scripts/topdown_game_ci.gd
+      - scripts/lpc_sprite_actor.gd
+      - scenes/topdown.tscn
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tamu-topdown-lpc-runtime
+  cancel-in-progress: false
+
+jobs:
+  validate_and_publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: experiment/tamu-topdown-lpc-20261114
+          persist-credentials: true
+
+      - name: Stage selected 64px LPC layers from complete Git source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s third_party/lpc-source/CREDITS.csv
+          test -s third_party/lpc-source/spritesheets/body/bodies/male/walk.png
+          mkdir -p assets/lpc
+          node <<'NODE'
+          const fs=require('node:fs');
+          const path=require('node:path');
+          const root='third_party/lpc-source/spritesheets';
+          const dst='assets/lpc';
+          let candidates=[];
+          const walk=(dir)=>{
+            for(const entry of fs.readdirSync(dir,{withFileTypes:true})){
+              const p=path.join(dir,entry.name);
+              if(entry.isDirectory()) walk(p);
+              else if(entry.name==='walk.png'){
+                const buf=fs.readFileSync(p);
+                if(buf.length<24||buf.subarray(0,8).toString('hex')!=='89504e470d0a1a0a') continue;
+                const width=buf.readUInt32BE(16),height=buf.readUInt32BE(20);
+                const relative=path.relative(root,p).split(path.sep).join('/');
+                candidates.push({relative,width,height,compatible:width===576&&height===256});
+              }
+            }
+          };
+          walk(root);
+          candidates.sort((a,b)=>a.relative.localeCompare(b.relative));
+          const used={}; let selected=0;
+          // Body source is mandatory. Only selected character/equipment layers enter Android assets.
+          for(const row of candidates){
+            const category=row.relative.split('/')[0];
+            const limit=(row.relative==='body/bodies/male/walk.png')?1000:12;
+            if(!row.compatible || (used[category]||0)>=limit) continue;
+            const srcDir=path.dirname(path.join(root,row.relative));
+            const destDir=path.dirname(path.join(dst,row.relative));
+            fs.mkdirSync(destDir,{recursive:true});
+            for(const action of ['walk','idle','slash','spellcast','thrust','shoot']){
+              const file=path.join(srcDir,action+'.png');
+              if(!fs.existsSync(file))continue;
+              const out=path.join(destDir,action+'.png');
+              const data=fs.readFileSync(file);
+              if(data.length<24 || data.subarray(0,8).toString('hex')!=='89504e470d0a1a0a')continue;
+              // 64px per frame, four directions; excludes oversize attack layouts.
+              if(data.readUInt32BE(16)%64!==0 || data.readUInt32BE(20)!==256)continue;
+              fs.copyFileSync(file,out);
+            }
+            used[category]=(used[category]||0)+1;
+            row.runtime_path='res://assets/lpc/'+row.relative;
+            selected++;
+          }
+          const expected=path.join(dst,'body/bodies/male/walk.png');
+          if(!fs.existsSync(expected)) throw Error('Expected LPC male body unavailable');
+          fs.copyFileSync('third_party/lpc-source/CREDITS.csv',path.join(dst,'CREDITS.csv'));
+          const report={source_commit:fs.readFileSync('third_party/lpc-source/UPSTREAM_COMMIT','utf8').trim(),
+            licensed_art_credits:'res://assets/lpc/CREDITS.csv',compatible_layers:selected,
+            complete_library_entries:candidates.length,source:'third_party/lpc-source/spritesheets',
+            entries:candidates};
+          fs.writeFileSync(path.join(dst,'catalog.json'),JSON.stringify(report,null,2)+'\n');
+          console.log('TAMU_LPC_RUNTIME_ASSETS_OK',JSON.stringify({compatible_layers:selected,library_walk_entries:candidates.length,groups:used}));
+          NODE
+          test -s assets/lpc/body/bodies/male/walk.png
+          test -s assets/lpc/catalog.json
+          du -sh assets/lpc/
+
+      - name: Import and native check with Godot 4.6
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=https://github.com/godotengine/godot-builds/releases/download/4.6-stable
+          curl -fL --retry 3 "$BASE/Godot_v4.6-stable_linux.x86_64.zip" -o /tmp/tamu-topdown-godot.zip
+          unzip -q /tmp/tamu-topdown-godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.6-stable_linux.x86_64
+          sudo install /tmp/Godot_v4.6-stable_linux.x86_64 /usr/local/bin/godot
+          godot --headless --version
+          timeout --kill-after=3s 270s godot --headless --editor --path . --import --quit > topdown-import.log 2>&1 || { tail -100 topdown-import.log; exit 1; }
+          timeout --kill-after=3s 35s godot --headless --path . --check-only --script res://scripts/topdown_game.gd > topdown-parse.log 2>&1 || { cat topdown-parse.log; exit 1; }
+          timeout --kill-after=3s 45s godot --headless --path . --script res://scripts/topdown_game_ci.gd > topdown-contract.log 2>&1 || { cat topdown-contract.log; exit 1; }
+          cat topdown-contract.log
+          grep -q TAMU_TOPDOWN_LPC_GAMEPLAY_CONTRACT_OK topdown-contract.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_TOPDOWN_.*FAILED' topdown-parse.log topdown-contract.log; then exit 1; fi
+
+      - name: Commit selected runtime artwork with credits
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/lpc
+          if git diff --cached --quiet; then
+            echo TAMU_LPC_RUNTIME_ALREADY_PUBLISHED
+            exit 0
+          fi
+          git commit -m 'assets(tamu): publish selected LPC runtime layers and attributed catalog'
+          git push origin HEAD:refs/heads/experiment/tamu-topdown-lpc-20261114
+
+      - name: Test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tamu-topdown-lpc-native-check
+          path: |
+            topdown-import.log
+            topdown-parse.log
+            topdown-contract.log
+          if-no-files-found: warn
