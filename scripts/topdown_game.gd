@@ -5,6 +5,7 @@ extends Node2D
 const GameplaySession = preload("res://scripts/gameplay_session.gd")
 const R2Authority = preload("res://scripts/r2_authority.gd")
 const WorldSource = preload("res://scripts/world_source.gd")
+const WorldIdentity = preload("res://scripts/world_identity.gd")
 const LPCActor = preload("res://scripts/lpc_sprite_actor.gd")
 const CraftingBook = preload("res://scripts/crafting_book_ui.gd")
 const TERRAIN_MANIFEST := "res://game/love/assets/terrain25d/manifest.json"
@@ -37,6 +38,7 @@ var last_direction := Vector2.DOWN
 var action_hold := 0.0
 var terrain_rebuild_at := Vector2(INF, INF)
 var world_ready := false
+var appearance_signature := ""
 
 func _ready() -> void:
     texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -48,6 +50,19 @@ func _ready() -> void:
         _make_failure_overlay("R2 kaynak/veri eksik. Kaydedilmiş dünya değiştirilmedi.")
         return
     available_chunks = source.available.duplicate()
+    gameplay.enable_ground_loot()
+    var identity: Dictionary = WorldIdentity.load_or_create()
+    if not bool(identity.get("ok", false)):
+        push_error("TAMU_TOPDOWN_WORLD_IDENTITY_BLOCKED " + str(identity.get("status", "")))
+        _make_failure_overlay("Dünya kimliği doğrulanamadı. Kayıt korunuyor.")
+        return
+    var durable: Dictionary = gameplay.enable_durable("game", str(identity["id"]),
+        str(authority.region_id), Callable(authority, "surface"), Callable(authority, "obstacles"))
+    if not bool(durable.get("ok", false)):
+        push_error("TAMU_TOPDOWN_STAGE6_BLOCKED " + str(durable.get("status", "")))
+        _make_failure_overlay("Stage6 kayıt uyumsuz: " + str(durable.get("status", "")))
+        return
+    authority.depleted_ids = gameplay.depleted.duplicate(true)
     _load_objects()
     _load_ground_texture()
     var objects_layer := Node2D.new()
@@ -61,6 +76,7 @@ func _ready() -> void:
     ])
     objects_layer.add_child(actor)
     actor.position = actor_world
+    _sync_equipment()
     if actor.sprites.is_empty():
         push_warning("TAMU_LPC_PLAYER_SHEET_MISSING")
     camera = Camera2D.new()
@@ -74,7 +90,6 @@ func _ready() -> void:
     book.name = "CanonicalCraftingBook"
     add_child(book)
     book.setup(gameplay, Callable(self, "_begin_craft"))
-    gameplay.enable_ground_loot()
     world_ready = true
     queue_redraw()
     print("TAMU_TOPDOWN_GAMEPLAY_READY region=", authority.region_id,
@@ -90,7 +105,7 @@ func _load_objects() -> void:
             continue
         var item := {"id": str(id), "kind": kind,
             "position": Vector2(float(record["x"]), float(record["y"])),
-            "radius": float(record["radius"]), "collected": false}
+            "radius": float(record["radius"]), "collected": gameplay.depleted.has(str(id))}
         objects.append(item)
         object_index[str(id)] = item
     if objects.is_empty():
@@ -193,6 +208,12 @@ func _draw() -> void:
             draw_arc(p, r - 3.0, 0, TAU, 12, Color("#abb0a2"), 2.0)
         if not selection.is_empty() and selection["id"] == item["id"]:
             draw_arc(p, r + 9, 0, TAU, 24, Color.GOLD, 3.0)
+    for id in gameplay.building.placed:
+        var placed: Dictionary = gameplay.building.placed[id]
+        var box: Rect2 = placed["box"]
+        if box.intersects(bounds):
+            draw_rect(box, Color("#8b6b49"), true)
+            draw_rect(box.grow(-3), Color("#c4a16c"), false, 2.0)
     for drop in gameplay.pending_ground_loot():
         var p := Vector2(float(drop["x"]), float(drop["y"]))
         if bounds.has_point(p):
@@ -280,10 +301,13 @@ func _pickup_nearest() -> void:
 func _pickup(id: String) -> void:
     var result: Dictionary = gameplay.pickup_ground_loot(id, actor_world, _command("topdown_pickup"))
     status.text = "ALINDI: " + str(result.get("item_id", "")) if result.get("ok", false) else "ALMA: " + str(result.get("status", "failed"))
+    if bool(result.get("ok", false)):
+        _sync_equipment()
     queue_redraw()
 
 func _begin_craft(recipe_id: String) -> Dictionary:
-    var result: Dictionary = gameplay.begin_craft(_command("topdown_craft"), recipe_id)
+    var stations: Array = gameplay.building.station_tags_near(actor_world, 48.0)
+    var result: Dictionary = gameplay.begin_craft(_command("topdown_craft"), recipe_id, stations)
     status.text = "ÜRETİM BAŞLADI" if result.get("ok", false) else "ÜRETİM: " + str(result.get("status", "failed"))
     if result.get("status") == "started":
         actor.play_action("spellcast", 0.5)
@@ -322,6 +346,7 @@ func _process(delta: float) -> void:
     var moving := Vector2.ZERO
     var step := direction * actor_speed * minf(delta, 0.1)
     if step != Vector2.ZERO:
+        last_direction = direction.normalized()
         if _safe_move(actor_world + step):
             actor_world += step
             moving = direction
@@ -347,6 +372,7 @@ func _process(delta: float) -> void:
                 status.text = "TOPLANDI — EŞYAYI AL"
         elif str(change.get("type", "")) == "CraftCompleted":
             status.text = "ÜRETİM TAMAMLANDI: " + str(change.get("recipe_id", ""))
+            _sync_equipment()
     # Small visible sample only. Avoid rebuilding static R2 on every frame.
     if actor_world.distance_squared_to(terrain_rebuild_at) > 16.0 * 16.0:
         terrain_rebuild_at = actor_world
@@ -386,6 +412,8 @@ func _make_ui() -> void:
         Vector2(174, 84), func(): book.open_library())
     _make_button(controls, "ÇANTA", Vector2(-196, -382),
         Vector2(174, 84), func(): book.open_inventory())
+    _make_button(controls, "KUR", Vector2(-196, -479),
+        Vector2(174, 84), Callable(self, "_place_workbench"))
     var pad := [
         {"key": "up", "name": "▲", "offset": Vector2(104, -275)},
         {"key": "left", "name": "◀", "offset": Vector2(28, -195)},
@@ -424,3 +452,43 @@ func _make_button(parent: Control, name: String, offset: Vector2,
 
 func _touch_direction(key: String, active: bool) -> void:
     movement_buttons[key] = active
+
+func _new_uuid4() -> String:
+    var bytes := Crypto.new().generate_random_bytes(16)
+    bytes[6] = (bytes[6] & 15) | 64
+    bytes[8] = (bytes[8] & 63) | 128
+    var value := bytes.hex_encode()
+    return "%s-%s-%s-%s-%s" % [
+        value.substr(0,8), value.substr(8,4), value.substr(12,4),
+        value.substr(16,4), value.substr(20,12)]
+
+func _place_workbench() -> void:
+    if not world_ready:
+        return
+    var placement := actor_world + last_direction.normalized() * 64.0
+    var result: Dictionary = gameplay.place_building(_command("topdown_place"),
+        _new_uuid4(), "core:workbench", placement, 0, actor_world, "core:player")
+    status.text = "TEZGÂH YERLEŞTİRİLDİ" if result.get("ok", false) else "KUR: " + str(result.get("status", "failed"))
+    if bool(result.get("ok", false)):
+        _sync_equipment()
+        queue_redraw()
+
+func _sync_equipment() -> void:
+    if actor == null or gameplay == null:
+        return
+    var layers := PackedStringArray(["res://assets/lpc/body/bodies/male/walk.png"])
+    # Optional item.visual.lpc_walk_path is purely a rendering hint.
+    # Unknown/unpackaged assets never grant an item or change gameplay authority.
+    for stack in gameplay.slots:
+        if not stack is Dictionary:
+            continue
+        var visual: Dictionary = gameplay.item_visual(str(stack.get("def_id", "")))
+        var art := str(visual.get("lpc_walk_path", ""))
+        if art.begins_with("res://assets/lpc/") and art.ends_with("/walk.png") and ResourceLoader.exists(art):
+            if not layers.has(art):
+                layers.append(art)
+    var signature := "|".join(layers)
+    if signature == appearance_signature:
+        return
+    if actor.set_layers(layers):
+        appearance_signature = signature
