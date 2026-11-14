@@ -1,0 +1,88 @@
+name: TAMU import complete pinned LPC library
+
+on:
+  push:
+    branches:
+      - experiment/tamu-topdown-lpc-20261114
+    paths:
+      - .github/workflows/lpc-full-import.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tamu-lpc-library-import
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout experimental game branch
+        uses: actions/checkout@v4
+        with:
+          ref: experiment/tamu-topdown-lpc-20261114
+          fetch-depth: 1
+          persist-credentials: true
+
+      - name: Download pinned LPC assets and Godot 4 plugin
+        shell: bash
+        run: |
+          set -euo pipefail
+          ULPC_SHA=04140673ec02906f8233523639733c83690df750
+          ADDON_SHA=abe214da0a71c55a295d42ef7ea64f11dcc69769
+          mkdir -p "$RUNNER_TEMP/tamu-lpc" third_party/lpc-source
+          cd "$RUNNER_TEMP/tamu-lpc"
+          git clone --filter=blob:none --no-checkout https://github.com/LiberatedPixelCup/Universal-LPC-Spritesheet-Character-Generator.git generator
+          git -C generator checkout --detach "$ULPC_SHA"
+          test "$(git -C generator rev-parse HEAD)" = "$ULPC_SHA"
+          test -d generator/spritesheets
+          test -s generator/CREDITS.csv
+          git clone --filter=blob:none --no-checkout https://github.com/alextrevisan/LPCAnimatedSprite2D.git addon
+          git -C addon checkout --detach "$ADDON_SHA"
+          test "$(git -C addon rev-parse HEAD)" = "$ADDON_SHA"
+          test -f addon/addons/LPCAnimatedSprite/plugin.cfg
+          cd "$GITHUB_WORKSPACE"
+          # Full source collection in Git, excluded from Godot importer.
+          cp -a "$RUNNER_TEMP/tamu-lpc/generator/spritesheets" third_party/lpc-source/
+          if [ -d "$RUNNER_TEMP/tamu-lpc/generator/sheet_definitions" ]; then
+            cp -a "$RUNNER_TEMP/tamu-lpc/generator/sheet_definitions" third_party/lpc-source/
+          fi
+          cp "$RUNNER_TEMP/tamu-lpc/generator/CREDITS.csv" third_party/lpc-source/
+          cp "$RUNNER_TEMP/tamu-lpc/generator/README.md" third_party/lpc-source/UPSTREAM_README.md
+          printf '%s\n' "$ULPC_SHA" > third_party/lpc-source/UPSTREAM_COMMIT
+          printf '%s\n' '# Full source art library is not a runtime asset directory.' > third_party/lpc-source/.gdignore
+          if [ ! -d addons/LPCAnimatedSprite ]; then
+            mkdir -p addons
+            cp -a "$RUNNER_TEMP/tamu-lpc/addon/addons/LPCAnimatedSprite" addons/
+          else
+            echo 'LPC addon exists; refusing overwrite' >&2
+            exit 1
+          fi
+          printf '%s\n' "$ADDON_SHA" > third_party/lpc-source/ADDON_COMMIT
+          test -s third_party/lpc-source/CREDITS.csv
+          test -f addons/LPCAnimatedSprite/plugin.cfg
+          echo "Sprites: $(find third_party/lpc-source/spritesheets -name '*.png' | wc -l)"
+          du -sh third_party/lpc-source addons/LPCAnimatedSprite
+
+      - name: Commit complete pinned library into experiment branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if find third_party/lpc-source addons/LPCAnimatedSprite -type f -size +99M | grep -q .; then
+            echo 'At least one file exceeds GitHub size limit' >&2
+            exit 1
+          fi
+          test -n "$(find third_party/lpc-source/spritesheets -type f -name '*.png' -print -quit)"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add third_party/lpc-source addons/LPCAnimatedSprite
+          if git diff --cached --quiet; then
+            echo 'Already present; no changes.'
+            exit 0
+          fi
+          git diff --cached --stat | tail -n 5
+          git commit -m 'assets(lpc): vendor full pinned LPC library and Godot addon with credits'
+          git push origin HEAD:refs/heads/experiment/tamu-topdown-lpc-20261114
