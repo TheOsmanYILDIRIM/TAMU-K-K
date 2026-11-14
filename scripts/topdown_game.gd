@@ -57,7 +57,7 @@ func _ready() -> void:
     actor = LPCActor.new()
     actor.name = "LPCPlayer"
     actor.sheet_paths = PackedStringArray([
-        "res://third_party/lpc-source/spritesheets/body/bodies/male/walk.png"
+        "res://assets/lpc/body/bodies/male/walk.png"
     ])
     objects_layer.add_child(actor)
     actor.position = actor_world
