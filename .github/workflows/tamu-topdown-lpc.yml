@@ -81,9 +81,9 @@ jobs:
           }
           const expected=path.join(dst,'body/bodies/male/walk.png');
           if(!fs.existsSync(expected)) throw Error('Expected LPC male body unavailable');
-          fs.copyFileSync('third_party/lpc-source/CREDITS.csv',path.join(dst,'CREDITS.csv'));
+          fs.copyFileSync('third_party/lpc-source/CREDITS.csv',path.join(dst,'CREDITS.txt'));
           const report={source_commit:fs.readFileSync('third_party/lpc-source/UPSTREAM_COMMIT','utf8').trim(),
-            licensed_art_credits:'res://assets/lpc/CREDITS.csv',compatible_layers:selected,
+            licensed_art_credits:'res://assets/lpc/CREDITS.txt',compatible_layers:selected,
             complete_library_entries:candidates.length,source:'third_party/lpc-source/spritesheets',
             entries:candidates};
           fs.writeFileSync(path.join(dst,'catalog.json'),JSON.stringify(report,null,2)+'\n');
