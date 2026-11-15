@@ -4,7 +4,13 @@ name: TAMU topdown authored gameplay smoke # verified LPC animals + PCK gate
 on:
   push:
     branches: [experiment/tamu-topdown-lpc-20261114]
-    paths: [.github/workflows/tamu-topdown-authored-smoke.yml]
+    paths:
+      - .github/workflows/tamu-topdown-authored-smoke.yml
+      - scripts/topdown_game.gd
+      - scripts/topdown_game_ci.gd
+      - scripts/topdown_visual_ci.gd
+      - scripts/forest_harvest_gui.gd
+      - scripts/selection_card.gd
   workflow_dispatch:
 
 permissions:
