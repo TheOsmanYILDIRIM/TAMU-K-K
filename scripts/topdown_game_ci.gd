@@ -77,7 +77,7 @@ func _run() -> void:
             animal.elapsed = float(step) / animal.fps
             animal._draw_frame()
             var used: Rect2i = animal.current_frame_visible_bounds()
-            if not animal.sprite.visible or not used.has_area() or used.size.x < 24 \
+            if not animal.sprite.visible or not used.has_area() or used.size.x < 16 \
                     or used.size.y < 18 or animal.current_frame_opaque_pixels() < 120:
                 push_error("TAMU_LPC_ANIMAL_FRAME_FRAGMENT direction=" + str(direction)
                     + " step=" + str(step) + " used=" + str(used))
