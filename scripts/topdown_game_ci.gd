@@ -90,8 +90,9 @@ func _run() -> void:
             push_error("TAMU_LPC_ANIMAL_FRAME_ORDER_FAILED clip=" + name)
             quit(110)
             return
-    if animal.animation_frame_numbers("howl", "up") != [15]:
-        push_error("TAMU_LPC_ANIMAL_NORTH_HOWL_SOURCE_EXCEPTION_FAILED")
+    if animal.animation_frame_numbers("howl", "down") != [0] \
+            or animal.animation_frame_numbers("howl", "up") != [15,16,17,18]:
+        push_error("TAMU_LPC_ANIMAL_HOWL_DIRECTION_FALLBACK_FAILED")
         quit(110)
         return
     for direction in [Vector2.UP, Vector2.LEFT, Vector2.DOWN, Vector2.RIGHT]:

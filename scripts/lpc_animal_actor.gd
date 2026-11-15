@@ -105,10 +105,11 @@ func animation_frame_numbers(name: String, direction_key: String = "") -> Array[
     var data: Dictionary = CLIPS[name]
     var start := int(data["start"])
     var count := int(data["count"])
-    # The original wolf source is missing the multi-frame north-facing howl.
-    # Its authors/users explicitly note that only one upward-facing howl frame exists.
-    if name == "howl" and direction_key == "up":
-        count = 1
+    # The normalized source atlas has no screen-down howl cells at columns 15..18.
+    # Do not borrow frames from another action/direction: hold authored stance frame 0.
+    if name == "howl" and direction_key == "down":
+        result.append(0)
+        return result
     for i in range(count):
         result.append(start + i)
     return result
@@ -155,18 +156,19 @@ func verify_animation_contract() -> bool:
     for name in expected:
         if animation_frame_numbers(name) != expected[name]:
             return false
-    var valid := true
     for key in DIRECTION_ROWS:
         var row := int(DIRECTION_ROWS[key])
         for name in expected:
             var frames := animation_frame_numbers(name, str(key))
+            if name == "howl" and str(key) == "down":
+                if frames != [0]:
+                    return false
+            elif frames != expected[name]:
+                return false
             for column in frames:
-                var opaque := _frame_opaque_pixels(_frame_rect(int(column), row))
-                if opaque < 80:
-                    push_warning("TAMU_LPC_WOLF_SOURCE_CELL_EMPTY clip=%s direction=%s frame=%d row=%d opaque=%d"
-                        % [name, key, int(column), row, opaque])
-                    valid = false
-    return valid
+                if _frame_opaque_pixels(_frame_rect(int(column), row)) < 80:
+                    return false
+    return true
 
 func current_frame_number() -> int:
     var sequence := playback_sequence(clip)
