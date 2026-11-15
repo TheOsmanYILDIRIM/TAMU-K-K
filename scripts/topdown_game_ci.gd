@@ -65,6 +65,10 @@ func _run() -> void:
         quit(109)
         return
     var animal := LPCAnimal.new()
+    if animal.frame_size != Vector2i(32, 64):
+        push_error("TAMU_LPC_ANIMAL_FRAME_LAYOUT_FAILED")
+        quit(110)
+        return
     root.add_child(animal)
     animal.configure(Vector2(96, 96), 0)
     if not animal.loaded or not animal.verify_animation_contract():
