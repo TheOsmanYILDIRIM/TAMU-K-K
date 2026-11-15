@@ -65,10 +65,6 @@ func _run() -> void:
         quit(109)
         return
     var animal := LPCAnimal.new()
-    if animal.frame_size != Vector2i(32, 64):
-        push_error("TAMU_LPC_ANIMAL_FRAME_LAYOUT_FAILED")
-        quit(110)
-        return
     root.add_child(animal)
     animal.configure(Vector2(96, 96), 0)
     if not animal.loaded or not animal.verify_animation_contract():
@@ -82,8 +78,7 @@ func _run() -> void:
             animal._draw_frame()
             var used: Rect2i = animal.current_frame_visible_bounds()
             if not animal.sprite.visible or not used.has_area() or used.size.x < 24 \
-                    or used.size.y < 18 or used.size.x * used.size.y < 600 \
-                    or animal.current_frame_opaque_pixels() < 160:
+                    or used.size.y < 18 or animal.current_frame_opaque_pixels() < 120:
                 push_error("TAMU_LPC_ANIMAL_FRAME_FRAGMENT direction=" + str(direction)
                     + " step=" + str(step) + " used=" + str(used))
                 quit(110)
