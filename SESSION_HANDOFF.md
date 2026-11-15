@@ -1129,3 +1129,13 @@ SOHBET-G'nin uygulanmış worker ticket/FIFO, visible/halo alias, `upload_cap=1`
 - Final authored smoke run `43738830457` / run #16 SUCCESS. Visual evidence explicitly shows the selected oak, blurred background, connector and original `AĞAÇ / Toplanabilir Kaynak / Odun / TOPLA / DETAY / İŞARETLE` panel after a rendered frame.
 - Independent downloaded PCK: 43,211,144 bytes; SHA-256 `b84f1900ecc97fd1275db9212e04452d84108bd4983892eed8f63ca5cc912251`; matches CI hash exactly.
 - Current tested code/workflow HEAD before this handoff-only commit: `653fa7f1acfd24fbb1572496f81174b3980458df`. main remains unchanged. Physical Android confirmation of selection tap/effect/buttons/performance is still open.
+
+
+### 2026-11-15 — [TOPDOWN-LPC-ANIMATION] Player head restored; disappearing wolf frames fixed
+- User device feedback: LPC player had no head; wolf actors disappeared on some animation frames.
+- Player root cause: top-down only loaded `body/bodies/male`; LPC human head is a separate synchronized `head/heads/human/male` layer. Runtime now stages/exports both layers for `walk/idle/slash/spellcast/thrust/shoot`.
+- Player animation contract now rejects alpha-empty frames in all four directions for `idle/walk/slash/spellcast`.
+- Wolf root cause: renderer blindly modulo-cycled sprite-grid cells. Current HEAD `9281d1cdb4528cbaf52cf77e7b508ab4e858f4a9` scans each 64×64 cell, keeps only contiguous full-sprite cells and rejects separator/stray/fragment cells using visible-bounds thresholds; CI exercises 32 animation steps in all four directions.
+- Lightweight LPC workflow `43740061207`: SUCCESS. Full authored/export smoke `43740061224`: SUCCESS.
+- Latest PCK: 43,240,396 bytes; SHA-256 `b9f46a0dd87d8c1259fee688529e523a2ae33b7ac2aade07074dcf8c670f3b7e`. Xvfb visual evidence shows the player head present and a wolf visible.
+- Physical Android animation continuity remains OPEN until the user retests this exact PCK. main remains unchanged.
