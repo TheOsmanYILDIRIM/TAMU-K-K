@@ -155,22 +155,18 @@ func verify_animation_contract() -> bool:
     for name in expected:
         if animation_frame_numbers(name) != expected[name]:
             return false
+    var valid := true
     for key in DIRECTION_ROWS:
         var row := int(DIRECTION_ROWS[key])
         for name in expected:
             var frames := animation_frame_numbers(name, str(key))
-            if name == "howl" and str(key) == "up":
-                if frames != [15]:
-                    return false
-            elif frames != expected[name]:
-                return false
             for column in frames:
                 var opaque := _frame_opaque_pixels(_frame_rect(int(column), row))
                 if opaque < 80:
                     push_warning("TAMU_LPC_WOLF_SOURCE_CELL_EMPTY clip=%s direction=%s frame=%d row=%d opaque=%d"
                         % [name, key, int(column), row, opaque])
-                    return false
-    return true
+                    valid = false
+    return valid
 
 func current_frame_number() -> int:
     var sequence := playback_sequence(clip)
