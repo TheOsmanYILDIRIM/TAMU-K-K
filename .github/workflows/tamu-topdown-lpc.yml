@@ -121,20 +121,14 @@ jobs:
           grep -q TAMU_TOPDOWN_LPC_GAMEPLAY_CONTRACT_OK topdown-contract.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_TOPDOWN_.*FAILED' topdown-parse.log topdown-contract.log; then exit 1; fi
 
-      - name: Commit selected runtime artwork with credits
+      - name: Keep staged LPC runtime artwork build-only
         shell: bash
         run: |
           set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add assets/lpc
-          git reset -- assets/lpc/animals/wolf || true
-          if git diff --cached --quiet; then
-            echo TAMU_LPC_RUNTIME_ALREADY_PUBLISHED
-            exit 0
-          fi
-          git commit -m 'assets(tamu): publish selected LPC runtime layers and attributed catalog'
-          git push origin HEAD:refs/heads/experiment/tamu-topdown-lpc-20261114
+          test -s assets/lpc/body/bodies/male/walk.png
+          test -s assets/lpc/catalog.json
+          test -s assets/lpc/animals/wolf/walk.png
+          echo TAMU_LPC_RUNTIME_BUILD_ONLY_OK
 
       - name: Test evidence
         if: always()
