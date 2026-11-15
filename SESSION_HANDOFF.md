@@ -1150,3 +1150,12 @@ SOHBET-G'nin uygulanmış worker ticket/FIFO, visible/halo alias, `upload_cap=1`
 - Lightweight LPC workflow run `43741469799`: SUCCESS. Full authored/export run `43741469777`: SUCCESS.
 - Verified exported PCK: 43,241,484 bytes; SHA-256 `b32945d2db152f8167151f5bfb7a2e5ac056dd9df15bcf5d39ea8fcce136b06b`.
 - Physical Android animation continuity is still OPEN until the user retests this exact PCK.
+
+
+### 2026-11-15 — [TOPDOWN-LPC-SEMANTICS] Frame playback follows authored animation meaning
+- Random/non-empty-frame selection was removed from `lpc_sprite_actor.gd`. Player animation now reads the repository's canonical `addons/LPCAnimatedSprite/LPCAnimationData.gd`: walk `[1..8]`, idle `[0,0,1]`, slash `[0..5]`, spellcast `[0..6]`, thrust `[0..7]`, shoot `[0..12]`; split-sheet direction rows remain north/west/south/east = 0/1/2/3.
+- Wolf staging now uses the same Redshrike/William artwork normalized by the 2014 Concordia integration at `makrohn/concordia@643e2a2a110b298f28777cbe04c9cd0cf46b9e37` (blob `115de528696dcf3a62c117baa2af8e73ab683b8d`, 1472×512 = 23 frames × 8 directions). Its config labels run `5..9`, bite/swing `10..14`, howl/cast `15..18`, die `19..22`; the remaining leading `0..4` block is walk/stance artwork.
+- Top-down visual cardinal rows are LEFT=1, DOWN=3, RIGHT=5, UP=7. Full alpha scan found exactly one missing cardinal action block: screen-down howl columns 15..18 are empty. Runtime resolves only that source gap to deterministic stance frame 0; it never substitutes a random frame or another action.
+- CI asserts exact player sequences and wolf semantic blocks across all four cardinal directions. LPC runtime run `43743080260` SUCCESS; full authored/export run `43743080256` SUCCESS.
+- Verified exported PCK: 43,274,060 bytes; SHA-256 `c19661c8ebdb2f0e603863f408546ba1ecfa1e57ff83e443dbcfc472f778a3e9`.
+- Code HEAD before this handoff-only commit: `0fba2c9fd4dad4c89300a45fde2da905a48a7dbb`. Physical Android animation continuity remains open until user retest; main unchanged.
