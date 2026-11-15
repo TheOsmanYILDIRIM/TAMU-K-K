@@ -67,11 +67,22 @@ func _cell_visible_bounds(image: Image, row: int, column: int) -> Rect2i:
         return Rect2i()
     return region.get_used_rect()
 
+func _cell_opaque_pixels(image: Image, row: int, column: int) -> int:
+    var count := 0
+    var x0 := column * frame_size.x
+    var y0 := row * frame_size.y
+    for y in range(y0, mini(y0 + frame_size.y, image.get_height())):
+        for x in range(x0, mini(x0 + frame_size.x, image.get_width())):
+            if image.get_pixel(x, y).a > 0.02:
+                count += 1
+    return count
+
 func _cell_is_full_sprite(image: Image, row: int, column: int) -> bool:
     var used := _cell_visible_bounds(image, row, column)
-    # Reject separators, stray paws/tails and almost-empty attack slots.
+    # Reject separators, stray paws/tails and sparse animation fragments.
     return used.has_area() and used.size.x >= 24 and used.size.y >= 18 \
-        and used.size.x * used.size.y >= 600
+        and used.size.x * used.size.y >= 600 \
+        and _cell_opaque_pixels(image, row, column) >= 160
 
 func _scan_visible_frames() -> void:
     visible_columns_by_row.clear()
@@ -120,6 +131,16 @@ func current_frame_visible_bounds() -> Rect2i:
         return Rect2i()
     var column := int(elapsed * fps) % frames.size()
     return _cell_visible_bounds(sprite.texture.get_image(), row, int(frames[column]))
+
+func current_frame_opaque_pixels() -> int:
+    if sprite == null or sprite.texture == null:
+        return 0
+    var row := _direction_row()
+    var frames: Array = visible_columns_by_row.get(row, [])
+    if frames.is_empty():
+        return 0
+    var column := int(elapsed * fps) % frames.size()
+    return _cell_opaque_pixels(sprite.texture.get_image(), row, int(frames[column]))
 
 func _draw_frame() -> void:
     if sprite == null or sprite.texture == null:

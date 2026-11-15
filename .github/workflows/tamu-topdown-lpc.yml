@@ -8,6 +8,7 @@ on:
       - scripts/topdown_game.gd
       - scripts/topdown_game_ci.gd
       - scripts/lpc_sprite_actor.gd
+      - scripts/lpc_animal_actor.gd
       - scenes/topdown.tscn
   workflow_dispatch:
 

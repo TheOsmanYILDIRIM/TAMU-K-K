@@ -9,6 +9,8 @@ on:
       - scripts/topdown_game.gd
       - scripts/topdown_game_ci.gd
       - scripts/topdown_visual_ci.gd
+      - scripts/lpc_sprite_actor.gd
+      - scripts/lpc_animal_actor.gd
       - scripts/forest_harvest_gui.gd
       - scripts/selection_card.gd
   workflow_dispatch:

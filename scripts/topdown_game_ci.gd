@@ -78,7 +78,8 @@ func _run() -> void:
             animal._draw_frame()
             var used: Rect2i = animal.current_frame_visible_bounds()
             if not animal.sprite.visible or not used.has_area() or used.size.x < 24 \
-                    or used.size.y < 18 or used.size.x * used.size.y < 600:
+                    or used.size.y < 18 or used.size.x * used.size.y < 600 \
+                    or animal.current_frame_opaque_pixels() < 160:
                 push_error("TAMU_LPC_ANIMAL_FRAME_FRAGMENT direction=" + str(direction)
                     + " step=" + str(step) + " used=" + str(used))
                 quit(110)

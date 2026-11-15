@@ -48,6 +48,12 @@ func _process(delta: float) -> bool:
         push_error("TAMU_TOPDOWN_LPC_ANIMALS_UNAVAILABLE")
         quit(138)
         return false
+    for animal in animals:
+        if not bool(animal.get("loaded")) or not bool(animal.call("verify_animation_contract")) \
+                or int(animal.call("current_frame_opaque_pixels")) < 160:
+            push_error("TAMU_TOPDOWN_LPC_ANIMAL_VISIBLE_FRAME_FAILED")
+            quit(143)
+            return false
     if modular_hud == null or not bool(modular_hud.call("verify_contract")):
         push_error("TAMU_TOPDOWN_MODULAR_HUD_UNAVAILABLE")
         quit(139)
