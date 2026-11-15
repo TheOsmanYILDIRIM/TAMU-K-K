@@ -204,6 +204,29 @@ jobs:
             echo TAMU_LEGACY_TREE_ART_STILL_PRESENT
             exit 1
           fi
+      - name: Extract canonical TAMU HUD pack into importable textures
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PYHUD'
+          import zipfile
+          from pathlib import Path
+          source = Path('assets/ui/hud/packs/TAMU_HUD_Correct_Split.zip')
+          target = Path('assets/ui/hud/parts')
+          expected = ["alert.png","attack.png","bag.png","blank_attack.png","blank_hotbar.png","cloud.png","codex.png","compass_and_zoom.png","crouch.png","dawn.png","day.png","dusk.png","empty_slot.png","forge.png","growth.png","health_water_energy.png","hotbar.png","interact.png","journal.png","joystick.png","joystick_thumb.png","menu.png","night.png","portrait.png","selected_slot.png","sprint.png","zoom_minus_separate.png","zoom_plus.png","zoom_plus_separate.png"]
+          with zipfile.ZipFile(source) as archive:
+              present=set(archive.namelist())
+              assert all(name in present for name in expected), 'HUD_PARTS_INCOMPLETE'
+              target.mkdir(parents=True, exist_ok=True)
+              for name in expected:
+                  data=archive.read(name)
+                  assert data.startswith(b'\x89PNG\r\n\x1a\n'), f'HUD_BAD_PNG {name}'
+                  (target/name).write_bytes(data)
+          print('TAMU_HUD_TEXTURES_EXTRACTED',len(expected))
+          PYHUD
+          test -s assets/ui/hud/parts/portrait.png
+          test -s assets/ui/hud/parts/joystick.png
+          test -s assets/ui/hud/parts/blank_hotbar.png
       - name: Bake canonical static minimap for the existing TAMU HUD
         shell: bash
         run: |
@@ -236,8 +259,30 @@ jobs:
           sha256sum build/TAMU-TopDown.pck | tee screenshots/topdown-pck.sha256
           stat -c 'TAMU_TOPDOWN_PCK_BYTES=%s' build/TAMU-TopDown.pck | tee screenshots/topdown-pck-size.log
           PCK="$PWD/build/TAMU-TopDown.pck"
-          (cd "$RUNNER_TEMP" && timeout --kill-after=3s 45s godot --headless --main-pack "$PCK" --script res://scripts/topdown_game_ci.gd > "$GITHUB_WORKSPACE/screenshots/topdown-pck-contract.log" 2>&1) || { cat "$GITHUB_WORKSPACE/screenshots/topdown-pck-contract.log"; exit 1; }
+          python3 - <<'PYPCK'
+          from pathlib import Path
+          import struct
+          p=Path('build/TAMU-TopDown.pck')
+          with p.open('rb') as f:
+              header=f.read(40)
+              assert header[:4]==b'GDPC', 'PCK_BAD_MAGIC'
+              end=struct.unpack_from('<Q',header,32)[0]
+              f.seek(end)
+              count=struct.unpack('<I',f.read(4))[0]
+              names=[]
+              for _ in range(count):
+                  size=struct.unpack('<I',f.read(4))[0]
+                  name=f.read(size).rstrip(b'\x00').decode('utf-8').lower()
+                  f.seek(16+16+4,1)
+                  names.append(name)
+          for name in ('portrait','joystick','blank_hotbar','interact','blank_attack'):
+              assert any(f'assets/ui/hud/parts/{name}.png' in path for path in names), f'PCK_HUD_TEXTURE_MISSING {name}'
+          assert any('assets/ui/minimap/terrain.png' in path for path in names), 'PCK_MINIMAP_TEXTURE_MISSING'
+          print('TAMU_TOPDOWN_PCK_HUD_ASSETS_OK files=',count)
+          PYPCK
+          (cd "$RUNNER_TEMP" && TAMU_PCK_HUD_CHECK=1 timeout --kill-after=3s 55s godot --headless --main-pack "$PCK" --script res://scripts/topdown_game_ci.gd > "$GITHUB_WORKSPACE/screenshots/topdown-pck-contract.log" 2>&1) || { cat "$GITHUB_WORKSPACE/screenshots/topdown-pck-contract.log"; exit 1; }
           grep -q TAMU_TOPDOWN_LPC_GAMEPLAY_CONTRACT_OK screenshots/topdown-pck-contract.log
+          grep -q TAMU_TOPDOWN_PCK_HUD_CONTRACT_OK screenshots/topdown-pck-contract.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_.*FAILED' screenshots/topdown-pck-contract.log; then cat screenshots/topdown-pck-contract.log; exit 1; fi
           echo TAMU_TOPDOWN_PCK_VERIFIED
       - uses: actions/upload-artifact@v4

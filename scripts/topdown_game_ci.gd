@@ -75,4 +75,20 @@ func _run() -> void:
         return
     actor.queue_free()
     print("TAMU_TOPDOWN_LPC_GAMEPLAY_CONTRACT_OK body=576x256 four_directions=true clips=idle/walk/slash animals=wolf canonical_harvest_craft=true")
+    if OS.get_environment("TAMU_PCK_HUD_CHECK") == "1":
+        var game = scene.instantiate()
+        root.add_child(game)
+        await process_frame
+        await process_frame
+        if not bool(game.get("world_ready")):
+            push_error("TAMU_TOPDOWN_PCK_HUD_WORLD_NOT_READY")
+            quit(111)
+            return
+        var hud = game.get("modular_hud")
+        if hud == null or not bool(hud.call("verify_contract")):
+            push_error("TAMU_TOPDOWN_PCK_HUD_CONTRACT_FAILED")
+            quit(112)
+            return
+        print("TAMU_TOPDOWN_PCK_HUD_CONTRACT_OK")
+        game.queue_free()
     quit()
