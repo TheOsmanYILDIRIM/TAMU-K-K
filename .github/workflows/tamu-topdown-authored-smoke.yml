@@ -198,7 +198,7 @@ jobs:
           Pinned source repository: OpenGameArt/LiberatedPixelCup @ f61104a1ecc54e7bce54b82ada7d7ba4c41bc524
           Asset licenses: OGA-BY 3.0 / CC-BY 3.0 / CC-BY 4.0 / GPL 2.0 / GPL 3.0.
           EOF
-          if find game/love/assets/terrain25d/source_png -type f \\( -path '*/oak/*' -o -path '*/dead_tree/*' -o -path '*/stump/*' \\) | grep -q .; then
+          if find game/love/assets/terrain25d/source_png -type f | grep -Eq '/(oak|dead_tree|stump)/'; then
             echo TAMU_LEGACY_TREE_ART_STILL_PRESENT
             exit 1
           fi
