@@ -1,8 +1,9 @@
 extends Node2D
 class_name LPCAnimalActor
 @export var texture_path := "res://assets/lpc/animals/wolf/walk.png"
-@export var frame_size := Vector2i(64, 64)
+@export var frame_size := Vector2i(32, 64)
 @export var fps := 7.0
+const WALK_FRAMES_PER_DIRECTION := 6
 var sprite: Sprite2D
 var loaded := false
 var elapsed := 0.0
@@ -93,16 +94,15 @@ func _scan_visible_frames() -> void:
         return
     var columns := sprite.texture.get_width() / frame_size.x
     var rows := sprite.texture.get_height() / frame_size.y
-    # William/Redshrike wolf walk starts at the left of each direction row.
-    # Keep the contiguous visible walk cycle only; stop before later animation slots.
-    for row in range(mini(4, rows)):
+    # Redshrike/William wolf sheet: 32x64 cells, six walk frames per direction,
+    # progressing horizontally from the left. Never bleed into run/bite/howl/death.
+    if columns < WALK_FRAMES_PER_DIRECTION or rows < 4:
+        return
+    for row in range(4):
         var frames: Array[int] = []
-        for column in range(columns):
-            var visible := _cell_is_full_sprite(image, row, column)
-            if visible:
+        for column in range(WALK_FRAMES_PER_DIRECTION):
+            if _cell_is_full_sprite(image, row, column):
                 frames.append(column)
-            elif not frames.is_empty():
-                break
         visible_columns_by_row[row] = frames
 
 func verify_animation_contract() -> bool:
