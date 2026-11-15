@@ -6,7 +6,7 @@ const GameplaySession = preload("res://scripts/gameplay_session.gd")
 const R2Authority = preload("res://scripts/r2_authority.gd")
 const WorldSource = preload("res://scripts/world_source.gd")
 const WorldIdentity = preload("res://scripts/world_identity.gd")
-const LPCActor = preload("res://scripts/lpc_sprite_actor.gd")
+const LPCActor = preload("res://scripts/lpc_sprite_actor.gd")\nconst LPCAnimal = preload("res://scripts/lpc_animal_actor.gd")
 const CraftingBook = preload("res://scripts/crafting_book_ui.gd")
 const ProductionSandboxUI = preload("res://scripts/production_sandbox_ui.gd")
 const TERRAIN_MANIFEST := "res://game/love/assets/terrain25d/manifest.json"
@@ -97,7 +97,19 @@ func _ready() -> void:
     queue_redraw()
     print("TAMU_TOPDOWN_GAMEPLAY_READY region=", authority.region_id,
         " objects=", objects.size(), " catalog=", gameplay.catalog.version,
-        " lpc_sheets=", actor.sprites.size())
+        " lpc_sheets=", actor.sprites.size(), " lpc_animals=", animals.size())
+
+func _spawn_animals(layer: Node2D) -> void:
+    var offsets := [Vector2(170, 80), Vector2(-120, 130), Vector2(90, -120)]
+    for i in range(offsets.size()):
+        var animal := LPCAnimal.new()
+        animal.name = "LPCWolf%d" % (i + 1)
+        layer.add_child(animal)
+        animal.configure(actor_world + offsets[i], i)
+        if animal.loaded:
+            animals.append(animal)
+    if animals.size() < 3:
+        push_warning("TAMU_LPC_ANIMALS_INCOMPLETE count=" + str(animals.size()))
 
 func _load_objects() -> void:
     # Authority already validated the 832 identities and coordinates.

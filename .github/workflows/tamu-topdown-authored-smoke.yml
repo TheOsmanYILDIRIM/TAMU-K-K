@@ -177,6 +177,31 @@ jobs:
           done
           test -s assets/lpc/body/bodies/male/walk.png
           cp third_party/lpc-source/CREDITS.csv assets/lpc/CREDITS.txt
+          mkdir -p assets/lpc/animals/wolf
+          WOLF_COMMIT=f61104a1ecc54e7bce54b82ada7d7ba4c41bc524
+          WOLF_URL="https://raw.githubusercontent.com/OpenGameArt/LiberatedPixelCup/$WOLF_COMMIT/sprite/original/Redshrike/wolf/wolfsheet1.png"
+          curl -fL --retry 3 "$WOLF_URL" -o assets/lpc/animals/wolf/walk.png
+          python3 - <<'PY'
+          import hashlib,pathlib
+          b=pathlib.Path('assets/lpc/animals/wolf/walk.png').read_bytes()
+          git_sha=hashlib.sha1(b'blob '+str(len(b)).encode()+b'\\0'+b).hexdigest()
+          assert git_sha=='acd20f9908daf6a7a6c9b47cfac7dc5c1c7cf17a', git_sha
+          assert b[:8]==b'\\x89PNG\\r\\n\\x1a\\n'
+          print('TAMU_LPC_WOLF_SOURCE_OK bytes=',len(b),'git_blob=',git_sha)
+          PY
+          cat >> assets/lpc/CREDITS.txt <<'EOF'
+
+TAMU top-down demo wolf:
+Stephen "Redshrike" Challener — graphic artist
+William.Thompsonj — contributor/commissioner
+Source: https://opengameart.org/content/lpc-wolf-animation
+Pinned source repository: OpenGameArt/LiberatedPixelCup @ f61104a1ecc54e7bce54b82ada7d7ba4c41bc524
+Asset licenses: OGA-BY 3.0 / CC-BY 3.0 / CC-BY 4.0 / GPL 2.0 / GPL 3.0.
+EOF
+          if find game/love/assets/terrain25d/source_png -type f \\( -path '*/oak/*' -o -path '*/dead_tree/*' -o -path '*/stump/*' \\) | grep -q .; then
+            echo TAMU_LEGACY_TREE_ART_STILL_PRESENT
+            exit 1
+          fi
       - name: Native Godot 4.6 top-down gameplay and screenshot
         shell: bash
         run: |
@@ -195,9 +220,16 @@ jobs:
       - name: Export verified demo PCK
         run: |
           mkdir -p build
-          sed -i 's/export_filter="resources"/export_filter="all_resources"/; s/include_filter="/include_filter="chunks\/*.json,assets\/lpc\/*.txt,game\/love\/assets\/terrain25d\/manifest.json,/' export_presets.cfg
+          sed -i 's/export_filter="resources"/export_filter="all_resources"/; s/include_filter="/include_filter="chunks\/*.json,chunks\/*.verts,assets\/lpc\/*.txt,game\/love\/assets\/terrain25d\/manifest.json,/' export_presets.cfg
           godot --headless --path . --export-pack Android build/TAMU-TopDown.pck
           test -s build/TAMU-TopDown.pck
+          sha256sum build/TAMU-TopDown.pck | tee screenshots/topdown-pck.sha256
+          stat -c 'TAMU_TOPDOWN_PCK_BYTES=%s' build/TAMU-TopDown.pck | tee screenshots/topdown-pck-size.log
+          PCK="$PWD/build/TAMU-TopDown.pck"
+          (cd "$RUNNER_TEMP" && timeout --kill-after=3s 45s godot --headless --main-pack "$PCK" --script res://scripts/topdown_game_ci.gd > "$GITHUB_WORKSPACE/screenshots/topdown-pck-contract.log" 2>&1) || { cat "$GITHUB_WORKSPACE/screenshots/topdown-pck-contract.log"; exit 1; }
+          grep -q TAMU_TOPDOWN_LPC_GAMEPLAY_CONTRACT_OK screenshots/topdown-pck-contract.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_.*FAILED' screenshots/topdown-pck-contract.log; then cat screenshots/topdown-pck-contract.log; exit 1; fi
+          echo TAMU_TOPDOWN_PCK_VERIFIED
       - uses: actions/upload-artifact@v4
         with:
           name: TAMU-TopDown-PCK

@@ -8,7 +8,7 @@ func _initialize() -> void:
     call_deferred("_run")
 
 func _run() -> void:
-    if not Projection.verify_contract():
+    if not WorldProjection.verify_contract():
         push_error("TAMU_TOPDOWN_PROJECTION_TEST_FAILED")
         quit(101)
         return
@@ -49,6 +49,19 @@ func _run() -> void:
         push_error("TAMU_LPC_IDLE_FAILED")
         quit(108)
         return
+    var wolf_path := "res://assets/lpc/animals/wolf/walk.png"
+    if not ResourceLoader.exists(wolf_path):
+        push_error("TAMU_LPC_ANIMAL_SHEET_MISSING")
+        quit(109)
+        return
+    var animal := LPCAnimal.new()
+    root.add_child(animal)
+    animal.configure(Vector2(96, 96), 0)
+    if not animal.loaded:
+        push_error("TAMU_LPC_ANIMAL_NOT_LOADED")
+        quit(110)
+        return
+    animal.queue_free()
     var gameplay := Gameplay.new()
     if not gameplay.verify_contract():
         push_error("TAMU_TOPDOWN_CANONICAL_GAMEPLAY_FAILED")
@@ -60,5 +73,5 @@ func _run() -> void:
         quit(110)
         return
     actor.queue_free()
-    print("TAMU_TOPDOWN_LPC_GAMEPLAY_CONTRACT_OK body=576x256 four_directions=true clips=idle/walk/slash canonical_harvest_craft=true")
+    print("TAMU_TOPDOWN_LPC_GAMEPLAY_CONTRACT_OK body=576x256 four_directions=true clips=idle/walk/slash animals=wolf canonical_harvest_craft=true")
     quit()

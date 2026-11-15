@@ -29,7 +29,7 @@ func _process(delta: float) -> void:
         return
     var authority = game.get("authority")
     var gameplay = game.get("gameplay")
-    var actor = game.get("actor")
+    var actor = game.get("actor")\n    var animals = game.get("animals")
     if authority == null or authority.records.size() != 832:
         push_error("TAMU_TOPDOWN_BOOT_SOURCE_PARITY_FAILED")
         quit(133)
@@ -42,6 +42,10 @@ func _process(delta: float) -> void:
         push_error("TAMU_TOPDOWN_LPC_PLAYER_UNAVAILABLE")
         quit(135)
         return
+    if not (animals is Array) or animals.size() < 3:
+        push_error("TAMU_TOPDOWN_LPC_ANIMALS_UNAVAILABLE")
+        quit(138)
+        return
     var image := root.get_texture().get_image()
     if image == null or image.get_width() < 400 or image.get_height() < 600:
         push_error("TAMU_TOPDOWN_SCREENSHOT_EMPTY")
@@ -53,6 +57,6 @@ func _process(delta: float) -> void:
         push_error("TAMU_TOPDOWN_SCREENSHOT_SAVE_FAILED")
         quit(137)
         return
-    print("TAMU_TOPDOWN_AUTHORED_SCENE_OK objects=832 stage6=game lpc=true screenshot=topdown-gameplay.png")
+    print("TAMU_TOPDOWN_AUTHORED_SCENE_OK objects=832 stage6=game lpc=true animals=3 oak_only=true screenshot=topdown-gameplay.png")
     quit()
     return
