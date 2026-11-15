@@ -1,5 +1,6 @@
 extends Node2D
 class_name LPCSpriteActor
+const LPCAnimationMetadata = preload("res://addons/LPCAnimatedSprite/LPCAnimationData.gd")
 ## LPC 64px 4-direction layered actor.
 ## Uses selected runtime files under assets/lpc; complete upstream source is excluded from PCK.
 @export var sheet_paths: PackedStringArray = PackedStringArray()
@@ -19,6 +20,7 @@ var action := ""
 var action_remaining := 0.0
 var texture_cache: Dictionary = {}
 var visible_frame_cache: Dictionary = {}
+var animation_metadata = LPCAnimationMetadata.new()
 
 func _ready() -> void:
     y_sort_enabled = false
@@ -101,7 +103,7 @@ func set_motion(world_velocity: Vector2, delta: float) -> void:
     if wanted != clip:
         phase = 0.0
         _apply_clip(wanted)
-    phase += delta * (walk_fps if wanted != "idle" else 2.0)
+    phase += delta * float(animation_metadata.animation_speeds.get(wanted, 8))
     _draw_current_frame()
 
 func _apply_clip(requested: String) -> void:
@@ -156,45 +158,60 @@ func _frame_has_alpha(sprite: Sprite2D, row: int, column: int) -> bool:
     visible_frame_cache[key] = found
     return found
 
-func _visible_columns(sprite: Sprite2D, row: int) -> Array[int]:
+func frame_sequence_for(requested: String) -> Array[int]:
     var result: Array[int] = []
-    var limit := mini(walk_frame_count, sprite.hframes) if clip == "walk" else sprite.hframes
-    for column in range(limit):
-        if _frame_has_alpha(sprite, row, column):
-            result.append(column)
+    if animation_metadata.custom_frames.has(requested):
+        for value in animation_metadata.custom_frames[requested]:
+            result.append(int(value))
+        return result
+    if not animation_metadata.animation_frame_counts.has(requested):
+        return result
+    var first := int(animation_metadata.initial_sprite_indices.get(requested, 0))
+    var count := int(animation_metadata.animation_frame_counts[requested])
+    for i in range(count):
+        result.append(first + i)
     return result
 
 func _draw_current_frame() -> void:
+    var sequence := frame_sequence_for(clip)
     for sprite in sprites:
         var row := _direction_offset()
-        if sprite.vframes > 4 and clip == "walk":
-            row += walk_first_row
-        if row >= sprite.vframes:
+        if row >= sprite.vframes or sequence.is_empty():
             sprite.visible = false
             continue
-        var columns := _visible_columns(sprite, row)
-        if columns.is_empty():
+        var column := int(sequence[int(phase) % sequence.size()])
+        if column < 0 or column >= sprite.hframes:
             sprite.visible = false
             continue
         sprite.visible = true
-        var logical := 0 if clip == "idle" and action_remaining <= 0.0 else int(phase) % columns.size()
-        sprite.frame = row * sprite.hframes + columns[logical]
+        sprite.frame = row * sprite.hframes + column
 
 func verify_animation_contract() -> bool:
     if sprites.size() < 2:
         return false
+    var expected := {
+        "idle": [0, 0, 1],
+        "walk": [1, 2, 3, 4, 5, 6, 7, 8],
+        "slash": [0, 1, 2, 3, 4, 5],
+        "spellcast": [0, 1, 2, 3, 4, 5, 6],
+        "thrust": [0, 1, 2, 3, 4, 5, 6, 7],
+        "shoot": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    }
     var saved_facing := facing
     var saved_clip := clip
-    for direction in [Vector2.UP, Vector2.LEFT, Vector2.DOWN, Vector2.RIGHT]:
-        facing = direction
-        for requested in ["idle", "walk", "slash", "spellcast", "thrust", "shoot"]:
-            _apply_clip(requested)
+    for requested in expected:
+        if frame_sequence_for(requested) != expected[requested]:
+            return false
+        _apply_clip(requested)
+        for direction in [Vector2.UP, Vector2.LEFT, Vector2.DOWN, Vector2.RIGHT]:
+            facing = direction
             var row := _direction_offset()
             for sprite in sprites:
-                if row >= sprite.vframes or _visible_columns(sprite, row).is_empty():
-                    facing = saved_facing
-                    _apply_clip(saved_clip)
+                if row >= sprite.vframes:
                     return false
+                for column in frame_sequence_for(requested):
+                    if int(column) >= sprite.hframes or not _frame_has_alpha(sprite, row, int(column)):
+                        return false
     facing = saved_facing
     _apply_clip(saved_clip)
     return true

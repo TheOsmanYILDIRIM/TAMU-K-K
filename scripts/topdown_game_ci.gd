@@ -36,7 +36,14 @@ func _run() -> void:
         quit(104)
         return
     if not actor.verify_animation_contract():
-        push_error("TAMU_LPC_PLAYER_ANIMATION_VISIBILITY_FAILED")
+        push_error("TAMU_LPC_PLAYER_ANIMATION_SEMANTICS_FAILED")
+        quit(104)
+        return
+    if actor.frame_sequence_for("walk") != [1,2,3,4,5,6,7,8] \
+            or actor.frame_sequence_for("idle") != [0,0,1] \
+            or actor.frame_sequence_for("slash") != [0,1,2,3,4,5] \
+            or actor.frame_sequence_for("spellcast") != [0,1,2,3,4,5,6]:
+        push_error("TAMU_LPC_PLAYER_FRAME_ORDER_FAILED")
         quit(104)
         return
     actor.set_motion(Vector2.UP, 0.125)
@@ -71,18 +78,31 @@ func _run() -> void:
         push_error("TAMU_LPC_ANIMAL_ANIMATION_VISIBILITY_FAILED")
         quit(110)
         return
+    var semantic_blocks := {
+        "walk": [0,1,2,3,4],
+        "run": [5,6,7,8,9],
+        "bite": [10,11,12,13,14],
+        "howl": [15,16,17,18],
+        "die": [19,20,21,22]
+    }
+    for name in semantic_blocks:
+        if animal.animation_frame_numbers(name) != semantic_blocks[name]:
+            push_error("TAMU_LPC_ANIMAL_FRAME_ORDER_FAILED clip=" + name)
+            quit(110)
+            return
     for direction in [Vector2.UP, Vector2.LEFT, Vector2.DOWN, Vector2.RIGHT]:
         animal.facing = direction
-        for step in range(32):
-            animal.elapsed = float(step) / animal.fps
-            animal._draw_frame()
-            var used: Rect2i = animal.current_frame_visible_bounds()
-            if not animal.sprite.visible or not used.has_area() or used.size.x < 16 \
-                    or used.size.y < 18 or animal.current_frame_opaque_pixels() < 120:
-                push_error("TAMU_LPC_ANIMAL_FRAME_FRAGMENT direction=" + str(direction)
-                    + " step=" + str(step) + " used=" + str(used))
-                quit(110)
-                return
+        for name in ["walk", "run", "bite", "howl", "die"]:
+            animal.set_clip(name)
+            var sequence: Array[int] = animal.playback_sequence(name)
+            for step in range(sequence.size()):
+                animal.clip_elapsed = float(step) / animal.fps
+                animal._draw_frame()
+                if not animal.sprite.visible or animal.current_frame_opaque_pixels() < 80:
+                    push_error("TAMU_LPC_ANIMAL_SEMANTIC_FRAME_FAILED clip=" + name
+                        + " direction=" + str(direction) + " step=" + str(step))
+                    quit(110)
+                    return
     animal.queue_free()
     var gameplay := Gameplay.new()
     if not gameplay.verify_contract():
@@ -95,7 +115,7 @@ func _run() -> void:
         quit(110)
         return
     actor.queue_free()
-    print("TAMU_TOPDOWN_LPC_GAMEPLAY_CONTRACT_OK body_head_layers=true four_directions=true clips=idle/walk/slash/spellcast wolf_nonempty_frames=true canonical_harvest_craft=true")
+    print("TAMU_TOPDOWN_LPC_GAMEPLAY_CONTRACT_OK lpc_metadata_sequences=true body_head_layers=true four_directions=true wolf_semantic_blocks=walk/run/bite/howl/die canonical_harvest_craft=true")
     if OS.get_environment("TAMU_PCK_HUD_CHECK") == "1":
         var game = scene.instantiate()
         root.add_child(game)

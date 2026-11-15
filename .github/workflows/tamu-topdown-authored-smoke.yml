@@ -196,16 +196,22 @@ jobs:
           test -s assets/lpc/head/heads/human/male/spellcast.png
           cp third_party/lpc-source/CREDITS.csv assets/lpc/CREDITS.txt
           mkdir -p assets/lpc/animals/wolf
-          WOLF_COMMIT=f61104a1ecc54e7bce54b82ada7d7ba4c41bc524
-          WOLF_URL="https://raw.githubusercontent.com/OpenGameArt/LiberatedPixelCup/$WOLF_COMMIT/sprite/original/Redshrike/wolf/wolfsheet1.png"
+          # Same Redshrike/William LPC wolf artwork, normalized by the
+          # 2014 Concordia implementation into 23 semantic frames x 8 directions.
+          # Frame blocks: 0..4 walk, 5..9 run, 10..14 bite,
+          # 15..18 howl, 19..22 die.
+          WOLF_COMMIT=643e2a2a110b298f28777cbe04c9cd0cf46b9e37
+          WOLF_URL="https://raw.githubusercontent.com/makrohn/concordia/$WOLF_COMMIT/mods/concordia/images/enemies/wolf.png"
           curl -fL --retry 3 "$WOLF_URL" -o assets/lpc/animals/wolf/walk.png
           python3 - <<'PY'
-          import hashlib,pathlib
+          import hashlib,pathlib,struct
           b=pathlib.Path('assets/lpc/animals/wolf/walk.png').read_bytes()
           git_sha=hashlib.sha1(b'blob '+str(len(b)).encode()+bytes([0])+b).hexdigest()
-          assert git_sha=='acd20f9908daf6a7a6c9b47cfac7dc5c1c7cf17a', git_sha
+          assert git_sha=='115de528696dcf3a62c117baa2af8e73ab683b8d', git_sha
           assert b[:8]==bytes([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a])
-          print('TAMU_LPC_WOLF_SOURCE_OK bytes=',len(b),'git_blob=',git_sha)
+          width,height=struct.unpack('>II',b[16:24])
+          assert (width,height)==(1472,512),(width,height)
+          print('TAMU_LPC_WOLF_SEMANTIC_ATLAS_OK bytes=',len(b),'git_blob=',git_sha,'size=',width,height)
           PY
           cat >> assets/lpc/CREDITS.txt <<'EOF'
           
