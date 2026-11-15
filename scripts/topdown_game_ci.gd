@@ -90,5 +90,19 @@ func _run() -> void:
             quit(112)
             return
         print("TAMU_TOPDOWN_PCK_HUD_CONTRACT_OK")
+        var objects = game.get("objects")
+        if not (objects is Array) or objects.is_empty() or not bool(game.call("_select_harvest", objects[0])):
+            push_error("TAMU_TOPDOWN_PCK_SELECTION_OPEN_FAILED")
+            quit(113)
+            return
+        var forest = game.get("forest_gui")
+        var panel = forest.get("panel") as Control if forest != null else null
+        var premium = forest.get("premium_card") if forest != null else null
+        if forest == null or panel == null or not panel.visible or premium == null \
+                or not bool(premium.call("verify_contract")):
+            push_error("TAMU_TOPDOWN_PCK_SELECTION_UI_FAILED")
+            quit(114)
+            return
+        print("TAMU_TOPDOWN_PCK_SELECTION_UI_OK")
         game.queue_free()
     quit()

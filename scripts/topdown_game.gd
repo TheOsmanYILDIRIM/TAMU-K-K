@@ -11,6 +11,8 @@ const LPCAnimal = preload("res://scripts/lpc_animal_actor.gd")
 const CraftingBook = preload("res://scripts/crafting_book_ui.gd")
 const ProductionSandboxUI = preload("res://scripts/production_sandbox_ui.gd")
 const ModularHUD = preload("res://scripts/modular_hud.gd")
+const ForestHarvestGUI = preload("res://scripts/forest_harvest_gui.gd")
+const SelectionShader = preload("res://scripts/harvest_outline.gdshader")
 const TERRAIN_MANIFEST := "res://game/love/assets/terrain25d/manifest.json"
 const TERRAIN_ATLAS := "res://assets/terrain25d/atlas_00.png"
 const OAK = preload("res://assets/trees/tamu_oak.png")
@@ -35,6 +37,11 @@ var texture_regions: Dictionary = {}
 var texture_cache: Dictionary = {}
 var modular_hud: CanvasLayer
 var forest_gui: CanvasLayer
+var selected_harvest: Dictionary = {}
+var selected_harvest_outline: Sprite2D
+var selection_proxy: Sprite2D
+var harvest_outline_material: ShaderMaterial
+var selection_outline_texture: Texture2D
 var joystick_base: Panel
 var joystick_knob: Panel
 var joystick_pointer := -1
@@ -102,6 +109,10 @@ func _ready() -> void:
     add_child(book)
     book.setup(gameplay, Callable(self, "_begin_craft"))
     _make_joystick_authority()
+    forest_gui = ForestHarvestGUI.new()
+    forest_gui.name = "ForestHarvestInterface"
+    add_child(forest_gui)
+    forest_gui.call("setup", self)
     modular_hud = ModularHUD.new()
     modular_hud.name = "TAMUModularHUD"
     add_child(modular_hud)
@@ -231,11 +242,8 @@ func _draw() -> void:
         var p: Vector2 = item["position"]
         if not bounds.grow(80).has_point(p):
             continue
-        var r: float = clampf(float(item["radius"]) * 0.6, 10, 25)
-        var size := OAK.get_size() * (r * 4.0 / OAK.get_height())
+        var size := _oak_visual_size(item)
         draw_texture_rect(OAK, Rect2(p - Vector2(size.x * 0.5, size.y), size), false)
-        if not selection.is_empty() and selection["id"] == item["id"]:
-            draw_arc(p, r + 9, 0, TAU, 24, Color.GOLD, 3.0)
     for id in gameplay.building.placed:
         var placed: Dictionary = gameplay.building.placed[id]
         var box: Rect2 = placed["box"]
@@ -290,13 +298,93 @@ func _select_at_screen(screen_pos: Vector2) -> void:
         if distance < minf(nearest, threshold):
             nearest = distance
             target = item
-    selection = target
-    status.text = ("SEÇİLDİ: " + str(target["kind"]) + " | TOPLA") if not target.is_empty() else "Kaynak seçilmedi"
+    if target.is_empty():
+        _clear_harvest_selection()
+        _harvest_feedback("Kaynak seçilmedi")
+    else:
+        _select_harvest(target)
+
+func _oak_visual_size(item: Dictionary) -> Vector2:
+    var r: float = clampf(float(item["radius"]) * 0.6, 10.0, 25.0)
+    return OAK.get_size() * (r * 4.0 / OAK.get_height())
+
+func _ensure_selection_outline_texture() -> Texture2D:
+    if selection_outline_texture != null:
+        return selection_outline_texture
+    var original := OAK.get_image()
+    if original == null or original.is_empty():
+        return null
+    var padding := 5
+    var padded := Image.create(original.get_width() + padding * 2,
+        original.get_height() + padding * 2, false, Image.FORMAT_RGBA8)
+    padded.fill(Color.TRANSPARENT)
+    padded.blit_rect(original, Rect2i(Vector2i.ZERO, original.get_size()),
+        Vector2i(padding, padding))
+    selection_outline_texture = ImageTexture.create_from_image(padded)
+    return selection_outline_texture
+
+func _clear_harvest_selection() -> void:
+    selection = {}
+    selected_harvest = {}
+    if forest_gui != null:
+        forest_gui.call("close")
+    if selection_proxy != null and is_instance_valid(selection_proxy):
+        selection_proxy.queue_free()
+    selection_proxy = null
+    selected_harvest_outline = null
     queue_redraw()
+
+func _select_harvest(item: Dictionary) -> bool:
+    if item.is_empty() or bool(item.get("collected", false)):
+        return false
+    if not gameplay.is_harvestable(str(item.get("kind", ""))):
+        return false
+    _clear_harvest_selection()
+    selection = item
+    selected_harvest = item.duplicate(true)
+    var size := _oak_visual_size(item)
+    selection_proxy = Sprite2D.new()
+    selection_proxy.name = "TopdownSelectionProxy"
+    selection_proxy.texture = OAK
+    selection_proxy.position = (item["position"] as Vector2) - Vector2(0.0, size.y * 0.5)
+    selection_proxy.scale = Vector2(size.x / OAK.get_width(), size.y / OAK.get_height())
+    selection_proxy.visible = false
+    add_child(selection_proxy)
+    selected_harvest["sprite"] = selection_proxy
+    var outline_texture := _ensure_selection_outline_texture()
+    if outline_texture != null:
+        if harvest_outline_material == null:
+            harvest_outline_material = ShaderMaterial.new()
+            harvest_outline_material.shader = SelectionShader
+        selected_harvest_outline = Sprite2D.new()
+        selected_harvest_outline.name = "HarvestGoldSilhouette"
+        selected_harvest_outline.texture = outline_texture
+        selected_harvest_outline.material = harvest_outline_material
+        selected_harvest_outline.visible = false
+        selection_proxy.add_child(selected_harvest_outline)
+    if forest_gui != null:
+        forest_gui.call("open_for", selected_harvest)
+    _harvest_feedback("SEÇİLDİ: AĞAÇ  ·  TOPLA")
+    print("TAMU_TOPDOWN_HARVEST_SELECTED id=", item["id"], " main_ui=true")
+    queue_redraw()
+    return true
+
+func _harvest_feedback(message: String) -> void:
+    if status != null:
+        status.text = message
+    if forest_gui != null:
+        forest_gui.call("set_status", message)
+
+func _try_harvest() -> void:
+    _harvest()
 
 func _screen_is_on_controls(point: Vector2) -> bool:
     if modular_hud != null and bool(modular_hud.call("blocks_world_input", point)):
         return true
+    if forest_gui != null:
+        var panel := forest_gui.get("panel") as Control
+        if panel != null and panel.visible and panel.get_global_rect().has_point(point):
+            return true
     return joystick_base != null and point.distance_to(_joystick_center()) <= 105.0
 
 func _command(prefix: String) -> String:
@@ -307,16 +395,16 @@ func _harvest() -> void:
     if not world_ready:
         return
     if not gameplay.active_harvest.is_empty():
-        status.text = "TOPLAMA SÜRÜYOR"
+        _harvest_feedback("TOPLAMA SÜRÜYOR")
         return
     if selection.is_empty():
         _pickup_nearest()
         return
     if not authority.matches_object(selection):
-        status.text = "KAYNAK KİMLİĞİ GEÇERSİZ"
+        _harvest_feedback("KAYNAK KİMLİĞİ GEÇERSİZ")
         return
     var result: Dictionary = gameplay.begin_harvest(selection, actor_world, _command("topdown_harvest"))
-    status.text = "TOPLANIYOR..." if result.get("status") == "started" else "TOPLA: " + str(result.get("status"))
+    _harvest_feedback("TOPLANIYOR..." if result.get("status") == "started" else "TOPLA: " + str(result.get("status")))
     if result.get("status") == "started":
         action_hold = 0.5
         actor.play_action("slash", 0.65)
@@ -397,8 +485,8 @@ func _process(delta: float) -> void:
                 object_index[id]["collected"] = true
                 authority.depleted_ids[id] = true
                 if not selection.is_empty() and str(selection["id"]) == id:
-                    selection = {}
-                status.text = "TOPLANDI — EŞYAYI AL"
+                    _clear_harvest_selection()
+                _harvest_feedback("TOPLANDI — EŞYAYI AL")
         elif str(change.get("type", "")) == "CraftCompleted":
             status.text = "ÜRETİM TAMAMLANDI: " + str(change.get("recipe_id", ""))
             _sync_equipment()

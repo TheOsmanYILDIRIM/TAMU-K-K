@@ -52,6 +52,34 @@ func _process(delta: float) -> bool:
         push_error("TAMU_TOPDOWN_MODULAR_HUD_UNAVAILABLE")
         quit(139)
         return false
+    var objects = game.get("objects")
+    var actor_world: Vector2 = game.get("actor_world")
+    var nearest: Dictionary = {}
+    var nearest_distance := INF
+    for item in objects:
+        if bool(item.get("collected", false)):
+            continue
+        var d: float = actor_world.distance_squared_to(item["position"])
+        if d < nearest_distance:
+            nearest_distance = d
+            nearest = item
+    if nearest.is_empty() or not bool(game.call("_select_harvest", nearest)):
+        push_error("TAMU_TOPDOWN_SELECTION_OPEN_FAILED")
+        quit(140)
+        return false
+    var forest_gui = game.get("forest_gui")
+    var panel = forest_gui.get("panel") as Control if forest_gui != null else null
+    var premium = forest_gui.get("premium_card") if forest_gui != null else null
+    if forest_gui == null or panel == null or not panel.visible or premium == null \
+            or not bool(premium.call("verify_contract")):
+        push_error("TAMU_TOPDOWN_SELECTION_UI_CONTRACT_FAILED")
+        quit(141)
+        return false
+    var selected = game.get("selected_harvest")
+    if not (selected is Dictionary) or selected.is_empty() or not selected.has("sprite"):
+        push_error("TAMU_TOPDOWN_SELECTION_EFFECT_PROXY_FAILED")
+        quit(142)
+        return false
     var image := root.get_texture().get_image()
     if image == null or image.get_width() < 400 or image.get_height() < 600:
         push_error("TAMU_TOPDOWN_SCREENSHOT_EMPTY")
@@ -63,6 +91,6 @@ func _process(delta: float) -> bool:
         push_error("TAMU_TOPDOWN_SCREENSHOT_SAVE_FAILED")
         quit(137)
         return false
-    print("TAMU_TOPDOWN_AUTHORED_SCENE_OK objects=832 stage6=game lpc=true animals=3 oak_only=true modular_hud=true screenshot=topdown-gameplay.png")
+    print("TAMU_TOPDOWN_AUTHORED_SCENE_OK objects=832 stage6=game lpc=true animals=3 oak_only=true modular_hud=true selection_ui=true selection_effect=true screenshot=topdown-gameplay.png")
     quit()
     return false

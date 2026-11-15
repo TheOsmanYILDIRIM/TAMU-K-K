@@ -227,6 +227,18 @@ jobs:
           test -s assets/ui/hud/parts/portrait.png
           test -s assets/ui/hud/parts/joystick.png
           test -s assets/ui/hud/parts/blank_hotbar.png
+      - name: Bake main-game forest selection effects
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq python3-pil >/dev/null
+          python3 scripts/build_forest_gui.py | tee screenshots/topdown-forest-ui.log
+          grep -q TAMU_FOREST_GUI_ASSETS_OK screenshots/topdown-forest-ui.log
+          test -s assets/gui/glow.png
+          test -s assets/gui/bokeh.png
+          test -s assets/gui/panel.png
+          test -s assets/ui/selection/parts/panel.png
       - name: Bake canonical static minimap for the existing TAMU HUD
         shell: bash
         run: |
@@ -278,11 +290,16 @@ jobs:
           for name in ('portrait','joystick','blank_hotbar','interact','blank_attack'):
               assert any(f'assets/ui/hud/parts/{name}.png' in path for path in names), f'PCK_HUD_TEXTURE_MISSING {name}'
           assert any('assets/ui/minimap/terrain.png' in path for path in names), 'PCK_MINIMAP_TEXTURE_MISSING'
+          for path in ('assets/gui/glow.png','assets/gui/bokeh.png','assets/ui/selection/parts/panel.png',
+                       'scripts/forest_harvest_gui.gdc','scripts/selection_card.gdc',
+                       'scripts/forest_focus.gdshader','scripts/harvest_outline.gdshader'):
+              assert any(path in name for name in names), f'PCK_SELECTION_UI_MISSING {path}'
           print('TAMU_TOPDOWN_PCK_HUD_ASSETS_OK files=',count)
           PYPCK
           (cd "$RUNNER_TEMP" && TAMU_PCK_HUD_CHECK=1 timeout --kill-after=3s 55s godot --headless --main-pack "$PCK" --script res://scripts/topdown_game_ci.gd > "$GITHUB_WORKSPACE/screenshots/topdown-pck-contract.log" 2>&1) || { cat "$GITHUB_WORKSPACE/screenshots/topdown-pck-contract.log"; exit 1; }
           grep -q TAMU_TOPDOWN_LPC_GAMEPLAY_CONTRACT_OK screenshots/topdown-pck-contract.log
           grep -q TAMU_TOPDOWN_PCK_HUD_CONTRACT_OK screenshots/topdown-pck-contract.log
+          grep -q TAMU_TOPDOWN_PCK_SELECTION_UI_OK screenshots/topdown-pck-contract.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_.*FAILED' screenshots/topdown-pck-contract.log; then cat screenshots/topdown-pck-contract.log; exit 1; fi
           echo TAMU_TOPDOWN_PCK_VERIFIED
       - uses: actions/upload-artifact@v4
