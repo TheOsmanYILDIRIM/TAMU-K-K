@@ -11,6 +11,7 @@ const CraftingBook = preload("res://scripts/crafting_book_ui.gd")
 const ProductionSandboxUI = preload("res://scripts/production_sandbox_ui.gd")
 const TERRAIN_MANIFEST := "res://game/love/assets/terrain25d/manifest.json"
 const TERRAIN_ATLAS := "res://assets/terrain25d/atlas_00.png"
+const OAK = preload("res://assets/trees/tamu_oak.png")
 const TILE := 64.0
 const PLAYER_RADIUS := 9.0
 const MAX_TILES := 1100
@@ -103,7 +104,7 @@ func _load_objects() -> void:
     for id in authority.records:
         var record: Dictionary = authority.records[id]
         var kind := str(record["kind"])
-        if kind not in ["tree", "rock"]:
+        if kind != "tree":
             continue
         var item := {"id": str(id), "kind": kind,
             "position": Vector2(float(record["x"]), float(record["y"])),
@@ -201,13 +202,8 @@ func _draw() -> void:
         if not bounds.grow(80).has_point(p):
             continue
         var r: float = clampf(float(item["radius"]) * 0.6, 10, 25)
-        if item["kind"] == "tree":
-            draw_circle(p, r, Color("#315b3a"))
-            draw_arc(p, r - 3.0, 0, TAU, 18, Color("#92b478"), 2.0)
-            draw_circle(p, 4.0, Color("#806b4b"))
-        else:
-            draw_circle(p, r, Color("#747a75"))
-            draw_arc(p, r - 3.0, 0, TAU, 12, Color("#abb0a2"), 2.0)
+        var size := OAK.get_size() * (r * 4.0 / OAK.get_height())
+        draw_texture_rect(OAK, Rect2(p - Vector2(size.x * 0.5, size.y), size), false)
         if not selection.is_empty() and selection["id"] == item["id"]:
             draw_arc(p, r + 9, 0, TAU, 24, Color.GOLD, 3.0)
     for id in gameplay.building.placed:
