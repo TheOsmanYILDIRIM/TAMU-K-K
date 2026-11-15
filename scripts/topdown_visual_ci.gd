@@ -4,6 +4,7 @@ extends SceneTree
 var time_in_scene := 0.0
 var started := false
 var selection_opened := false
+var animation_evidence_saved := false
 
 func _initialize() -> void:
     call_deferred("_launch")
@@ -40,7 +41,7 @@ func _process(delta: float) -> bool:
         push_error("TAMU_TOPDOWN_STAGE6_NOT_BOUND")
         quit(134)
         return false
-    if actor == null or actor.sprites.size() < 1:
+    if actor == null or actor.sprites.size() < 2 or not bool(actor.call("verify_animation_contract")):
         push_error("TAMU_TOPDOWN_LPC_PLAYER_UNAVAILABLE")
         quit(135)
         return false
@@ -58,6 +59,20 @@ func _process(delta: float) -> bool:
         push_error("TAMU_TOPDOWN_MODULAR_HUD_UNAVAILABLE")
         quit(139)
         return false
+    if not animation_evidence_saved:
+        var clean_image := root.get_texture().get_image()
+        if clean_image == null or clean_image.get_width() < 400 or clean_image.get_height() < 600:
+            push_error("TAMU_TOPDOWN_LPC_ANIMATION_SCREENSHOT_EMPTY")
+            quit(144)
+            return false
+        var clean_path := ProjectSettings.globalize_path("res://screenshots/topdown-lpc-animation.png")
+        DirAccess.make_dir_recursive_absolute(clean_path.get_base_dir())
+        if clean_image.save_png(clean_path) != OK:
+            push_error("TAMU_TOPDOWN_LPC_ANIMATION_SCREENSHOT_SAVE_FAILED")
+            quit(145)
+            return false
+        animation_evidence_saved = true
+        print("TAMU_TOPDOWN_LPC_ANIMATION_EVIDENCE_OK player_layers=2 animals=3")
     if not selection_opened:
         var objects = game.get("objects")
         var actor_world: Vector2 = game.get("actor_world")
