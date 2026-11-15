@@ -1159,3 +1159,13 @@ SOHBET-G'nin uygulanmış worker ticket/FIFO, visible/halo alias, `upload_cap=1`
 - CI asserts exact player sequences and wolf semantic blocks across all four cardinal directions. LPC runtime run `43743080260` SUCCESS; full authored/export run `43743080256` SUCCESS.
 - Verified exported PCK: 43,274,060 bytes; SHA-256 `c19661c8ebdb2f0e603863f408546ba1ecfa1e57ff83e443dbcfc472f778a3e9`.
 - Code HEAD before this handoff-only commit: `0fba2c9fd4dad4c89300a45fde2da905a48a7dbb`. Physical Android animation continuity remains open until user retest; main unchanged.
+
+
+### 2026-11-15 — [TOPDOWN-OAK-SCALE] Oak gameplay scale corrected
+- User reported top-down trees were too small. Root cause: `_oak_visual_size()` reduced authored radius and rendered only `r * 4` pixels of height, yielding roughly 40–100px trees beside a 64px LPC actor.
+- Code commit `7c1a9c6fd725fdfba6a17bae5a564f4cdf1020ba` raises oak height to `r * 10` (roughly 100–250px while preserving authored radius variation).
+- Added `_oak_visual_rect()` as the single geometry source for drawing, viewport culling, selection proxy alignment, and touch hit-testing. Enlarged canopies are now selectable instead of requiring a tap near the ground anchor.
+- LPC runtime run `43750829183`: SUCCESS. Full authored/export run `43750829128` / run #34: SUCCESS.
+- Xvfb evidence shows substantial tree scale and aligned selection effect/card.
+- Verified PCK: 43,275,100 bytes; SHA-256 `818dbecf943eceebf971d88dd6acdfa3290aec1d2451302441a194b724f90379`.
+- Physical Android tree scale/touch acceptance remains OPEN until user retest. main unchanged.
