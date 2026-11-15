@@ -231,6 +231,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p screenshots
           sudo apt-get update -qq
           sudo apt-get install -y -qq python3-pil >/dev/null
           python3 scripts/build_forest_gui.py | tee screenshots/topdown-forest-ui.log
