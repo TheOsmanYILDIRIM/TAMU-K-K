@@ -1,5 +1,6 @@
 name: TAMU topdown authored gameplay smoke # verified LPC animals + PCK gate
 # Regression: topdown GDScript preloads use real line breaks; SceneTree smoke callbacks use the Godot 4.6 bool signature.
+# Acceptance: the authored visual smoke must also prove the existing TAMU ModularHUD contract is active.
 on:
   push:
     branches: [experiment/tamu-topdown-lpc-20261114]
