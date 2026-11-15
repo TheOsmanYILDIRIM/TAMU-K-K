@@ -192,6 +192,17 @@ jobs:
           test -s screenshots/topdown-gameplay.png
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|TAMU_TOPDOWN_.*FAILED' screenshots/topdown-*.log; then exit 1; fi
           echo TAMU_TOPDOWN_NATIVE_VISUAL_ACCEPTED
+      - name: Export verified demo PCK
+        run: |
+          mkdir -p build
+          sed -i 's/export_filter="resources"/export_filter="all_resources"/; s/include_filter="/include_filter="chunks\/*.json,assets\/lpc\/*.txt,game\/love\/assets\/terrain25d\/manifest.json,/' export_presets.cfg
+          godot --headless --path . --export-pack Android build/TAMU-TopDown.pck
+          test -s build/TAMU-TopDown.pck
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TAMU-TopDown-PCK
+          path: build/TAMU-TopDown.pck
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: always()
         with:
