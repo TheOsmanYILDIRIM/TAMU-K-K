@@ -1139,3 +1139,14 @@ SOHBET-G'nin uygulanmış worker ticket/FIFO, visible/halo alias, `upload_cap=1`
 - Lightweight LPC workflow `43740061207`: SUCCESS. Full authored/export smoke `43740061224`: SUCCESS.
 - Latest PCK: 43,240,396 bytes; SHA-256 `b9f46a0dd87d8c1259fee688529e523a2ae33b7ac2aade07074dcf8c670f3b7e`. Xvfb visual evidence shows the player head present and a wolf visible.
 - Physical Android animation continuity remains OPEN until the user retests this exact PCK. main remains unchanged.
+
+
+### 2026-11-15 — [TOPDOWN-LPC-ANIMATION] Head and wolf frame layout fixed
+- Tested code HEAD: `865bac1e4acd0253bcc731d414a0253976e2116a`; main unchanged.
+- Player LPC is now a synchronized layered actor: `body/bodies/male` + `head/heads/human/male`. Runtime/equipment refresh keeps both base layers. The animation contract covers `idle`, `walk`, `slash`, `spellcast`, `thrust`, and `shoot` in all four directions and rejects alpha-empty layer frames.
+- Wolf disappearance root cause was not generic frame emptiness: the original 640x384 Redshrike/William sheet is non-uniform. N/S walk frames use 23x63 regions on a 32px horizontal stride; E/W use 64x31 regions at separate Y ranges. Treating it as a uniform 64x64 grid rendered two narrow frames together or crossed action strips.
+- `lpc_animal_actor.gd` now uses explicit walk rectangles: DOWN x=5/37/69/101 y=128; UP x=164/196/228/260 y=128; LEFT x=320..576 step64 y=289; RIGHT x=320..576 step64 y=97. It also rejects sparse/transparent regions using used bounds and opaque-pixel checks.
+- Clean Xvfb animation evidence `topdown-lpc-animation.png` shows one headed player and three distinct intact wolves before selection blur/UI. Selection screenshot remains separately verified.
+- Lightweight LPC workflow run `43741469799`: SUCCESS. Full authored/export run `43741469777`: SUCCESS.
+- Verified exported PCK: 43,241,484 bytes; SHA-256 `b32945d2db152f8167151f5bfb7a2e5ac056dd9df15bcf5d39ea8fcce136b06b`.
+- Physical Android animation continuity is still OPEN until the user retests this exact PCK.
