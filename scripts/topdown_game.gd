@@ -23,6 +23,7 @@ var source: RefCounted
 var actor_world := Vector2(64, 128)
 var actor_speed := 96.0
 var actor: Node2D
+var animals: Array[Node2D] = []
 var camera: Camera2D
 var selection: Dictionary = {}
 var objects: Array[Dictionary] = []
@@ -80,6 +81,7 @@ func _ready() -> void:
     objects_layer.add_child(actor)
     actor.position = actor_world
     _sync_equipment()
+    _spawn_animals(objects_layer)
     if actor.sprites.is_empty():
         push_warning("TAMU_LPC_PLAYER_SHEET_MISSING")
     camera = Camera2D.new()

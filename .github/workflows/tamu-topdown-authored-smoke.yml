@@ -184,9 +184,9 @@ jobs:
           python3 - <<'PY'
           import hashlib,pathlib
           b=pathlib.Path('assets/lpc/animals/wolf/walk.png').read_bytes()
-          git_sha=hashlib.sha1(b'blob '+str(len(b)).encode()+b'\\0'+b).hexdigest()
+          git_sha=hashlib.sha1(b'blob '+str(len(b)).encode()+bytes([0])+b).hexdigest()
           assert git_sha=='acd20f9908daf6a7a6c9b47cfac7dc5c1c7cf17a', git_sha
-          assert b[:8]==b'\\x89PNG\\r\\n\\x1a\\n'
+          assert b[:8]==bytes([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a])
           print('TAMU_LPC_WOLF_SOURCE_OK bytes=',len(b),'git_blob=',git_sha)
           PY
           cat >> assets/lpc/CREDITS.txt <<'EOF'

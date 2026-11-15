@@ -1,7 +1,8 @@
 extends SceneTree
 const LPC = preload("res://scripts/lpc_sprite_actor.gd")
 const Topdown = preload("res://scripts/topdown_game.gd")
-const Projection = preload("res://scripts/topdown_projection.gd")
+const LPCAnimal = preload("res://scripts/lpc_animal_actor.gd")
+const WorldProjection = preload("res://scripts/topdown_projection.gd")
 const Gameplay = preload("res://scripts/gameplay_session.gd")
 
 func _initialize() -> void:
