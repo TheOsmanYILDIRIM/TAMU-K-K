@@ -1,4 +1,5 @@
 name: TAMU topdown authored gameplay smoke # verified LPC animals + PCK gate
+# Regression: topdown GDScript preloads must contain real line breaks, never escaped \\n text.
 on:
   push:
     branches: [experiment/tamu-topdown-lpc-20261114]
