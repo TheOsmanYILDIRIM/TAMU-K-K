@@ -240,11 +240,10 @@ func _draw() -> void:
     for item in objects:
         if bool(item["collected"]):
             continue
-        var p: Vector2 = item["position"]
-        if not bounds.grow(80).has_point(p):
+        var oak_rect := _oak_visual_rect(item)
+        if not bounds.grow(24.0).intersects(oak_rect):
             continue
-        var size := _oak_visual_size(item)
-        draw_texture_rect(OAK, Rect2(p - Vector2(size.x * 0.5, size.y), size), false)
+        draw_texture_rect(OAK, oak_rect, false)
     for id in gameplay.building.placed:
         var placed: Dictionary = gameplay.building.placed[id]
         var box: Rect2 = placed["box"]
@@ -291,13 +290,16 @@ func _select_at_screen(screen_pos: Vector2) -> void:
             _pickup(str(drop["id"]))
             return
     var target: Dictionary = {}
+    var tree_nearest := INF
     for item in objects:
         if bool(item["collected"]):
             continue
+        var oak_rect := _oak_visual_rect(item).grow(10.0)
+        if not oak_rect.has_point(at):
+            continue
         var distance := (item["position"] as Vector2).distance_squared_to(at)
-        var threshold := pow(maxf(26.0, float(item["radius"]) * 0.8), 2.0)
-        if distance < minf(nearest, threshold):
-            nearest = distance
+        if distance < tree_nearest:
+            tree_nearest = distance
             target = item
     if target.is_empty():
         _clear_harvest_selection()
@@ -306,8 +308,15 @@ func _select_at_screen(screen_pos: Vector2) -> void:
         _select_harvest(target)
 
 func _oak_visual_size(item: Dictionary) -> Vector2:
+    # Top-down oak should read as a substantial environment object beside a 64px LPC actor.
+    # Preserve authored radius variation while avoiding the previous 40-100px miniature range.
     var r: float = clampf(float(item["radius"]) * 0.6, 10.0, 25.0)
-    return OAK.get_size() * (r * 4.0 / OAK.get_height())
+    return OAK.get_size() * (r * 10.0 / OAK.get_height())
+
+func _oak_visual_rect(item: Dictionary) -> Rect2:
+    var size := _oak_visual_size(item)
+    var foot := item["position"] as Vector2
+    return Rect2(foot - Vector2(size.x * 0.5, size.y), size)
 
 func _ensure_selection_outline_texture() -> Texture2D:
     if selection_outline_texture != null:

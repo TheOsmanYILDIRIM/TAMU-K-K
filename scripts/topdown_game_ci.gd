@@ -66,6 +66,20 @@ func _run() -> void:
         push_error("TAMU_LPC_IDLE_FAILED")
         quit(108)
         return
+    var tree_probe := Topdown.new()
+    var small_tree := tree_probe._oak_visual_size({"radius": 10.0})
+    var medium_tree := tree_probe._oak_visual_size({"radius": 20.0})
+    var large_tree := tree_probe._oak_visual_size({"radius": 50.0})
+    if small_tree.y < 95.0 or medium_tree.y < 115.0 or large_tree.y < 240.0:
+        push_error("TAMU_TOPDOWN_OAK_SCALE_TOO_SMALL")
+        quit(108)
+        return
+    var probe_rect := tree_probe._oak_visual_rect({"radius": 20.0, "position": Vector2(100, 200)})
+    if absf(probe_rect.end.y - 200.0) > 0.01 or probe_rect.size != medium_tree:
+        push_error("TAMU_TOPDOWN_OAK_FOOT_ANCHOR_FAILED")
+        quit(108)
+        return
+    tree_probe.free()
     var wolf_path := "res://assets/lpc/animals/wolf/walk.png"
     if not ResourceLoader.exists(wolf_path):
         push_error("TAMU_LPC_ANIMAL_SHEET_MISSING")
