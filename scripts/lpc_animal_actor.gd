@@ -165,7 +165,10 @@ func verify_animation_contract() -> bool:
             elif frames != expected[name]:
                 return false
             for column in frames:
-                if _frame_opaque_pixels(_frame_rect(int(column), row)) < 80:
+                var opaque := _frame_opaque_pixels(_frame_rect(int(column), row))
+                if opaque < 80:
+                    push_warning("TAMU_LPC_WOLF_SOURCE_CELL_EMPTY clip=%s direction=%s frame=%d row=%d opaque=%d"
+                        % [name, key, int(column), row, opaque])
                     return false
     return true
 
