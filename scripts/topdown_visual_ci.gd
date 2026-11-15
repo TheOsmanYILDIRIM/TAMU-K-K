@@ -3,6 +3,7 @@ extends SceneTree
 ## The test captures a screenshot only after the playable scene is ready.
 var time_in_scene := 0.0
 var started := false
+var selection_opened := false
 
 func _initialize() -> void:
     call_deferred("_launch")
@@ -21,7 +22,6 @@ func _process(delta: float) -> bool:
     time_in_scene += delta
     if time_in_scene < 1.8:
         return false
-    started = false
     var game := current_scene
     if game == null or not bool(game.get("world_ready")):
         push_error("TAMU_TOPDOWN_BOOT_WORLD_NOT_READY")
@@ -52,34 +52,39 @@ func _process(delta: float) -> bool:
         push_error("TAMU_TOPDOWN_MODULAR_HUD_UNAVAILABLE")
         quit(139)
         return false
-    var objects = game.get("objects")
-    var actor_world: Vector2 = game.get("actor_world")
-    var nearest: Dictionary = {}
-    var nearest_distance := INF
-    for item in objects:
-        if bool(item.get("collected", false)):
-            continue
-        var d: float = actor_world.distance_squared_to(item["position"])
-        if d < nearest_distance:
-            nearest_distance = d
-            nearest = item
-    if nearest.is_empty() or not bool(game.call("_select_harvest", nearest)):
-        push_error("TAMU_TOPDOWN_SELECTION_OPEN_FAILED")
-        quit(140)
+    if not selection_opened:
+        var objects = game.get("objects")
+        var actor_world: Vector2 = game.get("actor_world")
+        var nearest: Dictionary = {}
+        var nearest_distance := INF
+        for item in objects:
+            if bool(item.get("collected", false)):
+                continue
+            var d: float = actor_world.distance_squared_to(item["position"])
+            if d < nearest_distance:
+                nearest_distance = d
+                nearest = item
+        if nearest.is_empty() or not bool(game.call("_select_harvest", nearest)):
+            push_error("TAMU_TOPDOWN_SELECTION_OPEN_FAILED")
+            quit(140)
+            return false
+        var forest_gui = game.get("forest_gui")
+        var panel = forest_gui.get("panel") as Control if forest_gui != null else null
+        var premium = forest_gui.get("premium_card") if forest_gui != null else null
+        if forest_gui == null or panel == null or not panel.visible or premium == null \
+                or not bool(premium.call("verify_contract")):
+            push_error("TAMU_TOPDOWN_SELECTION_UI_CONTRACT_FAILED")
+            quit(141)
+            return false
+        var selected = game.get("selected_harvest")
+        if not (selected is Dictionary) or selected.is_empty() or not selected.has("sprite"):
+            push_error("TAMU_TOPDOWN_SELECTION_EFFECT_PROXY_FAILED")
+            quit(142)
+            return false
+        selection_opened = true
+        time_in_scene = 0.0
         return false
-    var forest_gui = game.get("forest_gui")
-    var panel = forest_gui.get("panel") as Control if forest_gui != null else null
-    var premium = forest_gui.get("premium_card") if forest_gui != null else null
-    if forest_gui == null or panel == null or not panel.visible or premium == null \
-            or not bool(premium.call("verify_contract")):
-        push_error("TAMU_TOPDOWN_SELECTION_UI_CONTRACT_FAILED")
-        quit(141)
-        return false
-    var selected = game.get("selected_harvest")
-    if not (selected is Dictionary) or selected.is_empty() or not selected.has("sprite"):
-        push_error("TAMU_TOPDOWN_SELECTION_EFFECT_PROXY_FAILED")
-        quit(142)
-        return false
+    started = false
     var image := root.get_texture().get_image()
     if image == null or image.get_width() < 400 or image.get_height() < 600:
         push_error("TAMU_TOPDOWN_SCREENSHOT_EMPTY")
