@@ -6,10 +6,12 @@ class_name LPCAnimalActor
 
 const CELL := 64
 const DIRECTION_ROWS := {
+    # Cardinal rows by VISUAL screen-facing direction in the normalized atlas.
+    # Row 3 faces toward the camera (screen-down); row 7 faces away (screen-up).
     "left": 1,
-    "up": 3,
+    "up": 7,
     "right": 5,
-    "down": 7
+    "down": 3
 }
 const CLIPS := {
     "stance": {"start": 0, "count": 1, "mode": "hold"},
