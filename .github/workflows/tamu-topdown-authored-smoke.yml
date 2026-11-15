@@ -176,14 +176,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p assets/lpc/body/bodies/male
-          for action in walk idle slash spellcast; do
-            source="third_party/lpc-source/spritesheets/body/bodies/male/$action.png"
-            if test -s "$source"; then
-              cp "$source" "assets/lpc/body/bodies/male/$action.png"
+          mkdir -p assets/lpc/body/bodies/male assets/lpc/head/heads/human/male
+          for action in walk idle slash spellcast thrust shoot; do
+            body_source="third_party/lpc-source/spritesheets/body/bodies/male/$action.png"
+            head_source="third_party/lpc-source/spritesheets/head/heads/human/male/$action.png"
+            if test -s "$body_source"; then
+              cp "$body_source" "assets/lpc/body/bodies/male/$action.png"
+            fi
+            if test -s "$head_source"; then
+              cp "$head_source" "assets/lpc/head/heads/human/male/$action.png"
             fi
           done
           test -s assets/lpc/body/bodies/male/walk.png
+          test -s assets/lpc/head/heads/human/male/walk.png
+          test -s assets/lpc/head/heads/human/male/idle.png
+          test -s assets/lpc/head/heads/human/male/slash.png
+          test -s assets/lpc/head/heads/human/male/spellcast.png
           cp third_party/lpc-source/CREDITS.csv assets/lpc/CREDITS.txt
           mkdir -p assets/lpc/animals/wolf
           WOLF_COMMIT=f61104a1ecc54e7bce54b82ada7d7ba4c41bc524
@@ -294,6 +302,12 @@ jobs:
                   name=f.read(size).rstrip(b'\x00').decode('utf-8').lower()
                   f.seek(16+16+4,1)
                   names.append(name)
+          for lpc in ('assets/lpc/body/bodies/male/walk.png',
+                      'assets/lpc/head/heads/human/male/walk.png',
+                      'assets/lpc/head/heads/human/male/idle.png',
+                      'assets/lpc/head/heads/human/male/slash.png',
+                      'assets/lpc/animals/wolf/walk.png'):
+              assert any(lpc in path for path in names), f'PCK_LPC_ANIMATION_ASSET_MISSING {lpc}'
           for name in ('portrait','joystick','blank_hotbar','interact','blank_attack'):
               assert any(f'assets/ui/hud/parts/{name}.png' in path for path in names), f'PCK_HUD_TEXTURE_MISSING {name}'
           assert any('assets/ui/minimap/terrain.png' in path for path in names), 'PCK_MINIMAP_TEXTURE_MISSING'

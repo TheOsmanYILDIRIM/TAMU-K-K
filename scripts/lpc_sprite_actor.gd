@@ -18,6 +18,7 @@ var clip := "walk"
 var action := ""
 var action_remaining := 0.0
 var texture_cache: Dictionary = {}
+var visible_frame_cache: Dictionary = {}
 
 func _ready() -> void:
     y_sort_enabled = false
@@ -132,13 +133,68 @@ func _direction_offset() -> int:
         return 2
     return 3
 
+func _frame_has_alpha(sprite: Sprite2D, row: int, column: int) -> bool:
+    if sprite == null or sprite.texture == null:
+        return false
+    var image := sprite.texture.get_image()
+    if image == null or image.is_empty():
+        return false
+    var key := "%s:%d:%d:%d:%d" % [sprite.texture.resource_path, row, column,
+        sprite.hframes, sprite.vframes]
+    if visible_frame_cache.has(key):
+        return bool(visible_frame_cache[key])
+    var x0 := column * frame_size.x
+    var y0 := row * frame_size.y
+    var found := false
+    for y in range(y0, mini(y0 + frame_size.y, image.get_height()), 2):
+        for x in range(x0, mini(x0 + frame_size.x, image.get_width()), 2):
+            if image.get_pixel(x, y).a > 0.02:
+                found = true
+                break
+        if found:
+            break
+    visible_frame_cache[key] = found
+    return found
+
+func _visible_columns(sprite: Sprite2D, row: int) -> Array[int]:
+    var result: Array[int] = []
+    var limit := mini(walk_frame_count, sprite.hframes) if clip == "walk" else sprite.hframes
+    for column in range(limit):
+        if _frame_has_alpha(sprite, row, column):
+            result.append(column)
+    return result
+
 func _draw_current_frame() -> void:
     for sprite in sprites:
         var row := _direction_offset()
         if sprite.vframes > 4 and clip == "walk":
             row += walk_first_row
         if row >= sprite.vframes:
+            sprite.visible = false
             continue
-        var frame_count := mini(walk_frame_count, sprite.hframes) if clip == "walk" else sprite.hframes
-        var column := 0 if clip == "idle" and action_remaining <= 0.0 else int(phase) % maxi(1, frame_count)
-        sprite.frame = row * sprite.hframes + mini(column, sprite.hframes - 1)
+        var columns := _visible_columns(sprite, row)
+        if columns.is_empty():
+            sprite.visible = false
+            continue
+        sprite.visible = true
+        var logical := 0 if clip == "idle" and action_remaining <= 0.0 else int(phase) % columns.size()
+        sprite.frame = row * sprite.hframes + columns[logical]
+
+func verify_animation_contract() -> bool:
+    if sprites.size() < 2:
+        return false
+    var saved_facing := facing
+    var saved_clip := clip
+    for direction in [Vector2.UP, Vector2.LEFT, Vector2.DOWN, Vector2.RIGHT]:
+        facing = direction
+        for requested in ["idle", "walk", "slash", "spellcast"]:
+            _apply_clip(requested)
+            var row := _direction_offset()
+            for sprite in sprites:
+                if row >= sprite.vframes or _visible_columns(sprite, row).is_empty():
+                    facing = saved_facing
+                    _apply_clip(saved_clip)
+                    return false
+    facing = saved_facing
+    _apply_clip(saved_clip)
+    return true

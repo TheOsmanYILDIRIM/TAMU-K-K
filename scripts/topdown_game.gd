@@ -90,7 +90,8 @@ func _ready() -> void:
     actor = LPCActor.new()
     actor.name = "LPCPlayer"
     actor.sheet_paths = PackedStringArray([
-        "res://assets/lpc/body/bodies/male/walk.png"
+        "res://assets/lpc/body/bodies/male/walk.png",
+        "res://assets/lpc/head/heads/human/male/walk.png"
     ])
     objects_layer.add_child(actor)
     actor.position = actor_world
@@ -580,7 +581,10 @@ func _place_workbench() -> void:
 func _sync_equipment() -> void:
     if actor == null or gameplay == null:
         return
-    var layers := PackedStringArray(["res://assets/lpc/body/bodies/male/walk.png"])
+    var layers := PackedStringArray([
+        "res://assets/lpc/body/bodies/male/walk.png",
+        "res://assets/lpc/head/heads/human/male/walk.png"
+    ])
     # Optional item.visual.lpc_walk_path is purely a rendering hint.
     # Unknown/unpackaged assets never grant an item or change gameplay authority.
     for stack in gameplay.slots:

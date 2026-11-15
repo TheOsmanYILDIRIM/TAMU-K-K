@@ -26,8 +26,12 @@ func _run() -> void:
     var actor := LPC.new()
     actor.sheet_paths = PackedStringArray([tex_path])
     root.add_child(actor)
-    if actor.sprites.size() != 1:
-        push_error("TAMU_LPC_PLAYER_NOT_LOADED")
+    if actor.sprites.size() < 2:
+        push_error("TAMU_LPC_PLAYER_HEAD_OR_BODY_NOT_LOADED")
+        quit(104)
+        return
+    if not actor.verify_animation_contract():
+        push_error("TAMU_LPC_PLAYER_ANIMATION_VISIBILITY_FAILED")
         quit(104)
         return
     actor.set_motion(Vector2.UP, 0.125)
@@ -58,8 +62,8 @@ func _run() -> void:
     var animal := LPCAnimal.new()
     root.add_child(animal)
     animal.configure(Vector2(96, 96), 0)
-    if not animal.loaded:
-        push_error("TAMU_LPC_ANIMAL_NOT_LOADED")
+    if not animal.loaded or not animal.verify_animation_contract():
+        push_error("TAMU_LPC_ANIMAL_ANIMATION_VISIBILITY_FAILED")
         quit(110)
         return
     animal.queue_free()
@@ -74,7 +78,7 @@ func _run() -> void:
         quit(110)
         return
     actor.queue_free()
-    print("TAMU_TOPDOWN_LPC_GAMEPLAY_CONTRACT_OK body=576x256 four_directions=true clips=idle/walk/slash animals=wolf canonical_harvest_craft=true")
+    print("TAMU_TOPDOWN_LPC_GAMEPLAY_CONTRACT_OK body_head_layers=true four_directions=true clips=idle/walk/slash/spellcast wolf_nonempty_frames=true canonical_harvest_craft=true")
     if OS.get_environment("TAMU_PCK_HUD_CHECK") == "1":
         var game = scene.instantiate()
         root.add_child(game)
