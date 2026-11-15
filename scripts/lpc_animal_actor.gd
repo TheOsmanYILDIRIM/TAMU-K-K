@@ -60,14 +60,18 @@ func _direction_row() -> int:
     if facing == Vector2.DOWN: return 2
     return 3
 
-func _cell_has_alpha(image: Image, row: int, column: int) -> bool:
-    var x0 := column * frame_size.x
-    var y0 := row * frame_size.y
-    for y in range(y0, mini(y0 + frame_size.y, image.get_height()), 2):
-        for x in range(x0, mini(x0 + frame_size.x, image.get_width()), 2):
-            if image.get_pixel(x, y).a > 0.02:
-                return true
-    return false
+func _cell_visible_bounds(image: Image, row: int, column: int) -> Rect2i:
+    var region := image.get_region(Rect2i(column * frame_size.x, row * frame_size.y,
+        frame_size.x, frame_size.y))
+    if region == null or region.is_empty():
+        return Rect2i()
+    return region.get_used_rect()
+
+func _cell_is_full_sprite(image: Image, row: int, column: int) -> bool:
+    var used := _cell_visible_bounds(image, row, column)
+    # Reject separators, stray paws/tails and almost-empty attack slots.
+    return used.has_area() and used.size.x >= 24 and used.size.y >= 18 \
+        and used.size.x * used.size.y >= 600
 
 func _scan_visible_frames() -> void:
     visible_columns_by_row.clear()
@@ -83,7 +87,7 @@ func _scan_visible_frames() -> void:
     for row in range(mini(4, rows)):
         var frames: Array[int] = []
         for column in range(columns):
-            var visible := _cell_has_alpha(image, row, column)
+            var visible := _cell_is_full_sprite(image, row, column)
             if visible:
                 frames.append(column)
             elif not frames.is_empty():
@@ -95,11 +99,27 @@ func verify_animation_contract() -> bool:
         return false
     if visible_columns_by_row.size() < 4:
         return false
+    var image := sprite.texture.get_image()
+    if image == null or image.is_empty():
+        return false
     for row in range(4):
         var frames: Array = visible_columns_by_row.get(row, [])
         if frames.size() < 2:
             return false
+        for column in frames:
+            if not _cell_is_full_sprite(image, row, int(column)):
+                return false
     return true
+
+func current_frame_visible_bounds() -> Rect2i:
+    if sprite == null or sprite.texture == null:
+        return Rect2i()
+    var row := _direction_row()
+    var frames: Array = visible_columns_by_row.get(row, [])
+    if frames.is_empty():
+        return Rect2i()
+    var column := int(elapsed * fps) % frames.size()
+    return _cell_visible_bounds(sprite.texture.get_image(), row, int(frames[column]))
 
 func _draw_frame() -> void:
     if sprite == null or sprite.texture == null:

@@ -71,6 +71,18 @@ func _run() -> void:
         push_error("TAMU_LPC_ANIMAL_ANIMATION_VISIBILITY_FAILED")
         quit(110)
         return
+    for direction in [Vector2.UP, Vector2.LEFT, Vector2.DOWN, Vector2.RIGHT]:
+        animal.facing = direction
+        for step in range(32):
+            animal.elapsed = float(step) / animal.fps
+            animal._draw_frame()
+            var used: Rect2i = animal.current_frame_visible_bounds()
+            if not animal.sprite.visible or not used.has_area() or used.size.x < 24 \
+                    or used.size.y < 18 or used.size.x * used.size.y < 600:
+                push_error("TAMU_LPC_ANIMAL_FRAME_FRAGMENT direction=" + str(direction)
+                    + " step=" + str(step) + " used=" + str(used))
+                quit(110)
+                return
     animal.queue_free()
     var gameplay := Gameplay.new()
     if not gameplay.verify_contract():
