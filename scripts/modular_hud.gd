@@ -316,4 +316,6 @@ func blocks_world_input(point: Vector2) -> bool:
     return false
 
 func verify_contract() -> bool:
-    return initialized and controls.has("interact") and controls.has("zoom_plus") and sprites.has("joystick_thumb") and minimap != null
+    return initialized and controls.has("interact") and controls.has("zoom_plus") \
+        and sprites.has("joystick_thumb") and minimap != null \
+        and bool(minimap.call("verify_contract"))

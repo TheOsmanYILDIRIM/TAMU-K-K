@@ -91,6 +91,17 @@ jobs:
           NODE
           test -s assets/lpc/body/bodies/male/walk.png
           test -s assets/lpc/catalog.json
+          mkdir -p assets/lpc/animals/wolf
+          WOLF_COMMIT=f61104a1ecc54e7bce54b82ada7d7ba4c41bc524
+          WOLF_URL="https://raw.githubusercontent.com/OpenGameArt/LiberatedPixelCup/$WOLF_COMMIT/sprite/original/Redshrike/wolf/wolfsheet1.png"
+          curl -fL --retry 3 "$WOLF_URL" -o assets/lpc/animals/wolf/walk.png
+          python3 - <<'PY'
+          import hashlib,pathlib
+          b=pathlib.Path('assets/lpc/animals/wolf/walk.png').read_bytes()
+          git_sha=hashlib.sha1(b'blob '+str(len(b)).encode()+bytes([0])+b).hexdigest()
+          assert git_sha=='acd20f9908daf6a7a6c9b47cfac7dc5c1c7cf17a', git_sha
+          print('TAMU_LPC_WOLF_SOURCE_OK bytes=',len(b),'git_blob=',git_sha)
+          PY
           du -sh assets/lpc/
 
       - name: Import and native check with Godot 4.6
@@ -117,6 +128,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add assets/lpc
+          git reset -- assets/lpc/animals/wolf || true
           if git diff --cached --quiet; then
             echo TAMU_LPC_RUNTIME_ALREADY_PUBLISHED
             exit 0

@@ -204,6 +204,14 @@ jobs:
             echo TAMU_LEGACY_TREE_ART_STILL_PRESENT
             exit 1
           fi
+      - name: Bake canonical static minimap for the existing TAMU HUD
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p screenshots
+          timeout --kill-after=3s 120s godot --headless --path . --script res://scripts/bake_minimap_ci.gd > screenshots/topdown-minimap-bake.log 2>&1 || { cat screenshots/topdown-minimap-bake.log; exit 1; }
+          grep -q TAMU_STATIC_MINIMAP_BAKED_OK screenshots/topdown-minimap-bake.log
+          test -s assets/ui/minimap/terrain.png
       - name: Native Godot 4.6 top-down gameplay and screenshot
         shell: bash
         run: |
