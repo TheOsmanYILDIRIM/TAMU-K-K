@@ -81,6 +81,21 @@ jobs:
           }
           const expected=path.join(dst,'body/bodies/male/walk.png');
           if(!fs.existsSync(expected)) throw Error('Expected LPC male body unavailable');
+          const requiredSets=[
+            ['body/bodies/male','body/bodies/male'],
+            ['head/heads/human/male','head/heads/human/male']
+          ];
+          for(const [sourceRel,destRel] of requiredSets){
+            const srcDir=path.join(root,sourceRel);
+            const destDir=path.join(dst,destRel);
+            fs.mkdirSync(destDir,{recursive:true});
+            for(const action of ['walk','idle','slash','spellcast','thrust','shoot']){
+              const file=path.join(srcDir,action+'.png');
+              if(!fs.existsSync(file)) throw Error('Required LPC layer action missing: '+file);
+              fs.copyFileSync(file,path.join(destDir,action+'.png'));
+            }
+          }
+          if(!fs.existsSync(path.join(dst,'head/heads/human/male/walk.png'))) throw Error('Expected LPC male head unavailable');
           fs.copyFileSync('third_party/lpc-source/CREDITS.csv',path.join(dst,'CREDITS.txt'));
           const report={source_commit:fs.readFileSync('third_party/lpc-source/UPSTREAM_COMMIT','utf8').trim(),
             licensed_art_credits:'res://assets/lpc/CREDITS.txt',compatible_layers:selected,
@@ -90,6 +105,9 @@ jobs:
           console.log('TAMU_LPC_RUNTIME_ASSETS_OK',JSON.stringify({compatible_layers:selected,library_walk_entries:candidates.length,groups:used}));
           NODE
           test -s assets/lpc/body/bodies/male/walk.png
+          test -s assets/lpc/head/heads/human/male/walk.png
+          test -s assets/lpc/head/heads/human/male/idle.png
+          test -s assets/lpc/head/heads/human/male/slash.png
           test -s assets/lpc/catalog.json
           mkdir -p assets/lpc/animals/wolf
           WOLF_COMMIT=f61104a1ecc54e7bce54b82ada7d7ba4c41bc524
@@ -126,6 +144,7 @@ jobs:
         run: |
           set -euo pipefail
           test -s assets/lpc/body/bodies/male/walk.png
+          test -s assets/lpc/head/heads/human/male/walk.png
           test -s assets/lpc/catalog.json
           test -s assets/lpc/animals/wolf/walk.png
           echo TAMU_LPC_RUNTIME_BUILD_ONLY_OK

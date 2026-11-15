@@ -23,8 +23,13 @@ func _run() -> void:
         push_error("TAMU_LPC_9X4_FRAME_LAYOUT_FAILED")
         quit(103)
         return
+    var head_path := "res://assets/lpc/head/heads/human/male/walk.png"
+    if not ResourceLoader.exists(head_path):
+        push_error("TAMU_LPC_RUNTIME_HEAD_MISSING")
+        quit(102)
+        return
     var actor := LPC.new()
-    actor.sheet_paths = PackedStringArray([tex_path])
+    actor.sheet_paths = PackedStringArray([tex_path, head_path])
     root.add_child(actor)
     if actor.sprites.size() < 2:
         push_error("TAMU_LPC_PLAYER_HEAD_OR_BODY_NOT_LOADED")
