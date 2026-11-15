@@ -1,4 +1,4 @@
-name: TAMU topdown authored gameplay smoke
+name: TAMU topdown authored gameplay smoke # verified LPC animals + PCK gate
 on:
   push:
     branches: [experiment/tamu-topdown-lpc-20261114]

@@ -29,7 +29,8 @@ func _process(delta: float) -> void:
         return
     var authority = game.get("authority")
     var gameplay = game.get("gameplay")
-    var actor = game.get("actor")\n    var animals = game.get("animals")
+    var actor = game.get("actor")
+    var animals = game.get("animals")
     if authority == null or authority.records.size() != 832:
         push_error("TAMU_TOPDOWN_BOOT_SOURCE_PARITY_FAILED")
         quit(133)
