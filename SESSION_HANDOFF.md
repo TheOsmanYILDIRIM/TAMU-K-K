@@ -1110,3 +1110,12 @@ SOHBET-G'nin uygulanmış worker ticket/FIFO, visible/halo alias, `upload_cap=1`
 - Final downloaded PCK: 41,579,900 bytes; SHA-256 `1fd9cb1b46e77d8a7c0633e1d07bfe13949d82a605e0df3e103ed728cf37d25d`. Independent local hash/size matched CI exactly.
 - This is native Linux/Xvfb Godot verification, not a physical Android device test. Physical Android launch/touch/visual/FPS/thermal acceptance remains open.
 - Audit note: legacy `forest_harvest_gui.gd` expects node-backed resource sprites and `selected_harvest`; the current top-down renderer draws source trees directly. It was not falsely wired. Adapting that selection card is a separate open UI-integration item.
+
+
+### 2026-11-15 — [TOPDOWN-HUD-DEVICE] Physical-device HUD packaging failure fixed
+- User physical-device launch of the prior PCK showed `TAMU HUD yüklenemedi; geçici kontrol arayüzüne dönülmedi.` while player/animals had already spawned. That proved `world_ready` stopped at the ModularHUD acceptance gate.
+- Root cause: source-tree CI could read `assets/ui/hud/packs/TAMU_HUD_Correct_Split.zip` directly, so Xvfb passed. The exported PCK did not contain that dynamic ZIP, and the top-down workflow had skipped the canonical Android step that extracts the 29 HUD PNGs into `assets/ui/hud/parts/` before Godot import/export.
+- Fix commit `5c2f8031ac48bd8af4612f54332445099276ad15`: extract and validate the 29 HUD PNGs before import; after export parse the PCK file table and require portrait/joystick/blank_hotbar/interact/blank_attack plus minimap; isolated PCK runtime now sets `TAMU_PCK_HUD_CHECK=1` and must emit `TAMU_TOPDOWN_PCK_HUD_CONTRACT_OK`.
+- Authored smoke run `43736084244` / run #13: SUCCESS. Independent downloaded fixed PCK is 42,710,688 bytes, SHA-256 `dbe11d40d7cba88aca45dff4494acc0f5e8a0788aeda93a506afdc5cbe8a476f`. Direct binary inspection confirmed all required HUD textures and `assets/ui/minimap/terrain.png` are present.
+- Current branch HEAD `d21e0f3d33a2452bcd8dd900d2a54d1f388e6fa7` additionally keeps LPC runtime staging build-only, preventing the branch-specific validation workflow from auto-committing unrelated generated LPC assets. LPC run `43736258328` SUCCESS.
+- main remains unchanged. Physical Android acceptance is still OPEN until the user launches this new fixed PCK and confirms HUD/touch/visual behavior on-device.
