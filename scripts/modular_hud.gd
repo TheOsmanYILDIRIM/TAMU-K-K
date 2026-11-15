@@ -87,7 +87,10 @@ func _action(key: String) -> void:
         "bag":
             host.call("open_inventory")
         "forge":
-            _message("ALAŞIM YALNIZCA FIRINDA AÇILIR")
+            if host.has_method("open_workshop"):
+                host.call("open_workshop")
+            else:
+                _message("ALAŞIM YALNIZCA FIRINDA AÇILIR")
         "journal","growth","menu":
             _message(key.to_upper() + " — ekran henüz uygulanmadı")
         _:

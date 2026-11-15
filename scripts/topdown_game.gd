@@ -10,13 +10,13 @@ const LPCActor = preload("res://scripts/lpc_sprite_actor.gd")
 const LPCAnimal = preload("res://scripts/lpc_animal_actor.gd")
 const CraftingBook = preload("res://scripts/crafting_book_ui.gd")
 const ProductionSandboxUI = preload("res://scripts/production_sandbox_ui.gd")
+const ModularHUD = preload("res://scripts/modular_hud.gd")
 const TERRAIN_MANIFEST := "res://game/love/assets/terrain25d/manifest.json"
 const TERRAIN_ATLAS := "res://assets/terrain25d/atlas_00.png"
 const OAK = preload("res://assets/trees/tamu_oak.png")
 const TILE := 64.0
 const PLAYER_RADIUS := 9.0
 const MAX_TILES := 1100
-const BUTTON_SIZE := Vector2(138, 72)
 
 var gameplay: RefCounted
 var authority: RefCounted
@@ -33,12 +33,18 @@ var available_chunks: Dictionary = {}
 var terrain_atlas: Texture2D
 var texture_regions: Dictionary = {}
 var texture_cache: Dictionary = {}
-var buttons_layer: CanvasLayer
+var modular_hud: CanvasLayer
+var forest_gui: CanvasLayer
+var joystick_base: Panel
+var joystick_knob: Panel
+var joystick_pointer := -1
+var joystick_vector := Vector2.ZERO
+var sprint_held := false
+const JOYSTICK_RADIUS := 62.0
 var status: Label
 var book: CanvasLayer
 var workshop: CanvasLayer
 var command_sequence := 0
-var movement_buttons: Dictionary = {}
 var last_direction := Vector2.DOWN
 var action_hold := 0.0
 var terrain_rebuild_at := Vector2(INF, INF)
@@ -91,11 +97,20 @@ func _ready() -> void:
     camera.zoom = Vector2(1.65, 1.65)
     camera.position = actor_world
     add_child(camera)
-    _make_ui()
     book = CraftingBook.new()
     book.name = "CanonicalCraftingBook"
     add_child(book)
     book.setup(gameplay, Callable(self, "_begin_craft"))
+    _make_joystick_authority()
+    modular_hud = ModularHUD.new()
+    modular_hud.name = "TAMUModularHUD"
+    add_child(modular_hud)
+    if not modular_hud.setup(self) or not modular_hud.verify_contract():
+        push_error("TAMU_TOPDOWN_MODULAR_HUD_SETUP_FAILED")
+        _make_failure_overlay("TAMU HUD yüklenemedi; geçici kontrol arayüzüne dönülmedi.")
+        return
+    status = modular_hud.get("alert") as Label
+    status.text = "Kaynağa dokun, ETKİLEŞİM ile topla"
     world_ready = true
     queue_redraw()
     print("TAMU_TOPDOWN_GAMEPLAY_READY region=", authority.region_id,
@@ -235,11 +250,26 @@ func _draw() -> void:
 
 func _input(event: InputEvent) -> void:
     if not world_ready or (book != null and book.is_open()) or (workshop != null and workshop.visible):
+        _release_joystick()
         return
-    if event is InputEventScreenTouch and event.pressed:
-        _select_at_screen(event.position)
+    if event is InputEventScreenTouch:
+        if event.pressed and joystick_pointer < 0 and event.position.distance_to(_joystick_center()) <= 105.0:
+            joystick_pointer = event.index
+            _set_joystick(event.position)
+            get_viewport().set_input_as_handled()
+            return
+        if not event.pressed and event.index == joystick_pointer:
+            _release_joystick()
+            get_viewport().set_input_as_handled()
+            return
+        if event.pressed and not _screen_is_on_controls(event.position):
+            _select_at_screen(event.position)
+    elif event is InputEventScreenDrag and event.index == joystick_pointer:
+        _set_joystick(event.position)
+        get_viewport().set_input_as_handled()
     elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-        _select_at_screen(event.position)
+        if not _screen_is_on_controls(event.position):
+            _select_at_screen(event.position)
 
 func _select_at_screen(screen_pos: Vector2) -> void:
     if _screen_is_on_controls(screen_pos):
@@ -265,15 +295,9 @@ func _select_at_screen(screen_pos: Vector2) -> void:
     queue_redraw()
 
 func _screen_is_on_controls(point: Vector2) -> bool:
-    if buttons_layer == null:
-        return false
-    var panel := buttons_layer.get_node_or_null("Controls")
-    if panel == null:
-        return false
-    for control in panel.get_children():
-        if control is Control and control.visible and control.get_global_rect().has_point(point):
-            return true
-    return false
+    if modular_hud != null and bool(modular_hud.call("blocks_world_input", point)):
+        return true
+    return joystick_base != null and point.distance_to(_joystick_center()) <= 105.0
 
 func _command(prefix: String) -> String:
     command_sequence += 1
@@ -345,19 +369,11 @@ func _process(delta: float) -> void:
     if not world_ready:
         return
     var manual := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
-    var touch := Vector2.ZERO
-    for key in movement_buttons:
-        if movement_buttons[key]:
-            match key:
-                "left": touch.x -= 1.0
-                "right": touch.x += 1.0
-                "up": touch.y -= 1.0
-                "down": touch.y += 1.0
-    var direction := (manual + touch).limit_length(1.0)
+    var direction := (manual + joystick_vector).limit_length(1.0)
     if (book != null and book.is_open()) or (workshop != null and workshop.visible):
         direction = Vector2.ZERO
     var moving := Vector2.ZERO
-    var step := direction * actor_speed * minf(delta, 0.1)
+    var step := direction * actor_speed * (1.65 if sprint_held and joystick_vector != Vector2.ZERO else 1.0) * minf(delta, 0.1)
     if step != Vector2.ZERO:
         last_direction = direction.normalized()
         if _safe_move(actor_world + step):
@@ -399,74 +415,59 @@ func _make_failure_overlay(message: String) -> void:
     label.position = Vector2(16, 80)
     ui.add_child(label)
 
-func _make_ui() -> void:
-    buttons_layer = CanvasLayer.new()
-    buttons_layer.layer = 120
-    add_child(buttons_layer)
-    var controls := Control.new()
-    controls.name = "Controls"
-    controls.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-    controls.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    buttons_layer.add_child(controls)
-    status = Label.new()
-    status.text = "Kaynağa dokun, TOPLA"
-    status.anchor_right = 1.0
-    status.offset_left = 22
-    status.offset_right = -22
-    status.offset_top = 28
-    status.offset_bottom = 80
-    status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-    status.add_theme_font_size_override("font_size", 22)
-    status.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    controls.add_child(status)
-    _make_button(controls, "TOPLA / AL", Vector2(-196, -180),
-        Vector2(174, 94), Callable(self, "_harvest"))
-    _make_button(controls, "ÜRETİM", Vector2(-196, -285),
-        Vector2(174, 84), func(): book.open_library())
-    _make_button(controls, "ÇANTA", Vector2(-196, -382),
-        Vector2(174, 84), func(): book.open_inventory())
-    _make_button(controls, "KUR", Vector2(-196, -479),
-        Vector2(174, 84), Callable(self, "_place_workbench"))
-    _make_button(controls, "ATÖLYE", Vector2(-196, -576),
-        Vector2(174, 84), Callable(self, "_open_workshop"))
-    var pad := [
-        {"key": "up", "name": "▲", "offset": Vector2(104, -275)},
-        {"key": "left", "name": "◀", "offset": Vector2(28, -195)},
-        {"key": "down", "name": "▼", "offset": Vector2(104, -195)},
-        {"key": "right", "name": "▶", "offset": Vector2(180, -195)}
-    ]
-    for part in pad:
-        var key := str(part["key"])
-        movement_buttons[key] = false
-        var b := Button.new()
-        b.text = str(part["name"])
-        b.custom_minimum_size = Vector2(74, 74)
-        b.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-        b.position = part["offset"]
-        b.focus_mode = Control.FOCUS_NONE
-        b.button_down.connect(_touch_direction.bind(key, true))
-        b.button_up.connect(_touch_direction.bind(key, false))
-        controls.add_child(b)
+func _make_joystick_authority() -> void:
+    joystick_base = Panel.new()
+    joystick_base.name = "TopdownJoystickAuthority"
+    joystick_base.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    joystick_base.modulate.a = 0.0
+    joystick_base.position = Vector2(18, 920)
+    joystick_base.size = Vector2(152, 152)
+    add_child(joystick_base)
+    joystick_knob = Panel.new()
+    joystick_knob.name = "TopdownJoystickKnobAuthority"
+    joystick_knob.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    joystick_knob.modulate.a = 0.0
+    joystick_knob.position = Vector2(47, 47)
+    joystick_knob.size = Vector2(58, 58)
+    joystick_base.add_child(joystick_knob)
 
-func _make_button(parent: Control, name: String, offset: Vector2,
-        dimensions: Vector2, callback: Callable) -> void:
-    var b := Button.new()
-    b.text = name
-    b.anchor_left = 1.0
-    b.anchor_right = 1.0
-    b.anchor_top = 1.0
-    b.anchor_bottom = 1.0
-    b.offset_left = offset.x
-    b.offset_right = offset.x + dimensions.x
-    b.offset_top = offset.y
-    b.offset_bottom = offset.y + dimensions.y
-    b.focus_mode = Control.FOCUS_NONE
-    b.add_theme_font_size_override("font_size", 20)
-    b.pressed.connect(callback)
-    parent.add_child(b)
+func _joystick_center() -> Vector2:
+    return joystick_base.get_global_rect().get_center()
 
-func _touch_direction(key: String, active: bool) -> void:
-    movement_buttons[key] = active
+func _set_joystick(point: Vector2) -> void:
+    var relative := point - _joystick_center()
+    joystick_vector = relative.limit_length(JOYSTICK_RADIUS) / JOYSTICK_RADIUS
+    if joystick_vector.length() < 0.13:
+        joystick_vector = Vector2.ZERO
+    if joystick_knob != null:
+        joystick_knob.position = Vector2(47, 47) + joystick_vector * JOYSTICK_RADIUS
+
+func _release_joystick() -> void:
+    joystick_pointer = -1
+    joystick_vector = Vector2.ZERO
+    if joystick_knob != null:
+        joystick_knob.position = Vector2(47, 47)
+
+func interact_world() -> void:
+    _harvest()
+
+func open_crafting_book() -> void:
+    _release_joystick()
+    if book != null:
+        book.open_library()
+
+func open_inventory() -> void:
+    _release_joystick()
+    if book != null:
+        book.open_inventory()
+
+func open_workshop() -> void:
+    _release_joystick()
+    _open_workshop()
+
+func _play_action_clip(clip: String, seconds: float = 0.65) -> void:
+    if actor != null:
+        actor.play_action(clip, seconds)
 
 func _new_uuid4() -> String:
     var bytes := Crypto.new().generate_random_bytes(16)
