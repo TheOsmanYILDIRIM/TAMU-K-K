@@ -187,7 +187,7 @@ func verify_animation_contract() -> bool:
     var saved_clip := clip
     for direction in [Vector2.UP, Vector2.LEFT, Vector2.DOWN, Vector2.RIGHT]:
         facing = direction
-        for requested in ["idle", "walk", "slash", "spellcast"]:
+        for requested in ["idle", "walk", "slash", "spellcast", "thrust", "shoot"]:
             _apply_clip(requested)
             var row := _direction_offset()
             for sprite in sprites:
