@@ -1119,3 +1119,13 @@ SOHBET-G'nin uygulanmış worker ticket/FIFO, visible/halo alias, `upload_cap=1`
 - Authored smoke run `43736084244` / run #13: SUCCESS. Independent downloaded fixed PCK is 42,710,688 bytes, SHA-256 `dbe11d40d7cba88aca45dff4494acc0f5e8a0788aeda93a506afdc5cbe8a476f`. Direct binary inspection confirmed all required HUD textures and `assets/ui/minimap/terrain.png` are present.
 - Code/CI HEAD before handoff-only documentation is `d21e0f3d33a2452bcd8dd900d2a54d1f388e6fa7`; it additionally keeps LPC runtime staging build-only, preventing the branch-specific validation workflow from auto-committing unrelated generated LPC assets. LPC run `43736258328` SUCCESS.
 - main remains unchanged. Physical Android acceptance is still OPEN until the user launches this new fixed PCK and confirms HUD/touch/visual behavior on-device.
+
+
+### 2026-11-15 — [TOPDOWN-SELECTION-UI] Main-game resource selection UI reused
+- Code integration commit `5de29ca7cbb68aaed34bd12ae84ca47801a0a250`: top-down now instantiates the existing `forest_harvest_gui.gd` and `selection_card.gd` used by the main Godot game.
+- Because top-down trees are drawn directly in `_draw()`, selection creates an invisible temporary Sprite2D proxy matching the selected `tamu_oak.png` size/position. The existing main-game selection system uses that proxy for blur/bokeh, focused object copy, gold silhouette/ground glow, connector line/target ring and the resource card; gameplay still uses the original canonical R2 dictionary/ID.
+- Existing panel actions are reused: TOPLA calls top-down canonical harvest through `_try_harvest`; DETAY/İŞARETLE remain the existing forest UI presentation actions. ModularHUD hides the old standalone forest action buttons, avoiding doubled controls.
+- CI now bakes the same generated forest UI assets used by main, requires selection UI/effect files in the exported PCK, opens a selection in isolated-PCK runtime, and requires `TAMU_TOPDOWN_PCK_SELECTION_UI_OK`.
+- Final authored smoke run `43738830457` / run #16 SUCCESS. Visual evidence explicitly shows the selected oak, blurred background, connector and original `AĞAÇ / Toplanabilir Kaynak / Odun / TOPLA / DETAY / İŞARETLE` panel after a rendered frame.
+- Independent downloaded PCK: 43,211,144 bytes; SHA-256 `b84f1900ecc97fd1275db9212e04452d84108bd4983892eed8f63ca5cc912251`; matches CI hash exactly.
+- Current tested code/workflow HEAD before this handoff-only commit: `653fa7f1acfd24fbb1572496f81174b3980458df`. main remains unchanged. Physical Android confirmation of selection tap/effect/buttons/performance is still open.
