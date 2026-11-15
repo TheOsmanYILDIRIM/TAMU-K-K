@@ -96,19 +96,23 @@ func _direction_key() -> String:
         return "down"
     return "right"
 
-func animation_frame_numbers(name: String) -> Array[int]:
+func animation_frame_numbers(name: String, direction_key: String = "") -> Array[int]:
     var result: Array[int] = []
     if not CLIPS.has(name):
         return result
     var data: Dictionary = CLIPS[name]
     var start := int(data["start"])
     var count := int(data["count"])
+    # The original wolf source is missing the multi-frame north-facing howl.
+    # Its authors/users explicitly note that only one upward-facing howl frame exists.
+    if name == "howl" and direction_key == "up":
+        count = 1
     for i in range(count):
         result.append(start + i)
     return result
 
 func playback_sequence(name: String) -> Array[int]:
-    var frames := animation_frame_numbers(name)
+    var frames := animation_frame_numbers(name, _direction_key())
     if frames.is_empty():
         return frames
     if str(CLIPS[name]["mode"]) == "pingpong" and frames.size() > 2:
@@ -149,10 +153,17 @@ func verify_animation_contract() -> bool:
     for name in expected:
         if animation_frame_numbers(name) != expected[name]:
             return false
-    for row in DIRECTION_ROWS.values():
+    for key in DIRECTION_ROWS:
+        var row := int(DIRECTION_ROWS[key])
         for name in expected:
-            for column in animation_frame_numbers(name):
-                if _frame_opaque_pixels(_frame_rect(int(column), int(row))) < 80:
+            var frames := animation_frame_numbers(name, str(key))
+            if name == "howl" and str(key) == "up":
+                if frames != [15]:
+                    return false
+            elif frames != expected[name]:
+                return false
+            for column in frames:
+                if _frame_opaque_pixels(_frame_rect(int(column), row)) < 80:
                     return false
     return true
 
